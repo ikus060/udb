@@ -1,0 +1,9 @@
+*.egg-info
+.coverage
+coverage.xml
+xunit.xml
+pytestdebug.log
+.eggs
+*.pyc
+.tox
+/dist
