@@ -1,0 +1,48 @@
+variables:
+  CONTAINER_IMAGE: ${CI_PROJECT_PATH}:${CI_COMMIT_SHORT_SHA}
+
+stages:
+  - test
+  - package
+  - sonar
+
+test:flake8:
+  before_script:
+    - pip install tox
+  image: python:3.9
+  script:
+    - tox -e flake8
+  stage: test
+
+test:py3:
+  artifacts:
+    paths:
+      - coverage.xml
+      - xunit.xml
+  before_script:
+    - pip install tox
+  image: python:3.9
+  script:
+    - tox -e py3
+  stage: test
+
+package:docker:
+  image: docker:20
+  needs: []
+  script:
+    - docker --version
+    - docker build -t ${CONTAINER_IMAGE} .
+  stage: package
+  services:
+  - name: docker:20-dind
+
+publish:sonar:
+  allow_failure: true
+  image: sonarsource/sonar-scanner-cli
+  needs:
+    - test:py3
+  script:
+    - sonar-scanner -X -Dsonar.python.coverage.reportPath=coverage.xml -Dsonar.python.xunit.reportPath=xunit.xml -Dsonar.host.url=$SONAR_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=$CI_PROJECT_NAME -Dsonar.projectVersion=$(git describe) -Dsonar.exclusions=**/test_*.py,setup.py -Dsonar.qualitygate.wait=true
+  stage: sonar
+  variables:
+    SONAR_PROJECT_BASE_DIR: "${CI_PROJECT_DIR}"
