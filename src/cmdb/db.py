@@ -76,7 +76,7 @@ class SQLAlchemyTool(cherrypy.Tool):
         cherrypy.request.db = None
         try:
             self.session.commit()
-        except:
+        except Exception:
             self.session.rollback()
             raise
         finally:
