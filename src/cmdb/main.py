@@ -86,18 +86,6 @@ def _setup_logging(log_file, log_access_file, level):
     cherrypy_error.addHandler(default_handler)
 
 
-def _error_page(**kwargs):
-    """
-    Custom error page to return plain text error message.
-    """
-    if cherrypy.response.headers['Content-Type'] == 'application/json':
-        return {
-            'message': kwargs.get('message', ''),
-            'status': kwargs.get('status', '')
-        }
-    return kwargs.get('message', '')
-
-
 def main(args=None):
     """
     Main entry point of the web server.
@@ -112,10 +100,10 @@ def main(args=None):
 
     # Configure web server
     environment = 'development' if cfg.debug else 'production'
+    cherrypy.config.environments['development'] = {}
     cherrypy.config.update({
         'server.socket_host': cfg.server_host,
         'server.socket_port': cfg.server_port,
-        'error_page.default': _error_page,
         'environment': environment,
     })
 

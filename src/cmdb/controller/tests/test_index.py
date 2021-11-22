@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 # cmdb, A web interface to manage IT network CMDB
 # Copyright (C) 2021 IKUS Software inc.
@@ -14,10 +15,17 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""
-CMDB Store to execute database operation.
-"""
 
 
-class Store():
-    pass
+from cmdb.controller.tests import WebCase
+
+
+class TestApp(WebCase):
+
+    def test_index(self):
+        # Given the application is started
+        # When making a query to index page
+        self.getPage('/')
+        # Then an html page is returned
+        self.assertStatus(200)
+        self.assertInBody('<body>')
