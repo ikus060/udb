@@ -21,15 +21,19 @@ import cherrypy
 
 
 def jinja2_handler(*args, **kwargs):
-    # Call handler
     request = cherrypy.serving.request
-    values = request._jinja2_inner_handler(*args, **kwargs)
+    # Get more variables
+    values = dict()
+    if request._jinja2_extra_processor:
+        values.update(request._jinja2_extra_processor(request))
+    # Call handler
+    values.update(request._jinja2_inner_handler(*args, **kwargs))
     # Convert data to jinja2
     template = request._jinja2_inner_template
     return template.render(values)
 
 
-def jinja2_out(env, template, debug=False):
+def jinja2_out(env, template, extra_processor=None, debug=False):
     request = cherrypy.serving.request
     # request.handler may be set to None by e.g. the caching tool
     # to signal to all components that a response body has already
@@ -42,6 +46,7 @@ def jinja2_out(env, template, debug=False):
                      'TOOLS.JINJA2')
     request._jinja2_inner_handler = request.handler
     request._jinja2_inner_template = env.get_template(template)
+    request._jinja2_extra_processor = extra_processor
     request.handler = jinja2_handler
 
 

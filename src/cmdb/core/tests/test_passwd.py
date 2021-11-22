@@ -14,16 +14,24 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+'''
+Created on Apr. 10, 2020
+
+@author: Patrik Dufresne
+'''
+
+import unittest
+
+from cmdb.core.passwd import check_password, hash_password
 
 
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import declarative_base
+class Test(unittest.TestCase):
 
-Base = declarative_base()
-
-
-class User(Base):
-    __tablename__ = 'users'
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    email = Column(String)
+    def test_check_password(self):
+        self.assertTrue(check_password(
+            'admin123', '{SSHA}/LAr7zGT/Rv/CEsbrEndyh27h+4fLb9h'))
+        self.assertFalse(check_password(
+            'admin12', '{SSHA}/LAr7zGT/Rv/CEsbrEndyh27h+4fLb9h'))
+        self.assertTrue(hash_password('admin12').startswith('{SSHA}'))
+        self.assertTrue(check_password('admin12', hash_password('admin12')))
+        self.assertTrue(check_password('admin123', hash_password('admin123')))

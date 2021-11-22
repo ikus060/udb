@@ -18,15 +18,20 @@
 import logging
 
 import cherrypy
+import jinja2
 import pkg_resources
 
-import cmdb.db  # noqa
-import cmdb.jinja2  # noqa
-import jinja2
-from cmdb.i18n import gettext, ngettext
-from cmdb.model import Base, User
+import cmdb.tools.db  # noqa: import cherrypy.tools.db
+import cmdb.tools.formauth  # noqa: import cherrypy.tools.formauth
+import cmdb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
+from cmdb.controller import template_processor
+from cmdb.controller.login import LoginPage
+from cmdb.controller.logout import LogoutPage
+from cmdb.core.model import Base
+from cmdb.tools.i18n import gettext, ngettext
 
 logger = logging.getLogger(__name__)
+
 
 #
 # Create singleton Jinja2 environement.
@@ -43,16 +48,46 @@ env = jinja2.Environment(
 )
 env.install_gettext_callables(gettext, ngettext, newstyle=True)
 
-#
-# Create singleton SQLAlchemyPlugin
-#
-cmdb.db.SQLAlchemyPlugin(cherrypy.engine, Base,
-                         'sqlite:////tmp/file.db').create()
+
+def _error_page(**kwargs):
+    """
+    Custom error page to return plain text error message.
+    """
+    # Check expected response type.
+    mtype = cherrypy.tools.accept.callable(
+        ['text/html', 'text/plain', 'application/json'])  # @UndefinedVariable
+    if mtype == 'text/plain':
+        return kwargs.get('message')
+    elif mtype == 'application/json':
+        return {
+            'message': kwargs.get('message', ''),
+            'status': kwargs.get('status', '')
+        }
+    # Try to build a nice error page.
+    try:
+        env = cherrypy.request.config.get('tools.jinja2.env')
+        extra_processor = cherrypy.request.config.get(
+            'tools.jinja2.extra_processor')
+        values = dict()
+        if extra_processor:
+            values.update(extra_processor(cherrypy.request))
+        values.update(kwargs)
+        template = env.get_template('error_page.html')
+        return template.render(**values)
+    except Exception:
+        # If failing, send the raw error message.
+        return kwargs.get('message')
 
 
 @cherrypy.tools.db()
+@cherrypy.tools.sessions()
+@cherrypy.tools.formauth()
 @cherrypy.tools.i18n(mo_dir=pkg_resources.resource_filename('cmdb', 'locales'), default='en_US', domain='messages')
-@cherrypy.config(**{'tools.jinja2.env': env})
+@cherrypy.config(**{
+    'error_page.default': _error_page,
+    'tools.jinja2.env': env,
+    'tools.jinja2.extra_processor': template_processor,
+})
 class Root(object):
     """
     Root entry point exposed using cherrypy.
@@ -60,23 +95,19 @@ class Root(object):
 
     def __init__(self, cfg):
         self.cfg = cfg
+        cherrypy.config.update({
+            'tools.sessions.storage_type': 'file' if cfg.session_dir else 'ram',
+            'tools.sessions.storage_path': cfg.session_dir,
+        })
+        # Create SQL plugin
+        plugin = cmdb.tools.db.SQLAlchemyPlugin(
+            cherrypy.engine, Base, 'sqlite:////tmp/file.db')
+        plugin.create()
 
-    def render_template(self, name, **kwargs):
-        tmpl = self.env.get_template('index.html')
-        return tmpl.render(
-            header_name=self.cfg.header_name,
-            footer_url=self.cfg.footer_url,
-            footer_name=self.cfg.footer_name,
-            **kwargs)
+        self.login = LoginPage()
+        self.logout = LogoutPage()
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='index.html')
     def index(self):
-        db = cherrypy.request.db
-        # Add user
-        ed_user = User(
-            name='ed')
-        db.add(ed_user)
-        # List user
-        users = list(db.query(User))
-        return {'users': users}
+        return {}
