@@ -7,3 +7,4 @@ pytestdebug.log
 *.pyc
 .tox
 /dist
+www.sqlite

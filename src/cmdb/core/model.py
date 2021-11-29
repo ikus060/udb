@@ -15,10 +15,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import cherrypy
+import cmdb.tools.db  # noqa: import cherrypy.tools.db
+from cmdb.core.passwd import check_password, hash_password
 from sqlalchemy import Column, String
-from sqlalchemy.orm import declarative_base
 
-Base = declarative_base()
+Base = cherrypy.tools.db.get_base('sqlite:///www.sqlite')
+
+
+class UserLoginException(Exception):
+    """
+    Raised when user's credentials are invalid.
+    """
+    pass
 
 
 class User(Base):
@@ -30,3 +39,40 @@ class User(Base):
 
     def __repr__(self):
         return "<User(name='%s', email='%s')>" % (self.name, self.email)
+
+    @classmethod
+    def create_default_admin(cls, default_username, default_password):
+        """
+        If the database is empty, create a default admin user.
+        """
+        assert default_username
+        # count number of users.
+        count = cls.query.count()
+        if count:
+            return  # database is not empty
+        # Create default user.
+        user = cls(username=default_username,
+                   password=default_password or hash_password('admin123'))
+        cls.session.add(user)
+        return user
+
+    @classmethod
+    def login(cls, username, password):
+        """
+        Validate username password using database and LDAP.
+        """
+        user = cls.query.filter_by(username=username).first()
+        if user and check_password(password, user.password):
+            return username
+        raise UserLoginException()
+
+    @classmethod
+    def create(cls, username, password=None):
+        """
+        Create a new user in database with the given password.
+        """
+        assert username
+        password = hash_password(password) if password else None
+        user = cls(username=username, password=password)
+        cls.session.add(user)
+        return user
