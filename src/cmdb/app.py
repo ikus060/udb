@@ -20,9 +20,11 @@ import logging
 import cherrypy
 import jinja2
 import pkg_resources
+from cmdb.core.passwd import hash_password
+from cmdb.core.model import User
 
 import cmdb.tools.db  # noqa: import cherrypy.tools.db
-import cmdb.tools.formauth  # noqa: import cherrypy.tools.formauth
+import cmdb.tools.auth_form  # noqa: import cherrypy.tools.auth_form
 import cmdb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
 from cmdb.controller import template_processor
 from cmdb.controller.login import LoginPage
@@ -81,7 +83,7 @@ def _error_page(**kwargs):
 
 @cherrypy.tools.db()
 @cherrypy.tools.sessions()
-@cherrypy.tools.formauth()
+@cherrypy.tools.auth_form()
 @cherrypy.tools.i18n(mo_dir=pkg_resources.resource_filename('cmdb', 'locales'), default='en_US', domain='messages')
 @cherrypy.config(**{
     'error_page.default': _error_page,
@@ -99,10 +101,11 @@ class Root(object):
             'tools.sessions.storage_type': 'file' if cfg.session_dir else 'ram',
             'tools.sessions.storage_path': cfg.session_dir,
         })
-        # Create SQL plugin
-        plugin = cmdb.tools.db.SQLAlchemyPlugin(
-            cherrypy.engine, Base, 'sqlite:////tmp/file.db')
-        plugin.create()
+        # Create database if required
+        cherrypy.tools.db.create_all()
+        # Create default admin if missing
+        User.create_default_admin(cfg.admin_user, cfg.admin_password)
+        User.session.commit()
 
         self.login = LoginPage()
         self.logout = LogoutPage()

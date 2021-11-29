@@ -52,6 +52,14 @@ class TestLogin(WebCase):
         self.assertHeaderItemValue('Location', self.baseurl + '/dnszone/')
         user_login_mock.assert_called_once_with(username, password)
 
+    def test_login_with_redirect_query_string(self):
+        # Given a user redirected to login page with a query string.
+        # When trying to login
+        self.getPage("/login/?redirect=%2Fdnszone%2F", method='GET')
+        # Then the form contains a redirect value
+        self.assertStatus('200 OK')
+        self.assertInBody('value="/dnszone/"')
+
     @unittest.mock.patch('cmdb.controller.login.user_login', side_effect=UserLoginException)
     def test_login_invalid_credentials(self, user_login_mock):
         # Given invalid credentials.
@@ -101,7 +109,17 @@ class TestLogin(WebCase):
         self.getPage("/")
         # Then user is redirected to login page.
         self.assertStatus('303 See Other')
-        self.assertHeaderItemValue('Location', self.baseurl + '/login/')
+        self.assertHeaderItemValue(
+            'Location', self.baseurl + '/login/?redirect=%2F')
+
+    @unittest.mock.patch('cmdb.controller.login.user_login', return_value='admin')
+    def test_redirect_to_login_with_url(self, user_login_mock):
+        # When trying to access a proptected page.
+        self.getPage("/dnszone/")
+        # Then user is redirected to login page.
+        self.assertStatus('303 See Other')
+        self.assertHeaderItemValue(
+            'Location', self.baseurl + '/login/?redirect=%2Fdnszone%2F')
 
     def test_login_with_store(self):
         # Given a valid user with crendial in database

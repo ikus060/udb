@@ -18,10 +18,10 @@
 import cherrypy
 from cmdb.config import Option
 from cmdb.controller import flash
-from cmdb.core.store import user_login, UserLoginException
-from cmdb.tools.formauth import SESSION_KEY
-from cmdb.tools.i18n import gettext as _
 from cmdb.controller.wtf import CherryForm
+from cmdb.core.model import User, UserLoginException
+from cmdb.tools.auth_form import SESSION_KEY
+from cmdb.tools.i18n import gettext as _
 from wtforms.fields import PasswordField, StringField
 from wtforms.fields.simple import HiddenField
 from wtforms.validators import InputRequired
@@ -47,7 +47,7 @@ class LoginPage():
     _welcome_msg = Option("welcome_msg")
 
     @cherrypy.expose
-    @cherrypy.tools.formauth(on=False)
+    @cherrypy.tools.auth_form(on=False)
     @cherrypy.tools.jinja2(template='login.html')
     def index(self, **kwargs):
         # If user is already login, redirect him
@@ -56,16 +56,15 @@ class LoginPage():
 
         #  When data is submited, validate credentials.
         form = LoginForm()
-        if form.is_submitted():
-            if form.validate():
-                try:
-                    username = user_login(
-                        form.username.data, form.password.data)
-                    assert username
-                    cherrypy.session[SESSION_KEY] = username
-                    raise cherrypy.HTTPRedirect(form.redirect.data or '/')
-                except UserLoginException:
-                    flash(_('Invalid crentials'))
+        if form.validate_on_submit():
+            try:
+                username = User.login(
+                    form.username.data, form.password.data)
+                assert username
+                cherrypy.session[SESSION_KEY] = username
+                raise cherrypy.HTTPRedirect(form.redirect.data or '/')
+            except UserLoginException:
+                flash(_('Invalid crentials'))
 
         # Re-encode the redirect for display in HTML
         params = {
