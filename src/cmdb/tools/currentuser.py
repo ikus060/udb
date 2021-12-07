@@ -15,26 +15,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
+from cmdb.core.model import User
 
 SESSION_KEY = '_cp_username'
 
 
-def check_auth_form(login_url='/login/', session_key=SESSION_KEY):
+def get_currentuser(session_key=SESSION_KEY):
     """
-    A tool that verify if the session is associated to a user by tracking
-    a session key. If session is not authenticated, redirect him to login page.
+    When session is enabled and user is authenticated, get the
+    current user object and store it into the session.
     """
-    # Session is required for this tools
+    # Check if session is enabled
+    sessions_on = cherrypy.request.config.get('tools.sessions.on', False)
+    if not sessions_on:
+        return
+    # Check if user is authenticated
     username = cherrypy.session.get(session_key)
     if not username:
-        redirect = cherrypy.serving.request.path_info
-        query_string = cherrypy.serving.request.query_string
-        if query_string:
-            redirect = redirect + '?' + query_string
-        new_url = cherrypy.url(
-            login_url, qs={'redirect': redirect})
-        raise cherrypy.HTTPRedirect(new_url)
+        return
+    # Get reference to current user object
+    userobj = User.query.filter_by(username=username).first()
+    if not userobj:
+        # User was deleted after authenticating.
+        raise cherrypy.HTTPError(403)
+    cherrypy.serving.request.login = userobj.username
+    cherrypy.serving.request.currentuser = userobj
 
 
-cherrypy.tools.auth_form = cherrypy.Tool(
-    'before_handler', check_auth_form, priority=72)
+cherrypy.tools.currentuser = cherrypy.Tool(
+    'before_handler', get_currentuser, priority=73)

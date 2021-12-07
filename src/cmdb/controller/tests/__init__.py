@@ -24,7 +24,8 @@ import cherrypy
 import cherrypy.test.helper
 from cmdb.app import Root
 from cmdb.config import parse_args
-from cmdb.core.store import create_user
+from cmdb.core.model import User
+from cmdb.core.passwd import hash_password
 
 BaseClass = cherrypy.test.helper.CPWebCase
 del BaseClass.test_gc
@@ -64,8 +65,8 @@ class WebCase(BaseClass):
 
     def setUp(self):
         super().setUp()
-        cherrypy.engine.publish('db.drop')
-        cherrypy.engine.publish('db.create')
+        cherrypy.tools.db.drop_all()
+        cherrypy.tools.db.create_all()
         if self.login:
             self._login()
 
@@ -81,7 +82,7 @@ class WebCase(BaseClass):
 
     @property
     def session(self):
-        return cherrypy.tools.db.session
+        return cherrypy.tools.db.get_session()
 
     @property
     def baseurl(self):
@@ -113,7 +114,7 @@ class WebCase(BaseClass):
 
     def _login(self, username=username, password=password, redirect='/'):
         # Create new user
-        create_user(username=self.username, password=password)
+        User(username=self.username, password=hash_password(password)).add()
         self.session.commit()
         # Authenticate
         self.getPage("/login/", method='POST',

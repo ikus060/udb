@@ -14,7 +14,7 @@
                 "--debug",
                 "--session-dir",
                 "/tmp"
-            ]
+            ],
         },
         {
             "name": "Debug Unit Test",
