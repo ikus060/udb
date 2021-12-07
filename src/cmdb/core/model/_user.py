@@ -19,8 +19,9 @@ import cherrypy
 import cmdb.tools.db  # noqa: import cherrypy.tools.db
 from cmdb.core.passwd import check_password, hash_password
 from sqlalchemy import Column, String
+from sqlalchemy.sql.sqltypes import Boolean, Integer
 
-Base = cherrypy.tools.db.get_base('sqlite:///www.sqlite')
+Base = cherrypy.tools.db.get_base()
 
 
 class UserLoginException(Exception):
@@ -31,14 +32,21 @@ class UserLoginException(Exception):
 
 
 class User(Base):
-    __tablename__ = 'users'
+    __tablename__ = 'user'
 
-    username = Column(String, primary_key=True)
-    password = Column(String)
-    email = Column(String, unique=True)
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True)
+    password = Column(String, nullable=True)
+    fullname = Column(String, nullable=False, default='')
+    email = Column(String, nullable=True, unique=True)
+    deleted = Column(Boolean, default=False)
 
     def __repr__(self):
-        return "<User(name='%s', email='%s')>" % (self.name, self.email)
+        return "<User(name='%s', email='%s')>" % (self.username, self.email)
+
+    def __html__(self):
+        # TODO Not sure if we keep this here.
+        return self.fullname or self.username
 
     @classmethod
     def create_default_admin(cls, default_username, default_password):
@@ -49,7 +57,7 @@ class User(Base):
         # count number of users.
         count = cls.query.count()
         if count:
-            return  # database is not empty
+            return None  # database is not empty
         # Create default user.
         user = cls(username=default_username,
                    password=default_password or hash_password('admin123'))

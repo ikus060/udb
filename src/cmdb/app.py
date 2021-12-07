@@ -20,16 +20,16 @@ import logging
 import cherrypy
 import jinja2
 import pkg_resources
-from cmdb.core.passwd import hash_password
-from cmdb.core.model import User
 
-import cmdb.tools.db  # noqa: import cherrypy.tools.db
 import cmdb.tools.auth_form  # noqa: import cherrypy.tools.auth_form
+import cmdb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
+import cmdb.tools.db  # noqa: import cherrypy.tools.db
 import cmdb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
-from cmdb.controller import template_processor
+from cmdb.controller import lastupdated, template_processor
+from cmdb.controller.dnszone import DnsZonePage
 from cmdb.controller.login import LoginPage
 from cmdb.controller.logout import LogoutPage
-from cmdb.core.model import Base
+from cmdb.core.model import DnsZone, User
 from cmdb.tools.i18n import gettext, ngettext
 
 logger = logging.getLogger(__name__)
@@ -49,6 +49,7 @@ env = jinja2.Environment(
     ]
 )
 env.install_gettext_callables(gettext, ngettext, newstyle=True)
+env.filters['lastupdated'] = lastupdated
 
 
 def _error_page(**kwargs):
@@ -84,6 +85,7 @@ def _error_page(**kwargs):
 @cherrypy.tools.db()
 @cherrypy.tools.sessions()
 @cherrypy.tools.auth_form()
+@cherrypy.tools.currentuser()
 @cherrypy.tools.i18n(mo_dir=pkg_resources.resource_filename('cmdb', 'locales'), default='en_US', domain='messages')
 @cherrypy.config(**{
     'error_page.default': _error_page,
@@ -104,11 +106,20 @@ class Root(object):
         # Create database if required
         cherrypy.tools.db.create_all()
         # Create default admin if missing
-        User.create_default_admin(cfg.admin_user, cfg.admin_password)
+        created = User.create_default_admin(cfg.admin_user, cfg.admin_password)
+        if created:
+            # TODO Add more stuff for developement
+            User(username='patrik', fullname='Patrik Dufresne').add()
+            User(username='daniel', fullname='Daniel Baumann').add()
+            DnsZone(name='bfh.ch', notes='This is a note').add()
+            DnsZone(name='bfh.science', notes='This is a note').add()
+            DnsZone(name='bfh.info', notes='This is a note').add()
+
         User.session.commit()
 
         self.login = LoginPage()
         self.logout = LogoutPage()
+        self.dnszone = DnsZonePage()
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='index.html')

@@ -29,7 +29,7 @@ from wtforms.validators import InputRequired
 
 class LoginForm(CherryForm):
     username = StringField(
-        _('Username or email'),
+        _('Username'),
         validators=[InputRequired()],
         render_kw={"placeholder": _("Enter a valid email address")})
     password = PasswordField(

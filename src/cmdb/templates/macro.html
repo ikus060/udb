@@ -1,0 +1,25 @@
+{% macro user(userobj) -%}
+{% if userobj %}
+{{userobj.fullname or userobj.username}}
+{%else%}
+{%trans%}Not assigned{%endtrans%}
+{%endif%}
+{%- endmacro %}
+
+{% macro loading() -%}
+<div class="text-center">
+    <div class="spinner-border text-center" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+</div>
+{%- endmacro %}
+
+
+{% macro message() -%}
+<div class="text-center">
+    <div class="spinner-border text-center" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+</div>
+{%- endmacro %}
+

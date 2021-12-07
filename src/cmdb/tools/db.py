@@ -17,12 +17,30 @@
 '''
 SQLAlchemy Tool for CherryPy.
 '''
+import logging
+
 import cherrypy
-import sqlalchemy
 from sqlalchemy import create_engine
-from sqlalchemy.pool import NullPool
-from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
+from sqlalchemy.orm import scoped_session, sessionmaker
+
+logger = logging.getLogger(__name__)
+
+
+def add(self):
+    """
+    Add current object to session.
+    """
+    self.__class__.session.add(self)
+    return self
+
+
+def delete(self):
+    """
+    Delete current object to session.
+    """
+    self.__class__.session.delete(self)
+    return self
 
 
 class BaseExtensions(DeclarativeMeta):
@@ -33,7 +51,7 @@ class BaseExtensions(DeclarativeMeta):
     For example, given the model User:
     # no need to write init methods for models, simply pass keyword arguments or
     # override if needed.
-    User(name="daniel", email="daniel@dasa.cc") # is automatically added to session
+    User(name="daniel", email="daniel@dasa.cc").add()
     User.query # returns session.query(User)
     User.query.all() # instead of session.query(User).all()
     changed = User.from_dict({}) # update record based on dict argument passed in and returns any keys changed
@@ -41,6 +59,8 @@ class BaseExtensions(DeclarativeMeta):
 
     def __init__(self, name, bases, class_dict):
         DeclarativeMeta.__init__(self, name, bases, class_dict)
+        self.add = add
+        self.delete = delete
 
     @property
     def query(self):
@@ -49,8 +69,11 @@ class BaseExtensions(DeclarativeMeta):
     @property
     def session(self):
         # get contents of string 'Engine(...)'
-        dburi = repr(self.__base__.metadata.bind)[7:-1]
+        dburi = repr(self.__bases__[-1].metadata.bind)[7:-1]
         return cherrypy.tools.db.get_session(dburi)
+
+    def add(self):
+        return self.session.add(self)
 
 
 class SQLA(cherrypy.Tool):
@@ -71,12 +94,16 @@ class SQLA(cherrypy.Tool):
         for v in self._bases.values():
             v.metadata.create_all()
 
+    def drop_all(self):
+        for v in self._bases.values():
+            v.metadata.drop_all()
+
     def get_base(self, dburi='sqlite:///www.sqlite'):
         base = self._bases.get(dburi)
         if base is None:
             self._bases[dburi] = base = declarative_base(
                 metaclass=BaseExtensions)
-            base.metadata.bind = create_engine(dburi, echo=True)
+            base.metadata.bind = create_engine(dburi, echo=False)
 
         if self._sessions.get(dburi) is None:
             self._sessions[dburi] = session = scoped_session(
@@ -98,7 +125,8 @@ class SQLA(cherrypy.Tool):
             try:
                 session.flush()
                 session.commit()
-            except:
+            except Exception:
+                logger.exception()
                 session.rollback()
                 session.expunge_all()
             finally:
