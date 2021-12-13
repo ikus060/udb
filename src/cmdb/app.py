@@ -26,10 +26,10 @@ import cmdb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
 import cmdb.tools.db  # noqa: import cherrypy.tools.db
 import cmdb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
 from cmdb.controller import lastupdated, template_processor
-from cmdb.controller.dnszone import DnsZonePage
+from cmdb.controller.network import DnsZonePage, SubnetPage, DnsRecordPage, DhcpRecordPage
 from cmdb.controller.login import LoginPage
 from cmdb.controller.logout import LogoutPage
-from cmdb.core.model import DnsZone, User
+from cmdb.core.model import DnsZone, User, Subnet, DnsRecord, DhcpRecord
 from cmdb.tools.i18n import gettext, ngettext
 
 logger = logging.getLogger(__name__)
@@ -115,11 +115,46 @@ class Root(object):
             DnsZone(name='bfh.science', notes='This is a note').add()
             DnsZone(name='bfh.info', notes='This is a note').add()
 
+            # Subnet
+            Subnet(ip_cidr='147.87.0.0/16',
+                   name='its-main-4',
+                   vrf=1, notes='main').add()
+            Subnet(ip_cidr='2002::1234:abcd:ffff:c0a8:101/64',
+                   name='its-main-6',
+                   vrf=1, notes='main').add()
+            Subnet(ip_cidr='147.87.250.0/24',
+                   name='DMZ',
+                   vrf=1, notes='public').add()
+            Subnet(ip_cidr='147.87.208.0/24',
+                   name='ARZ',
+                   vrf=1, notes='BE.net').add()
+
+            # DHCP
+            DhcpRecord(ip='147.87.250.1', mac='00:ba:d5:a2:34:56',
+                       notes='webserver bla bla bla').add()
+
+            # DNS
+            DnsRecord(name='foo.bfh.ch',
+                      type='A',
+                      value='147.87.250.0').add()
+            DnsRecord(name='bar.bfh.ch',
+                      type='A',
+                      value='147.87.250.1').add()
+            DnsRecord(name='bar.bfh.ch',
+                      type='CNAME',
+                      value='www.bar.bfh.ch').add()
+            DnsRecord(name='baz.bfh.ch',
+                      type='A',
+                      value='147.87.250.2').add()
+
         User.session.commit()
 
         self.login = LoginPage()
         self.logout = LogoutPage()
         self.dnszone = DnsZonePage()
+        self.subnet = SubnetPage()
+        self.dnsrecord = DnsRecordPage()
+        self.dhcprecord = DhcpRecordPage()
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='index.html')

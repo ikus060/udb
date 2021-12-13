@@ -1,6 +1,6 @@
 {% macro list_messages(comments=True, changes=True) -%}
 <div class="list-group list-group-flush">
-    {% for message in dnszone.messages|sort(attribute="date",reverse=True) %}
+    {% for message in obj.messages|sort(attribute="date",reverse=True) %}
     {% if (changes and message.changes) or (comments and not message.changes) %}
     <a href="#" class="list-group-item list-group-item-action" aria-current="true">
         {{ message }}
@@ -30,7 +30,7 @@
             <!--Form -->
             <div class="card-body">
                 <div class="comment-form">
-                    <form method="post" action="{{url_for('dnszone', dnszone.id, 'post')}}">
+                    <form method="post" action="{{url_for(base_url, obj.id, 'post')}}">
                         <div class="mb-3 form-floating">
                             <textarea name="body" class="form-control" placeholder="Leave a comment here"
                                 id="floatingTextarea2" style="height: 80px"></textarea>

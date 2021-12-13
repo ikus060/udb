@@ -1,19 +1,19 @@
 <div if="followers" class="followers-list">
-    {% if not dnszone.is_following(currentuser) %}
-    <a href="{{url_for('dnszone', dnszone.id, 'follow')}}">Start following</a>
+    {% if not obj.is_following(currentuser) %}
+    <a href="{{url_for(base_url, obj.id, 'follow')}}">Start following</a>
     {% else %}
-    <a href="{{url_for('dnszone', dnszone.id, 'unfollow')}}">Stop following</a>
+    <a href="{{url_for(base_url, obj.id, 'unfollow')}}">Stop following</a>
     {% endif %}
 
-    {% if not dnszone.followers %}
+    {% if not obj.followers %}
     <p>{% trans %}No followers{% endtrans %}</p>
     {% endif %}
     <ul>
-        {% for userobj in dnszone.followers %}
+        {% for userobj in obj.followers %}
         <li>
             {{ macro.user(userobj) }}
-            <a href="{{url_for('dnszone', dnszone.id, 'unfollow', userobj.id)}}" title="{%trans%}unfollow{%endtrans%}"><i class="fas fa-times"></i><span
-                    class="visually-hidden">{%trans%}unfollow{%endtrans%}</span></a>
+            <a href="{{url_for(base_url, obj.id, 'unfollow', userobj.id)}}" title="{%trans%}unfollow{%endtrans%}"><i
+                    class="fas fa-times"></i><span class="visually-hidden">{%trans%}unfollow{%endtrans%}</span></a>
         </li>
         {% endfor %}
     </ul>

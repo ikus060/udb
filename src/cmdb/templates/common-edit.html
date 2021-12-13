@@ -4,7 +4,7 @@
 <div id="app" class="row">
     <div class="col-xl-2">
         <i class="h1 fas fa-pen"></i>
-        <h2>Edit a DNS Zone</h2>
+        <h2>Edit a {{display_name}}</h2>
         <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
             magna aliqua.</p>
     </div>
@@ -15,7 +15,7 @@
             <div class="text-center text-lg-start mt-4 pt-2">
                 <button type="submit" class="btn btn-primary"
                     style="padding-left: 2.5rem; padding-right: 2.5rem;">{%trans%}Save changes{%endtrans%}</button>
-                <a class="btn btn-secondary" href="{{url_for('/dnszone/')}}">{%trans%}Cancel{%endtrans%}</a>
+                <a class="btn btn-secondary" href="{{url_for(base_url)}}">{%trans%}Cancel{%endtrans%}</a>
             </div>
         </form>
 

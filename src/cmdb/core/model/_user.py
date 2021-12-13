@@ -19,6 +19,8 @@ import cherrypy
 import cmdb.tools.db  # noqa: import cherrypy.tools.db
 from cmdb.core.passwd import check_password, hash_password
 from sqlalchemy import Column, String
+from sqlalchemy.sql.expression import func
+from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Boolean, Integer
 
 Base = cherrypy.tools.db.get_base()
@@ -35,7 +37,8 @@ class User(Base):
     __tablename__ = 'user'
 
     id = Column(Integer, primary_key=True)
-    username = Column(String, unique=True)
+    # Unique
+    username = Column(String)
     password = Column(String, nullable=True)
     fullname = Column(String, nullable=False, default='')
     email = Column(String, nullable=True, unique=True)
@@ -84,3 +87,7 @@ class User(Base):
         user = cls(username=username, password=password)
         cls.session.add(user)
         return user
+
+
+# Create a unique index for username
+Index('user_username_index', func.lower(User.username), unique=True)

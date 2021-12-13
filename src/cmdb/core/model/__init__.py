@@ -16,4 +16,4 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from ._common import Message  # noqa
 from ._user import User, UserLoginException  # noqa
-from ._item import DnsZone  # noqa
+from ._network import DnsZone, Subnet, DnsRecord, DhcpRecord  # noqa

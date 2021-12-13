@@ -71,6 +71,7 @@ class WebCase(BaseClass):
             self._login()
 
     def tearDown(self):
+        cherrypy.tools.db.drop_all()
         super().tearDown()
 
     @property

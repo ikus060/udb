@@ -44,11 +44,11 @@ def get_flashed_messages():
     return []
 
 
-def url_for(endpoint, *args, **kwargs):
+def url_for(*args, **kwargs):
     """
     Generate a URL for the given endpoint, path (*args) with parameters (**kwargs)
     """
-    path = "/" + endpoint.strip("/")
+    path = ""
     for chunk in args:
         if not chunk:
             continue
