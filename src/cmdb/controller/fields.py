@@ -14,15 +14,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from cmdb.core.model import User
+from cmdb.core.model import DnsRecord, User
 from cmdb.tools.i18n import gettext as _
 from wtforms.fields.core import SelectField
-
-
-def objid(value):
-    if value is None or value == 'None':
-        return None
-    return int(value)
 
 
 class UserField(SelectField):
@@ -31,7 +25,7 @@ class UserField(SelectField):
     """
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, coerce=objid, **kwargs)
+        super().__init__(*args, coerce=self.user_obj, **kwargs)
 
     def iter_choices(self):
         """
@@ -43,5 +37,22 @@ class UserField(SelectField):
         for user in users:
             value = user.id
             label = user.fullname or user.username
-            selected = self.coerce(user.id) == self.data
+            selected = self.coerce(user) == self.data
             yield (value, label, selected)
+
+    def user_obj(self, value):
+        if value is None:
+            return None
+        elif isinstance(value, User):
+            return value
+        return User.query.filter_by(id=int(value)).first()
+
+
+class DnsRecordType(SelectField):
+    """
+    Field to select DNS Record type: A, CNAME, TXT, etc.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(
+            *args, choices=DnsRecord.TYPES, **kwargs)

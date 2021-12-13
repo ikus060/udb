@@ -27,19 +27,23 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 logger = logging.getLogger(__name__)
 
 
-def add(self):
+def add(self, commit=True):
     """
     Add current object to session.
     """
     self.__class__.session.add(self)
+    if commit:
+        self.__class__.session.commit()
     return self
 
 
-def delete(self):
+def delete(self, commit=True):
     """
     Delete current object to session.
     """
     self.__class__.session.delete(self)
+    if commit:
+        self.__class__.session.commit()
     return self
 
 
@@ -72,9 +76,6 @@ class BaseExtensions(DeclarativeMeta):
         dburi = repr(self.__bases__[-1].metadata.bind)[7:-1]
         return cherrypy.tools.db.get_session(dburi)
 
-    def add(self):
-        return self.session.add(self)
-
 
 class SQLA(cherrypy.Tool):
     _name = 'sqla'
@@ -95,6 +96,9 @@ class SQLA(cherrypy.Tool):
             v.metadata.create_all()
 
     def drop_all(self):
+        # Release open session.
+        self.on_end_resource()
+        # Drop all
         for v in self._bases.values():
             v.metadata.drop_all()
 
@@ -126,7 +130,7 @@ class SQLA(cherrypy.Tool):
                 session.flush()
                 session.commit()
             except Exception:
-                logger.exception()
+                logger.exception('error trying to flush and commit session')
                 session.rollback()
                 session.expunge_all()
             finally:
