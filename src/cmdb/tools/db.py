@@ -32,6 +32,7 @@ class SQLAlchemyPlugin(plugins.SimplePlugin):
 
         self.bus.subscribe('db.bind', self.bind)
         self.bus.subscribe('db.create', self.create)
+        self.bus.subscribe('db.drop', self.drop)
 
         self.sa_engine = None
 
@@ -44,6 +45,13 @@ class SQLAlchemyPlugin(plugins.SimplePlugin):
         cherrypy.log('Creating tables: %s' % self.sa_engine)
         self.orm_base.metadata.bind = self.sa_engine
         self.orm_base.metadata.create_all(self.sa_engine)
+
+    def drop(self):
+        if not self.sa_engine:
+            self.start()
+        cherrypy.log('Drop tables: %s' % self.sa_engine)
+        self.orm_base.metadata.bind = self.sa_engine
+        self.orm_base.metadata.drop_all(self.sa_engine)
 
     def stop(self):
         if self.sa_engine:
@@ -70,13 +78,13 @@ class SQLAlchemyTool(cherrypy.Tool):
 
     def bind_session(self):
         cherrypy.engine.publish('db.bind', self.session)
-        cherrypy.request.db = self.session
+        cherrypy.request.session = self.session
 
     def commit_transaction(self):
-        cherrypy.request.db = None
+        cherrypy.request.session = None
         try:
             self.session.commit()
-        except:
+        except Exception:
             self.session.rollback()
             raise
         finally:

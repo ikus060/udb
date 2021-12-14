@@ -30,7 +30,7 @@ You may also customize more option when starting the application. To get a list 
 Reference http://babel.edgewall.org/wiki/Documentation/setup.html
 
 cmdb may be translated using `.po` files. This section describe briefly
-how to translate rdiffweb. It's not a complete instruction set, it's merely a reminder.
+how to translate the application. It's not a complete instruction set, it's merely a reminder.
 
 Extract the strings to be translated:
 
