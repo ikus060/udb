@@ -9,7 +9,18 @@
             "type": "python",
             "request": "launch",
             "module": "cmdb.main",
-            "justMyCode": false
-        }
+            "justMyCode": false,
+            "args": [
+                "--debug",
+                "--session-dir",
+                "/tmp"
+            ]
+        },
+        {
+            "name": "Debug Unit Test",
+            "type": "python",
+            "request": "test",
+            "justMyCode": false,
+        },
     ]
 }

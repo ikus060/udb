@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 # cmdb, A web interface to manage IT network CMDB
 # Copyright (C) 2021 IKUS Software inc.
@@ -16,24 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import cherrypy.test.helper
+from sqlalchemy import Column, String
+from sqlalchemy.orm import declarative_base
 
-from cmdb.app import Root
-from cmdb.config import parse_args
+Base = declarative_base()
 
 
-class TestApp(cherrypy.test.helper.CPWebCase):
+class User(Base):
+    __tablename__ = 'users'
 
-    @classmethod
-    def setup_server(cls):
-        cfg = parse_args([])
-        app = Root(cfg)
-        cherrypy.tree.mount(app)
+    username = Column(String, primary_key=True)
+    password = Column(String)
+    email = Column(String, unique=True)
 
-    def test_index(self):
-        # Given the application is started
-        # When making a query to index page
-        self.getPage('/')
-        # Then an html page is returned
-        self.assertStatus(200)
-        self.assertInBody('<body>')
+    def __repr__(self):
+        return "<User(name='%s', email='%s')>" % (self.name, self.email)

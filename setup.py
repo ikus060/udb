@@ -60,6 +60,7 @@ setuptools.setup(
         "configargparse",
         "Jinja2>=2.10,<3",
         "requests",
+        "sqlalchemy",
         "WTForms<3.0.0",
     ],
     # required packages for build process
