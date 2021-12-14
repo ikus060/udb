@@ -17,79 +17,124 @@
 '''
 SQLAlchemy Tool for CherryPy.
 '''
+import logging
+
 import cherrypy
-from cherrypy.process import plugins
 from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-
-class SQLAlchemyPlugin(plugins.SimplePlugin):
-    def __init__(self, bus, orm_base, dburi, **kw):
-        plugins.SimplePlugin.__init__(self, bus)
-        self.dburi = dburi
-        self.orm_base = orm_base
-        self.create_kwargs = kw
-
-        self.bus.subscribe('db.bind', self.bind)
-        self.bus.subscribe('db.create', self.create)
-        self.bus.subscribe('db.drop', self.drop)
-
-        self.sa_engine = None
-
-    def start(self):
-        self.sa_engine = create_engine(self.dburi, **self.create_kwargs)
-
-    def create(self):
-        if not self.sa_engine:
-            self.start()
-        cherrypy.log('Creating tables: %s' % self.sa_engine)
-        self.orm_base.metadata.bind = self.sa_engine
-        self.orm_base.metadata.create_all(self.sa_engine)
-
-    def drop(self):
-        if not self.sa_engine:
-            self.start()
-        cherrypy.log('Drop tables: %s' % self.sa_engine)
-        self.orm_base.metadata.bind = self.sa_engine
-        self.orm_base.metadata.drop_all(self.sa_engine)
-
-    def stop(self):
-        if self.sa_engine:
-            self.sa_engine.dispose()
-            self.sa_engine = None
-
-    def bind(self, session):
-        session.configure(bind=self.sa_engine)
+logger = logging.getLogger(__name__)
 
 
-class SQLAlchemyTool(cherrypy.Tool):
+def add(self, commit=True):
+    """
+    Add current object to session.
+    """
+    self.__class__.session.add(self)
+    if commit:
+        self.__class__.session.commit()
+    return self
+
+
+def delete(self, commit=True):
+    """
+    Delete current object to session.
+    """
+    self.__class__.session.delete(self)
+    if commit:
+        self.__class__.session.commit()
+    return self
+
+
+class BaseExtensions(DeclarativeMeta):
+    '''
+    Extends declarative base to provide convenience methods to models similar to
+    functionality found in Elixir. Works in python3.
+
+    For example, given the model User:
+    # no need to write init methods for models, simply pass keyword arguments or
+    # override if needed.
+    User(name="daniel", email="daniel@dasa.cc").add()
+    User.query # returns session.query(User)
+    User.query.all() # instead of session.query(User).all()
+    changed = User.from_dict({}) # update record based on dict argument passed in and returns any keys changed
+    '''
+
+    def __init__(self, name, bases, class_dict):
+        DeclarativeMeta.__init__(self, name, bases, class_dict)
+        self.add = add
+        self.delete = delete
+
+    @property
+    def query(self):
+        return self.session.query(self)
+
+    @property
+    def session(self):
+        # get contents of string 'Engine(...)'
+        dburi = repr(self.__bases__[-1].metadata.bind)[7:-1]
+        return cherrypy.tools.db.get_session(dburi)
+
+
+class SQLA(cherrypy.Tool):
+    _name = 'sqla'
+    _bases = {}
+    _sessions = {}
+
     def __init__(self, **kw):
-        cherrypy.Tool.__init__(self, 'on_start_resource',
-                               self.bind_session,
-                               priority=20)
-
-        self.session = scoped_session(sessionmaker(**kw))
+        cherrypy.Tool.__init__(self, None, None, priority=20)
 
     def _setup(self):
-        cherrypy.Tool._setup(self)
-        cherrypy.request.hooks.attach('on_end_resource',
-                                      self.commit_transaction,
-                                      priority=80)
+        conf = self._merged_args()
+        cherrypy.request.hooks.attach(
+            'on_start_resource', self.on_start_resource, **conf)
+        cherrypy.request.hooks.attach('on_end_resource', self.on_end_resource)
 
-    def bind_session(self):
-        cherrypy.engine.publish('db.bind', self.session)
-        cherrypy.request.session = self.session
+    def create_all(self):
+        for v in self._bases.values():
+            v.metadata.create_all()
 
-    def commit_transaction(self):
-        cherrypy.request.session = None
-        try:
-            self.session.commit()
-        except Exception:
-            self.session.rollback()
-            raise
-        finally:
-            self.session.remove()
-        self.session.close()
+    def drop_all(self):
+        # Release open session.
+        self.on_end_resource()
+        # Drop all
+        for v in self._bases.values():
+            v.metadata.drop_all()
+
+    def get_base(self, dburi='sqlite:///www.sqlite'):
+        base = self._bases.get(dburi)
+        if base is None:
+            self._bases[dburi] = base = declarative_base(
+                metaclass=BaseExtensions)
+            base.metadata.bind = create_engine(dburi, echo=False)
+
+        if self._sessions.get(dburi) is None:
+            self._sessions[dburi] = session = scoped_session(
+                sessionmaker(autoflush=True, autocommit=False))
+            session.configure(bind=base.metadata.bind)
+
+        return base
+
+    def get_session(self, dburi='sqlite:///www.sqlite'):
+        return self._sessions.get(dburi)
+
+    def on_start_resource(self, echo=None):
+        if echo is not None:
+            for session in self._sessions.values():
+                session.bind.echo = echo
+
+    def on_end_resource(self):
+        for session in self._sessions.values():
+            try:
+                session.flush()
+                session.commit()
+            except Exception:
+                logger.exception('error trying to flush and commit session')
+                session.rollback()
+                session.expunge_all()
+            finally:
+                session.remove()
 
 
-cherrypy.tools.db = SQLAlchemyTool()
+cherrypy.tools.db = SQLA()

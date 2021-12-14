@@ -14,19 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-from sqlalchemy import Column, String
-from sqlalchemy.orm import declarative_base
-
-Base = declarative_base()
-
-
-class User(Base):
-    __tablename__ = 'users'
-
-    username = Column(String, primary_key=True)
-    password = Column(String)
-    email = Column(String, unique=True)
-
-    def __repr__(self):
-        return "<User(name='%s', email='%s')>" % (self.name, self.email)
+from ._common import Message  # noqa
+from ._user import User, UserLoginException  # noqa
+from ._network import DnsZone, Subnet, DnsRecord, DhcpRecord  # noqa

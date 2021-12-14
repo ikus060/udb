@@ -1,0 +1,24 @@
+{% extends 'layout.html' %}
+{% block body %}
+<div class="row">
+    <div class="col-md-2">
+        <i class="h1 far fa-plus-square"></i>
+        <h2>Create a new {{display_name}}</h2>
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+            magna aliqua.</p>
+    </div>
+    <div class="col-md-10">
+        {% include "flash.html" %}
+        <form method="POST">
+            {{form}}
+
+            <div class="text-center text-lg-start mt-4 pt-2">
+                <button type="submit" class="btn btn-primary"
+                    style="padding-left: 2.5rem; padding-right: 2.5rem;">{%trans%}Create{%endtrans%} {{display_name}}</button>
+                <a class="btn btn-secondary" href="{{url_for(base_url)}}">{%trans%}Cancel{%endtrans%}</a>
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}

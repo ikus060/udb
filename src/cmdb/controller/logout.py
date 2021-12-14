@@ -15,13 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
-from cmdb.tools.formauth import SESSION_KEY
+from cmdb.tools.auth_form import SESSION_KEY
 
 
 class LogoutPage():
 
     @cherrypy.expose
-    @cherrypy.tools.formauth(on=False)
+    @cherrypy.tools.auth_form(on=False)
     def index(self):
         # Remove session key
         cherrypy.session[SESSION_KEY] = None

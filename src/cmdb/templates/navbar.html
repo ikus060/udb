@@ -16,6 +16,8 @@
           <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
             <li><a class="dropdown-item" href="{{ url_for('dnszone') }}">{% trans %}DNS Zone{%endtrans%}</a></li>
             <li><a class="dropdown-item" href="{{ url_for('subnet') }}">{% trans %}IP Subnet{%endtrans%}</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('dnsrecord') }}">{% trans %}DNS Record{%endtrans%}</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('dhcprecord') }}">{% trans %}DHCP Record{%endtrans%}</a></li>
           </ul>
         </li>
       </ul>
