@@ -14,9 +14,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import datetime
+import time
 from collections import namedtuple
 
 import cherrypy
+from cmdb.tools.i18n import gettext as _
 
 FlashMessage = namedtuple('FlashMessage', ['message', 'level'])
 
@@ -41,23 +44,51 @@ def get_flashed_messages():
     return []
 
 
-def url_for(endpoint, *args, **kwargs):
+def url_for(*args, **kwargs):
     """
     Generate a URL for the given endpoint, path (*args) with parameters (**kwargs)
     """
-    path = "/" + endpoint.strip("/")
+    path = ""
     for chunk in args:
         if not chunk:
             continue
         elif chunk and isinstance(chunk, str):
             path += "/"
             path += chunk.rstrip("/")
+        elif chunk and isinstance(chunk, int):
+            path += "/"
+            path += str(chunk)
         else:
             raise ValueError(
-                'invalid positional arguments, url_for accept str, bytes or RepoPath: %r' % chunk)
+                'invalid positional arguments, url_for accept str, bytes, int: %r' % chunk)
     qs = [(k, v)
           for k, v in sorted(kwargs.items()) if v is not None]
     return cherrypy.url(path=path, qs=qs)
+
+
+def lastupdated(value, now=None):
+    """
+    Used to format date as "Updated 10 minutes ago".
+
+    Value could be a RdiffTime or an epoch as int.
+    """
+    if not value:
+        return ""
+    now = datetime.datetime.fromtimestamp(time.time())
+    delta = now - value
+    if delta.days > 365:
+        return _('%d years ago') % (delta.days / 365)
+    if delta.days > 60:
+        return _('%d months ago') % (delta.days / 30)
+    if delta.days > 7:
+        return _('%d weeks ago') % (delta.days / 7)
+    elif delta.days > 1:
+        return _('%d days ago') % delta.days
+    elif delta.seconds > 3600:
+        return _('%d hours ago') % (delta.seconds / 3600)
+    elif delta.seconds > 60:
+        return _('%d minutes ago') % (delta.seconds / 60)
+    return _('%d seconds ago') % delta.seconds
 
 
 def template_processor(request):
@@ -69,6 +100,8 @@ def template_processor(request):
         'get_flashed_messages': get_flashed_messages,
         'url_for': url_for,
     }
-    if hasattr(cherrypy, 'session'):
-        values['username'] = cherrypy.session.get('_cp_username')
+    if hasattr(cherrypy.serving.request, 'login'):
+        values['username'] = cherrypy.serving.request.login
+    if hasattr(cherrypy.serving.request, 'currentuser'):
+        values['currentuser'] = cherrypy.serving.request.currentuser
     return values

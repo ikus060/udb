@@ -69,6 +69,22 @@ def parse_args(args=None, config_file_contents=None):
         metavar='FOLDER',
         help='location where to store user session information. When undefined, the user sessions are kept in memory.')
 
+    parser.add_argument(
+        '--admin-user', '--adminuser',
+        metavar='USERNAME',
+        help='administrator username. The administrator user get created on startup if the database is empty.',
+        default='admin')
+
+    parser.add_argument(
+        '--admin-password',
+        metavar='USERNAME',
+        help="""administrator encrypted password as SSHA. Read online
+            documentation to know more about how to encrypt your password
+            into SSHA or use http://projects.marsching.org/weave4j/util/genpassword.php
+            When defined, administrator password cannot be updated using the web interface.
+            When undefined, default administrator password is `admin123` and
+            it can be updated using the web interface.""")
+
     # LDAP
     parser.add_argument(
         '--ldap-add-missing-user', '--addmissinguser',

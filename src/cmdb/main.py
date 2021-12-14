@@ -99,8 +99,14 @@ def main(args=None):
                    log_access_file=cfg.log_access_file, level=log_level)
 
     # Configure web server
-    environment = 'development' if cfg.debug else 'production'
-    cherrypy.config.environments['development'] = {}
+    environment = 'debug' if cfg.debug else 'production'
+    cherrypy.config.environments['debug'] = {
+        'engine.autoreload.on': True,
+        'checker.on': False,
+        'tools.log_headers.on': True,
+        'request.show_tracebacks': True,
+        'request.show_mismatched_params': True,
+    }
     cherrypy.config.update({
         'server.socket_host': cfg.server_host,
         'server.socket_port': cfg.server_port,

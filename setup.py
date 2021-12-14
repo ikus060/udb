@@ -61,6 +61,7 @@ setuptools.setup(
         "Jinja2>=2.10,<3",
         "requests",
         "sqlalchemy",
+        "validators",
         "WTForms<3.0.0",
     ],
     # required packages for build process

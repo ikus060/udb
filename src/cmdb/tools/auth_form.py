@@ -19,20 +19,22 @@ import cherrypy
 SESSION_KEY = '_cp_username'
 
 
-def check_formauth(login_url='/login/'):
-    """A tool that looks in config for 'auth.require'. If found and it
-    is not None, a login is required and the entry is evaluated as a list of
-    conditions that the user must fulfill"""
-    conditions = cherrypy.request.config.get('formauth.require', [])
-    username = cherrypy.session.get(SESSION_KEY)
-    if username:
-        cherrypy.request.login = username
-        for condition in conditions:
-            # A condition is just a callable that returns true or false
-            if not condition():
-                raise cherrypy.HTTPError(status=403)
-    else:
-        raise cherrypy.HTTPRedirect(login_url)
+def check_auth_form(login_url='/login/', session_key=SESSION_KEY):
+    """
+    A tool that verify if the session is associated to a user by tracking
+    a session key. If session is not authenticated, redirect him to login page.
+    """
+    # Session is required for this tools
+    username = cherrypy.session.get(session_key)
+    if not username:
+        redirect = cherrypy.serving.request.path_info
+        query_string = cherrypy.serving.request.query_string
+        if query_string:
+            redirect = redirect + '?' + query_string
+        new_url = cherrypy.url(
+            login_url, qs={'redirect': redirect})
+        raise cherrypy.HTTPRedirect(new_url)
 
 
-cherrypy.tools.formauth = cherrypy.Tool('before_handler', check_formauth)
+cherrypy.tools.auth_form = cherrypy.Tool(
+    'before_handler', check_auth_form, priority=72)

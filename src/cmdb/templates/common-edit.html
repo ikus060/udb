@@ -1,0 +1,34 @@
+{% extends 'layout.html' %}
+{% import "macro.html" as macro %}
+{% block body %}
+<div id="app" class="row">
+    <div class="col-xl-2">
+        <i class="h1 fas fa-pen"></i>
+        <h2>Edit a {{display_name}}</h2>
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+            magna aliqua.</p>
+    </div>
+    <div class="col-xl-8 col-md-10">
+        {% include "flash.html" %}
+        <form method="POST" class="mb-4">
+            {{form('form-floating mb-2')}}
+            <div class="text-center text-lg-start mt-4 pt-2">
+                <button type="submit" class="btn btn-primary"
+                    style="padding-left: 2.5rem; padding-right: 2.5rem;">{%trans%}Save changes{%endtrans%}</button>
+                <a class="btn btn-secondary" href="{{url_for(base_url)}}">{%trans%}Cancel{%endtrans%}</a>
+            </div>
+        </form>
+
+        <!-- Message thread -->
+        {% include "messages.html" %}
+
+    </div>
+    <div class="col-xl-2 col-md-2">
+        <!-- Followers -->
+        <h4>{%trans%}Followers{%endtrans%}</h4>
+
+        {% include "followers.html" %}
+
+    </div>
+</div>
+{% endblock %}

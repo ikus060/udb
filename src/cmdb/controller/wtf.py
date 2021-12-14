@@ -17,8 +17,9 @@
 
 
 import cherrypy
-from wtforms.form import Form
 from markupsafe import Markup, escape
+from wtforms.form import Form
+from wtforms.widgets.core import Select
 
 SUBMIT_METHODS = {'POST', 'PUT', 'PATCH', 'DELETE'}
 
@@ -44,6 +45,13 @@ class _ProxyFormdata():
 
 
 _AUTO = _ProxyFormdata()
+
+
+def _get_bs_class(cls):
+    # TODO Complete this function for checkbox, radio, range
+    if cls == Select:
+        return 'form-select'
+    return 'form-control'
 
 
 class CherryForm(Form):
@@ -82,16 +90,25 @@ class CherryForm(Form):
         """
         return self()
 
-    def __call__(self, div_class='form-outline', label_class='form-label', field_class='form-control', error_class='invalid-feedback'):
+    def __call__(self, div_class='form-outline', label_class='form-label', error_class='invalid-feedback'):
+        """
+        Generate an HTML representation of this form using bootstrap 5.
+        """
 
         def generator():
             for id, field in self._fields.items():
                 if field.type == 'HiddenField':
-                    yield field(**{'class': field_class})
+                    yield field()
                 else:
                     yield Markup('<div class="%s">' % escape(div_class))
-                    yield field.label(**{'class': label_class})
-                    yield field(**{'class': field_class})
+                    field_class = _get_bs_class(field.widget.__class__)
+                    if 'form-floating' in div_class:
+                        # For floating element we need to place the label after the input element
+                        yield field(**{'class': field_class + (' is-invalid' if field.errors else '')})
+                        yield field.label(**{'class': label_class})
+                    else:
+                        yield field.label(**{'class': label_class})
+                        yield field(**{'class': field_class + (' is-invalid' if field.errors else '')})
                     for error in field.errors:
                         yield Markup('<div class="%s">%s</div>' % (escape(error_class), escape(error)))
                     yield Markup('</div>')
