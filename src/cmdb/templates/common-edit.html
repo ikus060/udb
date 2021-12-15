@@ -1,5 +1,6 @@
 {% extends 'layout.html' %}
 {% import "macro.html" as macro %}
+{% import "common-status.html" as _status with context %}
 {% block body %}
 <div id="app" class="row">
     <div class="col-xl-2">
@@ -9,6 +10,12 @@
             magna aliqua.</p>
     </div>
     <div class="col-xl-8 col-md-10">
+        <div class="d-flex mb-4">
+            <h2 class="flex-fill">{{display_name}} {{(form|first).data}}</h2>
+            <div class="align-self-center">
+                {{ _status.dropdown(obj) }}
+            </div>
+        </div>
         {% include "flash.html" %}
         <form method="POST" class="mb-4">
             {{form('form-floating mb-2')}}
@@ -18,17 +25,13 @@
                 <a class="btn btn-secondary" href="{{url_for(base_url)}}">{%trans%}Cancel{%endtrans%}</a>
             </div>
         </form>
-
         <!-- Message thread -->
-        {% include "messages.html" %}
-
+        {% include "common-messages.html" %}
     </div>
     <div class="col-xl-2 col-md-2">
         <!-- Followers -->
         <h4>{%trans%}Followers{%endtrans%}</h4>
-
-        {% include "followers.html" %}
-
+        {% include "common-followers.html" %}
     </div>
 </div>
 {% endblock %}

@@ -1,0 +1,27 @@
+{% set status_label = {'enabled':_('Enabled'), 'disabled': _('Disabled'), 'deleted': _('Deleted')} %}
+{% set status_bs_cls = {'enabled': 'success', 'disabled': 'secondary', 'deleted': 'danger'} %}
+
+{% macro dropdown(obj) %}
+<div class="btn-group">
+    <button type="button" class="btn btn-sm btn-{{status_bs_cls.get(obj.status, 'secondary')}} dropdown-toggle"
+        data-bs-toggle="dropdown" aria-expanded="false">
+        {{ status_label.get(obj.status, obj.status) }}
+    </button>
+    <ul class="dropdown-menu">
+        {% for status, label in status_label.items() %}
+        <li>
+            <a class="dropdown-item {{ obj.status == status and 'active' }}"
+                href="{{ url_for(base_url, obj.id, 'status', status) }}">
+                {{label}}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endmacro %}
+
+{% macro badge(obj) %}
+{% if obj.status != 'enabled' %}
+<span class="badge rounded-pill bg-{{status_bs_cls.get(obj.status, 'secondary')}}">{{ status_label.get(obj.status, obj.status) }}</span>
+{% endif %}
+{% endmacro %}

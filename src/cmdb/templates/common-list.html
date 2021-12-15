@@ -1,14 +1,18 @@
 {% extends 'layout.html' %}
 {% import "macro.html" as macro %}
+{% import "common-status.html" as _status %}
+
 {% block body %}
-<div class="page-title d-flex justify-content-between">
-    <h1>{{display_name}}</h1>
-    <div class="page-title-controls">
+<div class="d-flex justify-content-between">
+    <h2 class="flex-fill">{{display_name}}</h2>
+    <div class="align-self-center">
+        <!-- Filter -->
+        {% include "common-filter.html" %}
+        <!-- Create -->
         <a class="btn btn-primary" href="{{url_for(base_url, 'new')}}">{%trans%}Create{%endtrans%} {{display_name}}</a>
     </div>
 </div>
-<hr />
-<table class="table table-striped table-hover">
+<table class="table">
     <thead>
         <tr>
             {% for field in form %}
@@ -20,30 +24,36 @@
         </tr>
     </thead>
     <tbody>
-        {% for obj in obj_list%}
+        {% for obj in obj_list %}
         <tr>
             {% set unused = form.process(obj=obj) %}
             {% for field in form %}
             <td scope="row">
                 {% if loop.first %}
                 <a href="{{url_for(base_url, obj.id, 'edit')}}">{{ field.data }}</a>
+                {{ _status.badge(obj) }}
                 {% else %}
                 {{ field.data|default('-') }}
                 {% endif %}
             </td>
             {% endfor %}
             <td>
-                <a class="btn btn-primary btn-sm" href="{{url_for(base_url, obj.id, 'edit')}}">
-                    <i class="fas fa-pen"></i>
+                <a class="btn btn-outline-primary btn-sm" href="{{url_for(base_url, obj.id, 'edit')}}"
+                    data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans %}View more detail{% endtrans %}">
+                    <i class="fas fa-angle-right"></i>
                     <span class="visually-hidden">edit</span>
-                </a>
-                <a class="btn btn-primary btn-sm" href="{{url_for(base_url, obj.id, 'delete')}}">
-                    <i class="far fa-trash-alt"></i>
-                    <span class="visually-hidden">delete</span>
                 </a>
             </td>
         </tr>
         {% endfor%}
     </tbody>
 </table>
+{% endblock %}
+{% block script %}
+<script>
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+</script>
 {% endblock %}

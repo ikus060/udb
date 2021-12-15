@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 # cmdb, A web interface to manage IT network CMDB
 # Copyright (C) 2021 IKUS Software inc.
