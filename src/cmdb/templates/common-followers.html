@@ -1,8 +1,8 @@
 <div if="followers" class="followers-list">
     {% if not obj.is_following(currentuser) %}
-    <a href="{{url_for(base_url, obj.id, 'follow')}}">Start following</a>
+    <a href="{{url_for(base_url, obj.id, 'follow', currentuser.id)}}">Start following</a>
     {% else %}
-    <a href="{{url_for(base_url, obj.id, 'unfollow')}}">Stop following</a>
+    <a href="{{url_for(base_url, obj.id, 'unfollow', currentuser.id)}}">Stop following</a>
     {% endif %}
 
     {% if not obj.followers %}

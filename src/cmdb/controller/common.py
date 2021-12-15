@@ -53,11 +53,26 @@ class CommonPage(object):
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='common-list.html')
-    def index(self):
+    def index(self, deleted=False, personal=False):
+        # Convert from string to boolean
+        with cherrypy.HTTPError.handle(ValueError, 400):
+            deleted = deleted in [True, 'True', 'true']
+            personal = personal in [True, 'True', 'true']
+        # Build query
+        query = self.object_cls.query
+        if not deleted:
+            query = query.filter(self.object_cls.status
+                                 != self.object_cls.STATUS_DELETED)
+        if personal:
+            query = query.filter(self.object_cls.owner
+                                 == cherrypy.request.currentuser)
+        obj_list = query.all()
         return {
+            'deleted': deleted,
+            'personal': personal,
             'form': self.object_form(),
             'base_url': self.base_url,
-            'obj_list': self.object_cls.query.all(),
+            'obj_list': obj_list,
             'display_name': self.object_form.get_display_name(),
         }
 
@@ -80,6 +95,20 @@ class CommonPage(object):
             'form': form,
             'display_name': self.object_form.get_display_name(),
         }
+
+    @cherrypy.expose
+    def status(self, status, id, **kwargs):
+        """
+        Soft-delete the record.
+        """
+        obj = self._get_or_404(id)
+        try:
+            obj.status = status
+            obj.add()
+        except ValueError as e:
+            # raised by SQLAlchemy validators
+            flash(_('Invalid status: %s') % e, level='error')
+        raise cherrypy.HTTPRedirect(url_for(self.base_url, id, 'edit'))
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='common-edit.html')
@@ -107,30 +136,24 @@ class CommonPage(object):
         }
 
     @cherrypy.expose
-    def follow(self, user_id=None, **kwargs):
+    def follow(self, user_id, id, **kwargs):
         """
         Add current user to the list of followers.
         """
-        obj = self._get_or_404(kwargs.get('id', None))
-        if user_id is None:
-            userobj = cherrypy.request.currentuser
-        else:
-            userobj = User.query.filter_by(id=1).first()
+        obj = self._get_or_404(id)
+        userobj = User.query.filter_by(id=user_id).first()
         if userobj and not obj.is_following(userobj):
             obj.followers.append(userobj)
             obj.add()
         raise cherrypy.HTTPRedirect(url_for(self.base_url, obj.id, 'edit'))
 
     @cherrypy.expose
-    def unfollow(self, user_id=None, **kwargs):
+    def unfollow(self, user_id, id, **kwargs):
         """
         Add current user to the list of followers.
         """
-        obj = self._get_or_404(kwargs.get('id', None))
-        if user_id is None:
-            userobj = cherrypy.request.currentuser
-        else:
-            userobj = User.query.filter_by(id=1).first()
+        obj = self._get_or_404(id)
+        userobj = User.query.filter_by(id=user_id).first()
         if userobj and obj.is_following(userobj):
             obj.followers.remove(userobj)
             obj.add()

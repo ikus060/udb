@@ -49,7 +49,6 @@ class WebCase(BaseClass):
             raise unittest.SkipTest(
                 "%s is an abstract base class" % cls.__name__)
         super().setup_class()
-        cls.do_gc_test = False
 
     @classmethod
     def teardown_class(cls):
