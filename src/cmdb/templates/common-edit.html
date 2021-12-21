@@ -3,15 +3,9 @@
 {% import "common-status.html" as _status with context %}
 {% block body %}
 <div id="app" class="row">
-    <div class="col-xl-2">
-        <i class="h1 fas fa-pen"></i>
-        <h2>Edit a {{display_name}}</h2>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
-            magna aliqua.</p>
-    </div>
     <div class="col-xl-8 col-md-10">
         <div class="d-flex mb-4">
-            <h2 class="flex-fill">{{display_name}} {{(form|first).data}}</h2>
+            <h2 class="flex-fill">Edit {{display_name}} {{(form|first).data}}</h2>
             <div class="align-self-center">
                 {{ _status.dropdown(obj) }}
             </div>
