@@ -1,26 +1,27 @@
 {% extends 'layout.html' %}
 {% block body %}
 <section class="vh-100">
-    <div class="container-fluid h-custom">
-        <div class="row d-flex justify-content-center align-items-center h-100">
-            <div class="col-md-9 col-lg-6 col-xl-5">
-                <img src="https://mdbootstrap.com/img/Photos/new-templates/bootstrap-login-form/draw2.png"
-                    class="img-fluid" alt="Sample image">
-            </div>
-            <div class="col-md-8 col-lg-6 col-xl-4 offset-xl-1">
+    <div class="row d-flex align-items-center h-100">
+        <div class="col-md-8 col-lg-6 col-xl-5 col-xxl-3">
+            <div class="card p-3">
+                <h2>{{ header_name }}</h2>
+
                 {% include "flash.html" %}
                 <form method="POST">
                     {{form}}
-
                     <div class="text-center text-lg-start mt-4 pt-2">
                         <button type="submit" class="btn btn-primary btn-lg"
                             style="padding-left: 2.5rem; padding-right: 2.5rem;">{%trans%}Login{%endtrans%}</button>
                     </div>
-
                 </form>
             </div>
         </div>
     </div>
 </section>
-
+<style>
+    main {
+        background: url({{url_for('static', 'login_bg.jpg')}});
+        background-size: cover;
+    }
+</style>
 {% endblock %}
