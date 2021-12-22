@@ -22,14 +22,17 @@ import jinja2
 import pkg_resources
 
 import cmdb.tools.auth_form  # noqa: import cherrypy.tools.auth_form
+import cmdb.tools.auth_basic  # noqa: import cherrypy.tools.auth_basic
 import cmdb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
 import cmdb.tools.db  # noqa: import cherrypy.tools.db
 import cmdb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
 from cmdb.controller import lastupdated, template_processor
+from cmdb.controller.api import Api
 from cmdb.controller.login import LoginPage
 from cmdb.controller.logout import LogoutPage
-from cmdb.controller.network import (DhcpRecordPage, DnsRecordPage,
-                                     DnsZonePage, SubnetPage)
+from cmdb.controller.network import (DhcpRecordApi, DhcpRecordPage,
+                                     DnsRecordApi, DnsRecordPage, DnsZoneApi,
+                                     DnsZonePage, SubnetApi, SubnetPage)
 from cmdb.controller.static import Static
 from cmdb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User
 from cmdb.tools.i18n import gettext, ngettext
@@ -150,14 +153,19 @@ class Root(object):
                       value='147.87.250.2').add()
 
         User.session.commit()
-
         self.login = LoginPage()
         self.logout = LogoutPage()
-        self.dnszone = DnsZonePage()
-        self.subnet = SubnetPage()
-        self.dnsrecord = DnsRecordPage()
-        self.dhcprecord = DhcpRecordPage()
         self.static = Static()
+        self.api = Api()
+        # Import modules to be added to this app.
+        self.dnszone = DnsZonePage()
+        self.api.dnszone = DnsZoneApi()
+        self.subnet = SubnetPage()
+        self.api.subnet = SubnetApi()
+        self.dnsrecord = DnsRecordPage()
+        self.api.dnsrecord = DnsRecordApi()
+        self.dhcprecord = DhcpRecordPage()
+        self.api.dhcprecord = DhcpRecordApi()
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='index.html')

@@ -16,11 +16,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from cmdb.controller.tests import WebCase
-from cmdb.core.model import DnsZone, Subnet, DnsRecord, DhcpRecord
+from cmdb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet
 from sqlalchemy.exc import IntegrityError
 
 
 class DnsZoneTest(WebCase):
+
+    def test_json(self):
+        # Given a DnsZone
+        obj = DnsZone(name='bfh.ch').add()
+        # When serializing the object to json
+        data = obj.to_json()
+        # Then a json representation is return
+        self.assertEqual(data['name'], 'bfh.ch')
 
     def test_add(self):
         # Given an empty database
@@ -85,6 +93,16 @@ class DnsZoneTest(WebCase):
 
 class SubnetTest(WebCase):
 
+    def test_json(self):
+        # Given a DnsZone
+        obj = Subnet(name='test', ip_cidr='192.168.1.0/24', vrf=3).add()
+        # When serializing the object to json
+        data = obj.to_json()
+        # Then a json representation is return
+        self.assertEqual(data['name'], 'test')
+        self.assertEqual(data['ip_cidr'], '192.168.1.0/24')
+        self.assertEqual(data['vrf'], 3)
+
     def test_add_ipv4(self):
         # Given an empty database
         self.assertEqual(0, Subnet.query.count())
@@ -148,6 +166,18 @@ class SubnetTest(WebCase):
 
 class DnsRecordTest(WebCase):
 
+    def test_json(self):
+        # Given a DnsZone
+        obj = DnsRecord(name='foo.example.com', type='A',
+                        value='192.0.2.23').add()
+        # When serializing the object to json
+        data = obj.to_json()
+        # Then a json representation is return
+        self.assertEqual(data['name'], 'foo.example.com')
+        self.assertEqual(data['type'], 'A')
+        self.assertEqual(data['ttl'], 3600)
+        self.assertEqual(data['value'], '192.0.2.23')
+
     def test_add_a_record(self):
         # Given an empty database
         self.assertEqual(0, DnsRecord.query.count())
@@ -202,6 +232,16 @@ class DnsRecordTest(WebCase):
 
 
 class DhcpRecordTest(WebCase):
+
+    def test_json(self):
+        # Given a DnsZone
+        obj = DhcpRecord(ip='2002::1234:abcd:ffff:c0a8:101',
+                         mac='00:00:5e:00:53:af').add()
+        # When serializing the object to json
+        data = obj.to_json()
+        # Then a json representation is return
+        self.assertEqual(data['ip'], '2002::1234:abcd:ffff:c0a8:101')
+        self.assertEqual(data['mac'], '00:00:5e:00:53:af')
 
     def test_add_with_ipv4(self):
         # Given an empty database
