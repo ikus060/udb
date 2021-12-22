@@ -15,16 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from cmdb.controller.tests import WebCase
 
 
-class TestApp(WebCase):
+class StaticTest(WebCase):
 
-    def test_index(self):
+    def test_login_bg_jgp(self):
         # Given the application is started
         # When making a query to index page
-        self.getPage('/')
+        self.getPage('/static/login_bg.jpg')
         # Then an html page is returned
         self.assertStatus(200)
-        self.assertInBody('<body>')
+        self.assertHeaderItemValue('Content-Type', 'image/jpeg')

@@ -50,12 +50,10 @@ def url_for(*args, **kwargs):
     """
     path = ""
     for chunk in args:
-        if not chunk:
-            continue
-        elif chunk and isinstance(chunk, str):
+        if isinstance(chunk, str):
             path += "/"
             path += chunk.rstrip("/")
-        elif chunk and isinstance(chunk, int):
+        elif isinstance(chunk, int):
             path += "/"
             path += str(chunk)
         else:

@@ -16,14 +16,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+
 import cherrypy
 import cmdb.tools.db  # noqa: import cherrypy.tools.db
+from markupsafe import Markup, escape
 from sqlalchemy import Column, String, Table, event, inspect
-from sqlalchemy.orm import declarative_mixin, declared_attr, relationship
+from sqlalchemy.orm import (declarative_mixin, declared_attr, relationship,
+                            validates)
 from sqlalchemy.sql.functions import func
 from sqlalchemy.sql.schema import ForeignKey
-from sqlalchemy.sql.sqltypes import Boolean, DateTime, Integer
-from markupsafe import Markup, escape
+from sqlalchemy.sql.sqltypes import DateTime, Integer
 
 from ._user import User
 
@@ -132,6 +134,11 @@ class CommonMixin(object):
     """
     Mixin for common item properties.
     """
+    STATUS_ACTIVE = 'active'
+    STATUS_DISABLED = 'disabled'
+    STATUS_DELETED = 'deleted'
+
+    STATUS = [STATUS_ACTIVE, STATUS_DISABLED, STATUS_DELETED]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -187,10 +194,16 @@ class CommonMixin(object):
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     modified_at = Column(DateTime, nullable=False,
                          server_default=func.now(), onupdate=func.now())
-    deleted = Column(Boolean, default=False)
+    status = Column(String, default='enabled')
 
     def is_following(self, user):
         """
         Check if the given user is following this object.
         """
         return user in self.followers
+
+    @validates('status')
+    def validate_status(self, key, value):
+        if value not in CommonMixin.STATUS:
+            raise ValueError(value)
+        return value
