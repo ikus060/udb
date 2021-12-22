@@ -26,10 +26,12 @@ import cmdb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
 import cmdb.tools.db  # noqa: import cherrypy.tools.db
 import cmdb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
 from cmdb.controller import lastupdated, template_processor
-from cmdb.controller.network import DnsZonePage, SubnetPage, DnsRecordPage, DhcpRecordPage
 from cmdb.controller.login import LoginPage
 from cmdb.controller.logout import LogoutPage
-from cmdb.core.model import DnsZone, User, Subnet, DnsRecord, DhcpRecord
+from cmdb.controller.network import (DhcpRecordPage, DnsRecordPage,
+                                     DnsZonePage, SubnetPage)
+from cmdb.controller.static import Static
+from cmdb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User
 from cmdb.tools.i18n import gettext, ngettext
 
 logger = logging.getLogger(__name__)
@@ -155,6 +157,7 @@ class Root(object):
         self.subnet = SubnetPage()
         self.dnsrecord = DnsRecordPage()
         self.dhcprecord = DhcpRecordPage()
+        self.static = Static()
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='index.html')

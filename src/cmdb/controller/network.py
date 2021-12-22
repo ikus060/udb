@@ -21,11 +21,21 @@ from cmdb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet
 from cmdb.tools.i18n import gettext as _
 from wtforms.fields import IntegerField, StringField
 from wtforms.fields.simple import TextAreaField
-from wtforms.validators import (DataRequired, HostnameValidation, IPAddress,
-                                MacAddress)
+from wtforms.validators import (
+    DataRequired, IPAddress, MacAddress, ValidationError)
 
 from .fields import DnsRecordType, UserField
 from .wtf import CherryForm
+
+
+def validate_domain(form, field):
+    if not validators.domain(field.data):
+        raise ValidationError(_('Invalid FQDN'))
+
+
+def validate_ip_cidr(form, field):
+    if not validators.ipv4_cidr(field.data) and not validators.ipv6_cidr(field.data):
+        raise ValidationError(_('Invalid subnet'))
 
 #
 # DNS Zone
@@ -33,15 +43,14 @@ from .wtf import CherryForm
 
 
 class DnsZoneForm(CherryForm):
+
     @staticmethod
     def get_display_name():
         return _('DNS Zone')
 
     name = StringField(
         _('Name'),
-        validators=[
-            DataRequired(),
-            HostnameValidation()],
+        validators=[DataRequired(), validate_domain],
         render_kw={"placeholder": _("Enter a FQDN")})
     notes = TextAreaField(
         _('Notes'),
@@ -71,11 +80,11 @@ class SubnetForm(CherryForm):
 
     ip_cidr = StringField(
         _('Subnet'),
-        validators=[DataRequired()],
+        validators=[DataRequired(), validate_ip_cidr],
         render_kw={"placeholder": _("Enter a subnet IP/CIDR")})
     name = StringField(
         _('Name'),
-        validators=[DataRequired()],
+        validators=[],
         render_kw={"placeholder": _("Enter a description")})
     vrf = IntegerField(
         _('VRF'),
@@ -109,9 +118,7 @@ class DnsRecordForm(CherryForm):
 
     name = StringField(
         _('Name'),
-        validators=[
-            DataRequired(),
-            lambda unused_form, value: validators.domain(value)],
+        validators=[DataRequired(), validate_domain],
         render_kw={"placeholder": _("Enter a FQDN")})
 
     type = DnsRecordType(

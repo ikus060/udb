@@ -14,17 +14,19 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import cherrypy
+import pkg_resources
 
 
-from cmdb.controller.tests import WebCase
+@cherrypy.tools.db(on=False)
+@cherrypy.tools.sessions(on=False)
+@cherrypy.tools.auth_form(on=False)
+@cherrypy.tools.currentuser(on=False)
+@cherrypy.tools.i18n(on=False)
+class Static():
 
-
-class TestApp(WebCase):
-
-    def test_index(self):
-        # Given the application is started
-        # When making a query to index page
-        self.getPage('/')
-        # Then an html page is returned
-        self.assertStatus(200)
-        self.assertInBody('<body>')
+    @cherrypy.expose()
+    def login_bg_jpg(self):
+        fn = pkg_resources.resource_filename(
+            'cmdb.controller.static', 'taylor-vick-M5tzZtFCOfs-unsplash.jpg')
+        return cherrypy.lib.static.serve_file(fn)

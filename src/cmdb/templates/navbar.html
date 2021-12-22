@@ -1,43 +1,101 @@
-<nav class="navbar navbar-expand-md navbar-dark bg-dark">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="/"><i class="fas fa-database"></i> {{header_name}}</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
-      aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+<!--Main Navigation-->
+<header>
+
+  {% if username %}
+  <!-- Sidebar -->
+  <nav class="sidebar navbar navbar-expand-lg navbar-light bg-light fixed-top p-3 flex-column align-items-start ">
+
+    <div>
+
+      <!-- Toggle -->
+      <button class="navbar-toggler me-3" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu"
+        aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="fas fa-bars"></i>
+      </button>
+
+      <!-- Brand -->
+      <a class="navbar-brand" href="{{ url_for('') }}">
+        <i class="fas fa-database"></i> {{ header_name }}
+      </a>
+
+    </div>
+
+    <div id="sidebarMenu" class="collapse navbar-collapse flex-column align-items-start w-100 mt-3">
+
+      <div class="list-group w-100">
+        <a href="{{ url_for('') }}" class="list-group-item list-group-item-action py-2 ripple" aria-current="true">
+          <i class="fas fa-tachometer-alt fa-fw me-2"></i><span>Home</span>
+        </a>
+      </div>
+      <div class="mt-2">
+        <strong>{% trans %}Network{% endtrans %}</strong>
+      </div>
+      <div class="list-group w-100">
+        <a href="{{ url_for('dnszone') }}" class="list-group-item list-group-item-action py-2 ripple">
+          <i class="fas fa-network-wired fa-fw me-3"></i><span>{% trans %}DNS Zone{%endtrans%}</span>
+        </a>
+        <a href="{{ url_for('subnet') }}" class="list-group-item list-group-item-action py-2 ripple">
+          <i class="fas fa-project-diagram fa-fw me-3"></i><span>{% trans %}IP Subnet{%endtrans%}</span>
+        </a>
+        <a href="{{ url_for('dnsrecord') }}" class="list-group-item list-group-item-action py-2 ripple">
+          <i class="fab fa-hive fa-fw me-3"></i><span>{% trans %}DNS Record{%endtrans%}</span>
+        </a>
+        <a href="{{ url_for('dhcprecord') }}" class="list-group-item list-group-item-action py-2 ripple">
+          <i class="fas fa-layer-group fa-fw me-3"></i><span>{% trans %}DHCP Record{%endtrans%}</span>
+        </a>
+      </div>
+      <div class="mt-2">
+        <strong>{% trans %}Software{% endtrans %}</strong>
+      </div>
+      <div class="list-group w-100">
+        <a href="#" class="list-group-item list-group-item-action py-2 ripple">
+          <i class="fas fa-box-open fa-fw me-3"></i><span>Licenses</span>
+        </a>
+      </div>
+
       {% if username %}
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
-            aria-expanded="false">
-            <i class="fas fa-network-wired"></i> {% trans %}Network{%endtrans%}
-          </a>
-          <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <li><a class="dropdown-item" href="{{ url_for('dnszone') }}">{% trans %}DNS Zone{%endtrans%}</a></li>
-            <li><a class="dropdown-item" href="{{ url_for('subnet') }}">{% trans %}IP Subnet{%endtrans%}</a></li>
-            <li><a class="dropdown-item" href="{{ url_for('dnsrecord') }}">{% trans %}DNS Record{%endtrans%}</a></li>
-            <li><a class="dropdown-item" href="{{ url_for('dhcprecord') }}">{% trans %}DHCP Record{%endtrans%}</a></li>
-          </ul>
-        </li>
-      </ul>
-      <div class="d-flex">
-        <ul class="navbar-nav">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown"
-            aria-expanded="false">
-            <i class="fas fa-user"></i> {{username}}
-          </a>
-          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
-            <li><a class="dropdown-item" href="#">Profile</a></li>
-            <li><a class="dropdown-item" href="#">Settings</a></li>
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
-          </ul>
+      <!-- Search form -->
+      <hr />
+      <form class="d-flex mb-auto">
+        <div class="input-group mb-3">
+          <input type="text" class="form-control" placeholder="Search TODO" aria-label="Search" aria-describedby="button-addon2">
+          <button class="btn btn-outline-secondary" type="button" id="button-addon2"><i class="fas fa-search"></i></button>
+        </div>
+      </form>
+      {% endif %}
+
+      <hr />
+      <div class="dropdown dropup">
+        <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle " id="dropdownUser1"
+          data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="fas fa-user fa-fw me-3"></i> <strong>{{ username }}</strong>
+        </a>
+        <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser1" style="">
+          <li><a class="dropdown-item" href="#">Settings</a></li>
+          <li><a class="dropdown-item" href="#">Profile</a></li>
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+          <li><a class="dropdown-item" href="{{ url_for('logout') }}">Sign out</a></li>
         </ul>
       </div>
-      {% endif %}
+
     </div>
-  </div>
-</nav>
+    <!-- sidebarMenu -->
+  </nav>
+  {% endif %}
+</header>
+<!--Main Navigation-->
+
+<style>
+  @media (min-width: 992px) {
+    .navbar {
+      width: 264px;
+      height: 100vh;
+      overflow-y: scroll;
+    }
+    main {
+      padding: 1rem 1rem 1rem 264px;
+    }
+  }
+</style>
