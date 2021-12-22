@@ -207,3 +207,17 @@ class CommonMixin(object):
         if value not in CommonMixin.STATUS:
             raise ValueError(value)
         return value
+
+    def to_json(self):
+        def _value(value):
+            if hasattr(value, 'isoformat'):  # datetime
+                return value.isoformat()
+            return value
+        return {
+            c.name: _value(getattr(self, c.name))
+            for c in self.__table__.columns
+        }
+
+    def from_json(self, data):
+        for k, v in data.items():
+            setattr(self, k, v)
