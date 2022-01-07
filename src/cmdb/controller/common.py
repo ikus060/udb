@@ -170,3 +170,78 @@ class CommonPage(object):
             obj.messages.append(message)
             obj.add()
         raise cherrypy.HTTPRedirect(url_for(self.base_url, obj.id, 'edit'))
+
+
+class CommonApi(object):
+
+    def __init__(self, object_cls):
+        assert object_cls
+        self.object_cls = object_cls
+
+    @cherrypy.expose()
+    def default(self, id=None, **kwargs):
+        with cherrypy.HTTPError.handle(405):
+            method = cherrypy.request.method
+            assert method in ['GET', 'PUT', 'POST', 'DELETE']
+        if method == 'GET' and id is None:
+            return self.list(**kwargs)
+        elif method == 'GET':
+            return self.get(id, **kwargs)
+        elif method == 'PUT':
+            return self.put(id, **kwargs)
+        elif method == 'DELETE':
+            return self.delete(id, **kwargs)
+        elif method == 'POST':
+            return self.post(**kwargs)
+
+    def _get_or_404(self, id):
+        """
+        Get object with the given id or raise a 404 error.
+        """
+        obj = self.object_cls.query.filter_by(id=id).first()
+        if not obj:
+            raise cherrypy.HTTPError(404)
+        return obj
+
+    def list(self, **kwargs):
+        return [obj.to_json() for obj in self.object_cls.query.all()]
+
+    def get(self, id, **kwargs):
+        return self._get_or_404(id).to_json()
+
+    def put(self, id, **kwargs):
+        """
+        Update an existing record.
+        """
+        data = cherrypy.request.json
+        obj = self._get_or_404(id)
+        try:
+            obj.from_json(data)
+            obj.add()
+            self.object_cls.session.commit()
+        except ValueError as e:
+            # raised by SQLAlchemy validators
+            raise cherrypy.HTTPError(400, _('Invalid value: %s') % e)
+        return self._get_or_404(obj.id).to_json()
+
+    def post(self, **kwargs):
+        """
+        Create a new record
+        """
+        data = cherrypy.request.json
+        obj = self.object_cls()
+        try:
+            obj.from_json(data)
+            obj.add()
+            self.object_cls.session.commit()
+        except ValueError as e:
+            # raised by SQLAlchemy validators
+            raise cherrypy.HTTPError(400, _('Invalid value: %s') % e)
+        return self._get_or_404(obj.id).to_json()
+
+    def delete(self, id, **kwargs):
+        obj = self._get_or_404(id)
+        obj.status = self.object_cls.STATUS_DELETED
+        obj.add()
+        obj.session.commit()
+        return self._get_or_404(id).to_json()
