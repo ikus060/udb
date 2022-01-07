@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cmdb, A web interface to manage IT network CMDB
+# udb, A web interface to manage IT network
 # Copyright (C) 2021 IKUS Software inc.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -37,21 +37,21 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md'), encoding='utf-8'
     long_description = f.read()
 
 setuptools.setup(
-    name='cmdb',
+    name='Universal Database',
     use_scm_version=True,
-    description='A web interface to manage IT network CMDB',
+    description='Web application used to manage records to configure enterprise network with ansible-playbook.',
     long_description=long_description,
     long_description_content_type="text/markdown",
     author='Patrik Dufresne',
     author_email='patrik@ikus-soft.com',
-    url='https://gitlab.com/ikus-soft/cmdb',
+    url='https://gitlab.com/ikus-soft/udb',
     license="GPLv3",
-    packages=['cmdb'],
+    packages=['udb'],
     package_dir={'': 'src'},
     include_package_data=True,
     entry_points={
         "console_scripts": [
-            "cmdb = cmdb.main:main",
+            "udb = udb.main:main",
         ],
     },
     install_requires=[

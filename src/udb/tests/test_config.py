@@ -15,8 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-include LICENSE
-include README.md
-include MANIFEST.in
+import unittest
 
-recursive-include src/udb/templates *
+from udb.config import parse_args
+
+
+class TestConfig(unittest.TestCase):
+
+    def test_parse_args(self):
+        # Given a valid list of arguemnts
+        args = ['--server-host', '1.2.3.4',
+                '--server-port', '5000',
+                '--log-file', '/path/to/log',
+                '--log-access-file', '/path/to/log2']
+        # When parsing the arguments list
+        cfg = parse_args(args)
+        # Then configuration matches the arguments value
+        self.assertEqual(cfg.server_host, '1.2.3.4')
+        self.assertEqual(cfg.server_port, 5000)
+        self.assertEqual(cfg.log_file, '/path/to/log')
+        self.assertEqual(cfg.log_access_file, '/path/to/log2')
