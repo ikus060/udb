@@ -15,8 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-include LICENSE
-include README.md
-include MANIFEST.in
+from udb.controller.tests import WebCase
 
-recursive-include src/udb/templates *
+
+class StaticTest(WebCase):
+
+    def test_login_bg_jgp(self):
+        # Given the application is started
+        # When making a query to index page
+        self.getPage('/static/login_bg.jpg')
+        # Then an html page is returned
+        self.assertStatus(200)
+        self.assertHeaderItemValue('Content-Type', 'image/jpeg')

@@ -15,8 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-include LICENSE
-include README.md
-include MANIFEST.in
 
-recursive-include src/udb/templates *
+from udb.controller.tests import WebCase
+
+
+class TestApp(WebCase):
+
+    def test_index(self):
+        # Given the application is started
+        # When making a query to index page
+        self.getPage('/')
+        # Then an html page is returned
+        self.assertStatus(200)
+        self.assertInBody('<body>')

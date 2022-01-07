@@ -14,9 +14,28 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import cherrypy
 
-include LICENSE
-include README.md
-include MANIFEST.in
+from udb.core.model import User, UserLoginException
 
-recursive-include src/udb/templates *
+
+def checkpassword(realm, username, password):
+    """
+    Check basic authentication.
+    """
+    try:
+        return User.login(username, password) is not None
+    except UserLoginException:
+        return False
+
+
+@cherrypy.tools.json_out()
+@cherrypy.tools.json_in()
+@cherrypy.tools.sessions(on=False)
+@cherrypy.tools.auth_form(on=False)
+@cherrypy.tools.auth_basic(on=True, realm='udb-api', checkpassword=checkpassword)
+class Api():
+    """
+    This class is a node to set all the configuration to access /api/
+    """
+    pass

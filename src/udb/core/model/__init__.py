@@ -14,9 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-include LICENSE
-include README.md
-include MANIFEST.in
-
-recursive-include src/udb/templates *
+from ._common import Message  # noqa
+from ._user import User, UserLoginException  # noqa
+from ._network import DnsZone, Subnet, DnsRecord, DhcpRecord  # noqa

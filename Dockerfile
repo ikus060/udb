@@ -8,4 +8,4 @@ WORKDIR /tmp
 COPY . .
 RUN pip install . && pytest
 
-CMD [ "python", "/usr/local/bin/cmdb" ]
+CMD [ "python", "/usr/local/bin/udb" ]
