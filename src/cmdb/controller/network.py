@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
 import validators
-from cmdb.controller.common import CommonPage
+from cmdb.controller.common import CommonApi, CommonPage
 from cmdb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet
 from cmdb.tools.i18n import gettext as _
 from wtforms.fields import IntegerField, StringField
@@ -68,6 +68,12 @@ class DnsZonePage(CommonPage):
         super().__init__('dnszone', DnsZone, DnsZoneForm)
 
 
+class DnsZoneApi(CommonApi):
+
+    def __init__(self):
+        super().__init__(DnsZone)
+
+
 #
 # Subnet
 #
@@ -104,6 +110,12 @@ class SubnetPage(CommonPage):
 
     def __init__(self):
         super().__init__('subnet', Subnet, SubnetForm)
+
+
+class SubnetApi(CommonApi):
+
+    def __init__(self):
+        super().__init__(Subnet)
 
 #
 # DNS Record
@@ -152,6 +164,12 @@ class DnsRecordPage(CommonPage):
         super().__init__('dnsrecord', DnsRecord, DnsRecordForm)
 
 
+class DnsRecordApi(CommonApi):
+
+    def __init__(self):
+        super().__init__(DnsRecord)
+
+
 class DhcpRecordForm(CherryForm):
     """
     DHCP Record Form
@@ -190,3 +208,9 @@ class DhcpRecordPage(CommonPage):
 
     def __init__(self):
         super().__init__('dhcprecord', DhcpRecord, DhcpRecordForm)
+
+
+class DhcpRecordApi(CommonApi):
+
+    def __init__(self):
+        super().__init__(DhcpRecord)
