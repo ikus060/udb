@@ -54,7 +54,7 @@ class CommonTest():
         self.assertInBody('Create')
 
     def test_edit(self):
-        # Given a datavase with a record
+        # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         # When trying to update it's name
         self.getPage(url_for(self.base_url, obj.id, 'edit'),
@@ -67,6 +67,40 @@ class CommonTest():
         new_obj = self.obj_cls.query.first()
         for k, v in self.edit_data.items():
             self.assertEqual(getattr(new_obj, k), v)
+
+    def test_edit_assign_owner(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add()
+        # When trying to update the owner
+        payload = dict(self.new_data)
+        payload['owner'] = User.query.first().id
+        self.getPage(url_for(self.base_url, obj.id, 'edit'),
+                     method='POST',
+                     body=payload)
+        self.session.commit()
+        # Then user is redirected to list page
+        self.assertStatus(303)
+        # Then database is updated
+        new_obj = self.obj_cls.query.first()
+        self.assertEqual(new_obj.owner, User.query.first())
+
+    def test_edit_unassign_owner(self):
+        # Given a database with a record assigned to a user
+        obj = self.obj_cls(**self.new_data)
+        obj.owner = User.query.first()
+        obj.add()
+        # When trying unassign
+        payload = dict(self.new_data)
+        payload['owner'] = 'None'
+        self.getPage(url_for(self.base_url, obj.id, 'edit'),
+                     method='POST',
+                     body=payload)
+        self.session.commit()
+        # Then user is redirected to list page
+        self.assertStatus(303)
+        # Then database is updated
+        new_obj = self.obj_cls.query.first()
+        self.assertEqual(new_obj.owner, None)
 
     def test_new(self):
         # Given an empty database
