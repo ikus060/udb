@@ -41,7 +41,7 @@ class UserField(SelectField):
             yield (value, label, selected)
 
     def user_obj(self, value):
-        if value is None:
+        if value is None or value == 'None':
             return None
         elif isinstance(value, User):
             return value
