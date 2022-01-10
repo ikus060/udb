@@ -60,6 +60,28 @@ class DnsZoneTest(WebCase):
         self.assertEqual(1, DnsZone.query.count())
         self.assertEqual(DnsZone.STATUS_DELETED, DnsZone.query.first().status)
 
+    def test_enabled(self):
+        # Given a datavase with a DnsZone
+        obj = DnsZone(name='bfh.ch').add()
+        self.assertEqual(1, DnsZone.query.count())
+        # When updating it's status to deleted
+        obj.status = DnsZone.STATUS_ENABLED
+        obj.add()
+        # Then the object still exists in database
+        self.assertEqual(1, DnsZone.query.count())
+        self.assertEqual(DnsZone.STATUS_ENABLED, DnsZone.query.first().status)
+
+    def test_disabled(self):
+        # Given a datavase with a DnsZone
+        obj = DnsZone(name='bfh.ch').add()
+        self.assertEqual(1, DnsZone.query.count())
+        # When updating it's status to deleted
+        obj.status = DnsZone.STATUS_DISABLED
+        obj.add()
+        # When the object still exists in database
+        self.assertEqual(1, DnsZone.query.count())
+        self.assertEqual(DnsZone.STATUS_DISABLED, DnsZone.query.first().status)
+
     def test_invalid_name(self):
         # Given an ampty database
         self.assertEqual(0, DnsZone.query.count())
