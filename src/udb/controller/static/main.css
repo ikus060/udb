@@ -1,0 +1,32 @@
+/**
+ * udb, A web interface to manage IT network
+ * Copyright (C) 2021 IKUS Software inc.
+ *
+ * Custom CSS
+ */
+
+
+/* navbar layout */
+main {
+    padding: 72px 1rem 1rem 1rem;
+}
+@media (min-width: 992px) {
+    .navbar {
+        width: 264px;
+        height: 100vh;
+        overflow-y: auto;
+    }
+    main {
+        padding: 1rem 1rem 1rem 264px;
+    }
+}
+
+.btn-circle {
+    width: 30px;
+    height: 30px;
+    padding: 6px 0px;
+    border-radius: 15px;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.42857;
+}

@@ -30,3 +30,9 @@ class Static():
         fn = pkg_resources.resource_filename(
             'udb.controller.static', 'taylor-vick-M5tzZtFCOfs-unsplash.jpg')
         return cherrypy.lib.static.serve_file(fn)
+
+    @cherrypy.expose()
+    def main_css(self):
+        fn = pkg_resources.resource_filename(
+            'udb.controller.static', 'main.css')
+        return cherrypy.lib.static.serve_file(fn)
