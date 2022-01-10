@@ -121,6 +121,57 @@ class CommonTest():
         # Then a follower is removed to the record
         self.assertEqual([], self.obj_cls.query.first().followers)
 
+    def test_status_disabled(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data)
+        obj.add()
+        # When trying disabled
+        self.getPage(url_for(self.base_url, obj.id, 'status', 'disabled'))
+        self.session.commit()
+        # Then user is redirected to the edit page
+        self.assertStatus(303)
+        # Then object status is disabled is removed to the record
+        self.assertEqual('disabled', self.obj_cls.query.first().status)
+
+    def test_status_delete(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data)
+        obj.add()
+        # When trying delete
+        self.getPage(url_for(self.base_url, obj.id, 'status', 'deleted'))
+        self.session.commit()
+        # Then user is redirected to the edit page
+        self.assertStatus(303)
+        # Then object status is delete is removed to the record
+        self.assertEqual('deleted', self.obj_cls.query.first().status)
+
+    def test_status_enabled(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data)
+        obj.status = 'disabled'
+        obj.add()
+        # When trying enabled
+        self.getPage(url_for(self.base_url, obj.id, 'status', 'enabled'))
+        self.session.commit()
+        # Then user is redirected to the edit page
+        self.assertStatus(303)
+        # Then object status is enabled is removed to the record
+        self.assertEqual('enabled', self.obj_cls.query.first().status)
+
+    def test_status_invalid(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data)
+        obj.add()
+        # When trying enabled
+        self.getPage(url_for(self.base_url, obj.id, 'status', 'invalid'))
+        self.session.commit()
+        # Then user is redirected to the edit page
+        self.assertStatus(303)
+        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        self.assertInBody('Invalid status: invalid')
+        # Then object status is enabled is removed to the record
+        self.assertEqual('enabled', self.obj_cls.query.first().status)
+
     def test_api_list_without_credentials(self):
         # Given I don't have credentials
         # When requesting the API

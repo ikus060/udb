@@ -134,11 +134,11 @@ class CommonMixin(object):
     """
     Mixin for common item properties.
     """
-    STATUS_ACTIVE = 'active'
+    STATUS_ENABLED = 'enabled'
     STATUS_DISABLED = 'disabled'
     STATUS_DELETED = 'deleted'
 
-    STATUS = [STATUS_ACTIVE, STATUS_DISABLED, STATUS_DELETED]
+    STATUS = [STATUS_ENABLED, STATUS_DISABLED, STATUS_DELETED]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -194,7 +194,7 @@ class CommonMixin(object):
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     modified_at = Column(DateTime, nullable=False,
                          server_default=func.now(), onupdate=func.now())
-    status = Column(String, default='enabled')
+    status = Column(String, default=STATUS_ENABLED)
 
     def is_following(self, user):
         """
