@@ -5,11 +5,11 @@
     <a href="{{url_for(base_url, obj.id, 'unfollow', currentuser.id)}}">Stop following</a>
     {% endif %}
 
-    {% if not obj.followers %}
+    {% if not obj.get_followers() %}
     <p>{% trans %}No followers{% endtrans %}</p>
     {% endif %}
     <ul>
-        {% for userobj in obj.followers %}
+        {% for userobj in obj.get_followers() %}
         <li>
             {{ macro.user(userobj) }}
             <a href="{{url_for(base_url, obj.id, 'unfollow', userobj.id)}}" title="{%trans%}unfollow{%endtrans%}"><i

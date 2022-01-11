@@ -1,6 +1,6 @@
 {% macro list_messages(comments=True, changes=True) -%}
 <div class="list-group list-group-flush">
-    {% for message in obj.messages|sort(attribute="date",reverse=True) %}
+    {% for message in obj.get_messages()|sort(attribute="date",reverse=True) %}
     {% if (changes and message.changes) or (comments and not message.changes) %}
     <a href="#" class="list-group-item list-group-item-action" aria-current="true">
         {{ message }}
