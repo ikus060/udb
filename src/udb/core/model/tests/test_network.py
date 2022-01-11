@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User
 from sqlalchemy.exc import IntegrityError
 
 
@@ -111,6 +111,21 @@ class DnsZoneTest(WebCase):
         with self.assertRaises(IntegrityError):
             DnsZone(name='BFH.ch').add()
             self.session.commit()
+
+    def test_update_owner(self):
+        # Given a database with an existing record
+        d = DnsZone(name='bfh.ch').add()
+        self.assertEqual(1, DnsZone.query.count())
+        self.session.commit()
+        # When trying to update the owner
+        new_user = User(username='test').add()
+        d.owner = new_user
+        d.add()
+        self.session.commit()
+        # Then a new message with changes is append to the object.
+        messages = d.get_messages()
+        self.assertEqual(1, len(messages))
+        self.assertEqual({'owner': [None, 'test']}, messages[0].changes)
 
 
 class SubnetTest(WebCase):
