@@ -54,7 +54,7 @@ class CommonTest():
         self.assertInBody('Create')
 
     def test_edit(self):
-        # Given a datavase with a record
+        # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         # When trying to update it's name
         self.getPage(url_for(self.base_url, obj.id, 'edit'),
@@ -67,6 +67,40 @@ class CommonTest():
         new_obj = self.obj_cls.query.first()
         for k, v in self.edit_data.items():
             self.assertEqual(getattr(new_obj, k), v)
+
+    def test_edit_assign_owner(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add()
+        # When trying to update the owner
+        payload = dict(self.new_data)
+        payload['owner'] = User.query.first().id
+        self.getPage(url_for(self.base_url, obj.id, 'edit'),
+                     method='POST',
+                     body=payload)
+        self.session.commit()
+        # Then user is redirected to list page
+        self.assertStatus(303)
+        # Then database is updated
+        new_obj = self.obj_cls.query.first()
+        self.assertEqual(new_obj.owner, User.query.first())
+
+    def test_edit_unassign_owner(self):
+        # Given a database with a record assigned to a user
+        obj = self.obj_cls(**self.new_data)
+        obj.owner = User.query.first()
+        obj.add()
+        # When trying unassign
+        payload = dict(self.new_data)
+        payload['owner'] = 'None'
+        self.getPage(url_for(self.base_url, obj.id, 'edit'),
+                     method='POST',
+                     body=payload)
+        self.session.commit()
+        # Then user is redirected to list page
+        self.assertStatus(303)
+        # Then database is updated
+        new_obj = self.obj_cls.query.first()
+        self.assertEqual(new_obj.owner, None)
 
     def test_new(self):
         # Given an empty database
@@ -92,7 +126,7 @@ class CommonTest():
         # Then user is redirected to the edit page
         self.assertStatus(303)
         # Then a ne message is added to the record.
-        message = self.obj_cls.query.first().messages[0]
+        message = self.obj_cls.query.first().get_messages()[0]
         self.assertEqual('this is my message', message.body)
 
     def test_follow(self):
@@ -101,25 +135,78 @@ class CommonTest():
         # When trying follow that record
         self.getPage(url_for(self.base_url, obj.id, 'follow', 1),
                      method='POST')
+        self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
         # Then a new follower is added to the record
-        follower = self.obj_cls.query.first().followers[0]
+        follower = self.obj_cls.query.first().get_followers()[0]
         self.assertEqual(1, follower.id)
 
     def test_unfollow(self):
         # Given a database with a record
         userobj = User.query.filter_by(id=1).first()
         obj = self.obj_cls(**self.new_data)
-        obj.followers.append(userobj)
         obj.add()
+        obj.add_follower(userobj)
+        self.session.commit()
         # When trying unfollow that record
         self.getPage(url_for(self.base_url, obj.id, 'unfollow', 1),
                      method='POST')
         # Then user is redirected to the edit page
         self.assertStatus(303)
         # Then a follower is removed to the record
-        self.assertEqual([], self.obj_cls.query.first().followers)
+        self.assertEqual([], self.obj_cls.query.first().get_followers())
+
+    def test_status_disabled(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data)
+        obj.add()
+        # When trying disabled
+        self.getPage(url_for(self.base_url, obj.id, 'status', 'disabled'))
+        self.session.commit()
+        # Then user is redirected to the edit page
+        self.assertStatus(303)
+        # Then object status is disabled is removed to the record
+        self.assertEqual('disabled', self.obj_cls.query.first().status)
+
+    def test_status_delete(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data)
+        obj.add()
+        # When trying delete
+        self.getPage(url_for(self.base_url, obj.id, 'status', 'deleted'))
+        self.session.commit()
+        # Then user is redirected to the edit page
+        self.assertStatus(303)
+        # Then object status is delete is removed to the record
+        self.assertEqual('deleted', self.obj_cls.query.first().status)
+
+    def test_status_enabled(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data)
+        obj.status = 'disabled'
+        obj.add()
+        # When trying enabled
+        self.getPage(url_for(self.base_url, obj.id, 'status', 'enabled'))
+        self.session.commit()
+        # Then user is redirected to the edit page
+        self.assertStatus(303)
+        # Then object status is enabled is removed to the record
+        self.assertEqual('enabled', self.obj_cls.query.first().status)
+
+    def test_status_invalid(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data)
+        obj.add()
+        # When trying enabled
+        self.getPage(url_for(self.base_url, obj.id, 'status', 'invalid'))
+        self.session.commit()
+        # Then user is redirected to the edit page
+        self.assertStatus(303)
+        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        self.assertInBody('Invalid status: invalid')
+        # Then object status is enabled is removed to the record
+        self.assertEqual('enabled', self.obj_cls.query.first().status)
 
     def test_api_list_without_credentials(self):
         # Given I don't have credentials

@@ -3,9 +3,19 @@
 {% import "common-status.html" as _status with context %}
 {% block body %}
 <div id="app" class="row">
-    <div class="col-xl-8 col-md-10">
+    <div class="offset-xl-2 col-xl-8 col-md-10">
         <div class="d-flex mb-4">
-            <h2 class="flex-fill">Edit {{display_name}} {{(form|first).data}}</h2>
+            <!-- Go Back -->
+            <a class="btn btn-primary btn-circle me-2 align-self-center" href="{{url_for(base_url)}}"
+                data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans %}Go Back{% endtrans%}">
+                <i class="fas fa-angle-left"></i>
+                <span class="visually-hidden">{% trans %}Go Back{% endtrans%}</span>
+            </a>
+            <!-- Title -->
+            <h2 class="flex-fill mb-0">
+                Edit {{display_name}} {{(form|first).data}}
+            </h2>
+            <!-- Status -->
             <div class="align-self-center">
                 {{ _status.dropdown(obj) }}
             </div>

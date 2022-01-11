@@ -32,13 +32,15 @@
                 {% if loop.first %}
                 <a href="{{url_for(base_url, obj.id, 'edit')}}">{{ field.data }}</a>
                 {{ _status.badge(obj) }}
+                {% elif field.data %}
+                {{ field.data }}
                 {% else %}
-                {{ field.data|default('-') }}
+                -
                 {% endif %}
             </td>
             {% endfor %}
             <td>
-                <a class="btn btn-outline-primary btn-sm" href="{{url_for(base_url, obj.id, 'edit')}}"
+                <a class="btn btn-primary btn-circle" href="{{url_for(base_url, obj.id, 'edit')}}"
                     data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans %}View more detail{% endtrans %}">
                     <i class="fas fa-angle-right"></i>
                     <span class="visually-hidden">edit</span>
