@@ -126,7 +126,7 @@ class CommonTest():
         # Then user is redirected to the edit page
         self.assertStatus(303)
         # Then a ne message is added to the record.
-        message = self.obj_cls.query.first().messages[0]
+        message = self.obj_cls.query.first().get_messages()[0]
         self.assertEqual('this is my message', message.body)
 
     def test_follow(self):
