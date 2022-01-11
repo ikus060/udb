@@ -135,25 +135,27 @@ class CommonTest():
         # When trying follow that record
         self.getPage(url_for(self.base_url, obj.id, 'follow', 1),
                      method='POST')
+        self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
         # Then a new follower is added to the record
-        follower = self.obj_cls.query.first().followers[0]
+        follower = self.obj_cls.query.first().get_followers()[0]
         self.assertEqual(1, follower.id)
 
     def test_unfollow(self):
         # Given a database with a record
         userobj = User.query.filter_by(id=1).first()
         obj = self.obj_cls(**self.new_data)
-        obj.followers.append(userobj)
         obj.add()
+        obj.add_follower(userobj)
+        self.session.commit()
         # When trying unfollow that record
         self.getPage(url_for(self.base_url, obj.id, 'unfollow', 1),
                      method='POST')
         # Then user is redirected to the edit page
         self.assertStatus(303)
         # Then a follower is removed to the record
-        self.assertEqual([], self.obj_cls.query.first().followers)
+        self.assertEqual([], self.obj_cls.query.first().get_followers())
 
     def test_status_disabled(self):
         # Given a database with a record

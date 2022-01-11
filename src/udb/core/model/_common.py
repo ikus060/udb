@@ -24,7 +24,7 @@ from sqlalchemy import Column, String, Table, event, inspect
 from sqlalchemy.orm import (declarative_mixin, declared_attr, relationship,
                             validates)
 from sqlalchemy.sql.functions import func
-from sqlalchemy.sql.schema import ForeignKey
+from sqlalchemy.sql.schema import ForeignKey, Index
 from sqlalchemy.sql.sqltypes import DateTime, Integer
 
 from ._user import User
@@ -72,7 +72,7 @@ def before_flush(session, flush_context, instances):
     for obj in session.dirty:
         if hasattr(obj, 'messages'):
             changes = _get_model_changes(
-                obj, ignore_fields=['messages', 'followers'])
+                obj, ignore_fields=['messages'])
             if not changes:
                 continue
             # TODO How to get the real author_id ?
@@ -129,6 +129,21 @@ class Message(Base):
         return Markup('').join(list(generator()))
 
 
+class Follower(Base):
+    __tablename__ = 'follower'
+
+    id = Column(Integer, primary_key=True)
+    model = Column(String, nullable=False)
+    model_id = Column(Integer, nullable=False)
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    user = relationship(User)
+
+
+# Create a unique index for username
+Index('follower_index', Follower.model,
+      Follower.model_id, Follower.user_id, unique=True)
+
+
 @declarative_mixin
 class CommonMixin(object):
     """
@@ -172,23 +187,6 @@ class CommonMixin(object):
             backref="%s_parents" % cls.__name__.lower(),
             lazy='select')
 
-    @declared_attr
-    def followers(cls):
-        followers_association = Table(
-            "%s_followers" % cls.__tablename__,
-            cls.metadata,
-            Column("user_id", ForeignKey("user.id"),
-                   primary_key=True),
-            Column("%s_id" % cls.__tablename__,
-                   ForeignKey("%s.id" % cls.__tablename__),
-                   primary_key=True),
-        )
-        return relationship(
-            User,
-            secondary=followers_association,
-            backref="%s_parents" % cls.__name__.lower(),
-            lazy='select')
-
     id = Column(Integer, primary_key=True)
     notes = Column(String, nullable=False, default='')
     created_at = Column(DateTime, nullable=False, server_default=func.now())
@@ -196,11 +194,41 @@ class CommonMixin(object):
                          server_default=func.now(), onupdate=func.now())
     status = Column(String, default=STATUS_ENABLED)
 
+    def add_follower(self, user):
+        assert self.id
+        assert user
+        if not self.is_following(user):
+            f = Follower(
+                model=self.__tablename__,
+                model_id=self.id,
+                user=user)
+            f.add(commit=False)
+
+    def remove_follower(self, user):
+        assert self.id
+        assert user
+        assert user.id
+        f = Follower.query.where(
+            Follower.model == self.__tablename__,
+            Follower.model_id == self.id,
+            Follower.user == user).first()
+        if f:
+            f.delete()
+
+    def get_followers(self):
+        """
+        Return list of followers for this object.
+        """
+        return User.query.join(Follower).where(Follower.model == self.__tablename__, Follower.model_id == self.id).all()
+
     def is_following(self, user):
         """
         Check if the given user is following this object.
         """
-        return user in self.followers
+        return Follower.query.where(
+            Follower.model == self.__tablename__,
+            Follower.model_id == self.id,
+            Follower.user == user).first() is not None
 
     @validates('status')
     def validate_status(self, key, value):

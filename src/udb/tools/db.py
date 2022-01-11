@@ -47,6 +47,16 @@ def delete(self, commit=True):
     return self
 
 
+def merge(self, commit=True):
+    """
+    Merge current object to session.
+    """
+    self.__class__.session.merge(self)
+    if commit:
+        self.__class__.session.commit()
+    return self
+
+
 class BaseExtensions(DeclarativeMeta):
     '''
     Extends declarative base to provide convenience methods to models similar to
@@ -65,6 +75,7 @@ class BaseExtensions(DeclarativeMeta):
         DeclarativeMeta.__init__(self, name, bases, class_dict)
         self.add = add
         self.delete = delete
+        self.merge = merge
 
     @property
     def query(self):
