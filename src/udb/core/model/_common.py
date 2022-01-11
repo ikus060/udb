@@ -76,7 +76,8 @@ def before_flush(session, flush_context, instances):
                 continue
             # TODO How to get the real author_id ?
             try:
-                body = json.dumps(changes)
+                body = json.dumps(changes, default=lambda obj: obj.__html__(
+                ) if hasattr(obj, '__html__') else str(obj))
             except Exception:
                 body = str(changes)
             message = Message(author_id=1, body=body)
