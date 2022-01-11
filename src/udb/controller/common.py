@@ -166,9 +166,8 @@ class CommonPage(object):
         if form.validate_on_submit():
             message = Message(
                 body=form.body.data,
-                author=cherrypy.request.currentuser).add()
-            obj.messages.append(message)
-            obj.add()
+                author=cherrypy.request.currentuser)
+            obj.add_message(message)
         raise cherrypy.HTTPRedirect(url_for(self.base_url, obj.id, 'edit'))
 
 

@@ -20,7 +20,7 @@ import json
 import cherrypy
 import udb.tools.db  # noqa: import cherrypy.tools.db
 from markupsafe import Markup, escape
-from sqlalchemy import Column, String, Table, event, inspect
+from sqlalchemy import Column, String, event, inspect
 from sqlalchemy.orm import (declarative_mixin, declared_attr, relationship,
                             validates)
 from sqlalchemy.sql.functions import func
@@ -70,9 +70,8 @@ def _get_model_changes(model, ignore_fields=[]):
 @event.listens_for(Session, "before_flush")
 def before_flush(session, flush_context, instances):
     for obj in session.dirty:
-        if hasattr(obj, 'messages'):
-            changes = _get_model_changes(
-                obj, ignore_fields=['messages'])
+        if hasattr(obj, 'get_messages'):
+            changes = _get_model_changes(obj)
             if not changes:
                 continue
             # TODO How to get the real author_id ?
@@ -81,13 +80,14 @@ def before_flush(session, flush_context, instances):
             except Exception:
                 body = str(changes)
             message = Message(author_id=1, body=body)
-            session.add(message)
-            obj.messages.append(message)
+            obj.add_message(message, commit=False)
 
 
 class Message(Base):
     __tablename__ = 'message'
     id = Column(Integer, primary_key=True)
+    model = Column(String, nullable=False)
+    model_id = Column(Integer, nullable=False)
     author_id = Column(Integer, ForeignKey('user.id'), nullable=False)
     author = relationship("User")
     subject = Column(String, nullable=False, default='')
@@ -170,23 +170,6 @@ class CommonMixin(object):
     def owner(cls):
         return relationship("User")
 
-    @declared_attr
-    def messages(cls):
-        messages_association = Table(
-            "%s_messages" % cls.__tablename__,
-            cls.metadata,
-            Column("message_id", ForeignKey("message.id"),
-                   primary_key=True),
-            Column("%s_id" % cls.__tablename__,
-                   ForeignKey("%s.id" % cls.__tablename__),
-                   primary_key=True),
-        )
-        return relationship(
-            Message,
-            secondary=messages_association,
-            backref="%s_parents" % cls.__name__.lower(),
-            lazy='select')
-
     id = Column(Integer, primary_key=True)
     notes = Column(String, nullable=False, default='')
     created_at = Column(DateTime, nullable=False, server_default=func.now())
@@ -194,7 +177,7 @@ class CommonMixin(object):
                          server_default=func.now(), onupdate=func.now())
     status = Column(String, default=STATUS_ENABLED)
 
-    def add_follower(self, user):
+    def add_follower(self, user, commit=True):
         assert self.id
         assert user
         if not self.is_following(user):
@@ -202,7 +185,7 @@ class CommonMixin(object):
                 model=self.__tablename__,
                 model_id=self.id,
                 user=user)
-            f.add(commit=False)
+            f.add(commit=commit)
 
     def remove_follower(self, user):
         assert self.id
@@ -229,6 +212,17 @@ class CommonMixin(object):
             Follower.model == self.__tablename__,
             Follower.model_id == self.id,
             Follower.user == user).first() is not None
+
+    def get_messages(self):
+        return Message.query.where(
+            Message.model == self.__tablename__,
+            Message.model_id == self.id).all()
+
+    def add_message(self, message, commit=True):
+        assert self.id
+        message.model = self.__tablename__
+        message.model_id = self.id
+        message.add(commit=commit)
 
     @validates('status')
     def validate_status(self, key, value):
