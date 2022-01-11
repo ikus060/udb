@@ -143,7 +143,7 @@ class CommonPage(object):
         obj = self._get_or_404(id)
         userobj = User.query.filter_by(id=user_id).first()
         if userobj and not obj.is_following(userobj):
-            obj.followers.append(userobj)
+            obj.add_follower(userobj)
             obj.add()
         raise cherrypy.HTTPRedirect(url_for(self.base_url, obj.id, 'edit'))
 
@@ -155,7 +155,7 @@ class CommonPage(object):
         obj = self._get_or_404(id)
         userobj = User.query.filter_by(id=user_id).first()
         if userobj and obj.is_following(userobj):
-            obj.followers.remove(userobj)
+            obj.remove_follower(userobj)
             obj.add()
         raise cherrypy.HTTPRedirect(url_for(self.base_url, obj.id, 'edit'))
 
