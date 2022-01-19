@@ -27,3 +27,11 @@ class StaticTest(WebCase):
         # Then an html page is returned
         self.assertStatus(200)
         self.assertHeaderItemValue('Content-Type', 'image/jpeg')
+
+    def test_favicon_ico(self):
+        # Given the application is started
+        # When making a query to index page
+        self.getPage('/static/favicon.svg')
+        # Then an html page is returned
+        self.assertStatus(200)
+        self.assertHeaderItemValue('Content-Type', 'image/svg+xml')
