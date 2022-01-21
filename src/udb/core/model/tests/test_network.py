@@ -273,6 +273,24 @@ class DnsRecordTest(WebCase):
         with self.assertRaises(ValueError):
             DnsRecord(name='foo.example.com', type='A', value='invalid').add()
 
+    def test_add_aaaa_record(self):
+        # Given an empty database
+        self.assertEqual(0, DnsRecord.query.count())
+        # When adding a DnsRecord
+        DnsRecord(name='foo.example.com', type='AAAA',
+                  value='2002::1234:abcd:ffff:c0a8:101').add()
+        # Then a new record is created
+        self.assertEqual(1, DnsRecord.query.count())
+
+    def test_add_aaaa_record_with_invalid_value(self):
+        # Given an empty database
+        self.assertEqual(0, DnsRecord.query.count())
+        # When adding a DnsRecord with an invalid value
+        # Then an exception is raised
+        with self.assertRaises(ValueError):
+            DnsRecord(name='foo.example.com',
+                      type='AAAA', value='invalid').add()
+
     def test_add_cname_record(self):
         # Given an empty database
         self.assertEqual(0, DnsRecord.query.count())
@@ -308,6 +326,42 @@ class DnsRecordTest(WebCase):
         with self.assertRaises(ValueError):
             DnsRecord(name='foo.example.com', type='TXT',
                       value='').add()
+
+    def test_add_ptr_record(self):
+        # Given an empty database
+        self.assertEqual(0, DnsRecord.query.count())
+        # When adding a DnsRecord
+        DnsRecord(name='foo.example.com', type='PTR',
+                  value='bar.example.com').add()
+        # Then a new record is created
+        self.assertEqual(1, DnsRecord.query.count())
+
+    def test_add_ptr_record_with_invalid_value(self):
+        # Given an empty database
+        self.assertEqual(0, DnsRecord.query.count())
+        # When adding a DnsRecord with an invalid value
+        # Then an exception is raised
+        with self.assertRaises(ValueError):
+            DnsRecord(name='foo.example.com', type='PTR',
+                      value='192.0.2.23').add()
+
+    def test_add_ns_record(self):
+        # Given an empty database
+        self.assertEqual(0, DnsRecord.query.count())
+        # When adding a DnsRecord
+        DnsRecord(name='foo.example.com', type='NS',
+                  value='bar.example.com').add()
+        # Then a new record is created
+        self.assertEqual(1, DnsRecord.query.count())
+
+    def test_add_ns_record_with_invalid_value(self):
+        # Given an empty database
+        self.assertEqual(0, DnsRecord.query.count())
+        # When adding a DnsRecord with an invalid value
+        # Then an exception is raised
+        with self.assertRaises(ValueError):
+            DnsRecord(name='foo.example.com', type='NS',
+                      value='192.0.2.23').add()
 
 
 class DhcpRecordTest(WebCase):

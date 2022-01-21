@@ -51,7 +51,6 @@ def _get_model_changes(model, ignore_fields=[]):
         >>> {'email': ['business_email@gmail.com', 'new_email@who-dis.biz']}
     """
     state = inspect(model)
-    print(state.committed_state)
     changes = {}
     for attr in state.attrs:
         hist = attr.load_history()

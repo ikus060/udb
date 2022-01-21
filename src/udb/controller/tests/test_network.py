@@ -20,7 +20,7 @@ from base64 import b64encode
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DnsZone, Subnet, User
+from udb.core.model import DnsZone, Subnet, User, DnsRecord
 
 
 class CommonTest():
@@ -367,3 +367,28 @@ class SubnetTest(WebCase, CommonTest):
         self.assertStatus(200)
         self.assertInBody(
             '<input checked="checked" class="form-check-input" id="dnszones-%s" name="dnszones" type="checkbox" value="1" />' % zone.id)
+
+
+class DnsRecordTest(WebCase, CommonTest):
+
+    base_url = 'dnsrecord'
+
+    obj_cls = DnsRecord
+
+    new_data = {'name': 'foo.example.com', 'type': 'CNAME',
+                'value': 'bar.example.com'}
+
+    edit_data = {'name': 'foo.example.com', 'type': 'CNAME',
+                 'value': 'bar.example.com', 'notes': 'new comment'}
+
+    def test_edit_invalid(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add()
+        # When trying to update it's name
+        self.getPage(url_for(self.base_url, obj.id, 'edit'),
+                     method='POST',
+                     body={'value': 'invalid_cname'})
+        self.session.commit()
+        # Then edit page is displayed with an error message
+        self.assertStatus(200)
+        self.assertInBody('value must matches the DNS record type')
