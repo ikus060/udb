@@ -47,8 +47,7 @@ class User(Base):
     def __repr__(self):
         return "<User(name='%s', email='%s')>" % (self.username, self.email)
 
-    def __html__(self):
-        # TODO Not sure if we keep this here.
+    def __str__(self):
         return self.fullname or self.username
 
     @classmethod

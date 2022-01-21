@@ -19,7 +19,7 @@
 import cherrypy
 from markupsafe import Markup, escape
 from wtforms.form import Form
-from wtforms.widgets.core import Select
+
 
 SUBMIT_METHODS = {'POST', 'PUT', 'PATCH', 'DELETE'}
 
@@ -47,11 +47,22 @@ class _ProxyFormdata():
 _AUTO = _ProxyFormdata()
 
 
-def _get_bs_class(cls):
-    # TODO Complete this function for checkbox, radio, range
-    if cls == Select:
-        return 'form-select'
-    return 'form-control'
+def _get_bs_field_class(field):
+    """
+    Return a list of class for the given field.
+    """
+    cls = []
+    if type(field.widget).__name__ == 'Select':
+        cls.append('form-select')
+    elif type(field.widget).__name__ == 'SelectMultiCheckbox':
+        cls.append('form-check-input')
+    else:
+        cls.append('form-control')
+
+    # Add is-valid or is-invalid accordingly.
+    if field.errors:
+        cls.append('is-invalid')
+    return ' '.join(cls)
 
 
 class CherryForm(Form):
@@ -62,8 +73,8 @@ class CherryForm(Form):
     Explicitly pass ``formdata=None`` to prevent this.
     """
 
-    def __init__(self, formdata=_AUTO, **kwargs):
-        super().__init__(formdata=formdata, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(formdata=_AUTO if self.is_submitted() else None, **kwargs)
 
     def is_submitted(self):
         """
@@ -90,7 +101,7 @@ class CherryForm(Form):
         """
         return self()
 
-    def __call__(self, div_class='form-outline', label_class='form-label', error_class='invalid-feedback'):
+    def __call__(self, floating=False):
         """
         Generate an HTML representation of this form using bootstrap 5.
         """
@@ -100,16 +111,28 @@ class CherryForm(Form):
                 if field.type == 'HiddenField':
                     yield field()
                 else:
-                    yield Markup('<div class="%s">' % escape(div_class))
-                    field_class = _get_bs_class(field.widget.__class__)
-                    if 'form-floating' in div_class:
+                    # Get proper bootstrap class for the widget
+                    cur_field_class = _get_bs_field_class(field)
+                    cur_label_class = 'form-label' + \
+                        (' is-invalid' if field.errors else '')
+
+                    # Check if form-floating is enabled and supported for the given field.
+                    is_form_floating = floating and type(field.widget).__name__ not in [
+                        'SelectMultiCheckbox']
+                    cur_div_class = 'form-floating mb-2' if is_form_floating else 'mb-3'
+
+                    # Create html layout accordingly.
+                    yield Markup('<div class="%s">' % cur_div_class)
+                    if is_form_floating:
                         # For floating element we need to place the label after the input element
-                        yield field(**{'class': field_class + (' is-invalid' if field.errors else '')})
-                        yield field.label(**{'class': label_class})
+                        yield field(**{'class': cur_field_class})
+                        yield field.label(**{'class': cur_label_class})
                     else:
-                        yield field.label(**{'class': label_class})
-                        yield field(**{'class': field_class + (' is-invalid' if field.errors else '')})
+                        yield field.label(**{'class': cur_label_class})
+                        yield field(**{'class': cur_field_class})
+
+                    # Append error messages to the form.
                     for error in field.errors:
-                        yield Markup('<div class="%s">%s</div>' % (escape(error_class), escape(error)))
+                        yield Markup('<div class="%s">%s</div>' % ('invalid-feedback', escape(error)))
                     yield Markup('</div>')
         return Markup('').join(list(generator()))

@@ -125,7 +125,28 @@ class DnsZoneTest(WebCase):
         # Then a new message with changes is append to the object.
         messages = d.get_messages()
         self.assertEqual(1, len(messages))
-        self.assertEqual({'owner': [None, 'test']}, messages[0].changes)
+        self.assertEqual({'owner': [[], ['test']]}, messages[0].changes)
+
+    def test_add_subnet(self):
+        # Given a database with an existing record
+        zone = DnsZone(name='bfh.ch').add()
+        self.session.commit()
+        # When trying to add an allowed subnet to the dns zone
+        subnet = Subnet(name='test', ip_cidr='192.168.1.0/24', vrf=3).add()
+        zone.subnets.append(subnet)
+        zone.add()
+        # Then a subnet is added
+        zone = DnsZone.query.first()
+        subnet = Subnet.query.first()
+        self.assertEqual(1, len(zone.subnets))
+        self.assertEqual('test', zone.subnets[0].name)
+        self.assertEqual(1, len(zone.subnets[0].dnszones))
+        self.assertEqual(zone, zone.subnets[0].dnszones[0])
+        # Then an audit message is created for both objects
+        self.assertEqual(zone.get_messages()[0].changes, {
+                         'subnets': [[], ['192.168.1.0/24 (test)']]})
+        self.assertEqual(subnet.get_messages()[0].changes, {
+                         'dnszones': [[], ['bfh.ch']]})
 
 
 class SubnetTest(WebCase):
@@ -199,6 +220,27 @@ class SubnetTest(WebCase):
         # Then an exception is raised
         with self.assertRaises(IntegrityError):
             Subnet(ip_cidr='192.168.1.0/24', name='bar').add()
+
+    def test_add_dnszonesubnet(self):
+        # Given a database with an existing record
+        subnet = Subnet(ip_cidr='192.168.1.0/24', name='foo').add()
+        self.session.commit()
+        # When trying to add an allowed subnet to the dns zone
+        zone = DnsZone(name='bfh.ch').add()
+        subnet.dnszones.append(zone)
+        zone.add()
+        # Then a subnet is added
+        subnet = Subnet.query.first()
+        zone = DnsZone.query.first()
+        self.assertEqual(1, len(subnet.dnszones))
+        self.assertEqual('bfh.ch', subnet.dnszones[0].name)
+        self.assertEqual(1, len(subnet.dnszones[0].subnets))
+        self.assertEqual(subnet, subnet.dnszones[0].subnets[0])
+        # Then an audit message is created for both objects
+        self.assertEqual(subnet.get_messages()[0].changes, {
+                         'dnszones': [[], ['bfh.ch']]})
+        self.assertEqual(zone.get_messages()[0].changes, {
+                         'subnets': [[], ['192.168.1.0/24 (foo)']]})
 
 
 class DnsRecordTest(WebCase):

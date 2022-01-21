@@ -14,45 +14,133 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from udb.core.model import DnsRecord, User
 from udb.tools.i18n import gettext as _
-from wtforms.fields.core import SelectField
+from wtforms.fields.core import SelectField, SelectMultipleField
+
+from wtforms.widgets import html_params
+from markupsafe import Markup, escape
 
 
-class UserField(SelectField):
+class SelectMultiCheckbox():
+
+    def __call__(self, field, **kwargs):
+
+        def generator():
+            kwargs.setdefault('type', 'checkbox')
+            field_id = kwargs.pop('id', field.id)
+            yield Markup('<div %s>' % html_params(id=field_id))
+            for value, label, checked in field.iter_choices():
+                choice_id = '%s-%s' % (field_id, value)
+                options = dict(kwargs, name=field.name,
+                               value=value, id=choice_id)
+                if checked:
+                    options['checked'] = 'checked'
+                yield Markup('<div class="form-check">')
+                yield Markup('<input %s /> ' % html_params(**options))
+                yield Markup('<label for="%s">%s</label>' % (field_id, escape(label)))
+                yield Markup('</div>')
+            yield Markup('</div>')
+
+        return Markup('').join(list(generator()))
+
+
+class SelectMultipleObjectField(SelectMultipleField):
     """
-    Field to select a user.
+    Field to select multiple object.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, coerce=self.user_obj, **kwargs)
+    def __init__(self, label=None, validators=None, object_cls=None, **kwargs):
+        assert object_cls
+        super().__init__(label, validators, coerce=self.db_obj,
+                         choices=None, validate_choice=True, **kwargs)
+        self.object_cls = object_cls
 
-    def iter_choices(self):
+    @property
+    def choices(self):
         """
-        Replace default implementation by returning the list of current users.
+        Replace default implementation by returning the list of objects.
         """
-        # TODO Avoid showing deleted user.
-        users = User.query.all()
-        yield (None, _("Not assigned"), self.data is None)
-        for user in users:
-            value = user.id
-            label = user.fullname or user.username
-            selected = self.coerce(user) == self.data
-            yield (value, label, selected)
+        return [(obj.id, str(obj)) for obj in self.object_cls.query.all()]
 
-    def user_obj(self, value):
+    @choices.setter
+    def choices(self, new_choices):
+        pass
+
+    def db_obj(self, value):
+        if value is None or value == 'None':
+            return []
+        elif isinstance(value, self.object_cls):
+            return value.id
+        return int(value)
+
+    def populate_obj(self, obj, name):
+        """
+        Assign object value.
+        """
+        values = self.object_cls.query.filter(
+            self.object_cls.id.in_(self.data)).all()
+        setattr(obj, name, values)
+
+    @property
+    def display(self):
+        """
+        Return a human readable display of the value.
+        """
+        if self.data:
+            values = self.object_cls.query.filter(
+                self.object_cls.id.in_(self.data)).all()
+            return Markup(' ').join([
+                Markup(
+                    '<a href="%s"><span class="badge rounded-pill bg-secondary">%s</span></a>' % (v.url(), v))
+                for v in values])
+        return '-'
+
+
+class SelectObjectField(SelectField):
+    """
+    Field to select an object.
+    """
+
+    def __init__(self, label=None, validators=None, object_cls=None, **kwargs):
+        assert object_cls
+        super().__init__(label, validators, coerce=self.db_obj,
+                         choices=None, validate_choice=True, **kwargs)
+        self.object_cls = object_cls
+
+    @property
+    def choices(self):
+        """
+        Replace default implementation by returning the list of objects.
+        """
+        # TODO Avoid showing deleted records.
+        entries = [(obj.id, str(obj)) for obj in self.object_cls.query.all()]
+        if self.data is None:
+            entries.insert(0, (None, _("Not assigned")))
+        return entries
+
+    @choices.setter
+    def choices(self, new_choices):
+        pass
+
+    def db_obj(self, value):
         if value is None or value == 'None':
             return None
-        elif isinstance(value, User):
+        elif isinstance(value, self.object_cls):
             return value
-        return User.query.filter_by(id=int(value)).first()
+        return int(value)
 
+    def populate_obj(self, obj, name):
+        """
+        Assign object value.
+        """
+        value = None
+        if self.data:
+            value = self.object_cls.query.filter_by(id=self.data).first()
+        setattr(obj, name, value)
 
-class DnsRecordType(SelectField):
-    """
-    Field to select DNS Record type: A, CNAME, TXT, etc.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(
-            *args, choices=DnsRecord.TYPES, **kwargs)
+    @property
+    def display(self):
+        """
+        Return a human readable display of the value.
+        """
+        return ' '.join([c[1] for c in self.choices if c[0] == self.data])

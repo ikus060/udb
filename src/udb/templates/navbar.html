@@ -15,7 +15,7 @@
 
       <!-- Brand -->
       <a class="navbar-brand" href="{{ url_for('') }}">
-        <img src="{{url_for('static', 'favicon.svg')}}" class="d-inline-block align-text-top" height="24"/>
+        <img src="{{url_for('static', 'favicon.svg')}}" class="d-inline-block align-text-top" height="24" />
         {{ header_name }}
       </a>
 
@@ -59,8 +59,10 @@
       <hr />
       <form class="d-flex mb-auto">
         <div class="input-group mb-3">
-          <input type="text" class="form-control" placeholder="Search TODO" aria-label="Search" aria-describedby="button-addon2">
-          <button class="btn btn-outline-secondary" type="button" id="button-addon2"><i class="fas fa-search"></i></button>
+          <input type="text" class="form-control" placeholder="Search TODO" aria-label="Search"
+            aria-describedby="button-addon2">
+          <button class="btn btn-outline-secondary" type="button" id="button-addon2"><i
+              class="fas fa-search"></i></button>
         </div>
       </form>
       {% endif %}
