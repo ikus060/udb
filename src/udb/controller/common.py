@@ -85,8 +85,10 @@ class CommonPage(object):
             try:
                 form.populate_obj(obj)
             except ValueError as e:
-                # raised by SQLAlchemy validators
-                flash(_('Invalid value: %s') % e, level='error')
+                if len(e.args) == 2 and getattr(form, e.args[0]):
+                    getattr(form, e.args[0]).errors.append(e.args[1])
+                else:
+                    flash(_('Invalid value: %s') % e, level='error')
             else:
                 obj.add()
                 raise cherrypy.HTTPRedirect(url_for(self.base_url))
@@ -122,7 +124,10 @@ class CommonPage(object):
                 form.populate_obj(obj)
             except ValueError as e:
                 # raised by SQLAlchemy validators
-                flash(_('Invalid value: %s') % e, level='error')
+                if len(e.args) == 2 and getattr(form, e.args[0]):
+                    getattr(form, e.args[0]).errors.append(e.args[1])
+                else:
+                    flash(_('Invalid value: %s') % e, level='error')
             else:
                 obj.add()
                 raise cherrypy.HTTPRedirect(url_for(self.base_url))
