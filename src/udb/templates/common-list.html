@@ -32,6 +32,8 @@
                 {% if loop.first %}
                 <a href="{{url_for(base_url, obj.id, 'edit')}}">{{ field.data }}</a>
                 {{ _status.badge(obj) }}
+                {% elif field.display %}
+                {{ field.display }}
                 {% elif field.data %}
                 {{ field.data }}
                 {% else %}

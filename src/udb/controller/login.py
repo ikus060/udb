@@ -55,7 +55,7 @@ class LoginPage():
             raise cherrypy.HTTPRedirect('/')
 
         #  When data is submited, validate credentials.
-        form = LoginForm()
+        form = LoginForm(data=cherrypy.request.params)
         if form.validate_on_submit():
             try:
                 username = User.login(

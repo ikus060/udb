@@ -26,6 +26,7 @@ from sqlalchemy.orm import (declarative_mixin, declared_attr, relationship,
 from sqlalchemy.sql.functions import func
 from sqlalchemy.sql.schema import ForeignKey, Index
 from sqlalchemy.sql.sqltypes import DateTime, Integer
+from udb.tools.i18n import gettext as _
 
 from ._user import User
 
@@ -50,37 +51,35 @@ def _get_model_changes(model, ignore_fields=[]):
         >>> {'email': ['business_email@gmail.com', 'new_email@who-dis.biz']}
     """
     state = inspect(model)
+    print(state.committed_state)
     changes = {}
     for attr in state.attrs:
-        if attr.key in ignore_fields:
-            continue
-
-        hist = state.get_history(attr.key, True)
-
+        hist = attr.load_history()
         if not hist.has_changes():
             continue
-
-        old_value = hist.deleted[0] if hist.deleted else None
-        new_value = hist.added[0] if hist.added else None
-        changes[attr.key] = [old_value, new_value]
+        changes[attr.key] = [hist.deleted, hist.added]
 
     return changes
 
 
 @event.listens_for(Session, "before_flush")
 def before_flush(session, flush_context, instances):
+    # Get current user
+    author_id = None
+    currentuser = getattr(cherrypy.serving.request, 'currentuser', None)
+    if currentuser:
+        author_id = currentuser.id
+    # Create message if object changed.
     for obj in session.dirty:
         if hasattr(obj, 'get_messages'):
             changes = _get_model_changes(obj)
             if not changes:
                 continue
-            # TODO How to get the real author_id ?
             try:
-                body = json.dumps(changes, default=lambda obj: obj.__html__(
-                ) if hasattr(obj, '__html__') else str(obj))
+                body = json.dumps(changes, default=str)
             except Exception:
                 body = str(changes)
-            message = Message(author_id=1, body=body)
+            message = Message(author_id=author_id, body=body)
             obj.add_message(message, commit=False)
 
 
@@ -89,13 +88,12 @@ class Message(Base):
     id = Column(Integer, primary_key=True)
     model = Column(String, nullable=False)
     model_id = Column(Integer, nullable=False)
-    author_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    author_id = Column(Integer, ForeignKey('user.id'), nullable=True)
     author = relationship("User")
     subject = Column(String, nullable=False, default='')
     # When body start with a "{" the content is a json changes.
     body = Column(String, nullable=False)
     date = Column(DateTime, default=func.now())
-    # TODO message_type: email, comments
 
     @property
     def changes(self):
@@ -119,8 +117,22 @@ class Message(Base):
             if changes:
                 yield Markup('<ul>')
                 for key, values in changes.items():
-                    old_value, new_value = values
-                    yield Markup('<li><b>%s</b>: %s → %s</li>' % (escape(key), escape(old_value), escape(new_value)))
+                    old_value, new_value = values[0:2]
+                    yield Markup('<li><b>%s</b>: ' % escape(key))
+                    if len(old_value) == 1 and len(new_value) == 1:
+                        yield Markup('%s → %s' % (escape(old_value[0]), escape(new_value[0])))
+                    else:
+                        yield Markup('<br/>')
+                        if old_value:
+                            for deleted in old_value:
+                                yield Markup(_('remove %s') % escape(deleted))
+                                yield Markup('<br/>')
+                        if new_value:
+                            for added in new_value:
+                                yield Markup(_('added %s') % escape(added))
+                                yield Markup('<br/>')
+                    yield Markup('</li>')
+
                 yield Markup('</ul>')
             else:
                 yield Markup('<p>')
@@ -244,3 +256,6 @@ class CommonMixin(object):
     def from_json(self, data):
         for k, v in data.items():
             setattr(self, k, v)
+
+    def url(self):
+        return "/%s/%s/edit" % (self.__class__.__name__.lower(), self.id)
