@@ -17,14 +17,15 @@
 import cherrypy
 import validators
 from udb.controller.common import CommonApi, CommonPage
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User
 from udb.tools.i18n import gettext as _
 from wtforms.fields import IntegerField, StringField
+from wtforms.fields.core import SelectField
 from wtforms.fields.simple import TextAreaField
-from wtforms.validators import (
-    DataRequired, IPAddress, MacAddress, ValidationError)
+from wtforms.validators import (DataRequired, IPAddress, MacAddress,
+                                ValidationError)
 
-from .fields import DnsRecordType, UserField
+from .fields import SelectMultiCheckbox, SelectMultipleObjectField, SelectObjectField
 from .wtf import CherryForm
 
 
@@ -36,6 +37,7 @@ def validate_domain(form, field):
 def validate_ip_cidr(form, field):
     if not validators.ipv4_cidr(field.data) and not validators.ipv6_cidr(field.data):
         raise ValidationError(_('Invalid subnet'))
+
 
 #
 # DNS Zone
@@ -57,9 +59,12 @@ class DnsZoneForm(CherryForm):
         default='',
         validators=[],
         render_kw={"placeholder": _("Enter details information about this DNS Zone")})
-    owner = UserField(
+    owner = SelectObjectField(
         _('Owner'),
-        default=lambda: cherrypy.serving.request.currentuser)
+        object_cls=User,
+        default=lambda: cherrypy.serving.request.currentuser.id)
+    subnets = SelectMultipleObjectField(
+        _('Allowed subnets'), object_cls=Subnet, widget=SelectMultiCheckbox())
 
 
 class DnsZonePage(CommonPage):
@@ -101,9 +106,12 @@ class SubnetForm(CherryForm):
         default='',
         validators=[],
         render_kw={"placeholder": _("Enter details information about this subnet")})
-    owner = UserField(
+    owner = SelectObjectField(
         _('Owner'),
-        default=lambda: cherrypy.serving.request.currentuser)
+        object_cls=User,
+        default=lambda: cherrypy.serving.request.currentuser.id)
+    dnszones = SelectMultipleObjectField(
+        _('Allowed DNS zone'), object_cls=DnsZone, widget=SelectMultiCheckbox())
 
 
 class SubnetPage(CommonPage):
@@ -133,9 +141,10 @@ class DnsRecordForm(CherryForm):
         validators=[DataRequired(), validate_domain],
         render_kw={"placeholder": _("Enter a FQDN")})
 
-    type = DnsRecordType(
+    type = SelectField(
         _('Type'),
-        validators=[DataRequired()])
+        validators=[DataRequired()],
+        choices=DnsRecord.TYPES)
 
     ttl = IntegerField(
         _('TLL'),
@@ -153,9 +162,10 @@ class DnsRecordForm(CherryForm):
         validators=[],
         render_kw={"placeholder": _("Enter details information about this subnet")})
 
-    owner = UserField(
+    owner = SelectObjectField(
         _('Owner'),
-        default=lambda: cherrypy.serving.request.currentuser)
+        object_cls=User,
+        default=lambda: cherrypy.serving.request.currentuser.id)
 
 
 class DnsRecordPage(CommonPage):
@@ -199,9 +209,10 @@ class DhcpRecordForm(CherryForm):
         validators=[],
         render_kw={"placeholder": _("Enter details information about this DHCP Static Record")})
 
-    owner = UserField(
+    owner = SelectObjectField(
         _('Owner'),
-        default=lambda: cherrypy.serving.request.currentuser)
+        object_cls=User,
+        default=lambda: cherrypy.serving.request.currentuser.id)
 
 
 class DhcpRecordPage(CommonPage):

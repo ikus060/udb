@@ -17,8 +17,8 @@
 
 import cherrypy
 import validators
-from sqlalchemy import Column, String
-from sqlalchemy.orm import validates
+from sqlalchemy import Column, ForeignKey, String, Table
+from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
@@ -27,15 +27,29 @@ from ._common import CommonMixin
 
 Base = cherrypy.tools.db.get_base()
 
+dnszone_subnet = Table(
+    'dnszone_subnet', Base.metadata,
+    Column('dnszone_id', ForeignKey('dnszone.id')),
+    Column('subnet_id', ForeignKey('subnet.id'))
+)
+
 
 class DnsZone(CommonMixin, Base):
     name = Column(String, unique=True, nullable=False)
+    subnets = relationship("Subnet",
+                           secondary=dnszone_subnet,
+                           backref="dnszones",
+                           active_history=True,
+                           sync_backref=True)
 
     @validates('name')
     def validate_name(self, key, value):
         if not validators.domain(value):
             raise ValueError(value)
         return value
+
+    def __str__(self):
+        return self.name
 
 
 # Make DNS Zone name (FQDN) unique without case-sensitive
@@ -52,6 +66,9 @@ class Subnet(CommonMixin, Base):
         if not validators.ipv4_cidr(value) and not validators.ipv6_cidr(value):
             raise ValueError(value)
         return value
+
+    def __str__(self):
+        return "%s (%s)" % (self.ip_cidr, self.name)
 
 
 class DnsRecord(CommonMixin, Base):
