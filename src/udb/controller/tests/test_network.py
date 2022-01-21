@@ -291,6 +291,34 @@ class DnsZoneTest(WebCase, CommonTest):
         self.assertStatus(200)
         self.assertInBody('Invalid FQDN')
 
+    def test_edit_with_subnet(self):
+        # Given a database with a record
+        subnet = Subnet(**{'ip_cidr': '192.168.0.1/24'}).add()
+        obj = self.obj_cls(
+            **{'name': 'examples.com', 'subnets': [subnet]}).add()
+        # When editing the record
+        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        # Then subnets are select
+        self.assertStatus(200)
+        self.assertInBody(
+            '<input checked="checked" class="form-check-input" id="subnets-%s" name="subnets" type="checkbox" value="1" />' % subnet.id)
+
+    def test_edit_add_subnet(self):
+        # Given a database with a record
+        subnet = Subnet(**{'ip_cidr': '192.168.0.1/24'}).add()
+        obj = self.obj_cls(
+            **{'name': 'examples.com', 'subnets': []}).add()
+        # When editing the record
+        self.getPage(url_for(self.base_url, obj.id, 'edit'),
+                     method='POST',
+                     body={'subnets': subnet.id})
+        self.assertStatus(303)
+        # Then subnets are select
+        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        self.assertStatus(200)
+        self.assertInBody(
+            '<input checked="checked" class="form-check-input" id="subnets-%s" name="subnets" type="checkbox" value="1" />' % subnet.id)
+
 
 class SubnetTest(WebCase, CommonTest):
 
@@ -313,3 +341,29 @@ class SubnetTest(WebCase, CommonTest):
         # Then edit page is displayed with an error message
         self.assertStatus(200)
         self.assertInBody('Invalid subnet')
+
+    def test_edit_with_dnszone(self):
+        # Given a database with a record
+        zone = DnsZone(name='examples.com').add()
+        obj = self.obj_cls(ip_cidr='192.168.0.1/24', dnszones=[zone]).add()
+        # When editing the record
+        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        # Then the zone is selected
+        self.assertStatus(200)
+        self.assertInBody(
+            '<input checked="checked" class="form-check-input" id="dnszones-%s" name="dnszones" type="checkbox" value="1" />' % zone.id)
+
+    def test_edit_add_dnszone(self):
+        # Given a database with a record
+        zone = DnsZone(name='examples.com').add()
+        obj = self.obj_cls(ip_cidr='192.168.0.1/24', dnszones=[]).add()
+        # When editing the record
+        self.getPage(url_for(self.base_url, obj.id, 'edit'),
+                     method='POST',
+                     body={'dnszones': zone.id})
+        self.assertStatus(303)
+        # Then the zone is selected
+        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        self.assertStatus(200)
+        self.assertInBody(
+            '<input checked="checked" class="form-check-input" id="dnszones-%s" name="dnszones" type="checkbox" value="1" />' % zone.id)

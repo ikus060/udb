@@ -3,9 +3,9 @@
     {% for message in obj.get_messages()|sort(attribute="date",reverse=True) %}
     {% if (changes and message.changes) or (comments and not message.changes) %}
     <a href="#" class="list-group-item list-group-item-action" aria-current="true">
-        {{ message }}
         <small>{%trans%}By {%endtrans%} {{ macro.user(message.author) }} • {{ message.date }}
             ({{message.date|lastupdated}})</small>
+        {{ message }}
     </a>
     {% endif %}
     {% endfor %}
