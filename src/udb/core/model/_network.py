@@ -22,6 +22,7 @@ from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
+from udb.tools.i18n import gettext as _
 
 from ._common import CommonMixin
 
@@ -45,7 +46,7 @@ class DnsZone(CommonMixin, Base):
     @validates('name')
     def validate_name(self, key, value):
         if not validators.domain(value):
-            raise ValueError(value)
+            raise ValueError('name', _('expected a valid FQDN'))
         return value
 
     def __str__(self):
@@ -64,7 +65,8 @@ class Subnet(CommonMixin, Base):
     @validates('ip_cidr')
     def validate_name(self, key, value):
         if not validators.ipv4_cidr(value) and not validators.ipv6_cidr(value):
-            raise ValueError(value)
+            raise ValueError('ip_cidr', _(
+                'expected a valid ipv4 or ipv6 address'))
         return value
 
     def __str__(self):
@@ -72,7 +74,25 @@ class Subnet(CommonMixin, Base):
 
 
 class DnsRecord(CommonMixin, Base):
-    TYPES = ['CNAME', 'A', 'AAAA', 'TXT']
+    TYPES = {
+        'CNAME': validators.domain,
+        'A': validators.ipv4,
+        'AAAA': validators.ipv6,
+        'TXT': lambda value: value and isinstance(value, str),
+        'SRV': lambda value: value and isinstance(value, str),
+        'PTR': validators.domain,
+        # Usable in IP address & FQDN views
+        'CDNSKEY': lambda value: value and isinstance(value, str),
+        'CDS': lambda value: value and isinstance(value, str),
+        'DNSKEY': lambda value: value and isinstance(value, str),
+        'DS': lambda value: value and isinstance(value, str),
+        # Usable in DNS zones
+        'CAA': lambda value: value and isinstance(value, str),
+        'SSHFP': lambda value: value and isinstance(value, str),
+        'TLSA': lambda value: value and isinstance(value, str),
+        'MX': lambda value: value and isinstance(value, str),
+        'NS': validators.domain,
+    }
 
     name = Column(String, unique=False, nullable=False)
     type = Column(String, nullable=False)
@@ -82,32 +102,23 @@ class DnsRecord(CommonMixin, Base):
     @validates('name')
     def validate_name(self, key, value):
         if not validators.domain(value):
-            raise ValueError(value)
+            raise ValueError('name', _('expected a valid FQDN'))
         return value
 
     @validates('type')
     def validate_type(self, key, value):
         if value not in DnsRecord.TYPES:
-            raise ValueError(value)
+            raise ValueError('type', _('expected a valid DNS record type'))
         return value
 
     @validates('value')
     def validate_value(self, key, value):
         valid = True
-        if self.type == 'A':
-            # A Record should be a valid IP address
-            valid = validators.ipv4(value)
-        if self.type == 'AAAA':
-            # AAAA Record should be a valid IPv6 address
-            valid = validators.ipv6(value)
-        elif self.type == 'CNAME':
-            # CNAME should be a valid FQDN
-            valid = validators.domain(value)
-        elif self.type == 'TXT':
-            # TXT may contain any value
-            valid = value and isinstance(value, str)
+        validator = DnsRecord.TYPES.get(self.type)
+        valid = validator(value)
         if not valid:
-            raise ValueError(value)
+            raise ValueError('value', _(
+                'value must matches the DNS record type'))
         return value
 
 
@@ -118,11 +129,11 @@ class DhcpRecord(CommonMixin, Base):
     @validates('ip')
     def validate_ip(self, key, value):
         if not validators.ipv4(value) and not validators.ipv6(value):
-            raise ValueError(value)
+            raise ValueError('ip', _('expected a valid ipv4 or ipv6'))
         return value
 
     @validates('mac')
     def validate_mac(self, key, value):
         if not validators.mac_address(value):
-            raise ValueError(value)
+            raise ValueError('mac', _('expected a valid mac'))
         return value

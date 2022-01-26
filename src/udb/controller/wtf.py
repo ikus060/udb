@@ -95,6 +95,12 @@ class CherryForm(Form):
         if self.errors:
             return ' '.join(['%s: %s' % (field, ', '.join(messages)) for field, messages in self.errors.items()])
 
+    def add_error(self, field, message):
+        """
+        Explicitly add an error to this form.
+        """
+        self.errors[field].append(message)
+
     def __html__(self):
         """
         Return a HTML representation of the form. For more powerful rendering, see the __call__() method.
