@@ -16,17 +16,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
 import validators
-from udb.controller.common import CommonApi, CommonPage
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User
+from udb.controller import url_for
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User
 from udb.tools.i18n import gettext as _
-from wtforms.fields import IntegerField, StringField
+from wtforms.fields import FieldList, FormField, IntegerField, StringField
 from wtforms.fields.core import SelectField
 from wtforms.fields.simple import TextAreaField
+from wtforms.form import Form
 from wtforms.validators import (DataRequired, IPAddress, MacAddress,
                                 ValidationError)
 
-from .fields import SelectMultiCheckbox, SelectMultipleObjectField, SelectObjectField
-from .wtf import CherryForm
+from .form import (CherryForm, SelectMultiCheckbox, SelectMultipleObjectField,
+                   SelectObjectField, TableWidget)
 
 
 def validate_domain(form, field):
@@ -39,12 +40,9 @@ def validate_ip_cidr(form, field):
         raise ValidationError(_('Invalid subnet'))
 
 
-#
-# DNS Zone
-#
-
-
 class DnsZoneForm(CherryForm):
+
+    object_cls = DnsZone
 
     @staticmethod
     def get_display_name():
@@ -54,36 +52,27 @@ class DnsZoneForm(CherryForm):
         _('Name'),
         validators=[DataRequired(), validate_domain],
         render_kw={"placeholder": _("Enter a FQDN")})
+
     notes = TextAreaField(
         _('Notes'),
         default='',
         validators=[],
         render_kw={"placeholder": _("Enter details information about this DNS Zone")})
+
     owner = SelectObjectField(
         _('Owner'),
         object_cls=User,
         default=lambda: cherrypy.serving.request.currentuser.id)
+
     subnets = SelectMultipleObjectField(
-        _('Allowed subnets'), object_cls=Subnet, widget=SelectMultiCheckbox())
+        _('Allowed subnets'),
+        object_cls=Subnet,
+        widget=SelectMultiCheckbox())
 
-
-class DnsZonePage(CommonPage):
-
-    def __init__(self):
-        super().__init__('dnszone', DnsZone, DnsZoneForm)
-
-
-class DnsZoneApi(CommonApi):
-
-    def __init__(self):
-        super().__init__(DnsZone)
-
-
-#
-# Subnet
-#
 
 class SubnetForm(CherryForm):
+
+    object_cls = Subnet
 
     @staticmethod
     def get_display_name():
@@ -114,23 +103,9 @@ class SubnetForm(CherryForm):
         _('Allowed DNS zone'), object_cls=DnsZone, widget=SelectMultiCheckbox())
 
 
-class SubnetPage(CommonPage):
-
-    def __init__(self):
-        super().__init__('subnet', Subnet, SubnetForm)
-
-
-class SubnetApi(CommonApi):
-
-    def __init__(self):
-        super().__init__(Subnet)
-
-#
-# DNS Record
-#
-
-
 class DnsRecordForm(CherryForm):
+
+    object_cls = DnsRecord
 
     @staticmethod
     def get_display_name():
@@ -147,7 +122,7 @@ class DnsRecordForm(CherryForm):
         choices=DnsRecord.TYPES)
 
     ttl = IntegerField(
-        _('TLL'),
+        _('TTL'),
         validators=[DataRequired()],
         default='3600',
         render_kw={"placeholder": _("Time-to-live value (default: 3600)")})
@@ -168,22 +143,11 @@ class DnsRecordForm(CherryForm):
         default=lambda: cherrypy.serving.request.currentuser.id)
 
 
-class DnsRecordPage(CommonPage):
-
-    def __init__(self):
-        super().__init__('dnsrecord', DnsRecord, DnsRecordForm)
-
-
-class DnsRecordApi(CommonApi):
-
-    def __init__(self):
-        super().__init__(DnsRecord)
-
-
 class DhcpRecordForm(CherryForm):
     """
     DHCP Record Form
     """
+    object_cls = DhcpRecord
 
     @staticmethod
     def get_display_name():
@@ -215,13 +179,53 @@ class DhcpRecordForm(CherryForm):
         default=lambda: cherrypy.serving.request.currentuser.id)
 
 
-class DhcpRecordPage(CommonPage):
+class RelatedDnsRecordFrom(Form):
 
-    def __init__(self):
-        super().__init__('dhcprecord', DhcpRecord, DhcpRecordForm)
+    name = StringField(
+        _('Name'),
+        render_kw={"readonly": True})
+
+    type = StringField(
+        _('Type'),
+        render_kw={"readonly": True})
+
+    ttl = IntegerField(
+        _('TTL'),
+        render_kw={"readonly": True})
+
+    value = StringField(
+        _('Value'),
+        render_kw={"readonly": True})
 
 
-class DhcpRecordApi(CommonApi):
+class RelatedDhcpRecordForm(Form):
 
-    def __init__(self):
-        super().__init__(DhcpRecord)
+    mac = StringField(
+        _('MAC'),
+        render_kw={"readonly": True})
+
+
+class IpForm(CherryForm):
+    """
+    IP Form
+    """
+    object_cls = Ip
+
+    @ staticmethod
+    def get_display_name():
+        return _('IP Address')
+
+    ip = StringField(
+        _('IP Address'),
+        validators=[DataRequired()],
+        render_kw={"readonly": True})
+
+    related_dns_records = FieldList(
+        FormField(RelatedDnsRecordFrom),
+        label=_('Related DNS Records'),
+        widget=TableWidget(create_new_url=url_for(DnsRecord, 'new')))
+
+    related_dhcp_records = FieldList(
+        FormField(RelatedDhcpRecordForm),
+        label=_('Related DHCP Records'),
+        widget=TableWidget(create_new_url=url_for(DhcpRecord, 'new')))

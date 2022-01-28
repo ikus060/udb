@@ -11,7 +11,7 @@
         {% for status, label in status_label.items() %}
         <li>
             <a class="dropdown-item {{ obj.status == status and 'active' }}"
-                href="{{ url_for(base_url, obj.id, 'status', status) }}">
+                href="{{ url_for(obj, 'status', status) }}">
                 {{label}}
             </a>
         </li>
@@ -22,6 +22,7 @@
 
 {% macro badge(obj) %}
 {% if obj.status != 'enabled' %}
-<span class="badge rounded-pill bg-{{status_bs_cls.get(obj.status, 'secondary')}}">{{ status_label.get(obj.status, obj.status) }}</span>
+<span class="badge rounded-pill bg-{{status_bs_cls.get(obj.status, 'secondary')}}">{{ status_label.get(obj.status,
+    obj.status) }}</span>
 {% endif %}
 {% endmacro %}
