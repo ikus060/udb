@@ -1,18 +1,18 @@
 {% extends 'layout.html' %}
 {% import "macro.html" as macro %}
-{% import "common-status.html" as _status %}
+{% import "common/status.html" as _status %}
 
 {% block body %}
 <div class="d-flex justify-content-between">
     <h2 class="flex-fill">{{display_name}}</h2>
     <div class="align-self-center">
         <!-- Filter -->
-        {% include "common-filter.html" %}
+        {% include "common/filter.html" %}
         <!-- Create -->
-        <a class="btn btn-primary" href="{{url_for(base_url, 'new')}}">{%trans%}Create{%endtrans%} {{display_name}}</a>
+        <a class="btn btn-primary" href="{{url_for(model, 'new')}}">{%trans%}Create{%endtrans%} {{display_name}}</a>
     </div>
 </div>
-<table class="table">
+<table class="table table-hover">
     <thead>
         <tr>
             {% for field in form %}
@@ -30,19 +30,17 @@
             {% for field in form %}
             <td scope="row">
                 {% if loop.first %}
-                <a href="{{url_for(base_url, obj.id, 'edit')}}">{{ field.data }}</a>
+                <a href="{{url_for(obj, 'edit')}}">{{ field.data }}</a>
                 {{ _status.badge(obj) }}
-                {% elif field.display %}
-                {{ field.display }}
                 {% elif field.data %}
-                {{ field.data }}
+                {% block loop_field scoped %}{{ field.data }}{% endblock %}
                 {% else %}
                 -
                 {% endif %}
             </td>
             {% endfor %}
             <td>
-                <a class="btn btn-primary btn-circle" href="{{url_for(base_url, obj.id, 'edit')}}"
+                <a class="btn btn-primary btn-circle btn-hover" href="{{url_for(obj, 'edit')}}"
                     data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans %}View more detail{% endtrans %}">
                     <i class="fas fa-angle-right"></i>
                     <span class="visually-hidden">edit</span>

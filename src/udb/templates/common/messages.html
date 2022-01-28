@@ -12,6 +12,7 @@
 </div>
 {%- endmacro %}
 
+{% if has_messages %}
 <div class="card">
     <div class="card-header">
         <ul class="nav nav-tabs card-header-tabs" role="tablist">
@@ -30,7 +31,7 @@
             <!--Form -->
             <div class="card-body">
                 <div class="comment-form">
-                    <form method="post" action="{{url_for(base_url, obj.id, 'post')}}">
+                    <form method="post" action="{{url_for(obj, 'post')}}">
                         <div class="mb-3 form-floating">
                             <textarea name="body" class="form-control" placeholder="Leave a comment here"
                                 id="floatingTextarea2" style="height: 80px"></textarea>
@@ -47,3 +48,4 @@
         </div>
     </div>
 </div>
+{% endif %}

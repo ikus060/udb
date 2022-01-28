@@ -15,13 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
+from sqlalchemy.inspection import inspect
 from udb.controller import flash, url_for
 from udb.core.model import Message, User
 from udb.tools.i18n import gettext as _
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import InputRequired
 
-from .wtf import CherryForm
+from .form import CherryForm
 
 
 class MessageForm(CherryForm):
@@ -31,57 +32,84 @@ class MessageForm(CherryForm):
         render_kw={"placeholder": _("Add a comments")})
 
 
-@cherrypy.popargs('id')
+@cherrypy.popargs('key')
 class CommonPage(object):
 
-    def __init__(self, base_url: str, object_cls, object_form: CherryForm) -> None:
-        assert base_url
-        assert object_cls
+    def __init__(self, model, object_form: CherryForm) -> None:
+        assert model
         assert object_form
-        self.base_url = base_url
-        self.object_cls = object_cls
+        self.model = model
         self.object_form = object_form
+        # Support a primary key based on sqlalquemy
+        self.primary_key = inspect(self.model).primary_key[0].name
+        # Detect features
+        self.has_status = hasattr(self.model, 'status')
+        self.has_owner = hasattr(self.model, 'status')
+        self.has_followers = hasattr(self.model, 'get_followers')
+        self.has_messages = hasattr(self.model, 'get_messages')
 
-    def _get_or_404(self, id):
+    def _get_or_404(self, key):
         """
-        Get object with the given id or raise a 404 error.
+        Get object with the given key or raise a 404 error.
         """
-        obj = self.object_cls.query.filter_by(id=id).first()
+        obj = self.model.query.filter_by(
+            **{self.primary_key: key}).first()
         if not obj:
             raise cherrypy.HTTPError(404)
         return obj
 
+    def _query(self, deleted, personal):
+        """
+        Build a query with supported feature of the current object class.
+        """
+        query = self.model.query
+        if not deleted and hasattr(self.model, 'status'):
+            query = query.filter(self.model.status
+                                 != self.model.STATUS_DELETED)
+        if personal and hasattr(self.model, 'owner'):
+            query = query.filter(self.model.owner
+                                 == cherrypy.request.currentuser)
+        return query
+
+    def _key(self, obj):
+        """
+        Return a string representation of this object primary key.
+        """
+        return getattr(obj, self.primary_key)
+
     @cherrypy.expose
-    @cherrypy.tools.jinja2(template='common-list.html')
+    @cherrypy.tools.jinja2(template=['{model_name}/list.html', 'common/list.html'])
     def index(self, deleted=False, personal=False):
         # Convert from string to boolean
         with cherrypy.HTTPError.handle(ValueError, 400):
             deleted = deleted in [True, 'True', 'true']
             personal = personal in [True, 'True', 'true']
         # Build query
-        query = self.object_cls.query
-        if not deleted:
-            query = query.filter(self.object_cls.status
-                                 != self.object_cls.STATUS_DELETED)
-        if personal:
-            query = query.filter(self.object_cls.owner
-                                 == cherrypy.request.currentuser)
-        obj_list = query.all()
+        obj_list = self._query(deleted, personal).all()
+        # return data for templates
         return {
+            'has_status': self.has_status,
+            'has_owner': self.has_owner,
+            'has_followers': self.has_followers,
+            'has_messages': self.has_messages,
+            # TODO Rename those attributes to filter_status
             'deleted': deleted,
+            # TODO filter_owner
             'personal': personal,
             'form': self.object_form(),
-            'base_url': self.base_url,
+            'model': self.model,
+            'model_name': self.model.__name__.lower(),
             'obj_list': obj_list,
             'display_name': self.object_form.get_display_name(),
         }
 
     @cherrypy.expose
-    @cherrypy.tools.jinja2(template='common-new.html')
+    @cherrypy.tools.jinja2(template=['{model_name}/new.html', 'common/new.html'])
     def new(self, **kwargs):
+        # Validate form
         form = self.object_form()
         if form.validate_on_submit():
-            obj = self.object_cls()
+            obj = self.model()
             try:
                 form.populate_obj(obj)
             except ValueError as e:
@@ -91,32 +119,34 @@ class CommonPage(object):
                     flash(_('Invalid value: %s') % e, level='error')
             else:
                 obj.add()
-                raise cherrypy.HTTPRedirect(url_for(self.base_url))
+                raise cherrypy.HTTPRedirect(url_for(self.model))
+        # return data form template
         return {
-            'base_url': self.base_url,
+            'model': self.model,
+            'model_name': self.model.__name__.lower(),
             'form': form,
             'display_name': self.object_form.get_display_name(),
         }
 
     @cherrypy.expose
-    def status(self, status, id, **kwargs):
+    def status(self, status, key, **kwargs):
         """
         Soft-delete the record.
         """
-        obj = self._get_or_404(id)
+        obj = self._get_or_404(key)
         try:
             obj.status = status
             obj.add()
         except ValueError as e:
             # raised by SQLAlchemy validators
             flash(_('Invalid status: %s') % e, level='error')
-        raise cherrypy.HTTPRedirect(url_for(self.base_url, id, 'edit'))
+        raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
     @cherrypy.expose
-    @cherrypy.tools.jinja2(template='common-edit.html')
-    def edit(self, id, **kwargs):
+    @cherrypy.tools.jinja2(template=['{model_name}/edit.html', 'common/edit.html'])
+    def edit(self, key, **kwargs):
         # Return Not found if object doesn't exists
-        obj = self._get_or_404(id)
+        obj = self._get_or_404(key)
         # Update object if form was submited
         form = self.object_form(obj=obj)
         if form.validate_on_submit():
@@ -130,10 +160,15 @@ class CommonPage(object):
                     flash(_('Invalid value: %s') % e, level='error')
             else:
                 obj.add()
-                raise cherrypy.HTTPRedirect(url_for(self.base_url))
+                raise cherrypy.HTTPRedirect(url_for(self.model))
         # Return object form
         return {
-            'base_url': self.base_url,
+            'has_status': self.has_status,
+            'has_owner': self.has_owner,
+            'has_followers': self.has_followers,
+            'has_messages': self.has_messages,
+            'model': self.model,
+            'model_name': self.model.__name__.lower(),
             'form': form,
             'message_form': MessageForm(),
             'obj': obj,
@@ -141,39 +176,39 @@ class CommonPage(object):
         }
 
     @cherrypy.expose
-    def follow(self, user_id, id, **kwargs):
+    def follow(self, user_id, key, **kwargs):
         """
         Add current user to the list of followers.
         """
-        obj = self._get_or_404(id)
+        obj = self._get_or_404(key)
         userobj = User.query.filter_by(id=user_id).first()
         if userobj and not obj.is_following(userobj):
             obj.add_follower(userobj)
             obj.add()
-        raise cherrypy.HTTPRedirect(url_for(self.base_url, obj.id, 'edit'))
+        raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
     @cherrypy.expose
-    def unfollow(self, user_id, id, **kwargs):
+    def unfollow(self, user_id, key, **kwargs):
         """
         Add current user to the list of followers.
         """
-        obj = self._get_or_404(id)
+        obj = self._get_or_404(key)
         userobj = User.query.filter_by(id=user_id).first()
         if userobj and obj.is_following(userobj):
             obj.remove_follower(userobj)
             obj.add()
-        raise cherrypy.HTTPRedirect(url_for(self.base_url, obj.id, 'edit'))
+        raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
     @cherrypy.expose
-    def post(self, id, **kwargs):
-        obj = self._get_or_404(id)
+    def post(self, key, **kwargs):
+        obj = self._get_or_404(key)
         form = MessageForm()
         if form.validate_on_submit():
             message = Message(
                 body=form.body.data,
                 author=cherrypy.request.currentuser)
             obj.add_message(message)
-        raise cherrypy.HTTPRedirect(url_for(self.base_url, obj.id, 'edit'))
+        raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
 
 class CommonApi(object):

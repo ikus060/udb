@@ -1,0 +1,13 @@
+{% extends 'common/list.html' %}
+{# Overwrite Allowed subnet field #}
+{% block loop_field scoped %}
+{% if field.name == 'subnets'%}
+{% for value, label, checked in field.iter_choices() %}
+{% if checked %}
+<a href="{{url_for('subnet',value,'edit')}}"><span class="badge rounded-pill bg-secondary">{{label}}</span></a>
+{% endif %}
+{% endfor %}
+{% else %}
+{{super()}}
+{% endif %}
+{% endblock %}

@@ -255,6 +255,3 @@ class CommonMixin(object):
     def from_json(self, data):
         for k, v in data.items():
             setattr(self, k, v)
-
-    def url(self):
-        return "/%s/%s/edit" % (self.__class__.__name__.lower(), self.id)

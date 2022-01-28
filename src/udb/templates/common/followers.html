@@ -1,8 +1,11 @@
+{% if has_followers %}
+<!-- Followers -->
+<h4>{%trans%}Followers{%endtrans%}</h4>
 <div if="followers" class="followers-list">
     {% if not obj.is_following(currentuser) %}
-    <a href="{{url_for(base_url, obj.id, 'follow', currentuser.id)}}">Start following</a>
+    <a href="{{url_for(obj, 'follow', currentuser.id)}}">Start following</a>
     {% else %}
-    <a href="{{url_for(base_url, obj.id, 'unfollow', currentuser.id)}}">Stop following</a>
+    <a href="{{url_for(obj, 'unfollow', currentuser.id)}}">Stop following</a>
     {% endif %}
 
     {% if not obj.get_followers() %}
@@ -12,9 +15,10 @@
         {% for userobj in obj.get_followers() %}
         <li>
             {{ macro.user(userobj) }}
-            <a href="{{url_for(base_url, obj.id, 'unfollow', userobj.id)}}" title="{%trans%}unfollow{%endtrans%}"><i
+            <a href="{{url_for(obj, 'unfollow', userobj.id)}}" title="{%trans%}unfollow{%endtrans%}"><i
                     class="fas fa-times"></i><span class="visually-hidden">{%trans%}unfollow{%endtrans%}</span></a>
         </li>
         {% endfor %}
     </ul>
 </div>
+{% endif %}
