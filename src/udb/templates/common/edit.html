@@ -1,12 +1,12 @@
 {% extends 'layout.html' %}
 {% import "macro.html" as macro %}
-{% import "common-status.html" as _status with context %}
+{% import "common/status.html" as _status with context %}
 {% block body %}
 <div id="app" class="row">
     <div class="offset-xl-2 col-xl-8 col-md-10">
         <div class="d-flex mb-4">
             <!-- Go Back -->
-            <a class="btn btn-primary btn-circle me-2 align-self-center" href="{{url_for(base_url)}}"
+            <a class="btn btn-primary btn-circle me-2 align-self-center" href="{{url_for(model)}}"
                 data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans %}Go Back{% endtrans%}">
                 <i class="fas fa-angle-left"></i>
                 <span class="visually-hidden">{% trans %}Go Back{% endtrans%}</span>
@@ -15,10 +15,12 @@
             <h2 class="flex-fill mb-0">
                 Edit {{display_name}} {{(form|first).data}}
             </h2>
+            {% if has_status %}
             <!-- Status -->
             <div class="align-self-center">
                 {{ _status.dropdown(obj) }}
             </div>
+            {% endif %}
         </div>
         {% include "flash.html" %}
         <form method="POST" class="mb-4">
@@ -26,16 +28,14 @@
             <div class="text-center text-lg-start mt-4 pt-2">
                 <button type="submit" class="btn btn-primary"
                     style="padding-left: 2.5rem; padding-right: 2.5rem;">{%trans%}Save changes{%endtrans%}</button>
-                <a class="btn btn-secondary" href="{{url_for(base_url)}}">{%trans%}Cancel{%endtrans%}</a>
+                <a class="btn btn-secondary" href="{{url_for(model)}}">{%trans%}Cancel{%endtrans%}</a>
             </div>
         </form>
         <!-- Message thread -->
-        {% include "common-messages.html" %}
+        {% include "common/messages.html" %}
     </div>
     <div class="col-xl-2 col-md-2">
-        <!-- Followers -->
-        <h4>{%trans%}Followers{%endtrans%}</h4>
-        {% include "common-followers.html" %}
+        {% include "common/followers.html" %}
     </div>
 </div>
 {% endblock %}

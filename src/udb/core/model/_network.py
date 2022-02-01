@@ -17,8 +17,8 @@
 
 import cherrypy
 import validators
-from sqlalchemy import Column, ForeignKey, String, Table
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy import Column, ForeignKey, String, Table, select
+from sqlalchemy.orm import relationship, validates, aliased
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
@@ -121,6 +121,9 @@ class DnsRecord(CommonMixin, Base):
                 'value must matches the DNS record type'))
         return value
 
+    def __str__(self):
+        return "%s = %s (%s)" % (self.name, self.value, self.type)
+
 
 class DhcpRecord(CommonMixin, Base):
     ip = Column(String, nullable=False, unique=True)
@@ -137,3 +140,31 @@ class DhcpRecord(CommonMixin, Base):
         if not validators.mac_address(value):
             raise ValueError('mac', _('expected a valid mac'))
         return value
+
+    def __str__(self):
+        return "%s (%s)" % (self.ip, self.mac)
+
+
+# Create a non-traditional mapping with multiple table.
+# Read more about it here: https://docs.sqlalchemy.org/en/14/orm/nonstandard_mappings.html
+ip_entry = select(DhcpRecord.ip.label('ip')).filter(DhcpRecord.status != DhcpRecord.STATUS_DELETED).union(
+    select(DnsRecord.value.label('ip')).filter(DnsRecord.type == 'A', DnsRecord.status != DnsRecord.STATUS_DELETED)).subquery()
+
+
+class Ip(Base):
+    __table__ = ip_entry
+    __mapper_args__ = {
+        'primary_key': [ip_entry.c.ip]
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @property
+    def related_dns_records(self):
+        a = aliased(DnsRecord)
+        return DnsRecord.query.join(a, DnsRecord.name == a.name).filter(a.value == self.ip).all()
+
+    @property
+    def related_dhcp_records(self):
+        return DhcpRecord.query.filter(DhcpRecord.ip == self.ip).all()

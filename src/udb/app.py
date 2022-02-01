@@ -21,20 +21,20 @@ import cherrypy
 import jinja2
 import pkg_resources
 
-import udb.tools.auth_form  # noqa: import cherrypy.tools.auth_form
 import udb.tools.auth_basic  # noqa: import cherrypy.tools.auth_basic
+import udb.tools.auth_form  # noqa: import cherrypy.tools.auth_form
 import udb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
 import udb.tools.db  # noqa: import cherrypy.tools.db
 import udb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
-from udb.controller import lastupdated, template_processor
+from udb.controller import lastupdated, template_processor, url_for
 from udb.controller.api import Api
+from udb.controller.common import CommonApi, CommonPage
 from udb.controller.login import LoginPage
 from udb.controller.logout import LogoutPage
-from udb.controller.network import (DhcpRecordApi, DhcpRecordPage,
-                                    DnsRecordApi, DnsRecordPage, DnsZoneApi,
-                                    DnsZonePage, SubnetApi, SubnetPage)
+from udb.controller.network import (DhcpRecordForm, DnsRecordForm, DnsZoneForm,
+                                    IpForm, SubnetForm)
 from udb.controller.static import Static
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User
 from udb.tools.i18n import gettext, ngettext
 
 logger = logging.getLogger(__name__)
@@ -55,6 +55,7 @@ env = jinja2.Environment(
 )
 env.install_gettext_callables(gettext, ngettext, newstyle=True)
 env.filters['lastupdated'] = lastupdated
+env.globals['url_for'] = url_for
 
 
 def _error_page(**kwargs):
@@ -113,7 +114,6 @@ class Root(object):
         # Create default admin if missing
         created = User.create_default_admin(cfg.admin_user, cfg.admin_password)
         if created:
-            # TODO Add more stuff for developement
             User(username='patrik', fullname='Patrik Dufresne').add()
             User(username='daniel', fullname='Daniel Baumann').add()
             DnsZone(name='bfh.ch', notes='This is a note').add()
@@ -158,14 +158,16 @@ class Root(object):
         self.static = Static()
         self.api = Api()
         # Import modules to be added to this app.
-        self.dnszone = DnsZonePage()
-        self.api.dnszone = DnsZoneApi()
-        self.subnet = SubnetPage()
-        self.api.subnet = SubnetApi()
-        self.dnsrecord = DnsRecordPage()
-        self.api.dnsrecord = DnsRecordApi()
-        self.dhcprecord = DhcpRecordPage()
-        self.api.dhcprecord = DhcpRecordApi()
+        self.dnszone = CommonPage(DnsZone, DnsZoneForm)
+        self.subnet = CommonPage(Subnet, SubnetForm)
+        self.dnsrecord = CommonPage(DnsRecord, DnsRecordForm)
+        self.dhcprecord = CommonPage(DhcpRecord, DhcpRecordForm)
+        self.ip = CommonPage(Ip, IpForm)
+        # Api
+        self.api.dnszone = CommonApi(DnsZone)
+        self.api.subnet = CommonApi(Subnet)
+        self.api.dnsrecord = CommonApi(DnsRecord)
+        self.api.dhcprecord = CommonApi(DhcpRecord)
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='index.html')

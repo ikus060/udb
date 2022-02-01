@@ -18,7 +18,7 @@
 import cherrypy
 from udb.config import Option
 from udb.controller import flash
-from udb.controller.wtf import CherryForm
+from udb.controller.form import CherryForm
 from udb.core.model import User, UserLoginException
 from udb.tools.auth_form import SESSION_KEY
 from udb.tools.i18n import gettext as _
