@@ -1,0 +1,9 @@
+/udb/
+/.debhelper/
+/udb.1
+/*.postinst.debhelper
+/*.prerm.debhelper
+/*.substvars
+/debhelper-build-stamp
+/files
+/*.postrm.debhelper

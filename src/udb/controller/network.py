@@ -20,7 +20,7 @@ from udb.controller import url_for
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User
 from udb.tools.i18n import gettext as _
 from wtforms.fields import FieldList, FormField, IntegerField, StringField
-from wtforms.fields.core import SelectField
+from wtforms.fields import SelectField
 from wtforms.fields.simple import TextAreaField
 from wtforms.form import Form
 from wtforms.validators import (DataRequired, IPAddress, MacAddress,
@@ -119,7 +119,7 @@ class DnsRecordForm(CherryForm):
     type = SelectField(
         _('Type'),
         validators=[DataRequired()],
-        choices=DnsRecord.TYPES)
+        choices=list(zip(DnsRecord.TYPES, DnsRecord.TYPES)))
 
     ttl = IntegerField(
         _('TTL'),

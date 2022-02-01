@@ -1,0 +1,5 @@
+udb (0.0.1-1) unstable; urgency=medium
+
+  * Initial upload to debian (Closes: #969974).
+
+ -- Patrik Dufresne <patrik@ikus-soft.com>  Mon, 01 Feb 2022 13:11:20 +0400
