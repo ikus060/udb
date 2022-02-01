@@ -55,14 +55,14 @@ setuptools.setup(
         ],
     },
     install_requires=[
-        "babel>=0.9.6",
-        "CherryPy>=8.9.1",
+        "babel",
+        "CherryPy>18",
         "configargparse",
-        "Jinja2>=2.10,<3",
+        "Jinja2",
         "requests",
-        "sqlalchemy",
+        "sqlalchemy>=1.4,<1.5",
         "validators",
-        "WTForms<3.0.0",
+        "WTForms>=2.2.1",
     ],
     # required packages for build process
     setup_requires=[

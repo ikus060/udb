@@ -1,0 +1,40 @@
+Source: udb
+Section: web
+Priority: optional
+Maintainer: Patrik Dufresne <patrik@ikus-soft.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ dh-sequence-python3,
+ python3,
+ python3-all-dev,
+ python3-babel,
+ python3-cherrypy3,
+ python3-configargparse,
+ python3-jinja2,
+ python3-pip,
+ python3-setuptools,
+ python3-setuptools-scm,
+ python3-sqlalchemy,
+ python3-wtforms,
+Rules-Requires-Root: no
+Standards-Version: 4.5.1
+Homepage: https://www.ikus-soft.com/en/udb/
+Vcs-Git: https://gitlab.com/ikus-soft/udb.git
+Vcs-Browser: https://gitlab.com/ikus-soft/udb
+
+Package: udb
+Architecture: all
+Depends:
+ python3,
+ python3-cheroot,
+ python3-cherrypy3,
+ python3-configargparse,
+ python3-jinja2,
+ python3-sqlalchemy,
+ python3-wtforms,
+ ${misc:Depends},
+ ${python3:Depends},
+ ${sphinxdoc:Depends},
+Suggests:
+ python3-psycopg2,
+Description: Web application used to manage records to configure enterprise network with ansible-playbook.

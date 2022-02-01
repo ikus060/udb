@@ -1,0 +1,8 @@
+[Unit]
+Description=Web application used to manage records to configure enterprise network with ansible-playbook.
+
+[Service]
+ExecStart=/usr/bin/udb
+
+[Install]
+WantedBy=multi-user.target

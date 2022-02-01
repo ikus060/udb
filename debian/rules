@@ -1,0 +1,23 @@
+#!/usr/bin/make -f
+
+include /usr/share/dpkg/pkg-info.mk
+
+export SETUPTOOLS_SCM_PRETEND_VERSION = $(DEB_VERSION_UPSTREAM)
+
+%:
+	dh $@ --buildsystem=pybuild
+
+override_dh_auto_test:
+	# Install setuptools entry point required for testing.
+	python3 -m pip install ".[test]"
+	python3 -m pytest -v
+
+execute_after_dh_auto_install:
+	rm -rf debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/controller/tests
+	rm -rf debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/core/tests
+	rm -rf debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/tests
+	rm -f  debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/test.py
+	rm -rf debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/static/less/
+	rm -rf debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/static/js/bootstrap.min.js
+	rm -rf debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/static/js/jquery.min.js
+	rm -rf debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/static/js/chart.min.js
