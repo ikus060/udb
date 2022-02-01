@@ -11,9 +11,14 @@ A web interface to manage IT network
 
 ## Installation
 
-Universal Database is not yet publish to pypi.org. You must install the project from source.
+Universal Database is available only for **Debian Bookworm**.
 
-    pip install git:https://gitlab.com/ikus-soft/udb
+    apt update
+    apt install apt-transport-https ca-certificates lsb-release gpg
+    curl -L https://nexus.ikus-soft.com/repository/archive/public.key | gpg --dearmor > /usr/share/keyrings/ikus-soft-keyring.gpg
+    echo "deb [arch=all signed-by=/usr/share/keyrings/ikus-soft-keyring.gpg] https://nexus.ikus-soft.com/repository/apt-release-$(lsb_release -sc)/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/ikus-soft.list
+    apt update
+    apt install udb
 
 ## Usage
 

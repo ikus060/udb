@@ -49,8 +49,6 @@ env = jinja2.Environment(
     autoescape=True,
     extensions=[
         'jinja2.ext.i18n',
-        'jinja2.ext.with_',
-        'jinja2.ext.autoescape',
     ]
 )
 env.install_gettext_callables(gettext, ngettext, newstyle=True)
