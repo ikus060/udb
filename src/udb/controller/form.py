@@ -176,8 +176,7 @@ class SelectMultipleObjectField(SelectMultipleField):
 
     def __init__(self, label=None, validators=None, object_cls=None, **kwargs):
         assert object_cls
-        super().__init__(label, validators, coerce=self.db_obj,
-                         choices=None, validate_choice=True, **kwargs)
+        super().__init__(label, validators, coerce=self.db_obj, choices=None, **kwargs)
         self.object_cls = object_cls
 
     @property
@@ -214,8 +213,7 @@ class SelectObjectField(SelectField):
 
     def __init__(self, label=None, validators=None, object_cls=None, **kwargs):
         assert object_cls
-        super().__init__(label, validators, coerce=self.db_obj,
-                         choices=None, validate_choice=True, **kwargs)
+        super().__init__(label, validators, coerce=self.db_obj, choices=None, **kwargs)
         self.object_cls = object_cls
 
     @property
