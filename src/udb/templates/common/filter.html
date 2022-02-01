@@ -1,35 +1,24 @@
+{% if has_status %}
 <div class="btn-group">
-    <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"
-        aria-expanded="false">
-        Show ...
-    </button>
-    <ul class="dropdown-menu">
-        <li>
-            <a class="dropdown-item {{ not deleted and 'active' }}"
-                href="{{ url_for(model, deleted=False, personal=personal) }}">
-                {% trans %}Hide deleted{% endtrans %}
-            </a>
-        </li>
-        <li>
-            <a class="dropdown-item {{ deleted and 'active' }}"
-                href="{{ url_for(model, deleted=True, personal=personal) }}">
-                {% trans %}Show deleted{% endtrans %}
-            </a>
-        </li>
-        <li>
-            <hr class="dropdown-divider">
-        </li>
-        <li>
-            <a class="dropdown-item {{ not personal and 'active' }}"
-                href="{{ url_for(model, deleted=deleted, personal=False) }}">
-                {% trans %}Owned by anyone{% endtrans %}
-            </a>
-        </li>
-        <li>
-            <a class="dropdown-item {{ personal and 'active' }}"
-                href="{{ url_for(model, deleted=deleted, personal=True) }}">
-                {% trans %}Owned by me{% endtrans %}
-            </a>
-        </li>
-    </ul>
+    <a class="btn btn-outline-secondary {{ not deleted and 'active' }}"
+        href="{{ url_for(model, deleted=False, personal=personal) }}">
+        {% trans %}Hide deleted{% endtrans %}
+    </a>
+    <a class="btn btn-outline-secondary {{ deleted and 'active' }}"
+        href="{{ url_for(model, deleted=True, personal=personal) }}">
+        {% trans %}Show deleted{% endtrans %}
+    </a>
 </div>
+{% endif %}
+{% if has_owner %}
+<div class="btn-group">
+    <a class="btn btn-outline-secondary {{ not personal and 'active' }}"
+        href="{{ url_for(model, deleted=deleted, personal=False) }}">
+        {% trans %}Owned by anyone{% endtrans %}
+    </a>
+    <a class="btn btn-outline-secondary {{ personal and 'active' }}"
+        href="{{ url_for(model, deleted=deleted, personal=True) }}">
+        {% trans %}Owned by me{% endtrans %}
+    </a>
+</div>
+{% endif %}

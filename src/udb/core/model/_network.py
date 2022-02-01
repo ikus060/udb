@@ -148,7 +148,7 @@ class DhcpRecord(CommonMixin, Base):
 # Create a non-traditional mapping with multiple table.
 # Read more about it here: https://docs.sqlalchemy.org/en/14/orm/nonstandard_mappings.html
 ip_entry = select(DhcpRecord.ip.label('ip')).filter(DhcpRecord.status != DhcpRecord.STATUS_DELETED).union(
-    select(DnsRecord.value.label('ip')).filter(DnsRecord.type == 'A', DnsRecord.status != DnsRecord.STATUS_DELETED)).subquery()
+    select(DnsRecord.value.label('ip')).filter(DnsRecord.type.in_(['A', 'AAAA']), DnsRecord.status != DnsRecord.STATUS_DELETED)).subquery()
 
 
 class Ip(Base):

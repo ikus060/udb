@@ -20,7 +20,7 @@ from base64 import b64encode
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DnsZone, Subnet, User, DnsRecord
+from udb.core.model import DnsZone, Subnet, User, DnsRecord, DhcpRecord
 
 
 class CommonTest():
@@ -405,3 +405,32 @@ class DnsRecordTest(WebCase, CommonTest):
         # Then edit page is displayed with an error message
         self.assertStatus(200)
         self.assertInBody('value must matches the DNS record type')
+
+
+class IPTest(WebCase):
+
+    def test_no_owner_filter(self):
+        # Given a database with records
+        DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        # When browsing IP list view
+        self.getPage('/ip/')
+        # Then owner filter doesn't exists
+        self.assertNotInBody('Owned by anyone')
+        self.assertNotInBody('Owned by me')
+
+    def test_no_deleted_filter(self):
+        # Given a database with records
+        DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        # When browsing IP list view
+        self.getPage('/ip/')
+        # Then no deleted filter exists
+        self.assertNotInBody('Hide deleted')
+        self.assertNotInBody('Show deleted')
+
+    def test_no_create_new(self):
+        # Given a database with records
+        DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        # When browsing IP list view
+        self.getPage('/ip/')
+        # Then no create new exists
+        self.assertNotInBody('Create IP Address')

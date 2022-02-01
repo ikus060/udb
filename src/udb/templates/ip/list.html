@@ -3,7 +3,7 @@
 {% block loop_field scoped %}
 {% if field.name in ['related_dns_records', 'related_dhcp_records']%}
 {% for obj in field.object_data %}
-<span class="badge rounded-pill bg-secondary">{{obj}}</span>
+<a href="{{url_for(obj,'edit')}}"><span class="badge rounded-pill bg-secondary">{{obj}}</span></a>
 {% endfor %}
 {% else %}
 {{super()}}
