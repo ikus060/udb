@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User
 from sqlalchemy.exc import IntegrityError
+from udb.controller.tests import WebCase
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User
 
 
 class DnsZoneTest(WebCase):
@@ -408,3 +408,63 @@ class DhcpRecordTest(WebCase):
         # Then an exception is raised
         with self.assertRaises(ValueError):
             DhcpRecord(ip='192.0.2.23', mac='invalid').add()
+
+
+class IpTest(WebCase):
+
+    def test_ip(self):
+        # Given a list of DhcpRecord and DnsRecord
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
+        DhcpRecord(ip='192.0.2.24', mac='00:00:5e:00:53:df').add()
+        DhcpRecord(ip='192.0.2.25', mac='00:00:5e:00:53:cf').add()
+        DnsRecord(name='foo.example.com', type='A', value='192.0.2.20').add()
+        DnsRecord(name='bar.example.com', type='A', value='192.0.2.23').add()
+        # When querying list of IPs
+        objs = Ip.query.order_by('ip').all()
+        # Then is matches the DhcpRecord.
+        self.assertEqual(len(objs), 4)
+        self.assertEqual(objs[0].ip, '192.0.2.20')
+        self.assertEqual(objs[1].ip, '192.0.2.23')
+        self.assertEqual(objs[2].ip, '192.0.2.24')
+        self.assertEqual(objs[3].ip, '192.0.2.25')
+
+    def test_ip_with_dhcp_deleted_status(self):
+        # Given a deleted DhcpRecord
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf',
+                   status='deleted').add()
+        # When querying list of IPs
+        objs = Ip.query.order_by('ip').all()
+        # Then the list is empty
+        self.assertEqual(len(objs), 0)
+
+    def test_ip_with_dns_deleted_status(self):
+        # Given a deleted DnsRecord
+        DnsRecord(name='foo.example.com', type='A',
+                  value='192.0.2.20', status='deleted').add()
+        # When querying list of IPs
+        objs = Ip.query.order_by('ip').all()
+        # Then the list is empty
+        self.assertEqual(len(objs), 0)
+
+    def test_ip_get_dns_records(self):
+        # Given a list of DnsRecords and DhcpRecord
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
+        DnsRecord(name='bar.example.com', type='A', value='192.0.2.23').add()
+        DnsRecord(name='bar.example.com', type='TXT', value='x47').add()
+        # When querying list of related DnsRecord on a Ip.
+        objs = Ip.query.order_by('ip').first().related_dns_records
+        # Then the list include all DnsRecord matching the fqdn
+        self.assertEqual(len(objs), 2)
+        self.assertEqual(objs[0].name, 'bar.example.com')
+        self.assertEqual(objs[1].name, 'bar.example.com')
+
+    def test_ip_get_dhcp_records(self):
+        # Given a list of DnsRecords and DhcpRecord
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
+        DnsRecord(name='bar.example.com', type='A', value='192.0.2.23').add()
+        DnsRecord(name='bar.example.com', type='TXT', value='x47').add()
+        # When querying list of related DnsRecord on a Ip.
+        objs = Ip.query.order_by('ip').first().related_dhcp_records
+        # Then the list include all DnsRecord matching the fqdn
+        self.assertEqual(len(objs), 1)
+        self.assertEqual(objs[0].mac, '00:00:5e:00:53:bf')

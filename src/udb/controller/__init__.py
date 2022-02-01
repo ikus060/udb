@@ -19,6 +19,7 @@ import time
 from collections import namedtuple
 
 import cherrypy
+from sqlalchemy.inspection import inspect
 from udb.tools.i18n import gettext as _
 
 FlashMessage = namedtuple('FlashMessage', ['message', 'level'])
@@ -56,6 +57,18 @@ def url_for(*args, **kwargs):
         elif isinstance(chunk, int):
             path += "/"
             path += str(chunk)
+        elif hasattr(chunk, '_sa_instance_state'):
+            # SQLAlchemy object
+            base = chunk.__class__.__name__.lower()
+            key_name = inspect(chunk.__class__).primary_key[0].name
+            key = getattr(chunk, key_name)
+            path += "/%s/%s" % (base, key)
+        elif hasattr(chunk, '_sa_registry'):
+            # SQLAlchemy model
+            path += "/"
+            path += chunk.__name__.lower()
+            if len(args) == 1:
+                path += "/"
         else:
             raise ValueError(
                 'invalid positional arguments, url_for accept str, bytes, int: %r' % chunk)
@@ -96,7 +109,6 @@ def template_processor(request):
         'footer_url': app.cfg.footer_url,
         'footer_name': app.cfg.footer_name,
         'get_flashed_messages': get_flashed_messages,
-        'url_for': url_for,
     }
     if hasattr(cherrypy.serving.request, 'login'):
         values['username'] = cherrypy.serving.request.login

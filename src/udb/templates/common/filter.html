@@ -6,13 +6,13 @@
     <ul class="dropdown-menu">
         <li>
             <a class="dropdown-item {{ not deleted and 'active' }}"
-                href="{{ url_for(base_url, deleted=False, personal=personal) }}">
+                href="{{ url_for(model, deleted=False, personal=personal) }}">
                 {% trans %}Hide deleted{% endtrans %}
             </a>
         </li>
         <li>
             <a class="dropdown-item {{ deleted and 'active' }}"
-                href="{{ url_for(base_url, deleted=True, personal=personal) }}">
+                href="{{ url_for(model, deleted=True, personal=personal) }}">
                 {% trans %}Show deleted{% endtrans %}
             </a>
         </li>
@@ -21,13 +21,13 @@
         </li>
         <li>
             <a class="dropdown-item {{ not personal and 'active' }}"
-                href="{{ url_for(base_url, deleted=deleted, personal=False) }}">
+                href="{{ url_for(model, deleted=deleted, personal=False) }}">
                 {% trans %}Owned by anyone{% endtrans %}
             </a>
         </li>
         <li>
             <a class="dropdown-item {{ personal and 'active' }}"
-                href="{{ url_for(base_url, deleted=deleted, personal=True) }}">
+                href="{{ url_for(model, deleted=deleted, personal=True) }}">
                 {% trans %}Owned by me{% endtrans %}
             </a>
         </li>

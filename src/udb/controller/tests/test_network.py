@@ -63,6 +63,7 @@ class CommonTest():
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
+        self.assertHeaderItemValue('Location', url_for(self.base_url) + '/')
         # Then database is updated
         new_obj = self.obj_cls.query.first()
         for k, v in self.edit_data.items():
@@ -80,6 +81,7 @@ class CommonTest():
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
+        self.assertHeaderItemValue('Location', url_for(self.base_url) + '/')
         # Then database is updated
         new_obj = self.obj_cls.query.first()
         self.assertEqual(new_obj.owner, User.query.first())
@@ -98,6 +100,7 @@ class CommonTest():
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
+        self.assertHeaderItemValue('Location', url_for(self.base_url) + '/')
         # Then database is updated
         new_obj = self.obj_cls.query.first()
         self.assertEqual(new_obj.owner, None)
@@ -111,6 +114,7 @@ class CommonTest():
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
+        self.assertHeaderItemValue('Location', url_for(self.base_url) + '/')
         # Then database is updated
         obj = self.obj_cls.query.first()
         for k, v in self.new_data.items():
@@ -120,26 +124,30 @@ class CommonTest():
         # Given a a database with a record
         obj = self.obj_cls(**self.new_data).add()
         # When trying to post a message
-        self.getPage(url_for(self.base_url, obj.id, 'post'),
+        self.getPage(url_for(obj, 'post'),
                      method='POST',
                      body={'body': 'this is my message'})
         # Then user is redirected to the edit page
         self.assertStatus(303)
+        obj = self.obj_cls.query.first()
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then a ne message is added to the record.
-        message = self.obj_cls.query.first().get_messages()[0]
+        message = obj.get_messages()[0]
         self.assertEqual('this is my message', message.body)
 
     def test_follow(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         # When trying follow that record
-        self.getPage(url_for(self.base_url, obj.id, 'follow', 1),
+        self.getPage(url_for(obj, 'follow', 1),
                      method='POST')
         self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
+        obj = self.obj_cls.query.first()
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then a new follower is added to the record
-        follower = self.obj_cls.query.first().get_followers()[0]
+        follower = obj.get_followers()[0]
         self.assertEqual(1, follower.id)
 
     def test_unfollow(self):
@@ -154,6 +162,7 @@ class CommonTest():
                      method='POST')
         # Then user is redirected to the edit page
         self.assertStatus(303)
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then a follower is removed to the record
         self.assertEqual([], self.obj_cls.query.first().get_followers())
 
@@ -166,6 +175,7 @@ class CommonTest():
         self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then object status is disabled is removed to the record
         self.assertEqual('disabled', self.obj_cls.query.first().status)
 
@@ -178,6 +188,7 @@ class CommonTest():
         self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then object status is delete is removed to the record
         self.assertEqual('deleted', self.obj_cls.query.first().status)
 
@@ -191,6 +202,7 @@ class CommonTest():
         self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then object status is enabled is removed to the record
         self.assertEqual('enabled', self.obj_cls.query.first().status)
 
@@ -203,6 +215,7 @@ class CommonTest():
         self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertInBody('Invalid status: invalid')
         # Then object status is enabled is removed to the record
@@ -223,10 +236,10 @@ class CommonTest():
                             headers=self.authorization)
         # Then our records is part of the list
         self.assertStatus(200)
-        self.assertEquals(len(data), 1)
-        self.assertEquals(data[0]['id'], obj.id)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['id'], obj.id)
         for k, v in self.new_data.items():
-            self.assertEquals(data[0][k], v)
+            self.assertEqual(data[0][k], v)
 
     def test_api_get(self):
         # Given a database with a record
@@ -236,9 +249,9 @@ class CommonTest():
                             headers=self.authorization)
         # Then our records is return as json
         self.assertStatus(200)
-        self.assertEquals(data['id'], obj.id)
+        self.assertEqual(data['id'], obj.id)
         for k, v in self.new_data.items():
-            self.assertEquals(data[k], v)
+            self.assertEqual(data[k], v)
 
     def test_api_post(self):
         # Given a valid payload
@@ -251,7 +264,7 @@ class CommonTest():
         # Then a new record is created
         self.assertStatus(200)
         for k, v in self.new_data.items():
-            self.assertEquals(data[k], v)
+            self.assertEqual(data[k], v)
 
     def test_api_put(self):
         # Given a existing record
@@ -266,7 +279,7 @@ class CommonTest():
         # Then record get updated
         self.assertStatus(200)
         for k, v in self.edit_data.items():
-            self.assertEquals(data[k], v)
+            self.assertEqual(data[k], v)
 
 
 class DnsZoneTest(WebCase, CommonTest):
@@ -301,7 +314,7 @@ class DnsZoneTest(WebCase, CommonTest):
         # Then subnets are select
         self.assertStatus(200)
         self.assertInBody(
-            '<input checked="checked" class="form-check-input" id="subnets-%s" name="subnets" type="checkbox" value="1" />' % subnet.id)
+            '<input class="form-check-input"  type="checkbox" name="subnets" value="1" id="subnets-%s" checked>' % subnet.id)
 
     def test_edit_add_subnet(self):
         # Given a database with a record
@@ -317,7 +330,7 @@ class DnsZoneTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
         self.assertInBody(
-            '<input checked="checked" class="form-check-input" id="subnets-%s" name="subnets" type="checkbox" value="1" />' % subnet.id)
+            '<input class="form-check-input"  type="checkbox" name="subnets" value="1" id="subnets-%s" checked>' % subnet.id)
 
 
 class SubnetTest(WebCase, CommonTest):
@@ -351,7 +364,7 @@ class SubnetTest(WebCase, CommonTest):
         # Then the zone is selected
         self.assertStatus(200)
         self.assertInBody(
-            '<input checked="checked" class="form-check-input" id="dnszones-%s" name="dnszones" type="checkbox" value="1" />' % zone.id)
+            '<input class="form-check-input"  type="checkbox" name="dnszones" value="1" id="dnszones-%s" checked>' % zone.id)
 
     def test_edit_add_dnszone(self):
         # Given a database with a record
@@ -366,7 +379,7 @@ class SubnetTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
         self.assertInBody(
-            '<input checked="checked" class="form-check-input" id="dnszones-%s" name="dnszones" type="checkbox" value="1" />' % zone.id)
+            '<input class="form-check-input"  type="checkbox" name="dnszones" value="1" id="dnszones-%s" checked>' % zone.id)
 
 
 class DnsRecordTest(WebCase, CommonTest):

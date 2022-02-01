@@ -4,7 +4,7 @@
     <div class="offset-xl-2 col-xl-8">
         <div class="d-flex mb-4">
             <!-- Go Back -->
-            <a class="btn btn-primary btn-circle me-2 align-self-center" href="{{url_for(base_url)}}"
+            <a class="btn btn-primary btn-circle me-2 align-self-center" href="{{url_for(model)}}"
                 data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans %}Go Back{% endtrans%}">
                 <i class="fas fa-angle-left"></i>
                 <span class="visually-hidden">{% trans %}Go Back{% endtrans%}</span>
@@ -21,7 +21,7 @@
                 <button type="submit" class="btn btn-primary"
                     style="padding-left: 2.5rem; padding-right: 2.5rem;">{%trans%}Create{%endtrans%}
                     {{display_name}}</button>
-                <a class="btn btn-secondary" href="{{url_for(base_url)}}">{%trans%}Cancel{%endtrans%}</a>
+                <a class="btn btn-secondary" href="{{url_for(model)}}">{%trans%}Cancel{%endtrans%}</a>
             </div>
 
         </form>

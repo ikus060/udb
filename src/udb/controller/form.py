@@ -18,8 +18,9 @@
 
 import cherrypy
 from markupsafe import Markup, escape
+from udb.tools.i18n import gettext as _
+from wtforms.fields import SelectField, SelectMultipleField
 from wtforms.form import Form
-
 
 SUBMIT_METHODS = {'POST', 'PUT', 'PATCH', 'DELETE'}
 
@@ -54,9 +55,7 @@ def _get_bs_field_class(field):
     cls = []
     if type(field.widget).__name__ == 'Select':
         cls.append('form-select')
-    elif type(field.widget).__name__ == 'SelectMultiCheckbox':
-        cls.append('form-check-input')
-    else:
+    elif type(field.widget).__name__ in ['TextInput', 'TextArea', 'PasswordInput']:
         cls.append('form-control')
 
     # Add is-valid or is-invalid accordingly.
@@ -142,3 +141,110 @@ class CherryForm(Form):
                         yield Markup('<div class="%s">%s</div>' % ('invalid-feedback', escape(error)))
                     yield Markup('</div>')
         return Markup('').join(list(generator()))
+
+
+class JinjaWidget():
+    """
+    Create field widget from Jinja2 templates.
+    """
+    filename = None
+
+    def __init__(self, **options):
+        self.options = options
+
+    def __call__(self, field, **kwargs):
+        env = cherrypy.request.config.get('tools.jinja2.env')
+        tmpl = env.get_template(self.filename)
+        kwargs = dict(self.options, **kwargs)
+        return Markup(tmpl.render(field=field, **kwargs))
+
+
+# Widget that could be used with SelectMultipleObjectField.
+class SelectMultiCheckbox(JinjaWidget):
+    filename = 'widgets/SelectMultiCheckbox.html'
+
+
+# Widget that could be used with FieldList
+class TableWidget(JinjaWidget):
+    filename = 'widgets/TableWidget.html'
+
+
+class SelectMultipleObjectField(SelectMultipleField):
+    """
+    Field to select one or more sqlalchemy object.
+    """
+
+    def __init__(self, label=None, validators=None, object_cls=None, **kwargs):
+        assert object_cls
+        super().__init__(label, validators, coerce=self.db_obj,
+                         choices=None, validate_choice=True, **kwargs)
+        self.object_cls = object_cls
+
+    @property
+    def choices(self):
+        """
+        Replace default implementation by returning the list of objects.
+        """
+        return [(obj.id, str(obj)) for obj in self.object_cls.query.all()]
+
+    @choices.setter
+    def choices(self, new_choices):
+        pass
+
+    def db_obj(self, value):
+        if value is None or value == 'None':
+            return []
+        elif isinstance(value, self.object_cls):
+            return value.id
+        return int(value)
+
+    def populate_obj(self, obj, name):
+        """
+        Assign object value.
+        """
+        values = self.object_cls.query.filter(
+            self.object_cls.id.in_(self.data)).all()
+        setattr(obj, name, values)
+
+
+class SelectObjectField(SelectField):
+    """
+    Field to select a single sqlalchemy object. e.g.: select a User
+    """
+
+    def __init__(self, label=None, validators=None, object_cls=None, **kwargs):
+        assert object_cls
+        super().__init__(label, validators, coerce=self.db_obj,
+                         choices=None, validate_choice=True, **kwargs)
+        self.object_cls = object_cls
+
+    @property
+    def choices(self):
+        """
+        Replace default implementation by returning the list of objects.
+        """
+        # TODO Avoid showing deleted records.
+        entries = [(obj.id, str(obj)) for obj in self.object_cls.query.all()]
+        if self.data is None:
+            entries.insert(0, (None, _("Not assigned")))
+        return entries
+
+    @choices.setter
+    def choices(self, new_choices):
+        pass
+
+    def db_obj(self, value):
+        if value is None or value == 'None':
+            return None
+        elif isinstance(value, self.object_cls):
+            return value
+        return int(value)
+
+    def populate_obj(self, obj, name):
+        """
+        Assign object value.
+        """
+        value = None
+        if self.data:
+            value = self.object_cls.query.filter_by(id=self.data).first()
+        setattr(obj, name, value)
