@@ -463,8 +463,40 @@ class IpTest(WebCase):
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
         DnsRecord(name='bar.example.com', type='A', value='192.0.2.23').add()
         DnsRecord(name='bar.example.com', type='TXT', value='x47').add()
-        # When querying list of related DnsRecord on a Ip.
+        # When querying list of related DhcpRecord on a Ip.
         objs = Ip.query.order_by('ip').first().related_dhcp_records
-        # Then the list include all DnsRecord matching the fqdn
+        # Then the list include all DhcpRecord matching the fqdn
         self.assertEqual(len(objs), 1)
         self.assertEqual(objs[0].mac, '00:00:5e:00:53:bf')
+
+    def test_ipv6_related_records(self):
+        # Given a list of DnsRecords and DhcpRecord with ipv6
+        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
+                   mac='00:00:5e:00:53:bf').add()
+        DnsRecord(name='bar.example.com', type='AAAA',
+                  value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add()
+        # When querying list of related DnsRecord on a Ip.
+        obj = Ip.query.order_by('ip').first()
+        # Then the list include all DnsRecord matching the fqdn
+        self.assertEqual(len(obj.related_dhcp_records), 1)
+        self.assertEqual(len(obj.related_dns_records), 1)
+
+    def test_dns_aaaa_ipv6(self):
+        # Given a DnsRecords with ipv6
+        DnsRecord(name='bar.example.com', type='AAAA',
+                  value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add()
+        # When querying list of related DnsRecord on a Ip.
+        obj = Ip.query.order_by('ip').first()
+        # Then the list include all DnsRecord matching the fqdn
+        self.assertEqual(len(obj.related_dhcp_records), 0)
+        self.assertEqual(len(obj.related_dns_records), 1)
+
+    def test_dhcp_ipv6(self):
+        # Given a DhcpRecord with ipv6
+        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
+                   mac='00:00:5e:00:53:bf').add()
+        # When querying list of related DhcpRecord on a Ip.
+        obj = Ip.query.order_by('ip').first()
+        # Then the list include all DhcpRecord matching the fqdn
+        self.assertEqual(len(obj.related_dhcp_records), 1)
+        self.assertEqual(len(obj.related_dns_records), 0)

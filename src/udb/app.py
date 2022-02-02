@@ -160,7 +160,7 @@ class Root(object):
         self.subnet = CommonPage(Subnet, SubnetForm)
         self.dnsrecord = CommonPage(DnsRecord, DnsRecordForm)
         self.dhcprecord = CommonPage(DhcpRecord, DhcpRecordForm)
-        self.ip = CommonPage(Ip, IpForm)
+        self.ip = CommonPage(Ip, IpForm, has_new=False)
         # Api
         self.api.dnszone = CommonApi(DnsZone)
         self.api.subnet = CommonApi(Subnet)

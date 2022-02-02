@@ -6,10 +6,10 @@
 <div class="d-flex justify-content-between">
     <h2 class="flex-fill">{{display_name}}</h2>
     <div class="align-self-center">
-        <!-- Filter -->
         {% include "common/filter.html" %}
-        <!-- Create -->
+        {% if has_new %}
         <a class="btn btn-primary" href="{{url_for(model, 'new')}}">{%trans%}Create{%endtrans%} {{display_name}}</a>
+        {% endif %}
     </div>
 </div>
 <table class="table table-hover">

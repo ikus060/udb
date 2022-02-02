@@ -35,7 +35,7 @@ class MessageForm(CherryForm):
 @cherrypy.popargs('key')
 class CommonPage(object):
 
-    def __init__(self, model, object_form: CherryForm) -> None:
+    def __init__(self, model, object_form: CherryForm, has_new: bool = True) -> None:
         assert model
         assert object_form
         self.model = model
@@ -43,6 +43,7 @@ class CommonPage(object):
         # Support a primary key based on sqlalquemy
         self.primary_key = inspect(self.model).primary_key[0].name
         # Detect features
+        self.has_new = has_new
         self.has_status = hasattr(self.model, 'status')
         self.has_owner = hasattr(self.model, 'status')
         self.has_followers = hasattr(self.model, 'get_followers')
@@ -88,6 +89,7 @@ class CommonPage(object):
         obj_list = self._query(deleted, personal).all()
         # return data for templates
         return {
+            'has_new': self.has_new,
             'has_status': self.has_status,
             'has_owner': self.has_owner,
             'has_followers': self.has_followers,
@@ -163,6 +165,7 @@ class CommonPage(object):
                 raise cherrypy.HTTPRedirect(url_for(self.model))
         # Return object form
         return {
+            'has_new': self.has_new,
             'has_status': self.has_status,
             'has_owner': self.has_owner,
             'has_followers': self.has_followers,
