@@ -1,13 +1,41 @@
-{% macro list_messages(comments=True, changes=True) -%}
+{% macro show_value(value) %}
+{%- if value is none -%}<i>{%trans%}Undefined{%endtrans%}</i>{%- else -%}{{value}}{%- endif -%}
+{% endmacro%}
+
+{% macro show_message(message) %}
+{% if message.type == 'new' %}
+<br />{% trans %}Record created{% endtrans %}
+<ul class="mb-0">
+    {% for key, values in message.changes.items() -%}
+    <li><b>{{key}}</b>: {{show_value(values[1])}} </li>
+    {%- endfor %}
+</ul>
+{% elif message.type == 'dirty' %}
+<ul class="mb-0">
+    {% for key, values in message.changes.items() %}
+    <li><b>{{key}}</b>:
+        {% if values[0] is not string and values[0] is sequence %}
+        {% for deleted in values[0] %}<br />{%trans%}Removed:{%endtrans%} {{ show_value(deleted) }}{% endfor %}
+        {% for added in values[1] %}<br />{%trans%}Added:{%endtrans%} {{ show_value(added) }}{% endfor %}
+        {% else %}
+        {{show_value(values[0])}} → {{show_value(values[1])}}
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>{{message.body}}</p>
+{% endif %}
+{% endmacro %}
+
+{% macro list_messages(type) -%}
 <div class="list-group list-group-flush">
-    {% for message in obj.get_messages()|sort(attribute="date",reverse=True) %}
-    {% if (changes and message.changes) or (comments and not message.changes) %}
-    <a href="#" class="list-group-item list-group-item-action" aria-current="true">
+    {% for message in obj.get_messages(type=type)|sort(attribute="date",reverse=True) %}
+    <div class="list-group-item list-group-item-action" aria-current="true">
         <small>{%trans%}By {%endtrans%} {{ macro.user(message.author) }} • {{ message.date }}
             ({{message.date|lastupdated}})</small>
-        {{ message }}
-    </a>
-    {% endif %}
+        {{ show_message(message) }}
+    </div>
     {% endfor %}
 </div>
 {%- endmacro %}
@@ -41,10 +69,10 @@
                     </form>
                 </div>
             </div>
-            {{ list_messages(True, False) }}
+            {{ list_messages('comment') }}
         </div>
         <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
-            {{ list_messages(False, True) }}
+            {{ list_messages(['new','dirty']) }}
         </div>
     </div>
 </div>

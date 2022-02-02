@@ -235,7 +235,7 @@ class SelectObjectField(SelectField):
         if value is None or value == 'None':
             return None
         elif isinstance(value, self.object_cls):
-            return value
+            return value.id
         return int(value)
 
     def populate_obj(self, obj, name):

@@ -85,6 +85,11 @@ class CommonTest():
         # Then database is updated
         new_obj = self.obj_cls.query.first()
         self.assertEqual(new_obj.owner, User.query.first())
+        # Then an audit message is displayed on edit page.
+        self.getPage(url_for(obj, 'edit'))
+        self.assertInBody('<i>Undefined</i> → %s' % new_obj.owner)
+        # Then appropriate owner is selected in edit page
+        self.assertInBody('<option selected value="%s">%s</option>' % (new_obj.owner.id, new_obj.owner))
 
     def test_edit_unassign_owner(self):
         # Given a database with a record assigned to a user
@@ -119,6 +124,10 @@ class CommonTest():
         obj = self.obj_cls.query.first()
         for k, v in self.new_data.items():
             self.assertEqual(v, getattr(obj, k))
+        # Then a audit message is created
+        message = obj.get_messages()[-1]
+        self.assertIsNotNone(message.changes)
+        self.assertEqual('new', message.type)
 
     def test_post_message(self):
         # Given a a database with a record
@@ -131,9 +140,13 @@ class CommonTest():
         self.assertStatus(303)
         obj = self.obj_cls.query.first()
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
-        # Then a ne message is added to the record.
-        message = obj.get_messages()[0]
+        # Then a new message is added to the record.
+        message = obj.get_messages()[-1]
         self.assertEqual('this is my message', message.body)
+        self.assertEqual('comment', message.type)
+        # Then this message is displayed on edit page
+        self.getPage(url_for(obj, 'edit'))
+        self.assertInBody('this is my message')
 
     def test_follow(self):
         # Given a database with a record

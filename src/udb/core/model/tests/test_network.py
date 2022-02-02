@@ -17,7 +17,7 @@
 
 from sqlalchemy.exc import IntegrityError
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User, Message
 
 
 class DnsZoneTest(WebCase):
@@ -124,8 +124,8 @@ class DnsZoneTest(WebCase):
         self.session.commit()
         # Then a new message with changes is append to the object.
         messages = d.get_messages()
-        self.assertEqual(1, len(messages))
-        self.assertEqual({'owner': [[], ['test']]}, messages[0].changes)
+        self.assertEqual(2, len(messages))
+        self.assertEqual({'owner': [None, 'test']}, messages[-1].changes)
 
     def test_add_subnet(self):
         # Given a database with an existing record
@@ -143,10 +143,41 @@ class DnsZoneTest(WebCase):
         self.assertEqual(1, len(zone.subnets[0].dnszones))
         self.assertEqual(zone, zone.subnets[0].dnszones[0])
         # Then an audit message is created for both objects
-        self.assertEqual(zone.get_messages()[0].changes, {
+        self.assertEqual(2, len(zone.get_messages()))
+        self.assertEqual(zone.get_messages()[-1].changes, {
                          'subnets': [[], ['192.168.1.0/24 (test)']]})
-        self.assertEqual(subnet.get_messages()[0].changes, {
+        self.assertEqual(2, len(subnet.get_messages()))
+        self.assertEqual(subnet.get_messages()[-1].changes, {
                          'dnszones': [[], ['bfh.ch']]})
+
+    def test_get_messages(self):
+        # Given a database with an existing record
+        d = DnsZone(name='bfh.ch').add()
+        self.assertEqual(1, DnsZone.query.count())
+        self.session.commit()
+        # When updating the owner
+        new_user = User(username='test').add()
+        d.owner = new_user
+        d.add()
+        self.session.commit()
+        # When adding a comments
+        d.add_message(Message(body='this is a comments'))
+        # Then a message with type 'new' exists
+        messages = d.get_messages('new')
+        self.assertEqual(1, len(messages))
+        self.assertEqual(messages[0].changes, {'name': [None, 'bfh.ch']})
+        # Then a message with type 'dirty' exists
+        messages = d.get_messages('dirty')
+        self.assertEqual(1, len(messages))
+        self.assertEqual(messages[0].changes, {'owner': [None, 'test']})
+        # Then a message with type 'comment' exists
+        messages = d.get_messages('comment')
+        self.assertEqual(1, len(messages))
+        self.assertEqual(messages[0].changes, None)
+        self.assertEqual(messages[0].body, 'this is a comments')
+        # Then the list of message contains all tre message
+        messages = d.get_messages()
+        self.assertEqual(3, len(messages))
 
 
 class SubnetTest(WebCase):
@@ -237,9 +268,11 @@ class SubnetTest(WebCase):
         self.assertEqual(1, len(subnet.dnszones[0].subnets))
         self.assertEqual(subnet, subnet.dnszones[0].subnets[0])
         # Then an audit message is created for both objects
-        self.assertEqual(subnet.get_messages()[0].changes, {
+        self.assertEqual(2, len(subnet.get_messages()))
+        self.assertEqual(subnet.get_messages()[-1].changes, {
                          'dnszones': [[], ['bfh.ch']]})
-        self.assertEqual(zone.get_messages()[0].changes, {
+        self.assertEqual(2, len(zone.get_messages()))
+        self.assertEqual(zone.get_messages()[-1].changes, {
                          'subnets': [[], ['192.168.1.0/24 (foo)']]})
 
 
