@@ -19,14 +19,12 @@ import json
 
 import cherrypy
 import udb.tools.db  # noqa: import cherrypy.tools.db
-from markupsafe import Markup, escape
 from sqlalchemy import Column, String, event, inspect
 from sqlalchemy.orm import (declarative_mixin, declared_attr, relationship,
                             validates)
 from sqlalchemy.sql.functions import func
 from sqlalchemy.sql.schema import ForeignKey, Index
 from sqlalchemy.sql.sqltypes import DateTime, Integer
-from udb.tools.i18n import gettext as _
 
 from ._user import User
 
@@ -56,13 +54,22 @@ def _get_model_changes(model, ignore_fields=[]):
         hist = attr.load_history()
         if not hist.has_changes():
             continue
-        changes[attr.key] = [hist.deleted, hist.added]
-
+        if isinstance(attr.value, (list, tuple)) or len(hist.deleted) > 1 or len(hist.added) > 1:
+            # If array, store array
+            changes[attr.key] = [hist.deleted, hist.added]
+        else:
+            # If primitive, store primitive
+            changes[attr.key] = [
+                hist.deleted[0] if len(hist.deleted) >= 1 else None,
+                hist.added[0] if len(hist.added) >= 1 else None]
     return changes
 
 
 @event.listens_for(Session, "before_flush")
 def before_flush(session, flush_context, instances):
+    """
+    When object get updated, add an audit message.
+    """
     # Get current user
     author_id = None
     currentuser = getattr(cherrypy.serving.request, 'currentuser', None)
@@ -70,7 +77,7 @@ def before_flush(session, flush_context, instances):
         author_id = currentuser.id
     # Create message if object changed.
     for obj in session.dirty:
-        if hasattr(obj, 'get_messages'):
+        if hasattr(obj, 'add_message'):
             changes = _get_model_changes(obj)
             if not changes:
                 continue
@@ -78,7 +85,29 @@ def before_flush(session, flush_context, instances):
                 body = json.dumps(changes, default=str)
             except Exception:
                 body = str(changes)
-            message = Message(author_id=author_id, body=body)
+            message = Message(author_id=author_id, body=body, type='dirty')
+            obj.add_message(message, commit=False)
+
+
+@event.listens_for(Session, "after_flush")
+def after_flush(session, flush_context):
+    """
+    When object get created, add an audit message.
+    """
+    # Get current user
+    author_id = None
+    currentuser = getattr(cherrypy.serving.request, 'currentuser', None)
+    if currentuser:
+        author_id = currentuser.id
+    # Create message if object is created.
+    for obj in session.new:
+        if hasattr(obj, 'add_message'):
+            changes = _get_model_changes(obj)
+            try:
+                body = json.dumps(changes, default=str)
+            except Exception:
+                body = str(changes)
+            message = Message(author_id=author_id, body=body, type='new')
             obj.add_message(message, commit=False)
 
 
@@ -90,6 +119,7 @@ class Message(Base):
     author_id = Column(Integer, ForeignKey('user.id'), nullable=True)
     author = relationship("User")
     subject = Column(String, nullable=False, default='')
+    type = Column(String, nullable=False, default='comment')
     # When body start with a "{" the content is a json changes.
     body = Column(String, nullable=False)
     date = Column(DateTime, default=func.now())
@@ -105,40 +135,6 @@ class Message(Base):
             return json.loads(self.body)
         except Exception:
             return None
-
-    def __html__(self):
-        """
-        HTML Representation of this  messages. Either the body as HTML or JSON changes as HTML.
-        """
-        changes = self.changes
-
-        def generator():
-            if changes:
-                yield Markup('<ul>')
-                for key, values in changes.items():
-                    old_value, new_value = values[0:2]
-                    yield Markup('<li><b>%s</b>: ' % escape(key))
-                    if len(old_value) == 1 and len(new_value) == 1:
-                        yield Markup('%s → %s' % (escape(old_value[0]), escape(new_value[0])))
-                    else:
-                        yield Markup('<br/>')
-                        if old_value:
-                            for deleted in old_value:
-                                yield Markup(_('remove %s') % escape(deleted))
-                                yield Markup('<br/>')
-                        if new_value:
-                            for added in new_value:
-                                yield Markup(_('added %s') % escape(added))
-                                yield Markup('<br/>')
-                    yield Markup('</li>')
-
-                yield Markup('</ul>')
-            else:
-                yield Markup('<p>')
-                yield Markup.escape(self.body)
-                yield Markup('</p>')
-
-        return Markup('').join(list(generator()))
 
 
 class Follower(Base):
@@ -225,10 +221,19 @@ class CommonMixin(object):
             Follower.model_id == self.id,
             Follower.user == user).first() is not None
 
-    def get_messages(self):
-        return Message.query.where(
+    def get_messages(self, type=None):
+        """
+        Return list of messages related to this object for the given type.
+        """
+        query = Message.query.where(
             Message.model == self.__tablename__,
-            Message.model_id == self.id).all()
+            Message.model_id == self.id)
+        if type is not None:
+            if isinstance(type, (tuple, list)):
+                query = query.where(Message.type.in_(type))
+            else:
+                query = query.where(Message.type == type)
+        return query.all()
 
     def add_message(self, message, commit=True):
         assert self.id
