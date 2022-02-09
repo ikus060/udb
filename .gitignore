@@ -8,5 +8,6 @@ pytestdebug.log
 .tox
 /dist
 www.sqlite
+data.db
 /.pybuild
 /build

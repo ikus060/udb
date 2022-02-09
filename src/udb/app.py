@@ -106,12 +106,13 @@ class Root(object):
         cherrypy.config.update({
             'tools.sessions.storage_type': 'file' if cfg.session_dir else 'ram',
             'tools.sessions.storage_path': cfg.session_dir,
+            'tools.db.uri': cfg.database_uri,
         })
         # Create database if required
         cherrypy.tools.db.create_all()
         # Create default admin if missing
         created = User.create_default_admin(cfg.admin_user, cfg.admin_password)
-        if created:
+        if created and cfg.database_create_demo_data:
             User(username='patrik', fullname='Patrik Dufresne').add()
             User(username='daniel', fullname='Daniel Baumann').add()
             DnsZone(name='bfh.ch', notes='This is a note').add()

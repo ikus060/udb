@@ -83,15 +83,13 @@ class BaseExtensions(DeclarativeMeta):
 
     @property
     def session(self):
-        # get contents of string 'Engine(...)'
-        dburi = repr(self.__bases__[-1].metadata.bind)[7:-1]
-        return cherrypy.tools.db.get_session(dburi)
+        return cherrypy.tools.db.get_session()
 
 
 class SQLA(cherrypy.Tool):
     _name = 'sqla'
-    _bases = {}
-    _sessions = {}
+    _base = None
+    _session = None
 
     def __init__(self, **kw):
         cherrypy.Tool.__init__(self, None, None, priority=20)
@@ -103,49 +101,44 @@ class SQLA(cherrypy.Tool):
         cherrypy.request.hooks.attach('on_end_resource', self.on_end_resource)
 
     def create_all(self):
-        for v in self._bases.values():
-            v.metadata.create_all()
+        if self._base.metadata.bind is None:
+            dburi = cherrypy.config.get('tools.db.uri')
+            self._base.metadata.bind = create_engine(dburi, echo=False)
+        self._base.metadata.create_all()
 
     def drop_all(self):
         # Release open session.
         self.on_end_resource()
         # Drop all
-        for v in self._bases.values():
-            v.metadata.drop_all()
+        self._base.metadata.drop_all()
 
-    def get_base(self, dburi='sqlite:///www.sqlite'):
-        base = self._bases.get(dburi)
-        if base is None:
-            self._bases[dburi] = base = declarative_base(
-                metaclass=BaseExtensions)
-            base.metadata.bind = create_engine(dburi, echo=False)
+    def get_base(self):
+        if self._base is None:
+            self._base = declarative_base(metaclass=BaseExtensions)
+        return self._base
 
-        if self._sessions.get(dburi) is None:
-            self._sessions[dburi] = session = scoped_session(
+    def get_session(self):
+        if self._session is None:
+            self._session = scoped_session(
                 sessionmaker(autoflush=True, autocommit=False))
-            session.configure(bind=base.metadata.bind)
+            self._session.configure(bind=self._base.metadata.bind)
 
-        return base
+        return self._session
 
-    def get_session(self, dburi='sqlite:///www.sqlite'):
-        return self._sessions.get(dburi)
-
-    def on_start_resource(self, echo=None):
+    def on_start_resource(self, echo=None, **kwargs):
         if echo is not None:
-            for session in self._sessions.values():
-                session.bind.echo = echo
+            self._session.bind.echo = echo
 
     def on_end_resource(self):
-        for session in self._sessions.values():
-            try:
-                session.flush()
-                session.commit()
-            except Exception:
-                logger.exception('error trying to flush and commit session')
-                session.rollback()
-                session.expunge_all()
-            finally:
-                session.remove()
+        try:
+            self._session.flush()
+            self._session.commit()
+        except Exception:
+            logger.exception('error trying to flush and commit session')
+            self._session.rollback()
+            self._session.expunge_all()
+        finally:
+            self._session.remove()
 
 
 cherrypy.tools.db = SQLA()
