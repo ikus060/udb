@@ -17,7 +17,7 @@
 
 import cherrypy
 import validators
-from sqlalchemy import Column, ForeignKey, String, Table, select
+from sqlalchemy import Column, ForeignKey, String, Table, select, event
 from sqlalchemy.orm import relationship, validates, aliased
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
@@ -99,6 +99,52 @@ class DnsRecord(CommonMixin, Base):
     ttl = Column(Integer, nullable=False, default=3600)
     value = Column(String, nullable=False)
 
+    @classmethod
+    def _validate_reverse_ipv4(cls, value):
+        """
+        Validate a reverse ipv6 value used for PTR records.
+        e.g.: 16.155.10.in-addr.arpa. for 10.155.16.0/22
+        """
+        groups = value.split('.')
+        if len(groups) > 4:
+            return False
+        if any(not x.isdigit() for x in groups):
+            return False
+        return all(0 <= int(part) < 256 for part in groups)
+
+    @classmethod
+    def _validate_reverse_ipv6(cls, value):
+        """
+        Validate a reverse ipv6 value used for PTR records.
+        e.g.: 8.b.d.0.1.0.0.2.ip6.arpa for 2001:db8::/29
+        """
+        groups = value.split('.')
+        if len(groups) > 32:
+            return False
+        return all(x in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'] for x in groups)
+
+    def _validate(self):
+        """
+        Run other validation on all fields.
+        """
+        # Validate value according to record type
+        validator = DnsRecord.TYPES.get(self.type)
+        if not validator(self.value):
+            raise ValueError('value', _(
+                'value must matches the DNS record type'))
+
+        # Validate name according to record type
+        if self.type == 'PTR':
+            if not(self.name.endswith('.in-addr.arpa') or self.name.endswith('.ip6.arpa')):
+                raise ValueError(
+                    'name', _('PTR records must ends with `.in-addr.arpa` or `.ip6.arpa`'))
+            if self.name.endswith('.in-addr.arpa') and not DnsRecord._validate_reverse_ipv4(self.name[0:-13]):
+                raise ValueError(
+                    'name', _('PTR records must define an IPv4 address'))
+            if self.name.endswith('.ip6.arpa') and not DnsRecord._validate_reverse_ipv6(self.name[0:-9]):
+                raise ValueError(
+                    'name', _('PTR records must define an IPv6 address'))
+
     @validates('name')
     def validate_name(self, key, value):
         if not validators.domain(value):
@@ -111,18 +157,18 @@ class DnsRecord(CommonMixin, Base):
             raise ValueError('type', _('expected a valid DNS record type'))
         return value
 
-    @validates('value')
-    def validate_value(self, key, value):
-        valid = True
-        validator = DnsRecord.TYPES.get(self.type)
-        valid = validator(value)
-        if not valid:
-            raise ValueError('value', _(
-                'value must matches the DNS record type'))
-        return value
-
     def __str__(self):
         return "%s = %s (%s)" % (self.name, self.value, self.type)
+
+
+@event.listens_for(DnsRecord, "before_update")
+def before_update(mapper, connection, instance):
+    instance._validate()
+
+
+@event.listens_for(DnsRecord, "before_insert")
+def before_insert(mapper, connection, instance):
+    instance._validate()
 
 
 class DhcpRecord(CommonMixin, Base):
