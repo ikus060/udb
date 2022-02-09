@@ -69,6 +69,27 @@ def parse_args(args=None, config_file_contents=None):
         metavar='FOLDER',
         help='location where to store user session information. When undefined, the user sessions are kept in memory.')
 
+    # Database
+    parser.add(
+        '--database-uri',
+        metavar='URI',
+        help="""Location of the database used for persistence. SQLite and PostgreSQL
+            database are supported officially. To use a SQLite database you may
+            define the location using a file path or a URI.
+            e.g.: /srv/udb/file.db or sqlite:///srv/udb/file.db`.
+            To use PostgreSQL server you must provide
+            a URI similar to postgresql://user:pass@10.255.1.34/dbname and you
+            must install required dependencies.
+            By default, UDB uses a SQLite embedded database located at ./data.db""",
+        default='sqlite:///data.db')
+
+    parser.add(
+        '--database-create-demo-data',
+        action='store_true',
+        help="""When this option is enabled, the application will create demonstration data."""
+    )
+
+    # Admin user
     parser.add_argument(
         '--admin-user', '--adminuser',
         metavar='USERNAME',

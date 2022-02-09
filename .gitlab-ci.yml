@@ -7,43 +7,44 @@ stages:
   - test-package
   - upload
 
-test:flake8:
+.tox: &tox
   before_script:
     - pip install tox
   image: python:3.9
   script:
-    - tox -e flake8
+    - tox -e ${TOXENV:-$CI_JOB_NAME}
   stage: test
 
-test:py3:
+flake8:
+  <<: *tox
+
+py3:
+  <<: *tox
   artifacts:
     paths:
       - coverage.xml
       - xunit.xml
-  before_script:
-    - pip install tox
-  image: python:3.9
-  script:
-    - tox -e py3
-  stage: test
 
-test:bookworm:
-  artifacts:
-    paths:
-      - coverage.xml
-      - xunit.xml
-  before_script:
-    - pip install tox
-  image: python:3.9
-  script:
-    - tox -e bookworm
-  stage: test
+bookworm:
+  <<: *tox
 
-test:sonar:
+postgresql:
+  <<: *tox
+  services:
+    - postgres:12.2-alpine
+  variables:
+    TOXENV: py3
+    UDB_TEST_DATABASE_URI: "postgresql://admin@postgres/test"
+    POSTGRES_DB: test
+    POSTGRES_USER: admin
+    POSTGRES_PASSWORD: ""
+    POSTGRES_HOST_AUTH_METHOD: trust
+
+sonar:
   allow_failure: true
   image: sonarsource/sonar-scanner-cli
   needs:
-    - test:py3
+    - py3
   script:
     - sonar-scanner -X -Dsonar.python.coverage.reportPath=coverage.xml -Dsonar.python.xunit.reportPath=xunit.xml -Dsonar.host.url=$SONAR_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=$CI_PROJECT_NAME -Dsonar.projectVersion=$(git describe) -Dsonar.exclusions=**/test_*.py,setup.py -Dsonar.qualitygate.wait=true
   stage: test
@@ -88,13 +89,13 @@ test-package:deb:
   needs: ["package:deb"]
   parallel:
     matrix:
-    - DIST: [bookworm]
+      - DIST: [bookworm]
   script:
-  - apt update && apt install -y ./dist/$DIST/udb*.deb
-  - udb --version
-  - (/usr/bin/udb &)
-  - apt install -y curl
-  - curl http://localhost:8080
+    - apt update && apt install -y ./dist/$DIST/udb*.deb
+    - udb --version
+    - (/usr/bin/udb &)
+    - apt install -y curl
+    - curl http://localhost:8080
 
 upload:deb:
   needs:

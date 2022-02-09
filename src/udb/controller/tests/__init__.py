@@ -17,6 +17,7 @@
 
 
 import json
+import os
 import unittest
 from urllib.parse import urlencode
 
@@ -56,7 +57,13 @@ class WebCase(BaseClass):
 
     @classmethod
     def setup_server(cls):
+        # Get defaultconfig from test class
         default_config = getattr(cls, 'default_config', {})
+        # Replace database url
+        dburi = os.environ.get('UDB_TEST_DATABASE_URI', None)
+        if dburi:
+            default_config['database-uri'] = dburi
+
         cfg = parse_args(args=[], config_file_contents='\n'.join(
             '%s=%s' % (k, v) for k, v in default_config.items()))
         app = Root(cfg)
