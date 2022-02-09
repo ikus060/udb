@@ -89,7 +89,8 @@ class CommonTest():
         self.getPage(url_for(obj, 'edit'))
         self.assertInBody('<i>Undefined</i> → %s' % new_obj.owner)
         # Then appropriate owner is selected in edit page
-        self.assertInBody('<option selected value="%s">%s</option>' % (new_obj.owner.id, new_obj.owner))
+        self.assertInBody('<option selected value="%s">%s</option>' %
+                          (new_obj.owner.id, new_obj.owner))
 
     def test_edit_unassign_owner(self):
         # Given a database with a record assigned to a user
@@ -418,6 +419,20 @@ class DnsRecordTest(WebCase, CommonTest):
         # Then edit page is displayed with an error message
         self.assertStatus(200)
         self.assertInBody('value must matches the DNS record type')
+
+    def test_new_ptr_invalid(self):
+        # Given an invalid PTR record.
+        data = {'name': 'foo.example.com',
+                'type': 'PTR', 'value': 'bar.example.com'}
+        # When trying to create a new record
+        self.getPage(url_for(self.base_url, 'new'),
+                     method='POST',
+                     body=data)
+        self.session.commit()
+        # Then edit page is displayed with an error message
+        self.assertStatus(200)
+        self.assertInBody(
+            'PTR records must ends with `.in-addr.arpa` or `.ip6.arpa`')
 
 
 class IPTest(WebCase):

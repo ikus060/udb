@@ -131,16 +131,16 @@ class DnsRecordForm(CherryForm):
         _('Value'),
         validators=[DataRequired()])
 
+    owner = SelectObjectField(
+        _('Owner'),
+        object_cls=User,
+        default=lambda: cherrypy.serving.request.currentuser.id)
+
     notes = TextAreaField(
         _('Notes'),
         default='',
         validators=[],
         render_kw={"placeholder": _("Enter details information about this subnet")})
-
-    owner = SelectObjectField(
-        _('Owner'),
-        object_cls=User,
-        default=lambda: cherrypy.serving.request.currentuser.id)
 
 
 class DhcpRecordForm(CherryForm):

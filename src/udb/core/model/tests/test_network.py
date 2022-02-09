@@ -360,11 +360,20 @@ class DnsRecordTest(WebCase):
             DnsRecord(name='foo.example.com', type='TXT',
                       value='').add()
 
-    def test_add_ptr_record(self):
+    def test_add_ipv4_ptr_record(self):
         # Given an empty database
         self.assertEqual(0, DnsRecord.query.count())
         # When adding a DnsRecord
-        DnsRecord(name='foo.example.com', type='PTR',
+        DnsRecord(name='255.2.0.192.in-addr.arpa', type='PTR',
+                  value='bar.example.com').add()
+        # Then a new record is created
+        self.assertEqual(1, DnsRecord.query.count())
+
+    def test_add_ipv6_ptr_record(self):
+        # Given an empty database
+        self.assertEqual(0, DnsRecord.query.count())
+        # When adding a DnsRecord
+        DnsRecord(name='8.b.d.0.1.0.0.2.ip6.arpa', type='PTR',
                   value='bar.example.com').add()
         # Then a new record is created
         self.assertEqual(1, DnsRecord.query.count())
