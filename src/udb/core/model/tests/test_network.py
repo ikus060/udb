@@ -17,7 +17,8 @@
 
 from sqlalchemy.exc import IntegrityError
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User, Message
+from udb.core.model import (DhcpRecord, DnsRecord, DnsZone, Ip, Message,
+                            Subnet, User)
 
 
 class DnsZoneTest(WebCase):
@@ -373,10 +374,18 @@ class DnsRecordTest(WebCase):
         # Given an empty database
         self.assertEqual(0, DnsRecord.query.count())
         # When adding a DnsRecord
-        DnsRecord(name='8.b.d.0.1.0.0.2.ip6.arpa', type='PTR',
+        DnsRecord(name='b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa', type='PTR',
                   value='bar.example.com').add()
         # Then a new record is created
         self.assertEqual(1, DnsRecord.query.count())
+
+    def test_add_ipv6_ptr_uppercase(self):
+        # Given an ipv6 record in uppercase
+        name = 'b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.IP6.ARPA'
+        # When adding the record to the database
+        DnsRecord(name=name, type='PTR', value='bar.example.com').add()
+        # Then the record is added with lowercase
+        self.assertEqual(name.lower(), DnsRecord.query.first().name)
 
     def test_add_ptr_record_with_invalid_value(self):
         # Given an empty database
@@ -542,3 +551,23 @@ class IpTest(WebCase):
         # Then the list include all DhcpRecord matching the fqdn
         self.assertEqual(len(obj.related_dhcp_records), 1)
         self.assertEqual(len(obj.related_dns_records), 0)
+
+    def test_related_dns_record_with_ptr_ipv4(self):
+        # Given a valid PTR record
+        DnsRecord(name='255.2.168.192.in-addr.arpa', type='PTR',
+                  value='bar.example.com').add()
+        # When querying list of IP
+        obj = Ip.query.order_by('ip').first()
+        # Then is include the IP Address of the PTR record
+        self.assertEqual('192.168.2.255', obj.ip)
+        self.assertEqual(len(obj.related_dns_records), 1)
+
+    def test_related_dns_record_with_ptr_ipv6(self):
+        # Given a valid PTR record
+        DnsRecord(name='b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa', type='PTR',
+                  value='bar.example.com').add()
+        # When querying list of IP
+        obj = Ip.query.order_by('ip').first()
+        # Then is include the IP Address of the PTR record
+        self.assertEqual('4321::1:2:3:4:567:89ab', obj.ip)
+        self.assertEqual(len(obj.related_dns_records), 1)

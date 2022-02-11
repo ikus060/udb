@@ -15,10 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import ipaddress
 import cherrypy
 import validators
-from sqlalchemy import Column, ForeignKey, String, Table, select, event
-from sqlalchemy.orm import relationship, validates, aliased
+from sqlalchemy import Column, ForeignKey, String, Table, event, select, union, or_
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
@@ -27,6 +29,34 @@ from udb.tools.i18n import gettext as _
 from ._common import CommonMixin
 
 Base = cherrypy.tools.db.get_base()
+
+
+def _sqlite_split_part(string, delimiter, position):
+    """
+    SQLite implementation of split_part.
+    https://www.postgresqltutorial.com/postgresql-split_part/
+    """
+    assert delimiter
+    assert position >= 1
+    parts = string.split(delimiter)
+    if len(parts) >= position:
+        return parts[position - 1]
+    return None
+
+
+def _sqlite_reverse(string):
+    """
+    SQLite implementation of reverse.
+    """
+    return string[::-1]
+
+
+@event.listens_for(Engine, "connect")
+def _register_sqlite_functions(dbapi_con, unused):
+    if 'sqlite' in repr(dbapi_con):
+        dbapi_con.create_function("split_part", 3, _sqlite_split_part)
+        dbapi_con.create_function("reverse", 1, _sqlite_reverse)
+
 
 dnszone_subnet = Table(
     'dnszone_subnet', Base.metadata,
@@ -149,7 +179,7 @@ class DnsRecord(CommonMixin, Base):
     def validate_name(self, key, value):
         if not validators.domain(value):
             raise ValueError('name', _('expected a valid FQDN'))
-        return value
+        return value.lower()
 
     @validates('type')
     def validate_type(self, key, value):
@@ -193,11 +223,61 @@ class DhcpRecord(CommonMixin, Base):
 
 # Create a non-traditional mapping with multiple table.
 # Read more about it here: https://docs.sqlalchemy.org/en/14/orm/nonstandard_mappings.html
-ip_entry = select(DhcpRecord.ip.label('ip')).filter(DhcpRecord.status != DhcpRecord.STATUS_DELETED).union(
-    select(DnsRecord.value.label('ip')).filter(DnsRecord.type.in_(['A', 'AAAA']), DnsRecord.status != DnsRecord.STATUS_DELETED)).subquery()
+def _ipv6_part(col, start):
+    return func.ltrim(func.replace(func.reverse(func.substring(col, start, 8)), '.', ''), '0')
+
+
+# Create a field to convert
+# 255.2.168.192.in-addr.arpa
+# to
+# 192.168.2.255
+_reverse_ptr_ipv4 = (
+    func.split_part(DnsRecord.name, '.', 4)
+    + '.'
+    + func.split_part(DnsRecord.name, '.', 3)
+    + '.'
+    + func.split_part(DnsRecord.name, '.', 2)
+    + '.'
+    + func.split_part(DnsRecord.name, '.', 1))
+
+# Create a field to convert
+# `b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa` to
+# `4321:0:1:2:3:4:567:89ab`
+_reverse_ptr_ipv6 = (
+    _ipv6_part(DnsRecord.name, 56)
+    + ':'
+    + _ipv6_part(DnsRecord.name, 48)
+    + ':'
+    + _ipv6_part(DnsRecord.name, 40)
+    + ':'
+    + _ipv6_part(DnsRecord.name, 32)
+    + ':'
+    + _ipv6_part(DnsRecord.name, 24)
+    + ':'
+    + _ipv6_part(DnsRecord.name, 16)
+    + ':'
+    + _ipv6_part(DnsRecord.name, 8)
+    + ':'
+    + _ipv6_part(DnsRecord.name, 0)
+)
+
+# Create a query to list all existing IP address in various record type.
+ip_entry = union(
+    select(DhcpRecord.ip.label('ip')).filter(
+        DhcpRecord.status != DhcpRecord.STATUS_DELETED),
+    select(DnsRecord.value.label('ip')).filter(
+        DnsRecord.type.in_(['A', 'AAAA']), DnsRecord.status != DnsRecord.STATUS_DELETED),
+    select(_reverse_ptr_ipv4.label('ip')).filter(
+        DnsRecord.type == 'PTR', DnsRecord.status != DnsRecord.STATUS_DELETED, DnsRecord.name.like('%.%.%.%.in-addr.arpa')),
+    select(_reverse_ptr_ipv6.label('ip')).filter(
+        DnsRecord.type == 'PTR', DnsRecord.status != DnsRecord.STATUS_DELETED, DnsRecord.name.like('%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.ip6.arpa'))
+).subquery()
 
 
 class Ip(Base):
+    """
+    This ORM is a view on all IP address declared in various record type.
+    """
     __table__ = ip_entry
     __mapper_args__ = {
         'primary_key': [ip_entry.c.ip]
@@ -208,8 +288,14 @@ class Ip(Base):
 
     @property
     def related_dns_records(self):
-        a = aliased(DnsRecord)
-        return DnsRecord.query.join(a, DnsRecord.name == a.name).filter(a.value == self.ip).all()
+        """
+        Return list of related DNS record. That include all DNS record with FQDN matching our current IP address and reverse pointer (PTR).
+        """
+        return DnsRecord.query.filter(or_(
+            DnsRecord.name.in_(select(DnsRecord.name).filter(
+                DnsRecord.value == self.ip).subquery()),
+            DnsRecord.name == ipaddress.ip_address(self.ip).reverse_pointer
+        )).all()
 
     @property
     def related_dhcp_records(self):
