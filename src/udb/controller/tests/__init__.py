@@ -26,7 +26,6 @@ import cherrypy.test.helper
 from udb.app import Root
 from udb.config import parse_args
 from udb.core.model import User
-from udb.core.passwd import hash_password
 
 BaseClass = cherrypy.test.helper.CPWebCase
 del BaseClass.test_gc
@@ -121,7 +120,7 @@ class WebCase(BaseClass):
 
     def _login(self, username=username, password=password, redirect='/'):
         # Create new user
-        User(username=self.username, password=hash_password(password)).add()
+        User.create_default_admin(username, password)
         self.session.commit()
         # Authenticate
         self.getPage("/login/", method='POST',

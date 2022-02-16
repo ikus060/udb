@@ -1,0 +1,11 @@
+{% extends 'common/list.html' %}
+{# Overwrite Allowed DNS Zone #}
+{% block loop_field scoped %}
+{% if field.name == 'role'%}
+{% for value, label, checked in field.iter_choices() %}
+{% if checked %}{{label}}{% endif %}
+{% endfor %}
+{% else %}
+{{super()}}
+{% endif %}
+{% endblock %}

@@ -34,6 +34,7 @@ from udb.controller.logout import LogoutPage
 from udb.controller.network import (DhcpRecordForm, DnsRecordForm, DnsZoneForm,
                                     IpForm, SubnetForm)
 from udb.controller.static import Static
+from udb.controller.user import UserForm
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User
 from udb.tools.i18n import gettext, ngettext
 
@@ -89,7 +90,7 @@ def _error_page(**kwargs):
 @cherrypy.tools.db()
 @cherrypy.tools.sessions()
 @cherrypy.tools.auth_form()
-@cherrypy.tools.currentuser()
+@cherrypy.tools.currentuser(userobj=lambda username: User.query.filter_by(username=username).first())
 @cherrypy.tools.i18n(mo_dir=pkg_resources.resource_filename('udb', 'locales'), default='en_US', domain='messages')
 @cherrypy.config(**{
     'error_page.default': _error_page,
@@ -113,8 +114,10 @@ class Root(object):
         # Create default admin if missing
         created = User.create_default_admin(cfg.admin_user, cfg.admin_password)
         if created and cfg.database_create_demo_data:
-            User(username='patrik', fullname='Patrik Dufresne').add()
-            User(username='daniel', fullname='Daniel Baumann').add()
+            User.create(username='guest',
+                        fullname='Default Guest', password='guest', role=User.ROLE_GUEST)
+            User.create(username='user',
+                        fullname='Default User', password='user', role=User.ROLE_USER)
             DnsZone(name='bfh.ch', notes='This is a note').add()
             DnsZone(name='bfh.science', notes='This is a note').add()
             DnsZone(name='bfh.info', notes='This is a note').add()
@@ -162,6 +165,8 @@ class Root(object):
         self.dnsrecord = CommonPage(DnsRecord, DnsRecordForm)
         self.dhcprecord = CommonPage(DhcpRecord, DhcpRecordForm)
         self.ip = CommonPage(Ip, IpForm, has_new=False)
+        self.user = CommonPage(
+            User, UserForm, list_role=User.ROLE_ADMIN, edit_role=User.ROLE_ADMIN)
         # Api
         self.api.dnszone = CommonApi(DnsZone)
         self.api.subnet = CommonApi(Subnet)

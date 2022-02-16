@@ -3,8 +3,9 @@
 
 {% macro dropdown(obj) %}
 <div class="btn-group">
+    {% set status_disabled = not currentuser.allow_edit_record() %}
     <button type="button" class="btn btn-sm btn-{{status_bs_cls.get(obj.status, 'secondary')}} dropdown-toggle"
-        data-bs-toggle="dropdown" aria-expanded="false">
+        data-bs-toggle="dropdown" aria-expanded="false" {% if status_disabled %}disabled{% endif %}>
         {{ status_label.get(obj.status, obj.status) }}
     </button>
     <ul class="dropdown-menu">

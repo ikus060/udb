@@ -55,7 +55,7 @@ def _get_bs_field_class(field):
     cls = []
     if type(field.widget).__name__ == 'Select':
         cls.append('form-select')
-    elif type(field.widget).__name__ in ['TextInput', 'TextArea', 'PasswordInput']:
+    elif type(field.widget).__name__ in ['TextInput', 'TextArea', 'PasswordInput', 'EmailInput']:
         cls.append('form-control')
 
     # Add is-valid or is-invalid accordingly.

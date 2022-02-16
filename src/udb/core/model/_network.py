@@ -16,9 +16,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import ipaddress
+
 import cherrypy
+import udb.tools.db  # noqa: import cherrypy.tools.db
 import validators
-from sqlalchemy import Column, ForeignKey, String, Table, event, select, union, or_
+from sqlalchemy import (Column, ForeignKey, String, Table, event, or_, select,
+                        union)
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql.expression import func

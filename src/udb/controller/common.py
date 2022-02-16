@@ -35,17 +35,19 @@ class MessageForm(CherryForm):
 @cherrypy.popargs('key')
 class CommonPage(object):
 
-    def __init__(self, model, object_form: CherryForm, has_new: bool = True) -> None:
+    def __init__(self, model, object_form: CherryForm, has_new: bool = True, list_role=User.ROLE_GUEST, edit_role=User.ROLE_USER) -> None:
         assert model
         assert object_form
         self.model = model
         self.object_form = object_form
+        self.list_role = list_role
+        self.edit_role = edit_role
         # Support a primary key based on sqlalquemy
         self.primary_key = inspect(self.model).primary_key[0].name
-        # Detect features
+        # Detect features supported by model.
         self.has_new = has_new
         self.has_status = hasattr(self.model, 'status')
-        self.has_owner = hasattr(self.model, 'status')
+        self.has_owner = hasattr(self.model, 'owner')
         self.has_followers = hasattr(self.model, 'get_followers')
         self.has_messages = hasattr(self.model, 'get_messages')
 
@@ -58,6 +60,14 @@ class CommonPage(object):
         if not obj:
             raise cherrypy.HTTPError(404)
         return obj
+
+    def _verify_role(self, role):
+        """
+        Verify if the current user has the required role.
+        """
+        user = cherrypy.serving.request.currentuser
+        if user is None or not user.has_role(role):
+            raise cherrypy.HTTPError(403, 'Insufficient privileges')
 
     def _query(self, deleted, personal):
         """
@@ -81,6 +91,7 @@ class CommonPage(object):
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/list.html', 'common/list.html'])
     def index(self, deleted=False, personal=False):
+        self._verify_role(self.list_role)
         # Convert from string to boolean
         with cherrypy.HTTPError.handle(ValueError, 400):
             deleted = deleted in [True, 'True', 'true']
@@ -108,6 +119,7 @@ class CommonPage(object):
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/new.html', 'common/new.html'])
     def new(self, **kwargs):
+        self._verify_role(self.edit_role)
         # Validate form
         form = self.object_form()
         if form.validate_on_submit():
@@ -136,23 +148,30 @@ class CommonPage(object):
         """
         Soft-delete the record.
         """
+        self._verify_role(self.edit_role)
         obj = self._get_or_404(key)
         try:
             obj.status = status
             obj.add()
         except ValueError as e:
             # raised by SQLAlchemy validators
-            flash(_('Invalid status: %s') % e, level='error')
+            self.model.session.rollback()
+            if len(e.args) == 2:
+                flash(e.args[1], level='error')
+            else:
+                flash(_('Invalid status: %s') % e, level='error')
         raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/edit.html', 'common/edit.html'])
     def edit(self, key, **kwargs):
+        self._verify_role(self.list_role)
         # Return Not found if object doesn't exists
         obj = self._get_or_404(key)
         # Update object if form was submited
         form = self.object_form(obj=obj)
         if form.validate_on_submit():
+            self._verify_role(self.edit_role)
             try:
                 form.populate_obj(obj)
                 obj.add()
@@ -185,6 +204,7 @@ class CommonPage(object):
         """
         Add current user to the list of followers.
         """
+        self._verify_role(self.list_role)
         obj = self._get_or_404(key)
         userobj = User.query.filter_by(id=user_id).first()
         if userobj and not obj.is_following(userobj):
@@ -197,6 +217,7 @@ class CommonPage(object):
         """
         Add current user to the list of followers.
         """
+        self._verify_role(self.list_role)
         obj = self._get_or_404(key)
         userobj = User.query.filter_by(id=user_id).first()
         if userobj and obj.is_following(userobj):
@@ -206,6 +227,7 @@ class CommonPage(object):
 
     @cherrypy.expose
     def post(self, key, **kwargs):
+        self._verify_role(self.list_role)
         obj = self._get_or_404(key)
         form = MessageForm()
         if form.validate_on_submit():
@@ -218,12 +240,15 @@ class CommonPage(object):
 
 class CommonApi(object):
 
-    def __init__(self, object_cls):
+    def __init__(self, object_cls, list_role=User.ROLE_GUEST, edit_role=User.ROLE_USER):
         assert object_cls
         self.object_cls = object_cls
+        self.list_role = list_role
+        self.edit_role = edit_role
 
     @cherrypy.expose()
     def default(self, id=None, **kwargs):
+        self._verify_role(self.list_role)
         with cherrypy.HTTPError.handle(405):
             method = cherrypy.request.method
             assert method in ['GET', 'PUT', 'POST', 'DELETE']
@@ -247,6 +272,14 @@ class CommonApi(object):
             raise cherrypy.HTTPError(404)
         return obj
 
+    def _verify_role(self, role):
+        """
+        Verify if the current user has the required role.
+        """
+        user = cherrypy.serving.request.currentuser
+        if user is None or not user.has_role(role):
+            raise cherrypy.HTTPError(403, 'Insufficient privileges')
+
     def list(self, **kwargs):
         return [obj.to_json() for obj in self.object_cls.query.all()]
 
@@ -257,6 +290,7 @@ class CommonApi(object):
         """
         Update an existing record.
         """
+        self._verify_role(self.edit_role)
         data = cherrypy.request.json
         obj = self._get_or_404(id)
         try:
@@ -272,6 +306,7 @@ class CommonApi(object):
         """
         Create a new record
         """
+        self._verify_role(self.edit_role)
         data = cherrypy.request.json
         obj = self.object_cls()
         try:
@@ -284,6 +319,7 @@ class CommonApi(object):
         return self._get_or_404(obj.id).to_json()
 
     def delete(self, id, **kwargs):
+        self._verify_role(self.edit_role)
         obj = self._get_or_404(id)
         obj.status = self.object_cls.STATUS_DELETED
         obj.add()

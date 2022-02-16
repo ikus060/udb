@@ -56,6 +56,7 @@ setuptools.setup(
     },
     install_requires=[
         "babel",
+        "email_validator",
         "CherryPy>18",
         "configargparse",
         "Jinja2",

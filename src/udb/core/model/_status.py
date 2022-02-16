@@ -14,6 +14,25 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from ._message import Message  # noqa
-from ._user import User, UserLoginException  # noqa
-from ._network import DnsZone, Subnet, DnsRecord, DhcpRecord, Ip  # noqa
+
+
+from sqlalchemy import Column, String
+from sqlalchemy.orm import validates
+
+
+class StatusMixing(object):
+    """
+    Mixin to support soft delete (enabled, disable, deleted)
+    """
+    STATUS_ENABLED = 'enabled'
+    STATUS_DISABLED = 'disabled'
+    STATUS_DELETED = 'deleted'
+    STATUS = [STATUS_ENABLED, STATUS_DISABLED, STATUS_DELETED]
+
+    status = Column(String, default=STATUS_ENABLED)
+
+    @validates('status')
+    def validate_status(self, key, value):
+        if value not in StatusMixing.STATUS:
+            raise ValueError(value)
+        return value
