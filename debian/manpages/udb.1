@@ -7,6 +7,7 @@ usage: udb [\-h] [\-d] [\-f CONFIG] [\-v] [\-\-server\-host IP] [\-\-server\-por
 .IP
 [\-\-log\-file FILE] [\-\-log\-access\-file FILE]
 [\-\-log\-level {ERROR,WARN,INFO,DEBUG}] [\-\-session\-dir FOLDER]
+[\-\-database\-uri URI] [\-\-database\-create\-demo\-data]
 [\-\-admin\-user USERNAME] [\-\-admin\-password USERNAME]
 [\-\-ldap\-add\-missing\-user]
 [\-\-ldap\-add\-user\-default\-role {admin,user}] [\-\-ldap\-uri LDAP_URI]
@@ -60,6 +61,23 @@ Define the log level. [env var: UDB_LOG_LEVEL]
 location where to store user session information. When
 undefined, the user sessions are kept in memory. [env
 var: UDB_SESSION_DIR]
+.TP
+\fB\-\-database\-uri\fR URI
+Location of the database used for persistence. SQLite
+and PostgreSQL database are supported officially. To
+use a SQLite database you may define the location
+using a file path or a URI. e.g.: \fI\,/srv/udb/file.db\/\fP or
+sqlite:///srv/udb/file.db`. To use PostgreSQL server
+you must provide a URI similar to
+postgresql://user:pass@10.255.1.34/dbname and you must
+install required dependencies. By default, UDB uses a
+SQLite embedded database located at ./data.db [env
+var: UDB_DATABASE_URI]
+.TP
+\fB\-\-database\-create\-demo\-data\fR
+When this option is enabled, the application will
+create demonstration data. [env var:
+UDB_DATABASE_CREATE_DEMO_DATA]
 .TP
 \fB\-\-admin\-user\fR USERNAME, \fB\-\-adminuser\fR USERNAME
 administrator username. The administrator user get
@@ -116,8 +134,8 @@ objects in the tree. [env var: UDB_LDAP_FILTER]
 .TP
 \fB\-\-ldap\-required\-group\fR GROUPNAME, \fB\-\-ldaprequiredgroup\fR GROUPNAME
 name of the group of which the user must be a member
-to access rdiffweb. Should be used with ldap\-groupattribute and ldap\-group\-attribute\-is\-dn. [env var:
-UDB_LDAP_REQUIRED_GROUP]
+to access the application. Should be used with ldapgroup\-attribute and ldap\-group\-attribute\-is\-dn. [env
+var: UDB_LDAP_REQUIRED_GROUP]
 .TP
 \fB\-\-ldap\-group\-attribute\fR ATTRIBUTE, \fB\-\-ldapgroupattribute\fR ATTRIBUTE
 name of the attribute defining the groups of which the

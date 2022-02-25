@@ -13,11 +13,7 @@ override_dh_auto_test:
 	python3 -m pytest -v
 
 execute_after_dh_auto_install:
-	rm -rf debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/controller/tests
-	rm -rf debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/core/tests
-	rm -rf debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/tests
-	rm -f  debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/test.py
-	rm -rf debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/static/less/
-	rm -rf debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/static/js/bootstrap.min.js
-	rm -rf debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/static/js/jquery.min.js
-	rm -rf debian/rdiffweb/usr/lib/python*/dist-packages/rdiffweb/static/js/chart.min.js
+	rm -rf debian/udb/usr/lib/python*/dist-packages/udb/controller/tests
+	rm -rf debian/udb/usr/lib/python*/dist-packages/udb/core/tests
+	rm -rf debian/udb/usr/lib/python*/dist-packages/udb/tests
+	rm -f  debian/udb/usr/lib/python*/dist-packages/udb/test.py

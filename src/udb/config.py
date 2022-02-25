@@ -154,7 +154,7 @@ def parse_args(args=None, config_file_contents=None):
     parser.add_argument(
         '--ldap-required-group', '--ldaprequiredgroup',
         metavar='GROUPNAME',
-        help="name of the group of which the user must be a member to access rdiffweb. Should be used with ldap-group-attribute and ldap-group-attribute-is-dn.")
+        help="name of the group of which the user must be a member to access the application. Should be used with ldap-group-attribute and ldap-group-attribute-is-dn.")
 
     parser.add_argument(
         '--ldap-group-attribute', '--ldapgroupattribute',
