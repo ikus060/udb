@@ -135,6 +135,8 @@ class CherryForm(Form):
                     else:
                         yield field.label(**{'class': cur_label_class})
                         yield field(**{'class': cur_field_class})
+                    if field.description:
+                        yield Markup('<div class="form-text">%s</div>' % escape(field.description))
 
                     # Append error messages to the form.
                     for error in field.errors:

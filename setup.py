@@ -27,7 +27,6 @@ if not sys.version_info >= (3, 6):
     sys.exit(1)
 
 tests_require = [
-    "mockldap",
     "pytest",
     "response",
 ]
@@ -62,7 +61,7 @@ setuptools.setup(
         "configargparse",
         "email_validator",
         "Jinja2",
-        "python-ldap",
+        "ldap3",
         "requests",
         "sqlalchemy>=1.4,<1.5",
         "validators",

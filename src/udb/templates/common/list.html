@@ -32,16 +32,18 @@
             {% set unused = form.process(obj=obj) %}
             {% for field in form %}
             <td scope="row">
+                {% block loop_field scoped %}
                 {% if loop.first %}
                 <a href="{{url_for(obj, 'edit')}}">{{ field.data }}</a>
                 {{ _status.badge(obj) }}
                 {% elif field.name in ['owner'] and field.object_data %}
                 {{ field.object_data }}
                 {% elif field.data %}
-                {% block loop_field scoped %}{{ field.data }}{% endblock %}
+                {{ field.data }}
                 {% else %}
                 -
                 {% endif %}
+                {% endblock %}
             </td>
             {% endfor %}
             <td>

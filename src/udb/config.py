@@ -106,19 +106,19 @@ def parse_args(args=None, config_file_contents=None):
             When undefined, default administrator password is `admin123` and
             it can be updated using the web interface.""")
 
-    # LDAP
     parser.add_argument(
-        '--ldap-add-missing-user', '--addmissinguser',
+        '--add-missing-user', '--addmissinguser',
         action='store_true',
         help='enable creation of users from LDAP when the credential are valid.',
         default=False)
 
     parser.add_argument(
-        '--ldap-add-user-default-role',
-        help='default role used when creating users from LDAP. This parameter is only useful when `--ldap-add-missing-user` is enabled.',
-        default='user',
-        choices=['admin', 'user'])
+        '--add-user-default-role',
+        help='default role used when creating users from LDAP. This parameter is only useful when `--add-missing-user` is enabled.',
+        default='guest',
+        choices=['admin', 'user', 'guest'])
 
+    # LDAP
     parser.add_argument(
         '--ldap-uri', '--ldapuri',
         help='URL to the LDAP server used to validate user credentials. e.g.: ldap://localhost:389')
@@ -211,6 +211,27 @@ def parse_args(args=None, config_file_contents=None):
         help="enable validation of shadow expired when validating user's credential. User will not be allowed to login if the account expired.",
         default=False,
         action='store_true')
+
+    # Email
+    parser.add_argument('--imap-server', metavar='SERVER',
+                        help='IMAP server used to reveive email.')
+    parser.add_argument('--imap-username', metavar='USERNAME',
+                        help='Username used to authenticated with the IMAP server.')
+    parser.add_argument('--imap-password', metavar='PASSWORD',
+                        help='Password used to authenticated with the IMAP server.')
+    parser.add_argument('--imap-frequency', metavar='FREQUENCY', type=int, default=5,
+                        help='Delay between each IMAP request')
+
+    parser.add_argument('--smtp-server', metavar='SERVER',
+                        help='SMTP server used to send email.')
+    parser.add_argument('--smtp-username', metavar='USERNAME',
+                        help='Username used to authenticated with the SMTP server.')
+    parser.add_argument('--smtp-password', metavar='PASSWORD',
+                        help='Password used to authenticated with the SMTP server.')
+    parser.add_argument('--smtp-from', metavar='SERVER',
+                        help='Email address used to send email.')
+    parser.add_argument('--smtp-encryption', default='none', choices=['none', 'ssl', 'starttls'],
+                        help='type of encryption to be used when establishing communication with SMTP server')
 
     # Branding
     parser.add_argument(

@@ -1,0 +1,35 @@
+{% extends 'layout.html' %}
+{% import "macro.html" as macro %}
+{% block body %}
+{# Title #}
+<h2>{%trans%}Edit user profile{%endtrans%}</h2>
+<hr />
+{# General form #}
+<div class="row">
+    <div class="col-md">
+        <h4>{%trans%}Account settings{%endtrans%}</h4>
+        <p>{%trans%}General information about your account.{%endtrans%}</p>
+    </div>
+    <div class="col-md-8">
+        <form method="POST">
+            {{form}}
+            <button type="submit" class="btn btn-primary">{%trans%}Save account settings{%endtrans%}</button>
+        </form>
+    </div>
+</div>
+
+<hr />
+{# Password form #}
+<div class="row">
+    <div class="col-md">
+        <h4>{%trans%}Password{%endtrans%}</h4>
+        <p>{%trans%}Change your current password{%endtrans%}</p>
+    </div>
+    <div class="col-md-8">
+        <form method="POST">
+            {{password_form}}
+            <button type="submit" class="btn btn-primary">{%trans%}Save password{%endtrans%}</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

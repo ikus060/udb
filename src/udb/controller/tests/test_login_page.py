@@ -18,81 +18,103 @@
 
 import unittest
 import unittest.mock
+
+import cherrypy
 from udb.controller.tests import WebCase
+from udb.core.model import User
 from udb.core.passwd import hash_password
-from udb.core.model import User, UserLoginException
 
 
 class TestLogin(WebCase):
     login = False
 
-    @unittest.mock.patch('udb.core.model.User.login', return_value='admin')
-    def test_login_valid(self, user_login_mock):
+    def setUp(self):
+        self.listener = unittest.mock.MagicMock()
+        self.listener.login.return_value = False
+        self.listener.authenticate.return_value = False
+        cherrypy.engine.subscribe("login", self.listener.login, priority=50)
+        cherrypy.engine.subscribe("authenticate", self.listener.authenticate, priority=50)
+        return super().setUp()
+
+    def tearDown(self):
+        cherrypy.engine.unsubscribe("login", self.listener.login)
+        cherrypy.engine.unsubscribe("authenticate", self.listener.authenticate)
+        return super().tearDown()
+
+    def test_login_valid(self):
         # Given a valid username and password
-        username = 'admin'
-        password = 'admin'
+        username = "admin"
+        password = "admin123"
+        User.create(username=username, password=password)
+        self.session.commit()
         # When login
-        self.getPage("/login/", method='POST',
-                     body={'username': username, 'password': password})
+        self.getPage(
+            "/login/", method="POST", body={"username": username, "password": password}
+        )
         # Then user is redirect to main page
         self.assertStatus('303 See Other')
-        user_login_mock.assert_called_once_with(username, password)
+        # Then listeners was called
+        self.listener.login.assert_called_once_with(username, password)
+        self.listener.authenticate.assert_called_once_with(username, password)
 
-    @unittest.mock.patch('udb.core.model.User.login', return_value='admin')
-    def test_login_with_redirect(self, user_login_mock):
+    def test_login_with_redirect(self):
         # Given a login form submited with a redirect value.
-        username = 'admin'
-        password = 'admin'
+        username = "admin"
+        password = "admin"
+        User.create(username=username, password=password)
+        self.session.commit()
         # When trying to login
-        self.getPage("/login/", method='POST',
-                     body={'username': username, 'password': password, 'redirect': '/dnszone/'})
+        self.getPage(
+            "/login/",
+            method="POST",
+            body={"username": username, "password": password, "redirect": "/dnszone/"},
+        )
         # Then user is redirect to the proper URL.
         self.assertStatus('303 See Other')
-        self.assertHeaderItemValue('Location', self.baseurl + '/dnszone/')
-        user_login_mock.assert_called_once_with(username, password)
+        self.assertHeaderItemValue("Location", self.baseurl + "/dnszone/")
 
     def test_login_with_redirect_query_string(self):
         # Given a user redirected to login page with a query string.
         # When trying to login
-        self.getPage("/login/?redirect=%2Fdnszone%2F", method='GET')
+        self.getPage("/login/?redirect=%2Fdnszone%2F", method="GET")
         # Then the form contains a redirect value
-        self.assertStatus('200 OK')
+        self.assertStatus("200 OK")
         self.assertInBody('value="/dnszone/"')
 
-    @unittest.mock.patch('udb.core.model.User.login', side_effect=UserLoginException)
-    def test_login_invalid_credentials(self, user_login_mock):
+    def test_login_invalid_credentials(self):
         # Given invalid credentials.
-        username = 'myusername'
-        password = 'mypassword'
+        username = "myusername"
+        password = "mypassword"
+        User.create(username=username, password=password)
+        self.session.commit()
         # When trying to login
-        self.getPage("/login/", method='POST',
-                     body={'username': username, 'password': password})
+        self.getPage(
+            "/login/", method="POST", body={"username": username, "password": "invalid"}
+        )
         # Then login page is displayed with an error message.
-        self.assertStatus('200 OK')
-        self.assertInBody('Invalid crentials')
-        user_login_mock.assert_called_once_with(username, password)
+        self.assertStatus("200 OK")
+        self.assertInBody("Invalid crentials")
         # Then the username field is populated
         self.assertInBody(username)
         # Then the password field is blank
-        self.assertNotInBody(password)
+        self.assertNotInBody("invalid")
 
-    @unittest.mock.patch('udb.core.model.User.login', return_value='admin')
-    def test_login_missing_username(self, user_login_mock):
+    def test_login_missing_username(self):
         # Given a missing username
-        username = ''
-        password = 'admin'
+        username = ""
+        password = "admin"
         # When sending the form to the login page.
-        self.getPage("/login/", method='POST',
-                     body={'username': username, 'password': password})
+        self.getPage(
+            "/login/", method="POST", body={"username": username, "password": password}
+        )
         # Then login page is displayed with an error message.
-        self.assertStatus('200 OK')
-        self.assertInBody('This field is required.')
-        user_login_mock.assert_not_called()
+        self.assertStatus("200 OK")
+        self.assertInBody("This field is required.")
 
     def test_login_already_auth(self):
         # Given a user that is already login
-        username = 'admin'
-        password = 'admin'
+        username = "admin"
+        password = "admin"
         User(username=username, password=hash_password(password)).add()
         self.session.commit()
         self.getPage("/login/", method='POST',
@@ -109,8 +131,7 @@ class TestLogin(WebCase):
         # Given an authentication user
         username = 'myuser'
         password = 'mypassword'
-        userobj = User(username=username,
-                       password=hash_password(password)).add()
+        userobj = User(username=username, password=hash_password(password)).add()
         self.session.commit()
         self.getPage("/login/", method='POST',
                      body={'username': username, 'password': password})
@@ -124,8 +145,7 @@ class TestLogin(WebCase):
         self.getPage("/")
         self.assertStatus('403 Forbidden')
 
-    @unittest.mock.patch('udb.core.model.User.login', return_value='admin')
-    def test_redirect_to_login(self, user_login_mock):
+    def test_redirect_to_login(self):
         # When trying to access a proptected page.
         self.getPage("/")
         # Then user is redirected to login page.
@@ -133,24 +153,10 @@ class TestLogin(WebCase):
         self.assertHeaderItemValue(
             'Location', self.baseurl + '/login/?redirect=%2F')
 
-    @unittest.mock.patch('udb.core.model.User.login', return_value='admin')
-    def test_redirect_to_login_with_url(self, user_login_mock):
+    def test_redirect_to_login_with_url(self):
         # When trying to access a proptected page.
         self.getPage("/dnszone/")
         # Then user is redirected to login page.
         self.assertStatus('303 See Other')
         self.assertHeaderItemValue(
             'Location', self.baseurl + '/login/?redirect=%2Fdnszone%2F')
-
-    def test_login_with_store(self):
-        # Given a valid user with crendial in database
-        username = 'newuser'
-        password = 'mypassword'
-        User(username=username, password=hash_password(password)).add()
-        self.session.commit()
-        # When trying to login with valid credentials
-        self.getPage("/login/", method='POST',
-                     body={'username': username, 'password': password})
-        # Then user is logged and redirect to home page.
-        self.assertStatus('303 See Other')
-        self.assertHeaderItemValue('Location', self.baseurl + '/')

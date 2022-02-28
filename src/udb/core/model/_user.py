@@ -21,19 +21,12 @@ from sqlalchemy import Column, String, event, inspect
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
-from udb.core.passwd import check_password, hash_password
+from udb.core.passwd import hash_password
 from udb.tools.i18n import gettext as _
 
 from ._status import StatusMixing
 
 Base = cherrypy.tools.db.get_base()
-
-
-class UserLoginException(Exception):
-    """
-    Raised when user's credentials are invalid.
-    """
-    pass
 
 
 class User(StatusMixing, Base):
@@ -72,16 +65,6 @@ class User(StatusMixing, Base):
         return user
 
     @classmethod
-    def login(cls, username, password):
-        """
-        Validate username password using database and LDAP.
-        """
-        user = cls.query.filter_by(username=username).first()
-        if user and check_password(password, user.password):
-            return username
-        raise UserLoginException()
-
-    @classmethod
     def create(cls, username, password=None, **kwargs):
         """
         Create a new user in database with the given password.
@@ -91,6 +74,16 @@ class User(StatusMixing, Base):
         user = cls(username=username, password=password, **kwargs)
         cls.session.add(user)
         return user
+
+    @classmethod
+    def coerce_role_name(cls, name):
+        return {'admin': User.ROLE_ADMIN, 'user': User.ROLE_USER, 'guest': User.ROLE_GUEST}.get(name)
+
+    def is_local(self):
+        """
+        True if the user authentication is local.
+        """
+        return self.password is not None
 
     def is_admin(self):
         """

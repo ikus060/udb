@@ -16,17 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
 
-from udb.core.model import User, UserLoginException
-
 
 def checkpassword(realm, username, password):
-    """
-    Check basic authentication.
-    """
-    try:
-        return User.login(username, password) is not None
-    except UserLoginException:
-        return False
+    # Use login plugin to validate user's credentials
+    return any(cherrypy.engine.publish('login', username, password))
 
 
 @cherrypy.tools.json_out()

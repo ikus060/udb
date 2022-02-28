@@ -59,7 +59,7 @@ class WebCase(BaseClass):
         # Get defaultconfig from test class
         default_config = getattr(cls, 'default_config', {})
         # Replace database url
-        dburi = os.environ.get('UDB_TEST_DATABASE_URI', None)
+        dburi = os.environ.get('TEST_DATABASE_URI', None)
         if dburi:
             default_config['database-uri'] = dburi
 
