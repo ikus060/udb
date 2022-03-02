@@ -14,6 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from ._common import Message  # noqa
-from ._user import User, UserLoginException  # noqa
+from ._message import Message  # noqa
+from ._user import User  # noqa
 from ._network import DnsZone, Subnet, DnsRecord, DhcpRecord, Ip  # noqa

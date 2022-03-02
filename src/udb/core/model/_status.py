@@ -14,21 +14,25 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import cherrypy
 
 
-def checkpassword(realm, username, password):
-    # Use login plugin to validate user's credentials
-    return any(cherrypy.engine.publish('login', username, password))
+from sqlalchemy import Column, String
+from sqlalchemy.orm import validates
 
 
-@cherrypy.tools.json_out()
-@cherrypy.tools.json_in()
-@cherrypy.tools.sessions(on=False)
-@cherrypy.tools.auth_form(on=False)
-@cherrypy.tools.auth_basic(on=True, realm='udb-api', checkpassword=checkpassword)
-class Api():
+class StatusMixing(object):
     """
-    This class is a node to set all the configuration to access /api/
+    Mixin to support soft delete (enabled, disable, deleted)
     """
-    pass
+    STATUS_ENABLED = 'enabled'
+    STATUS_DISABLED = 'disabled'
+    STATUS_DELETED = 'deleted'
+    STATUS = [STATUS_ENABLED, STATUS_DISABLED, STATUS_DELETED]
+
+    status = Column(String, default=STATUS_ENABLED)
+
+    @validates('status')
+    def validate_status(self, key, value):
+        if value not in StatusMixing.STATUS:
+            raise ValueError(value)
+        return value

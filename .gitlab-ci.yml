@@ -34,7 +34,7 @@ postgresql:
     - postgres:12.2-alpine
   variables:
     TOXENV: py3
-    UDB_TEST_DATABASE_URI: "postgresql://admin@postgres/test"
+    TEST_DATABASE_URI: "postgresql://admin@postgres/test"
     POSTGRES_DB: test
     POSTGRES_USER: admin
     POSTGRES_PASSWORD: ""

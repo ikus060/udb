@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# rdiffweb, A web interface to rdiff-backup repositories
-# Copyright (C) 2012-2021 rdiffweb contributors
+# AUTH BASIC a tools for cherrypy
+# Copyright (C) 2022 IKUS Software
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

@@ -26,7 +26,6 @@ import cherrypy.test.helper
 from udb.app import Root
 from udb.config import parse_args
 from udb.core.model import User
-from udb.core.passwd import hash_password
 
 BaseClass = cherrypy.test.helper.CPWebCase
 del BaseClass.test_gc
@@ -60,7 +59,7 @@ class WebCase(BaseClass):
         # Get defaultconfig from test class
         default_config = getattr(cls, 'default_config', {})
         # Replace database url
-        dburi = os.environ.get('UDB_TEST_DATABASE_URI', None)
+        dburi = os.environ.get('TEST_DATABASE_URI', None)
         if dburi:
             default_config['database-uri'] = dburi
 
@@ -121,7 +120,7 @@ class WebCase(BaseClass):
 
     def _login(self, username=username, password=password, redirect='/'):
         # Create new user
-        User(username=self.username, password=hash_password(password)).add()
+        User.create_default_admin(username, password)
         self.session.commit()
         # Authenticate
         self.getPage("/login/", method='POST',

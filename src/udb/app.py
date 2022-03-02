@@ -21,6 +21,8 @@ import cherrypy
 import jinja2
 import pkg_resources
 
+import udb.core.login  # noqa
+import udb.plugins.ldap  # noqa
 import udb.tools.auth_basic  # noqa: import cherrypy.tools.auth_basic
 import udb.tools.auth_form  # noqa: import cherrypy.tools.auth_form
 import udb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
@@ -28,12 +30,14 @@ import udb.tools.db  # noqa: import cherrypy.tools.db
 import udb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
 from udb.controller import lastupdated, template_processor, url_for
 from udb.controller.api import Api
-from udb.controller.common import CommonApi, CommonPage
-from udb.controller.login import LoginPage
-from udb.controller.logout import LogoutPage
-from udb.controller.network import (DhcpRecordForm, DnsRecordForm, DnsZoneForm,
-                                    IpForm, SubnetForm)
+from udb.controller.common_page import CommonApi, CommonPage
+from udb.controller.login_page import LoginPage
+from udb.controller.logout_page import LogoutPage
+from udb.controller.network_page import (DhcpRecordForm, DnsRecordForm, DnsZoneForm,
+                                         IpForm, SubnetForm)
+from udb.controller.profile_page import ProfilePage
 from udb.controller.static import Static
+from udb.controller.user_page import UserForm
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User
 from udb.tools.i18n import gettext, ngettext
 
@@ -89,7 +93,7 @@ def _error_page(**kwargs):
 @cherrypy.tools.db()
 @cherrypy.tools.sessions()
 @cherrypy.tools.auth_form()
-@cherrypy.tools.currentuser()
+@cherrypy.tools.currentuser(userobj=lambda username: User.query.filter_by(username=username).first())
 @cherrypy.tools.i18n(mo_dir=pkg_resources.resource_filename('udb', 'locales'), default='en_US', domain='messages')
 @cherrypy.config(**{
     'error_page.default': _error_page,
@@ -104,17 +108,46 @@ class Root(object):
     def __init__(self, cfg):
         self.cfg = cfg
         cherrypy.config.update({
+            # Configure database plugins
+            'tools.db.uri': cfg.database_uri,
+            # Configure session storage
             'tools.sessions.storage_type': 'file' if cfg.session_dir else 'ram',
             'tools.sessions.storage_path': cfg.session_dir,
-            'tools.db.uri': cfg.database_uri,
+            # Configure LDAP plugin
+            'ldap.uri': cfg.ldap_uri,
+            'ldap.base_dn': cfg.ldap_base_dn,
+            'ldap.bind_dn': cfg.ldap_bind_dn,
+            'ldap.bind_password': cfg.ldap_bind_password,
+            'ldap.scope': cfg.ldap_scope,
+            'ldap.tls': cfg.ldap_tls,
+            'ldap.username_attribute': cfg.ldap_username_attribute,
+            'ldap.required_group': cfg.ldap_required_group,
+            'ldap.group_attribute': cfg.ldap_group_attribute,
+            'ldap.group_attribute_is_dn': cfg.ldap_group_attribute_is_dn,
+            'ldap.version': cfg.ldap_version,
+            'ldap.network_timeout': cfg.ldap_network_timeout,
+            'ldap.timeout': cfg.ldap_timeout,
+            'ldap.encoding': cfg.ldap_encoding,
+            'ldap.check_shadow_expire': cfg.ldap_check_shadow_expire,
+            # Configure SMTP plugin
+            'smtp.server': cfg.smtp_server,
+            'smtp.username': cfg.smtp_username,
+            'smtp.password': cfg.smtp_password,
+            'smtp.email_from': cfg.smtp_from and '%s <%s>' % (cfg.header_name, cfg.smtp_from),
+            'smtp.encryption': cfg.smtp_encryption,
+            # Configure login
+            'login.add_missing_user': cfg.add_missing_user,
+            'login.add_user_default_role': User.coerce_role_name(cfg.add_user_default_role),
         })
         # Create database if required
         cherrypy.tools.db.create_all()
         # Create default admin if missing
         created = User.create_default_admin(cfg.admin_user, cfg.admin_password)
         if created and cfg.database_create_demo_data:
-            User(username='patrik', fullname='Patrik Dufresne').add()
-            User(username='daniel', fullname='Daniel Baumann').add()
+            User.create(username='guest',
+                        fullname='Default Guest', password='guest', role=User.ROLE_GUEST)
+            User.create(username='user',
+                        fullname='Default User', password='user', role=User.ROLE_USER)
             DnsZone(name='bfh.ch', notes='This is a note').add()
             DnsZone(name='bfh.science', notes='This is a note').add()
             DnsZone(name='bfh.info', notes='This is a note').add()
@@ -154,6 +187,7 @@ class Root(object):
         User.session.commit()
         self.login = LoginPage()
         self.logout = LogoutPage()
+        self.profile = ProfilePage()
         self.static = Static()
         self.api = Api()
         # Import modules to be added to this app.
@@ -162,6 +196,8 @@ class Root(object):
         self.dnsrecord = CommonPage(DnsRecord, DnsRecordForm)
         self.dhcprecord = CommonPage(DhcpRecord, DhcpRecordForm)
         self.ip = CommonPage(Ip, IpForm, has_new=False)
+        self.user = CommonPage(
+            User, UserForm, list_role=User.ROLE_ADMIN, edit_role=User.ROLE_ADMIN)
         # Api
         self.api.dnszone = CommonApi(DnsZone)
         self.api.subnet = CommonApi(Subnet)

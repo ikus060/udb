@@ -462,3 +462,84 @@ class IPTest(WebCase):
         self.getPage('/ip/')
         # Then no create new exists
         self.assertNotInBody('Create IP Address')
+
+
+class RoleTest(WebCase):
+    """
+    Test role verification.
+    """
+    login = False
+
+    authorization = [('Authorization', 'Basic %s' %
+                      b64encode(b'guest:password').decode('ascii'))]
+
+    def setUp(self):
+        super().setUp()
+        user = User.create(username='guest', password='password',
+                           role=User.ROLE_GUEST).add()
+        self.getPage("/login/", method='POST',
+                     body={'username': user.username, 'password': 'password', 'redirect': '/'})
+        self.assertStatus('303 See Other')
+
+    def test_list_as_guest(self):
+        # Given a 'guest' user authenticated
+        # Given a DnsZone
+        DnsZone(name='examples.com').add()
+        # When requesting list of records
+        self.getPage(url_for(DnsZone))
+        # Then the list is available
+        self.assertStatus(200)
+        self.assertInBody('examples.com')
+
+    def test_edit_as_guest(self):
+        # Given a 'guest' user authenticated
+        # Given a DnsZone
+        zone = DnsZone(name='examples.com').add()
+        # When trying to edit a record
+        self.getPage(url_for(zone, 'edit'),
+                     method='POST',
+                     body={'name': 'newname.com'})
+        # Then a 403 Forbidden is raised
+        self.assertStatus(403)
+
+    def test_status_as_guest(self):
+        # Given a 'guest' user authenticated
+        # Given a DnsZone
+        zone = DnsZone(name='examples.com').add()
+        # When trying to edit a record
+        self.getPage(url_for(zone, 'status', 'disabled'))
+        # Then a 403 Forbidden is raised
+        self.assertStatus(403)
+
+    def test_new_as_guest(self):
+        # Given a 'guest' user authenticated
+        # When trying to create a record
+        self.getPage(url_for('dnszone', 'new'),
+                     method='POST',
+                     body={'name': 'newname.com'})
+        # Then a 403 Forbidden is raised
+        self.assertStatus(403)
+
+    def test_api_post_as_guest(self):
+        # Given a valid payload
+        payload = json.dumps({'name': 'newname.com'})
+        # When sending a POST request to the API
+        self.getPage(url_for('api', 'dnszone'),
+                     headers=[('Content-Type', 'application/json'),
+                              ('Content-Length', str(len(payload)))] + self.authorization,
+                     method='POST', body=payload)
+        # Then a 403 Forbidden is raised
+        self.assertStatus(403)
+
+    def test_api_put_as_guest(self):
+        # Given a existing record
+        obj = DnsZone(name='examples.com').add()
+        # Given a valid payload
+        payload = json.dumps({'name': 'newname.com'})
+        # When sending a PUT request to the API
+        self.getPage(url_for('api', 'dnszone', obj.id),
+                     headers=[('Content-Type', 'application/json'),
+                              ('Content-Length', str(len(payload)))] + self.authorization,
+                     method='PUT', body=payload)
+        # Then a 403 Forbidden is raised
+        self.assertStatus(403)

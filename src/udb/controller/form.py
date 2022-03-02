@@ -55,7 +55,7 @@ def _get_bs_field_class(field):
     cls = []
     if type(field.widget).__name__ == 'Select':
         cls.append('form-select')
-    elif type(field.widget).__name__ in ['TextInput', 'TextArea', 'PasswordInput']:
+    elif type(field.widget).__name__ in ['TextInput', 'TextArea', 'PasswordInput', 'EmailInput']:
         cls.append('form-control')
 
     # Add is-valid or is-invalid accordingly.
@@ -135,6 +135,8 @@ class CherryForm(Form):
                     else:
                         yield field.label(**{'class': cur_label_class})
                         yield field(**{'class': cur_field_class})
+                    if field.description:
+                        yield Markup('<div class="form-text">%s</div>' % escape(field.description))
 
                     # Append error messages to the form.
                     for error in field.errors:

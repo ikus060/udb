@@ -55,10 +55,13 @@ setuptools.setup(
         ],
     },
     install_requires=[
+        "apscheduler",
         "babel",
         "CherryPy>18",
         "configargparse",
+        "email_validator",
         "Jinja2",
+        "ldap3",
         "requests",
         "sqlalchemy>=1.4,<1.5",
         "validators",

@@ -17,24 +17,24 @@
 
 import cherrypy
 import udb.tools.db  # noqa: import cherrypy.tools.db
-from udb.core.passwd import check_password, hash_password
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, event, inspect
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
-from sqlalchemy.sql.sqltypes import Boolean, Integer
+from sqlalchemy.sql.sqltypes import Integer
+from udb.core.passwd import hash_password
+from udb.tools.i18n import gettext as _
+
+from ._status import StatusMixing
 
 Base = cherrypy.tools.db.get_base()
 
 
-class UserLoginException(Exception):
-    """
-    Raised when user's credentials are invalid.
-    """
-    pass
-
-
-class User(Base):
+class User(StatusMixing, Base):
     __tablename__ = 'user'
+
+    ROLE_ADMIN = 0
+    ROLE_USER = 5
+    ROLE_GUEST = 10
 
     id = Column(Integer, primary_key=True)
     # Unique
@@ -42,13 +42,7 @@ class User(Base):
     password = Column(String, nullable=True)
     fullname = Column(String, nullable=False, default='')
     email = Column(String, nullable=True, unique=True)
-    deleted = Column(Boolean, default=False)
-
-    def __repr__(self):
-        return "<User(name='%s', email='%s')>" % (self.username, self.email)
-
-    def __str__(self):
-        return self.fullname or self.username
+    role = Column(Integer, nullable=True, default=ROLE_GUEST)
 
     @classmethod
     def create_default_admin(cls, default_username, default_password):
@@ -61,32 +55,82 @@ class User(Base):
         if count:
             return None  # database is not empty
         # Create default user.
+        password = default_password or 'admin123'
+        if not password.startswith('{SSHA}'):
+            password = hash_password(password)
         user = cls(username=default_username,
-                   password=default_password or hash_password('admin123'))
+                   password=password,
+                   role=User.ROLE_ADMIN)
         cls.session.add(user)
         return user
 
     @classmethod
-    def login(cls, username, password):
-        """
-        Validate username password using database and LDAP.
-        """
-        user = cls.query.filter_by(username=username).first()
-        if user and check_password(password, user.password):
-            return username
-        raise UserLoginException()
-
-    @classmethod
-    def create(cls, username, password=None):
+    def create(cls, username, password=None, **kwargs):
         """
         Create a new user in database with the given password.
         """
         assert username
         password = hash_password(password) if password else None
-        user = cls(username=username, password=password)
+        user = cls(username=username, password=password, **kwargs)
         cls.session.add(user)
         return user
+
+    @classmethod
+    def coerce_role_name(cls, name):
+        return {'admin': User.ROLE_ADMIN, 'user': User.ROLE_USER, 'guest': User.ROLE_GUEST}.get(name)
+
+    def is_local(self):
+        """
+        True if the user authentication is local.
+        """
+        return self.password is not None
+
+    def is_admin(self):
+        """
+        Return true if this user is an administrator
+        """
+        return self.role == User.ROLE_ADMIN
+
+    def is_user(self):
+        """Return True if this user has role `user` or `admin`."""
+        return self.role <= User.ROLE_USER
+
+    def is_guest(self):
+        """Return True if this user has role `guest`, `user` or `admin`."""
+        return self.role <= User.ROLE_GUEST
+
+    def has_role(self, role):
+        assert isinstance(role, int)
+        return self.role <= role
+
+    def allow_new_record(self):
+        return self.is_user()
+
+    def allow_edit_record(self):
+        return self.is_user()
+
+    def __repr__(self):
+        return "<User(name='%s', email='%s')>" % (self.username, self.email)
+
+    def __str__(self):
+        return self.fullname or self.username
 
 
 # Create a unique index for username
 Index('user_username_index', func.lower(User.username), unique=True)
+
+
+@event.listens_for(User, "before_update")
+def before_update(mapper, connection, instance):
+    # Check if current instance matches our current user
+    currentuser = getattr(cherrypy.serving.request, 'currentuser', None)
+    if currentuser and currentuser.id == instance.id:
+        # Raise exception when current user try to updated it's own status
+        state = inspect(instance)
+        if state.attrs['status'].history.has_changes():
+            raise ValueError('status',
+                             _('The user cannot update his own status.'))
+        # Raise exception when current user try to updated it's own role
+        if state.attrs['role'].history.has_changes():
+            raise ValueError('role',
+                             _('The user cannot update his own role.'))

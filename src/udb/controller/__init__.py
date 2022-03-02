@@ -109,6 +109,7 @@ def template_processor(request):
         'footer_url': app.cfg.footer_url,
         'footer_name': app.cfg.footer_name,
         'get_flashed_messages': get_flashed_messages,
+        'current_url': cherrypy.url(path=cherrypy.request.path_info)
     }
     if hasattr(cherrypy.serving.request, 'login'):
         values['username'] = cherrypy.serving.request.login

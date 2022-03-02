@@ -8,7 +8,10 @@
     <div class="align-self-center">
         {% include "common/filter.html" %}
         {% if has_new %}
-        <a class="btn btn-primary" href="{{url_for(model, 'new')}}">{%trans%}Create{%endtrans%} {{display_name}}</a>
+        {% set new_disabled = not currentuser.allow_new_record() %}
+        <a class="btn btn-primary {% if new_disabled %}disabled{% endif %}" href="{{url_for(model, 'new')}}"
+            role="button" {% if new_disabled %}aria-disabled="true" {% endif %}>{%trans%}Create{%endtrans%}
+            {{display_name}}</a>
         {% endif %}
     </div>
 </div>
@@ -29,21 +32,23 @@
             {% set unused = form.process(obj=obj) %}
             {% for field in form %}
             <td scope="row">
+                {% block loop_field scoped %}
                 {% if loop.first %}
                 <a href="{{url_for(obj, 'edit')}}">{{ field.data }}</a>
                 {{ _status.badge(obj) }}
                 {% elif field.name in ['owner'] and field.object_data %}
                 {{ field.object_data }}
                 {% elif field.data %}
-                {% block loop_field scoped %}{{ field.data }}{% endblock %}
+                {{ field.data }}
                 {% else %}
                 -
                 {% endif %}
+                {% endblock %}
             </td>
             {% endfor %}
             <td>
-                <a class="btn btn-primary btn-circle btn-hover" href="{{url_for(obj, 'edit')}}"
-                    data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans %}View more detail{% endtrans %}">
+                <a class="btn btn-primary btn-circle btn-hover" href="{{url_for(obj, 'edit')}}" data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="{% trans %}View more detail{% endtrans %}">
                     <i class="fas fa-angle-right"></i>
                     <span class="visually-hidden">edit</span>
                 </a>

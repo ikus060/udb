@@ -19,8 +19,6 @@ import cherrypy
 from udb.config import Option
 from udb.controller import flash
 from udb.controller.form import CherryForm
-from udb.core.model import User, UserLoginException
-from udb.tools.auth_form import SESSION_KEY
 from udb.tools.i18n import gettext as _
 from wtforms.fields import PasswordField, StringField
 from wtforms.fields.simple import HiddenField
@@ -51,19 +49,15 @@ class LoginPage():
     @cherrypy.tools.jinja2(template='login.html')
     def index(self, **kwargs):
         # If user is already login, redirect him
-        if cherrypy.session.get(SESSION_KEY, None):
+        if getattr(cherrypy.serving.request, 'currentuser', None):
             raise cherrypy.HTTPRedirect('/')
 
         #  When data is submited, validate credentials.
         form = LoginForm(data=cherrypy.request.params)
         if form.validate_on_submit():
-            try:
-                username = User.login(
-                    form.username.data, form.password.data)
-                assert username
-                cherrypy.session[SESSION_KEY] = username
+            if any(cherrypy.engine.publish('login', form.username.data, form.password.data)):
                 raise cherrypy.HTTPRedirect(form.redirect.data or '/')
-            except UserLoginException:
+            else:
                 flash(_('Invalid crentials'))
 
         # Re-encode the redirect for display in HTML

@@ -1,0 +1,24 @@
+{% extends 'common/list.html' %}
+
+{% macro local() %}
+<span class="badge rounded-pill bg-info">{% trans %}local{% endtrans %}</span>
+{% endmacro %}
+
+{% macro external() %}
+<span class="badge rounded-pill bg-info">{% trans %}external{% endtrans %}</span>
+{% endmacro %}
+
+{% block loop_field scoped %}
+{% if field.name == 'username' %}
+{# Add a label for remote user vs local #}
+{{super()}}
+{{ local() if obj.is_local() else external() }}
+{% elif field.name == 'role' %}
+{# Proide description for user's role #}
+{% for value, label, checked in field.iter_choices() %}
+{% if checked %}{{label}}{% endif %}
+{% endfor %}
+{% else %}
+{{super()}}
+{% endif %}
+{% endblock %}
