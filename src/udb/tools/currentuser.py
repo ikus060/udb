@@ -39,7 +39,7 @@ def get_currentuser(userobj, session_key=SESSION_KEY):
         if currentuser is None:
             # User was deleted after authenticating. Clear session.
             if sessions_on:
-                del cherrypy.session[session_key]
+                cherrypy.session.clear()
             raise cherrypy.HTTPError(403)
         cherrypy.serving.request.currentuser = currentuser
 

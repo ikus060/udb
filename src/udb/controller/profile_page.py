@@ -17,21 +17,28 @@
 
 
 import cherrypy
-from udb.controller import flash, url_for
+from udb.controller import flash
 from udb.controller.form import CherryForm
+from udb.core.passwd import check_password, hash_password
 from udb.tools.i18n import gettext as _
 from wtforms.fields import PasswordField, StringField
-from wtforms.validators import (data_required, email, equal_to, input_required,
-                                optional)
+from wtforms.validators import (ValidationError, data_required, email,
+                                equal_to, input_required, optional)
 
 
 class AccountForm(CherryForm):
 
-    username = StringField(_('Username'), validators=[data_required()])
+    username = StringField(_('Username'), validators=[data_required()], render_kw={'readonly': True})
 
     fullname = StringField(_('Fullname'))
 
     email = StringField(_('Email'), validators=[optional(), email()])
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Make username field read_only
+        self.username.process = lambda *args, **kwargs: None
+        self.username.populate_obj = lambda *args, **kwargs: None
 
 
 class PasswordForm(CherryForm):
@@ -42,15 +49,33 @@ class PasswordForm(CherryForm):
 
     password_confirmation = PasswordField(_('Password confirmation'), validators=[input_required(_("Confirmation password is missing."))])
 
+    def validate_current_password(self, field):
+        # If current password is undefined, it's a remote user
+        if cherrypy.request.currentuser.password is None:
+            raise ValidationError(_('Cannot update password for non-local user. Contact your administrator for more detail.'))
+
+        # Verify if the current password matches current password database
+        if not check_password(field.data, cherrypy.request.currentuser.password):
+            raise ValidationError(_('Current password is not valid.'))
+
+    def populate_obj(self, userobj):
+        userobj.password = hash_password(self.new_password.data)
+
 
 class ProfilePage():
 
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['profile.html'])
-    def index(self):
-        # Update object if form was submited
+    def index(self, **kwargs):
         userobj = cherrypy.request.currentuser
-        form = AccountForm(obj=userobj)
+        account_form = AccountForm(obj=userobj)
+        password_form = PasswordForm()
+        if 'current_password' in kwargs:
+            form = password_form
+        else:
+            form = account_form
+
+        # Update object if form was submited
         if form.validate_on_submit():
             try:
                 form.populate_obj(userobj)
@@ -63,29 +88,9 @@ class ProfilePage():
                 else:
                     flash(_('Invalid value: %s') % e, level='error')
             else:
-                raise cherrypy.HTTPRedirect(url_for(self.model))
+                flash(_('User profile updated successfully.'), level='success')
 
         return {
-            'form': form,
-            'password_form': PasswordForm(),
+            'form': account_form,
+            'password_form': password_form
         }
-
-    def password(self, **kwargs):
-        userobj = cherrypy.request.currentuser
-        form = PasswordForm(obj=userobj)
-        if form.validate_on_submit():
-            try:
-                if userobj.password == form.current_password.data:
-                    userobj.password = form.current_password.data
-                    userobj.add()
-                else:
-                    flash(_(' You must provide a valid current password'))
-            except ValueError as e:
-                # raised by SQLAlchemy validators
-                self.model.session.rollback()
-                if len(e.args) == 2 and getattr(form, e.args[0], None):
-                    getattr(form, e.args[0]).errors.append(e.args[1])
-                else:
-                    flash(_('Invalid value: %s') % e, level='error')
-            else:
-                raise cherrypy.HTTPRedirect(url_for(self.model))

@@ -165,6 +165,3 @@ class UserTest(WebCase):
         # Then user is redirected to edit page showing an error message
         self.assertStatus(200)
         self.assertInBody('The user cannot update his own role.')
-
-    # TODO test invalid email address
-    # TODO test edit our own role
