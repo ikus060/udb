@@ -55,25 +55,20 @@ class UserTest(WebCase):
         # Given a database with a record
         obj = User(**self.new_data).add()
         # When trying to update it's name
-        self.getPage(url_for(obj, 'edit'),
-                     method='POST',
-                     body=self.edit_data)
+        self.getPage(url_for(obj, 'edit'), method='POST', body=self.edit_data)
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for('user') + '/')
         # Then database is updated
-        new_obj = User.query.filter_by(
-            username=self.new_data['username']).first()
+        new_obj = User.query.filter_by(username=self.new_data['username']).first()
         for k, v in self.edit_data.items():
             self.assertEqual(getattr(new_obj, k), v)
 
     def test_new(self):
         # Given an empty database
         # When trying to create a new dns zone
-        self.getPage(url_for('user', 'new'),
-                     method='POST',
-                     body=self.new_data)
+        self.getPage(url_for('user', 'new'), method='POST', body=self.new_data)
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
@@ -94,8 +89,7 @@ class UserTest(WebCase):
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then object status is disabled is removed to the record
-        self.assertEqual('disabled', User.query.filter_by(
-            username=self.new_data['username']).first().status)
+        self.assertEqual('disabled', User.query.filter_by(username=self.new_data['username']).first().status)
 
     def test_status_delete(self):
         # Given a database with a record
@@ -108,8 +102,7 @@ class UserTest(WebCase):
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then object status is delete is removed to the record
-        self.assertEqual('deleted', User.query.filter_by(
-            username=self.new_data['username']).first().status)
+        self.assertEqual('deleted', User.query.filter_by(username=self.new_data['username']).first().status)
 
     def test_status_enabled(self):
         # Given a database with a record
@@ -123,8 +116,7 @@ class UserTest(WebCase):
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then object status is enabled is removed to the record
-        self.assertEqual('enabled', User.query.filter_by(
-            username=self.new_data['username']).first().status)
+        self.assertEqual('enabled', User.query.filter_by(username=self.new_data['username']).first().status)
 
     def test_status_invalid(self):
         # Given a database with a record
@@ -139,8 +131,7 @@ class UserTest(WebCase):
         self.getPage(url_for('user', obj.id, 'edit'))
         self.assertInBody('Invalid status: invalid')
         # Then object status is enabled is removed to the record
-        self.assertEqual('enabled', User.query.filter_by(
-            username=self.new_data['username']).first().status)
+        self.assertEqual('enabled', User.query.filter_by(username=self.new_data['username']).first().status)
 
     def test_edit_own_status(self):
         # Given a database with admin user
@@ -160,8 +151,7 @@ class UserTest(WebCase):
         self.assertEqual('admin', obj.username)
         self.assertEqual(0, obj.role)
         # When trying to update our own status
-        self.getPage(url_for(obj, 'edit'),
-                     method='POST', body={'role': 10})
+        self.getPage(url_for(obj, 'edit'), method='POST', body={'role': 10})
         # Then user is redirected to edit page showing an error message
         self.assertStatus(200)
         self.assertInBody('The user cannot update his own role.')

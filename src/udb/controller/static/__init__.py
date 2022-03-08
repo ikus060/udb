@@ -23,22 +23,18 @@ import pkg_resources
 @cherrypy.tools.auth_form(on=False)
 @cherrypy.tools.currentuser(on=False)
 @cherrypy.tools.i18n(on=False)
-class Static():
-
+class Static:
     @cherrypy.expose()
     def login_bg_jpg(self):
-        fn = pkg_resources.resource_filename(
-            'udb.controller.static', 'taylor-vick-M5tzZtFCOfs-unsplash.jpg')
+        fn = pkg_resources.resource_filename('udb.controller.static', 'taylor-vick-M5tzZtFCOfs-unsplash.jpg')
         return cherrypy.lib.static.serve_file(fn)
 
     @cherrypy.expose()
     def main_css(self):
-        fn = pkg_resources.resource_filename(
-            'udb.controller.static', 'main.css')
+        fn = pkg_resources.resource_filename('udb.controller.static', 'main.css')
         return cherrypy.lib.static.serve_file(fn)
 
     @cherrypy.expose()
     def favicon_svg(self):
-        fn = pkg_resources.resource_filename(
-            'udb.controller.static', 'udb_16.svg')
+        fn = pkg_resources.resource_filename('udb.controller.static', 'udb_16.svg')
         return cherrypy.lib.static.serve_file(fn)

@@ -19,7 +19,6 @@ from udb.controller.tests import WebCase
 
 
 class StaticTest(WebCase):
-
     def test_login_bg_jgp(self):
         # Given the application is started
         # When making a query to index page

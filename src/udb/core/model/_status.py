@@ -24,6 +24,7 @@ class StatusMixing(object):
     """
     Mixin to support soft delete (enabled, disable, deleted)
     """
+
     STATUS_ENABLED = 'enabled'
     STATUS_DISABLED = 'disabled'
     STATUS_DELETED = 'deleted'

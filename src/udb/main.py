@@ -52,8 +52,7 @@ def _setup_logging(log_file, log_access_file, level):
         record.user = cherrypy.request and cherrypy.request.login or "anonymous"
         return True
 
-    cherrypy.config.update(
-        {'log.screen': False, 'log.access_file': '', 'log.error_file': ''})
+    cherrypy.config.update({'log.screen': False, 'log.access_file': '', 'log.error_file': ''})
     cherrypy.engine.unsubscribe('graceful', cherrypy.log.reopen_files)
 
     # Configure root logger
@@ -61,23 +60,22 @@ def _setup_logging(log_file, log_access_file, level):
     logger.level = logging.getLevelName(level)
     if log_file:
         print("continue logging to %s" % log_file)
-        default_handler = logging.handlers.RotatingFileHandler(
-            log_file, maxBytes=10485760, backupCount=20)
+        default_handler = logging.handlers.RotatingFileHandler(log_file, maxBytes=10485760, backupCount=20)
     else:
         default_handler = logging.StreamHandler(sys.stdout)
     default_handler.addFilter(remove_cherrypy_date)
     default_handler.addFilter(add_ip)
     default_handler.addFilter(add_username)
-    default_handler.setFormatter(logging.Formatter(
-        "[%(asctime)s][%(levelname)-7s][%(ip)s][%(user)s][%(threadName)s][%(name)s] %(message)s"))
+    default_handler.setFormatter(
+        logging.Formatter("[%(asctime)s][%(levelname)-7s][%(ip)s][%(user)s][%(threadName)s][%(name)s] %(message)s")
+    )
     logger.addHandler(default_handler)
 
     # Configure cherrypy access logger
     cherrypy_access = logging.getLogger('cherrypy.access')
     cherrypy_access.propagate = False
     if log_access_file:
-        handler = logging.handlers.RotatingFileHandler(
-            log_access_file, maxBytes=10485760, backupCount=20)
+        handler = logging.handlers.RotatingFileHandler(log_access_file, maxBytes=10485760, backupCount=20)
         cherrypy_access.addHandler(handler)
 
     # Configure cherrypy error logger
@@ -95,8 +93,7 @@ def main(args=None):
 
     # Configure logging system
     log_level = "DEBUG" if cfg.debug else cfg.log_level
-    _setup_logging(log_file=cfg.log_file,
-                   log_access_file=cfg.log_access_file, level=log_level)
+    _setup_logging(log_file=cfg.log_file, log_access_file=cfg.log_access_file, level=log_level)
 
     # Configure web server
     environment = 'debug' if cfg.debug else 'production'
@@ -107,11 +104,13 @@ def main(args=None):
         'request.show_tracebacks': True,
         'request.show_mismatched_params': True,
     }
-    cherrypy.config.update({
-        'server.socket_host': cfg.server_host,
-        'server.socket_port': cfg.server_port,
-        'environment': environment,
-    })
+    cherrypy.config.update(
+        {
+            'server.socket_host': cfg.server_host,
+            'server.socket_port': cfg.server_port,
+            'environment': environment,
+        }
+    )
 
     # start app
     cherrypy.quickstart(Root(cfg=cfg), '/')

@@ -18,15 +18,15 @@
 import ipaddress
 
 import cherrypy
-import udb.tools.db  # noqa: import cherrypy.tools.db
 import validators
-from sqlalchemy import (Column, ForeignKey, String, Table, event, or_, select,
-                        union)
+from sqlalchemy import Column, ForeignKey, String, Table, event, or_, select, union
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
+
+import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext as _
 
 from ._common import CommonMixin
@@ -62,19 +62,18 @@ def _register_sqlite_functions(dbapi_con, unused):
 
 
 dnszone_subnet = Table(
-    'dnszone_subnet', Base.metadata,
+    'dnszone_subnet',
+    Base.metadata,
     Column('dnszone_id', ForeignKey('dnszone.id')),
-    Column('subnet_id', ForeignKey('subnet.id'))
+    Column('subnet_id', ForeignKey('subnet.id')),
 )
 
 
 class DnsZone(CommonMixin, Base):
     name = Column(String, unique=True, nullable=False)
-    subnets = relationship("Subnet",
-                           secondary=dnszone_subnet,
-                           backref="dnszones",
-                           active_history=True,
-                           sync_backref=True)
+    subnets = relationship(
+        "Subnet", secondary=dnszone_subnet, backref="dnszones", active_history=True, sync_backref=True
+    )
 
     @validates('name')
     def validate_name(self, key, value):
@@ -98,8 +97,7 @@ class Subnet(CommonMixin, Base):
     @validates('ip_cidr')
     def validate_name(self, key, value):
         if not validators.ipv4_cidr(value) and not validators.ipv6_cidr(value):
-            raise ValueError('ip_cidr', _(
-                'expected a valid ipv4 or ipv6 address'))
+            raise ValueError('ip_cidr', _('expected a valid ipv4 or ipv6 address'))
         return value
 
     def __str__(self):
@@ -154,7 +152,9 @@ class DnsRecord(CommonMixin, Base):
         groups = value.split('.')
         if len(groups) > 32:
             return False
-        return all(x in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'] for x in groups)
+        return all(
+            x in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'] for x in groups
+        )
 
     def _validate(self):
         """
@@ -163,20 +163,16 @@ class DnsRecord(CommonMixin, Base):
         # Validate value according to record type
         validator = DnsRecord.TYPES.get(self.type)
         if not validator(self.value):
-            raise ValueError('value', _(
-                'value must matches the DNS record type'))
+            raise ValueError('value', _('value must matches the DNS record type'))
 
         # Validate name according to record type
         if self.type == 'PTR':
-            if not(self.name.endswith('.in-addr.arpa') or self.name.endswith('.ip6.arpa')):
-                raise ValueError(
-                    'name', _('PTR records must ends with `.in-addr.arpa` or `.ip6.arpa`'))
+            if not (self.name.endswith('.in-addr.arpa') or self.name.endswith('.ip6.arpa')):
+                raise ValueError('name', _('PTR records must ends with `.in-addr.arpa` or `.ip6.arpa`'))
             if self.name.endswith('.in-addr.arpa') and not DnsRecord._validate_reverse_ipv4(self.name[0:-13]):
-                raise ValueError(
-                    'name', _('PTR records must define an IPv4 address'))
+                raise ValueError('name', _('PTR records must define an IPv4 address'))
             if self.name.endswith('.ip6.arpa') and not DnsRecord._validate_reverse_ipv6(self.name[0:-9]):
-                raise ValueError(
-                    'name', _('PTR records must define an IPv6 address'))
+                raise ValueError('name', _('PTR records must define an IPv6 address'))
 
     @validates('name')
     def validate_name(self, key, value):
@@ -241,7 +237,8 @@ _reverse_ptr_ipv4 = (
     + '.'
     + func.split_part(DnsRecord.name, '.', 2)
     + '.'
-    + func.split_part(DnsRecord.name, '.', 1))
+    + func.split_part(DnsRecord.name, '.', 1)
+)
 
 # Create a field to convert
 # `b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa` to
@@ -266,14 +263,20 @@ _reverse_ptr_ipv6 = (
 
 # Create a query to list all existing IP address in various record type.
 ip_entry = union(
-    select(DhcpRecord.ip.label('ip')).filter(
-        DhcpRecord.status != DhcpRecord.STATUS_DELETED),
+    select(DhcpRecord.ip.label('ip')).filter(DhcpRecord.status != DhcpRecord.STATUS_DELETED),
     select(DnsRecord.value.label('ip')).filter(
-        DnsRecord.type.in_(['A', 'AAAA']), DnsRecord.status != DnsRecord.STATUS_DELETED),
+        DnsRecord.type.in_(['A', 'AAAA']), DnsRecord.status != DnsRecord.STATUS_DELETED
+    ),
     select(_reverse_ptr_ipv4.label('ip')).filter(
-        DnsRecord.type == 'PTR', DnsRecord.status != DnsRecord.STATUS_DELETED, DnsRecord.name.like('%.%.%.%.in-addr.arpa')),
+        DnsRecord.type == 'PTR',
+        DnsRecord.status != DnsRecord.STATUS_DELETED,
+        DnsRecord.name.like('%.%.%.%.in-addr.arpa'),
+    ),
     select(_reverse_ptr_ipv6.label('ip')).filter(
-        DnsRecord.type == 'PTR', DnsRecord.status != DnsRecord.STATUS_DELETED, DnsRecord.name.like('%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.ip6.arpa'))
+        DnsRecord.type == 'PTR',
+        DnsRecord.status != DnsRecord.STATUS_DELETED,
+        DnsRecord.name.like('%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.ip6.arpa'),
+    ),
 ).subquery()
 
 
@@ -281,10 +284,9 @@ class Ip(Base):
     """
     This ORM is a view on all IP address declared in various record type.
     """
+
     __table__ = ip_entry
-    __mapper_args__ = {
-        'primary_key': [ip_entry.c.ip]
-    }
+    __mapper_args__ = {'primary_key': [ip_entry.c.ip]}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -294,11 +296,12 @@ class Ip(Base):
         """
         Return list of related DNS record. That include all DNS record with FQDN matching our current IP address and reverse pointer (PTR).
         """
-        return DnsRecord.query.filter(or_(
-            DnsRecord.name.in_(select(DnsRecord.name).filter(
-                DnsRecord.value == self.ip).subquery()),
-            DnsRecord.name == ipaddress.ip_address(self.ip).reverse_pointer
-        )).all()
+        return DnsRecord.query.filter(
+            or_(
+                DnsRecord.name.in_(select(DnsRecord.name).filter(DnsRecord.value == self.ip).subquery()),
+                DnsRecord.name == ipaddress.ip_address(self.ip).reverse_pointer,
+            )
+        ).all()
 
     @property
     def related_dhcp_records(self):

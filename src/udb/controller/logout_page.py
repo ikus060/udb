@@ -15,11 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
+
 from udb.tools.auth_form import SESSION_KEY
 
 
-class LogoutPage():
-
+class LogoutPage:
     @cherrypy.expose
     @cherrypy.tools.auth_form(on=False)
     def index(self):

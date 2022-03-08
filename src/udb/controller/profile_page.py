@@ -17,13 +17,13 @@
 
 
 import cherrypy
+from wtforms.fields import PasswordField, StringField
+from wtforms.validators import ValidationError, data_required, email, equal_to, input_required, optional
+
 from udb.controller import flash
 from udb.controller.form import CherryForm
 from udb.core.passwd import check_password, hash_password
 from udb.tools.i18n import gettext as _
-from wtforms.fields import PasswordField, StringField
-from wtforms.validators import (ValidationError, data_required, email,
-                                equal_to, input_required, optional)
 
 
 class AccountForm(CherryForm):
@@ -43,16 +43,30 @@ class AccountForm(CherryForm):
 
 class PasswordForm(CherryForm):
 
-    current_password = PasswordField(_('Current password'), validators=[input_required(_("Current password is missing."))], description=_('You must provide your current password in order to change it.'))
+    current_password = PasswordField(
+        _('Current password'),
+        validators=[input_required(_("Current password is missing."))],
+        description=_('You must provide your current password in order to change it.'),
+    )
 
-    new_password = PasswordField(_('New password'), validators=[input_required(_("New password is missing.")), equal_to('password_confirmation', message=_("The new password and its confirmation do not match."))])
+    new_password = PasswordField(
+        _('New password'),
+        validators=[
+            input_required(_("New password is missing.")),
+            equal_to('password_confirmation', message=_("The new password and its confirmation do not match.")),
+        ],
+    )
 
-    password_confirmation = PasswordField(_('Password confirmation'), validators=[input_required(_("Confirmation password is missing."))])
+    password_confirmation = PasswordField(
+        _('Password confirmation'), validators=[input_required(_("Confirmation password is missing."))]
+    )
 
     def validate_current_password(self, field):
         # If current password is undefined, it's a remote user
         if cherrypy.request.currentuser.password is None:
-            raise ValidationError(_('Cannot update password for non-local user. Contact your administrator for more detail.'))
+            raise ValidationError(
+                _('Cannot update password for non-local user. Contact your administrator for more detail.')
+            )
 
         # Verify if the current password matches current password database
         if not check_password(field.data, cherrypy.request.currentuser.password):
@@ -62,8 +76,7 @@ class PasswordForm(CherryForm):
         userobj.password = hash_password(self.new_password.data)
 
 
-class ProfilePage():
-
+class ProfilePage:
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['profile.html'])
     def index(self, **kwargs):
@@ -90,7 +103,4 @@ class ProfilePage():
             else:
                 flash(_('User profile updated successfully.'), level='success')
 
-        return {
-            'form': account_form,
-            'password_form': password_form
-        }
+        return {'form': account_form, 'password_form': password_form}

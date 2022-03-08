@@ -15,7 +15,13 @@ stages:
     - tox -e ${TOXENV:-$CI_JOB_NAME}
   stage: test
 
+black:
+  <<: *tox
+
 flake8:
+  <<: *tox
+
+isort:
   <<: *tox
 
 py3:

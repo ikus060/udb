@@ -16,11 +16,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
-import udb.tools.db  # noqa: import cherrypy.tools.db
 from sqlalchemy import Column, String, event, inspect
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
+
+import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.core.passwd import hash_password
 from udb.tools.i18n import gettext as _
 
@@ -58,9 +59,7 @@ class User(StatusMixing, Base):
         password = default_password or 'admin123'
         if not password.startswith('{SSHA}'):
             password = hash_password(password)
-        user = cls(username=default_username,
-                   password=password,
-                   role=User.ROLE_ADMIN)
+        user = cls(username=default_username, password=password, role=User.ROLE_ADMIN)
         cls.session.add(user)
         return user
 
@@ -128,9 +127,7 @@ def before_update(mapper, connection, instance):
         # Raise exception when current user try to updated it's own status
         state = inspect(instance)
         if state.attrs['status'].history.has_changes():
-            raise ValueError('status',
-                             _('The user cannot update his own status.'))
+            raise ValueError('status', _('The user cannot update his own status.'))
         # Raise exception when current user try to updated it's own role
         if state.attrs['role'].history.has_changes():
-            raise ValueError('role',
-                             _('The user cannot update his own role.'))
+            raise ValueError('role', _('The user cannot update his own role.'))

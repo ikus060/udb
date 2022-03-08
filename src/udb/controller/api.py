@@ -27,8 +27,9 @@ def checkpassword(realm, username, password):
 @cherrypy.tools.sessions(on=False)
 @cherrypy.tools.auth_form(on=False)
 @cherrypy.tools.auth_basic(on=True, realm='udb-api', checkpassword=checkpassword)
-class Api():
+class Api:
     """
     This class is a node to set all the configuration to access /api/
     """
+
     pass

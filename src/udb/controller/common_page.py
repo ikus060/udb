@@ -16,26 +16,25 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
 from sqlalchemy.inspection import inspect
+from wtforms.fields.simple import TextAreaField
+from wtforms.validators import InputRequired
+
 from udb.controller import flash, url_for
 from udb.core.model import Message, User
 from udb.tools.i18n import gettext as _
-from wtforms.fields.simple import TextAreaField
-from wtforms.validators import InputRequired
 
 from .form import CherryForm
 
 
 class MessageForm(CherryForm):
-    body = TextAreaField(
-        _('Message'),
-        validators=[InputRequired()],
-        render_kw={"placeholder": _("Add a comments")})
+    body = TextAreaField(_('Message'), validators=[InputRequired()], render_kw={"placeholder": _("Add a comments")})
 
 
 @cherrypy.popargs('key')
 class CommonPage(object):
-
-    def __init__(self, model, object_form: CherryForm, has_new: bool = True, list_role=User.ROLE_GUEST, edit_role=User.ROLE_USER) -> None:
+    def __init__(
+        self, model, object_form: CherryForm, has_new: bool = True, list_role=User.ROLE_GUEST, edit_role=User.ROLE_USER
+    ) -> None:
         assert model
         assert object_form
         self.model = model
@@ -55,8 +54,7 @@ class CommonPage(object):
         """
         Get object with the given key or raise a 404 error.
         """
-        obj = self.model.query.filter_by(
-            **{self.primary_key: key}).first()
+        obj = self.model.query.filter_by(**{self.primary_key: key}).first()
         if not obj:
             raise cherrypy.HTTPError(404)
         return obj
@@ -75,11 +73,9 @@ class CommonPage(object):
         """
         query = self.model.query
         if not deleted and hasattr(self.model, 'status'):
-            query = query.filter(self.model.status
-                                 != self.model.STATUS_DELETED)
+            query = query.filter(self.model.status != self.model.STATUS_DELETED)
         if personal and hasattr(self.model, 'owner'):
-            query = query.filter(self.model.owner
-                                 == cherrypy.request.currentuser)
+            query = query.filter(self.model.owner == cherrypy.request.currentuser)
         return query
 
     def _key(self, obj):
@@ -231,15 +227,12 @@ class CommonPage(object):
         obj = self._get_or_404(key)
         form = MessageForm()
         if form.validate_on_submit():
-            message = Message(
-                body=form.body.data,
-                author=cherrypy.request.currentuser)
+            message = Message(body=form.body.data, author=cherrypy.request.currentuser)
             obj.add_message(message)
         raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
 
 class CommonApi(object):
-
     def __init__(self, object_cls, list_role=User.ROLE_GUEST, edit_role=User.ROLE_USER):
         assert object_cls
         self.object_cls = object_cls
