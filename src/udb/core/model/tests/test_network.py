@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from unittest import mock
+
 from sqlalchemy.exc import IntegrityError
 
 from udb.controller.tests import WebCase
@@ -185,9 +187,22 @@ class SubnetTest(WebCase):
         # When serializing the object to json
         data = obj.to_json()
         # Then a json representation is return
-        self.assertEqual(data['name'], 'test')
-        self.assertEqual(data['ip_cidr'], '192.168.1.0/24')
-        self.assertEqual(data['vrf'], 3)
+        self.assertEqual(
+            data,
+            {
+                'created_at': mock.ANY,
+                'id': 1,
+                'ip_cidr': '192.168.1.0/24',
+                'modified_at': mock.ANY,
+                'name': 'test',
+                'network_address': '192.168.1.0',
+                'notes': '',
+                'owner_id': None,
+                'prefixlen': 24,
+                'status': 'enabled',
+                'vrf': 3,
+            },
+        )
 
     def test_add_ipv4(self):
         # Given an empty database
@@ -195,7 +210,10 @@ class SubnetTest(WebCase):
         # When adding a Subnet with IPV4
         Subnet(ip_cidr='192.168.1.0/24').add()
         # Then a new record is created
-        self.assertEqual(1, Subnet.query.count())
+        subnet = Subnet.query.first()
+        self.assertEqual('192.168.1.0/24', subnet.ip_cidr)
+        self.assertEqual('192.168.1.0', subnet.network_address)
+        self.assertEqual(24, subnet.prefixlen)
 
     def test_add_ipv6(self):
         # Given an empty database
@@ -203,7 +221,10 @@ class SubnetTest(WebCase):
         # When adding a Subnet with IPV6
         Subnet(ip_cidr='2002::1234:abcd:ffff:c0a8:101/64').add()
         # Then a new record is created
-        self.assertEqual(1, Subnet.query.count())
+        subnet = Subnet.query.first()
+        self.assertEqual('2002:0:0:1234::/64', subnet.ip_cidr)
+        self.assertEqual('2002:0:0:1234::', subnet.network_address)
+        self.assertEqual(64, subnet.prefixlen)
 
     def test_invalid_ipv4(self):
         # Given an empty database
@@ -269,6 +290,24 @@ class SubnetTest(WebCase):
         self.assertEqual(subnet.get_messages()[-1].changes, {'dnszones': [[], ['bfh.ch']]})
         self.assertEqual(2, len(zone.get_messages()))
         self.assertEqual(zone.get_messages()[-1].changes, {'subnets': [[], ['192.168.1.0/24 (foo)']]})
+
+    def test_subnets(self):
+        # Given a database with an existing record
+        subnet1 = Subnet(ip_cidr='192.168.1.0/24', name='foo').add()
+        subnet2 = Subnet(ip_cidr='192.168.1.128/30', name='bar').add()
+        # When querying list of subnets
+        subnets = subnet1.related_subnets
+        # Then the list contains our subnet
+        self.assertEqual([subnet2], subnets)
+
+    def test_supernets(self):
+        # Given a database with an existing record
+        subnet1 = Subnet(ip_cidr='192.168.1.0/24', name='foo').add()
+        subnet2 = Subnet(ip_cidr='192.168.1.128/30', name='bar').add()
+        # When querying list of subnets
+        subnets = subnet2.related_supernets
+        # Then the list contains our subnet
+        self.assertEqual([subnet1], subnets)
 
 
 class DnsRecordTest(WebCase):

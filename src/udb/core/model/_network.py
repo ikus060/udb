@@ -19,12 +19,13 @@ import ipaddress
 
 import cherrypy
 import validators
-from sqlalchemy import Column, ForeignKey, String, Table, event, or_, select, union
+from sqlalchemy import Column, ForeignKey, Table, TypeDecorator, UniqueConstraint, event, or_, select, union
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
+from sqlalchemy.types import INTEGER, String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext as _
@@ -89,19 +90,92 @@ class DnsZone(CommonMixin, Base):
 Index('dnszone_name_index', func.lower(DnsZone.name), unique=True)
 
 
+class NetworkAddressType(TypeDecorator):
+    impl = String(128)
+    cache_ok = True
+
+    @classmethod
+    def _ip_address_to_bits(cls, address: str):
+        """
+        Convert from `192.168.0.1` to `0101010101010`
+        """
+        if address is None:
+            return address
+        return ''.join([bin(x)[2:].rjust(8, '0')[::-1] for x in ipaddress.ip_address(address).packed])
+
+    @classmethod
+    def _bits_to_ip_address(cls, binary: str):
+        """
+        Convert from `0101010101010` to `192.168.0.1`
+        """
+        if binary is None:
+            return binary
+        # Convert bits to bytes
+        packed = bytes([int(binary[i : i + 8][::-1], 2) for i in range(0, len(binary), 8)])
+        return str(ipaddress.ip_address(packed))
+
+    def process_bind_param(self, address: str, dialect):
+        # When using a "network". This is used for LIKE operator.
+        # Let replace the network into the form `0101010101010%`
+        if address and '/' in address:
+            network = ipaddress.ip_network(address)
+            binary = NetworkAddressType._ip_address_to_bits(network.network_address)
+            return binary[0 : network.prefixlen] + '%'
+        return NetworkAddressType._ip_address_to_bits(address)
+
+    def process_result_value(self, binary: str, dialect):
+        return NetworkAddressType._bits_to_ip_address(binary)
+
+
 class Subnet(CommonMixin, Base):
     name = Column(String, unique=True, nullable=False, default='')
-    ip_cidr = Column(String, unique=True, nullable=False)
+    # Database are not very friendly when it come to storing 128bits for this reason, we are storing the network address as bit into a string field.
+    network_address = Column(NetworkAddressType, nullable=False)
+    prefixlen = Column(INTEGER, nullable=False)
     vrf = Column(Integer, nullable=True)
 
-    @validates('ip_cidr')
-    def validate_name(self, key, value):
-        if not validators.ipv4_cidr(value) and not validators.ipv6_cidr(value):
-            raise ValueError('ip_cidr', _('expected a valid ipv4 or ipv6 address'))
-        return value
+    @property
+    def ip_cidr(self):
+        return str(ipaddress.ip_network((self.network_address, self.prefixlen)))
+
+    @ip_cidr.setter
+    def ip_cidr(self, value):
+        network = ipaddress.ip_network(value, strict=False)
+        self.network_address = str(network.network_address)
+        self.prefixlen = network.prefixlen
+
+    @property
+    def related_supernets(self):
+        # Compute the list of possible supernets and make a query with it.
+        network = ipaddress.ip_network((self.network_address, self.prefixlen))
+        supernets = set(
+            [str(network.supernet(prefixlen_diff=i).network_address) for i in range(0, network.prefixlen + 1)]
+        )
+        return Subnet.query.filter(Subnet.prefixlen < self.prefixlen, Subnet.network_address.in_(supernets)).all()
+
+    @property
+    def related_subnets(self):
+        # IN operator is overriden by NetworkAddressType
+        return Subnet.query.filter(Subnet.prefixlen > self.prefixlen, Subnet.network_address.like(self.ip_cidr)).all()
 
     def __str__(self):
         return "%s (%s)" % (self.ip_cidr, self.name)
+
+    def to_json(self):
+        data = super().to_json()
+        data['network_address'] = str(ipaddress.ip_address(data['network_address']))
+        data['ip_cidr'] = self.ip_cidr
+        return data
+
+
+UniqueConstraint(Subnet.network_address, Subnet.prefixlen, name='subnet.ip_cidr')
+
+
+@event.listens_for(Engine, "handle_error")
+def handle_exception(context):
+    err = str(context.original_exception)
+    if "UNIQUE" in err and 'network_address' in err:
+        context.sqlalchemy_exception.orig.args = ('UNIQUE constraint failed: subnet.ip_cidr',)
 
 
 class DnsRecord(CommonMixin, Base):

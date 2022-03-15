@@ -19,7 +19,7 @@ import validators
 from wtforms.fields import FieldList, FormField, IntegerField, SelectField, StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.form import Form
-from wtforms.validators import DataRequired, IPAddress, MacAddress, ValidationError
+from wtforms.validators import DataRequired, IPAddress, MacAddress, Optional, ValidationError
 
 from udb.controller import url_for
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User
@@ -76,7 +76,7 @@ class SubnetForm(CherryForm):
         render_kw={"placeholder": _("Enter a subnet IP/CIDR")},
     )
     name = StringField(_('Name'), validators=[], render_kw={"placeholder": _("Enter a description")})
-    vrf = IntegerField(_('VRF'), validators=[], render_kw={"placeholder": _("Enter a VRF number (optional)")})
+    vrf = IntegerField(_('VRF'), validators=[Optional()], render_kw={"placeholder": _("Enter a VRF number (optional)")})
     notes = TextAreaField(
         _('Notes'),
         default='',

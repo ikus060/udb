@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
-
 import cherrypy
 import jinja2
 import pkg_resources
@@ -27,6 +25,7 @@ import udb.tools.auth_basic  # noqa: import cherrypy.tools.auth_basic
 import udb.tools.auth_form  # noqa: import cherrypy.tools.auth_form
 import udb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
 import udb.tools.db  # noqa: import cherrypy.tools.db
+import udb.tools.errors  # noqa
 import udb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
 from udb.controller import lastupdated, template_processor, url_for
 from udb.controller.api import Api
@@ -39,9 +38,6 @@ from udb.controller.static import Static
 from udb.controller.user_page import UserForm
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User
 from udb.tools.i18n import gettext, ngettext
-
-logger = logging.getLogger(__name__)
-
 
 #
 # Create singleton Jinja2 environement.

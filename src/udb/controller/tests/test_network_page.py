@@ -217,7 +217,7 @@ class CommonTest:
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
-        self.assertInBody('Invalid status: invalid')
+        self.assertInBody('Invalid value: invalid')
         # Then object status is enabled is removed to the record
         self.assertEqual('enabled', self.obj_cls.query.first().status)
 
@@ -339,9 +339,9 @@ class SubnetTest(WebCase, CommonTest):
 
     obj_cls = Subnet
 
-    new_data = {'ip_cidr': '192.168.0.1/24'}
+    new_data = {'ip_cidr': '192.168.0.0/24'}
 
-    edit_data = {'ip_cidr': '192.168.100.1/24', 'vrf': 4}
+    edit_data = {'ip_cidr': '192.168.100.0/24', 'vrf': 4}
 
     def test_edit_invalid(self):
         # Given a database with a record
@@ -381,6 +381,17 @@ class SubnetTest(WebCase, CommonTest):
             % zone.id
         )
 
+    def test_new_duplicate(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data)
+        obj.add()
+        self.session.commit()
+        # When trying to create the same record.
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
+        # Then error is repported to the user.
+        self.assertStatus(200)
+        self.assertInBody('A record already exists in database with the same value.')
+
 
 class DnsRecordTest(WebCase, CommonTest):
 
@@ -411,6 +422,29 @@ class DnsRecordTest(WebCase, CommonTest):
         # Then edit page is displayed with an error message
         self.assertStatus(200)
         self.assertInBody('PTR records must ends with `.in-addr.arpa` or `.ip6.arpa`')
+
+
+class DhcpRecordTest(WebCase, CommonTest):
+
+    base_url = 'dhcprecord'
+
+    obj_cls = DhcpRecord
+
+    new_data = {'ip': '1.2.3.4', 'mac': '02:42:d7:e4:aa:58'}
+
+    edit_data = {'ip': '1.2.3.5', 'mac': '02:42:d7:e4:aa:67'}
+
+    def test_new_duplicate(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data)
+        obj.add()
+        self.session.commit()
+        # When trying to create the same record.
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
+        self.session.commit()
+        # Then error is repported to the user.
+        self.assertStatus(200)
+        self.assertInBody('A record already exists in database with the same value.')
 
 
 class IPTest(WebCase):

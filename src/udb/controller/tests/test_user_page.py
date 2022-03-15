@@ -129,7 +129,7 @@ class UserTest(WebCase):
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         self.getPage(url_for('user', obj.id, 'edit'))
-        self.assertInBody('Invalid status: invalid')
+        self.assertInBody('Invalid value: invalid')
         # Then object status is enabled is removed to the record
         self.assertEqual('enabled', User.query.filter_by(username=self.new_data['username']).first().status)
 
