@@ -33,8 +33,7 @@ def jinja2_handler(*args, **kwargs):
         names = [t.format(**values) for t in request._jinja2_inner_template]
         tmpl = request._jinja2_inner_env.select_template(names)
     else:
-        tmpl = request._jinja2_inner_env.get_template(
-            request._jinja2_inner_template)
+        tmpl = request._jinja2_inner_env.get_template(request._jinja2_inner_template)
     return tmpl.render(values)
 
 
@@ -47,8 +46,7 @@ def jinja2_out(env, template, extra_processor=None, debug=False):
         return
 
     if debug:
-        cherrypy.log('Replacing %s with Jinja2 handler' % request.handler,
-                     'TOOLS.JINJA2')
+        cherrypy.log('Replacing %s with Jinja2 handler' % request.handler, 'TOOLS.JINJA2')
     request._jinja2_inner_env = env
     request._jinja2_inner_template = template
     request._jinja2_inner_handler = request.handler
@@ -56,5 +54,4 @@ def jinja2_out(env, template, extra_processor=None, debug=False):
     request.handler = jinja2_handler
 
 
-cherrypy.tools.jinja2 = cherrypy.Tool(
-    'before_handler', jinja2_out, priority=30)
+cherrypy.tools.jinja2 = cherrypy.Tool('before_handler', jinja2_out, priority=30)

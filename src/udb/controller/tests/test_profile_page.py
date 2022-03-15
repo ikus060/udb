@@ -18,6 +18,7 @@
 from unittest.mock import MagicMock
 
 import cherrypy
+
 from udb.controller import url_for
 from udb.controller.tests import WebCase
 from udb.core.model import User
@@ -25,7 +26,6 @@ from udb.core.passwd import check_password
 
 
 class ProfileTest(WebCase):
-
     def test_get_page(self):
         # Given a login user
         obj = User.query.filter_by(username=self.username).first()
@@ -44,7 +44,9 @@ class ProfileTest(WebCase):
     def test_update_profile(self):
         # Given a user
         # When updating my profile information
-        self.getPage(url_for('profile', ''), method='POST', body={'fullname': 'New Name', 'email': 'newmail@example.com'})
+        self.getPage(
+            url_for('profile', ''), method='POST', body={'fullname': 'New Name', 'email': 'newmail@example.com'}
+        )
         self.assertStatus(200)
         # Then the information is updated in database
         obj = User.query.filter_by(username='admin').first()
@@ -74,7 +76,11 @@ class ProfileTest(WebCase):
     def test_change_password(self):
         # Given a user
         # When updating the password
-        self.getPage(url_for('profile', ''), method='POST', body={'current_password': self.password, 'new_password': 'newvalue', 'password_confirmation': 'newvalue'})
+        self.getPage(
+            url_for('profile', ''),
+            method='POST',
+            body={'current_password': self.password, 'new_password': 'newvalue', 'password_confirmation': 'newvalue'},
+        )
         self.assertStatus(200)
         # Then changes are updated in database
         obj = User.query.filter_by(username=self.username).first()
@@ -86,7 +92,11 @@ class ProfileTest(WebCase):
         obj = User.query.filter_by(username=self.username).first()
         current_password = obj.password
         # When updating password with the wrong confirmation
-        self.getPage(url_for('profile', ''), method='POST', body={'current_password': self.password, 'new_password': 'newvalue', 'password_confirmation': ''})
+        self.getPage(
+            url_for('profile', ''),
+            method='POST',
+            body={'current_password': self.password, 'new_password': 'newvalue', 'password_confirmation': ''},
+        )
         self.assertStatus(200)
         # Then an error is displayed to the user
         self.assertInBody('Confirmation password is missing.')
@@ -100,7 +110,11 @@ class ProfileTest(WebCase):
         obj = User.query.filter_by(username=self.username).first()
         current_password = obj.password
         # When updating password with the wrong confirmation
-        self.getPage(url_for('profile', ''), method='POST', body={'current_password': self.password, 'new_password': 'newvalue', 'password_confirmation': 'invalid'})
+        self.getPage(
+            url_for('profile', ''),
+            method='POST',
+            body={'current_password': self.password, 'new_password': 'newvalue', 'password_confirmation': 'invalid'},
+        )
         self.assertStatus(200)
         # Then an error is displayed to the user
         self.assertInBody('The new password and its confirmation do not match.')
@@ -114,7 +128,11 @@ class ProfileTest(WebCase):
         obj = User.query.filter_by(username=self.username).first()
         current_password = obj.password
         # When updating password with the wrong current password.
-        self.getPage(url_for('profile', ''), method='POST', body={'current_password': 'invalid', 'new_password': 'newvalue', 'password_confirmation': 'newvalue'})
+        self.getPage(
+            url_for('profile', ''),
+            method='POST',
+            body={'current_password': 'invalid', 'new_password': 'newvalue', 'password_confirmation': 'newvalue'},
+        )
         self.assertStatus(200)
         # Then an error is displayed to the user.
         self.assertInBody('Current password is not valid.')
@@ -142,7 +160,11 @@ class ProfileTestWithExternalUser(WebCase):
         self.listener.authenticate.return_value = ('user01', {})
         self._login('user01', 'mypassword')
         # When updating the password
-        self.getPage(url_for('profile', ''), method='POST', body={'current_password': 'mypassword', 'new_password': 'newvalue', 'password_confirmation': 'newvalue'})
+        self.getPage(
+            url_for('profile', ''),
+            method='POST',
+            body={'current_password': 'mypassword', 'new_password': 'newvalue', 'password_confirmation': 'newvalue'},
+        )
         self.assertStatus(200)
         # Then error message is displayed to the user
         self.assertInBody('Cannot update password for non-local user. Contact your administrator for more detail.')

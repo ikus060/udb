@@ -18,14 +18,15 @@
 
 import cherrypy
 from markupsafe import Markup, escape
-from udb.tools.i18n import gettext as _
 from wtforms.fields import SelectField, SelectMultipleField
 from wtforms.form import Form
+
+from udb.tools.i18n import gettext as _
 
 SUBMIT_METHODS = {'POST', 'PUT', 'PATCH', 'DELETE'}
 
 
-class _ProxyFormdata():
+class _ProxyFormdata:
     """
     Custom class to proxy default form data into WTForm from cherrypy variables.
     """
@@ -118,12 +119,10 @@ class CherryForm(Form):
                 else:
                     # Get proper bootstrap class for the widget
                     cur_field_class = _get_bs_field_class(field)
-                    cur_label_class = 'form-label' + \
-                        (' is-invalid' if field.errors else '')
+                    cur_label_class = 'form-label' + (' is-invalid' if field.errors else '')
 
                     # Check if form-floating is enabled and supported for the given field.
-                    is_form_floating = floating and type(field.widget).__name__ not in [
-                        'SelectMultiCheckbox']
+                    is_form_floating = floating and type(field.widget).__name__ not in ['SelectMultiCheckbox']
                     cur_div_class = 'form-floating mb-2' if is_form_floating else 'mb-3'
 
                     # Create html layout accordingly.
@@ -142,13 +141,15 @@ class CherryForm(Form):
                     for error in field.errors:
                         yield Markup('<div class="%s">%s</div>' % ('invalid-feedback', escape(error)))
                     yield Markup('</div>')
+
         return Markup('').join(list(generator()))
 
 
-class JinjaWidget():
+class JinjaWidget:
     """
     Create field widget from Jinja2 templates.
     """
+
     filename = None
 
     def __init__(self, **options):
@@ -203,8 +204,7 @@ class SelectMultipleObjectField(SelectMultipleField):
         """
         Assign object value.
         """
-        values = self.object_cls.query.filter(
-            self.object_cls.id.in_(self.data)).all()
+        values = self.object_cls.query.filter(self.object_cls.id.in_(self.data)).all()
         setattr(obj, name, values)
 
 

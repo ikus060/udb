@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# udb, A web interface to manage IT network
-# Copyright (C) 2021 IKUS Software inc.
+# rdiffweb, A web interface to rdiff-backup repositories
+# Copyright (C) 2012-2021 rdiffweb contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,22 +14,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import sys
+
 import cherrypy
 
 
-def checkpassword(realm, username, password):
-    # Use login plugin to validate user's credentials
-    return any(cherrypy.engine.publish('login', username, password))
+def handle_exception(error_table):
+    t = sys.exc_info()[0]
+    code = error_table.get(t, 500)
+    cherrypy.serving.request.error_response = cherrypy.HTTPError(code).set_response
 
 
-@cherrypy.tools.json_out()
-@cherrypy.tools.json_in()
-@cherrypy.tools.sessions(on=False)
-@cherrypy.tools.auth_form(on=False)
-@cherrypy.tools.auth_basic(on=True, realm='udb-api', checkpassword=checkpassword)
-class Api:
-    """
-    This class is a node to set all the configuration to access /api/
-    """
-
-    pass
+cherrypy.tools.errors = cherrypy.Tool('before_error_response', handle_exception, priority=90)

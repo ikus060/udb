@@ -51,18 +51,15 @@ class CommonMixin(StatusMixing, MessageMixin, FollowerMixin):
     id = Column(Integer, primary_key=True)
     notes = Column(String, nullable=False, default='')
     created_at = Column(DateTime, nullable=False, server_default=func.now())
-    modified_at = Column(DateTime, nullable=False,
-                         server_default=func.now(), onupdate=func.now())
+    modified_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     def to_json(self):
         def _value(value):
             if hasattr(value, 'isoformat'):  # datetime
                 return value.isoformat()
             return value
-        return {
-            c.name: _value(getattr(self, c.name))
-            for c in self.__table__.columns
-        }
+
+        return {c.name: _value(getattr(self, c.name)) for c in self.__table__.columns}
 
     def from_json(self, data):
         for k, v in data.items():

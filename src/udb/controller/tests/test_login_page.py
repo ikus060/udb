@@ -20,6 +20,7 @@ import unittest
 import unittest.mock
 
 import cherrypy
+
 from udb.controller.tests import WebCase
 from udb.core.model import User
 from udb.core.passwd import hash_password
@@ -48,9 +49,7 @@ class TestLogin(WebCase):
         User.create(username=username, password=password)
         self.session.commit()
         # When login
-        self.getPage(
-            "/login/", method="POST", body={"username": username, "password": password}
-        )
+        self.getPage("/login/", method="POST", body={"username": username, "password": password})
         # Then user is redirect to main page
         self.assertStatus('303 See Other')
         # Then listeners was called
@@ -88,9 +87,7 @@ class TestLogin(WebCase):
         User.create(username=username, password=password)
         self.session.commit()
         # When trying to login
-        self.getPage(
-            "/login/", method="POST", body={"username": username, "password": "invalid"}
-        )
+        self.getPage("/login/", method="POST", body={"username": username, "password": "invalid"})
         # Then login page is displayed with an error message.
         self.assertStatus("200 OK")
         self.assertInBody("Invalid crentials")
@@ -104,9 +101,7 @@ class TestLogin(WebCase):
         username = ""
         password = "admin"
         # When sending the form to the login page.
-        self.getPage(
-            "/login/", method="POST", body={"username": username, "password": password}
-        )
+        self.getPage("/login/", method="POST", body={"username": username, "password": password})
         # Then login page is displayed with an error message.
         self.assertStatus("200 OK")
         self.assertInBody("This field is required.")
@@ -117,8 +112,7 @@ class TestLogin(WebCase):
         password = "admin"
         User(username=username, password=hash_password(password)).add()
         self.session.commit()
-        self.getPage("/login/", method='POST',
-                     body={'username': username, 'password': password})
+        self.getPage("/login/", method='POST', body={'username': username, 'password': password})
         self.assertStatus('303 See Other')
         self.getPage("/")
         self.assertStatus('200 OK')
@@ -133,8 +127,7 @@ class TestLogin(WebCase):
         password = 'mypassword'
         userobj = User(username=username, password=hash_password(password)).add()
         self.session.commit()
-        self.getPage("/login/", method='POST',
-                     body={'username': username, 'password': password})
+        self.getPage("/login/", method='POST', body={'username': username, 'password': password})
         self.assertStatus('303 See Other')
         self.getPage("/")
         self.assertStatus('200 OK')
@@ -150,13 +143,11 @@ class TestLogin(WebCase):
         self.getPage("/")
         # Then user is redirected to login page.
         self.assertStatus('303 See Other')
-        self.assertHeaderItemValue(
-            'Location', self.baseurl + '/login/?redirect=%2F')
+        self.assertHeaderItemValue('Location', self.baseurl + '/login/?redirect=%2F')
 
     def test_redirect_to_login_with_url(self):
         # When trying to access a proptected page.
         self.getPage("/dnszone/")
         # Then user is redirected to login page.
         self.assertStatus('303 See Other')
-        self.assertHeaderItemValue(
-            'Location', self.baseurl + '/login/?redirect=%2Fdnszone%2F')
+        self.assertHeaderItemValue('Location', self.baseurl + '/login/?redirect=%2Fdnszone%2F')

@@ -14,10 +14,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from wtforms.fields import SelectField, StringField
+from wtforms.validators import data_required, email, optional
+
 from udb.core.model import User
 from udb.tools.i18n import gettext as _
-from wtforms.fields import StringField, SelectField
-from wtforms.validators import data_required, optional, email
 
 from .form import CherryForm
 
@@ -43,5 +44,6 @@ class UserForm(CherryForm):
         choices=[
             (User.ROLE_GUEST, _('Guest - Permissions to view the records')),
             (User.ROLE_USER, _('User - Permissions to view and edit records')),
-            (User.ROLE_ADMIN, _('Administrator - All permissions'))
-        ])
+            (User.ROLE_ADMIN, _('Administrator - All permissions')),
+        ],
+    )

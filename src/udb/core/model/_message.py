@@ -18,12 +18,13 @@
 import json
 
 import cherrypy
-import udb.tools.db  # noqa: import cherrypy.tools.db
 from sqlalchemy import Column, String, event, inspect
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.functions import func
 from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.sql.sqltypes import DateTime, Integer
+
+import udb.tools.db  # noqa: import cherrypy.tools.db
 
 Base = cherrypy.tools.db.get_base()
 Session = cherrypy.tools.db.get_session()
@@ -58,7 +59,8 @@ def _get_model_changes(model):
             # If primitive, store primitive
             changes[attr.key] = [
                 hist.deleted[0] if len(hist.deleted) >= 1 else None,
-                hist.added[0] if len(hist.added) >= 1 else None]
+                hist.added[0] if len(hist.added) >= 1 else None,
+            ]
     return changes
 
 
@@ -134,7 +136,7 @@ class Message(Base):
             return None
 
 
-class MessageMixin():
+class MessageMixin:
     """
     Mixin to support messages.
     """
@@ -143,9 +145,7 @@ class MessageMixin():
         """
         Return list of messages related to this object for the given type.
         """
-        query = Message.query.where(
-            Message.model == self.__tablename__,
-            Message.model_id == self.id)
+        query = Message.query.where(Message.model == self.__tablename__, Message.model_id == self.id)
         if type is not None:
             if isinstance(type, (tuple, list)):
                 query = query.where(Message.type.in_(type))

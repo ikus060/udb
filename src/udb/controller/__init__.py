@@ -20,6 +20,7 @@ from collections import namedtuple
 
 import cherrypy
 from sqlalchemy.inspection import inspect
+
 from udb.tools.i18n import gettext as _
 
 FlashMessage = namedtuple('FlashMessage', ['message', 'level'])
@@ -70,10 +71,8 @@ def url_for(*args, **kwargs):
             if len(args) == 1:
                 path += "/"
         else:
-            raise ValueError(
-                'invalid positional arguments, url_for accept str, bytes, int: %r' % chunk)
-    qs = [(k, v)
-          for k, v in sorted(kwargs.items()) if v is not None]
+            raise ValueError('invalid positional arguments, url_for accept str, bytes, int: %r' % chunk)
+    qs = [(k, v) for k, v in sorted(kwargs.items()) if v is not None]
     return cherrypy.url(path=path, qs=qs)
 
 
@@ -109,7 +108,7 @@ def template_processor(request):
         'footer_url': app.cfg.footer_url,
         'footer_name': app.cfg.footer_name,
         'get_flashed_messages': get_flashed_messages,
-        'current_url': cherrypy.url(path=cherrypy.request.path_info)
+        'current_url': cherrypy.url(path=cherrypy.request.path_info),
     }
     if hasattr(cherrypy.serving.request, 'login'):
         values['username'] = cherrypy.serving.request.login

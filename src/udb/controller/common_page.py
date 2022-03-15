@@ -14,28 +14,32 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import logging
+
 import cherrypy
+from sqlalchemy.exc import DatabaseError, IntegrityError
 from sqlalchemy.inspection import inspect
-from udb.controller import flash, url_for
-from udb.core.model import Message, User
-from udb.tools.i18n import gettext as _
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import InputRequired
 
+from udb.controller import flash, url_for
+from udb.core.model import Message, User
+from udb.tools.i18n import gettext as _
+
 from .form import CherryForm
+
+logger = logging.getLogger(__name__)
 
 
 class MessageForm(CherryForm):
-    body = TextAreaField(
-        _('Message'),
-        validators=[InputRequired()],
-        render_kw={"placeholder": _("Add a comments")})
+    body = TextAreaField(_('Message'), validators=[InputRequired()], render_kw={"placeholder": _("Add a comments")})
 
 
 @cherrypy.popargs('key')
 class CommonPage(object):
-
-    def __init__(self, model, object_form: CherryForm, has_new: bool = True, list_role=User.ROLE_GUEST, edit_role=User.ROLE_USER) -> None:
+    def __init__(
+        self, model, object_form: CherryForm, has_new: bool = True, list_role=User.ROLE_GUEST, edit_role=User.ROLE_USER
+    ) -> None:
         assert model
         assert object_form
         self.model = model
@@ -55,11 +59,30 @@ class CommonPage(object):
         """
         Get object with the given key or raise a 404 error.
         """
-        obj = self.model.query.filter_by(
-            **{self.primary_key: key}).first()
+        obj = self.model.query.filter_by(**{self.primary_key: key}).first()
         if not obj:
             raise cherrypy.HTTPError(404)
         return obj
+
+    def _handle_exception(self, e, form=None):
+        self.model.session.rollback()
+        if isinstance(e, ValueError):
+            # For value error, repport the invalidvalue either as flash message or form error.
+            if form and len(e.args) == 2 and getattr(form, e.args[0], None):
+                getattr(form, e.args[0]).errors.append(e.args[1])
+            else:
+                flash(_('Invalid value: %s') % e, level='error')
+        elif isinstance(e, IntegrityError) and 'UNIQUE' in str(e):
+            # For database integrity error, try to identify the field in form. Or repport error as flash.
+            msg = _('A record already exists in database with the same value.')
+            field = str(e.orig).split('.')[-1]
+            if form and getattr(form, field, None):
+                getattr(form, field).errors.append(msg)
+            else:
+                flash(msg, level='error')
+        else:
+            flash(_('Database error: %s') % e, level='error')
+            logger.warning('database error', exc_info=1)
 
     def _verify_role(self, role):
         """
@@ -75,11 +98,9 @@ class CommonPage(object):
         """
         query = self.model.query
         if not deleted and hasattr(self.model, 'status'):
-            query = query.filter(self.model.status
-                                 != self.model.STATUS_DELETED)
+            query = query.filter(self.model.status != self.model.STATUS_DELETED)
         if personal and hasattr(self.model, 'owner'):
-            query = query.filter(self.model.owner
-                                 == cherrypy.request.currentuser)
+            query = query.filter(self.model.owner == cherrypy.request.currentuser)
         return query
 
     def _key(self, obj):
@@ -127,12 +148,9 @@ class CommonPage(object):
             try:
                 form.populate_obj(obj)
                 obj.add()
-            except ValueError as e:
+            except Exception as e:
                 self.model.session.rollback()
-                if len(e.args) == 2 and getattr(form, e.args[0], None):
-                    getattr(form, e.args[0]).errors.append(e.args[1])
-                else:
-                    flash(_('Invalid value: %s') % e, level='error')
+                self._handle_exception(e, form)
             else:
                 raise cherrypy.HTTPRedirect(url_for(self.model))
         # return data form template
@@ -153,13 +171,9 @@ class CommonPage(object):
         try:
             obj.status = status
             obj.add()
-        except ValueError as e:
-            # raised by SQLAlchemy validators
+        except Exception as e:
             self.model.session.rollback()
-            if len(e.args) == 2:
-                flash(e.args[1], level='error')
-            else:
-                flash(_('Invalid status: %s') % e, level='error')
+            self._handle_exception(e)
         raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
     @cherrypy.expose
@@ -175,13 +189,9 @@ class CommonPage(object):
             try:
                 form.populate_obj(obj)
                 obj.add()
-            except ValueError as e:
-                # raised by SQLAlchemy validators
+            except Exception as e:
                 self.model.session.rollback()
-                if len(e.args) == 2 and getattr(form, e.args[0], None):
-                    getattr(form, e.args[0]).errors.append(e.args[1])
-                else:
-                    flash(_('Invalid value: %s') % e, level='error')
+                self._handle_exception(e)
             else:
                 raise cherrypy.HTTPRedirect(url_for(self.model))
         # Return object form
@@ -231,15 +241,18 @@ class CommonPage(object):
         obj = self._get_or_404(key)
         form = MessageForm()
         if form.validate_on_submit():
-            message = Message(
-                body=form.body.data,
-                author=cherrypy.request.currentuser)
+            message = Message(body=form.body.data, author=cherrypy.request.currentuser)
             obj.add_message(message)
         raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
 
+@cherrypy.tools.errors(
+    error_table={
+        ValueError: 400,
+        DatabaseError: 400,
+    }
+)
 class CommonApi(object):
-
     def __init__(self, object_cls, list_role=User.ROLE_GUEST, edit_role=User.ROLE_USER):
         assert object_cls
         self.object_cls = object_cls
@@ -293,13 +306,9 @@ class CommonApi(object):
         self._verify_role(self.edit_role)
         data = cherrypy.request.json
         obj = self._get_or_404(id)
-        try:
-            obj.from_json(data)
-            obj.add()
-            self.object_cls.session.commit()
-        except ValueError as e:
-            # raised by SQLAlchemy validators
-            raise cherrypy.HTTPError(400, _('Invalid value: %s') % e)
+        obj.from_json(data)
+        obj.add()
+        self.object_cls.session.commit()
         return self._get_or_404(obj.id).to_json()
 
     def post(self, **kwargs):
@@ -309,13 +318,9 @@ class CommonApi(object):
         self._verify_role(self.edit_role)
         data = cherrypy.request.json
         obj = self.object_cls()
-        try:
-            obj.from_json(data)
-            obj.add()
-            self.object_cls.session.commit()
-        except ValueError as e:
-            # raised by SQLAlchemy validators
-            raise cherrypy.HTTPError(400, _('Invalid value: %s') % e)
+        obj.from_json(data)
+        obj.add()
+        self.object_cls.session.commit()
         return self._get_or_404(obj.id).to_json()
 
     def delete(self, id, **kwargs):

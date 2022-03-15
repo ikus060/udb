@@ -17,11 +17,12 @@
 
 
 import cherrypy
-import udb.tools.db  # noqa: import cherrypy.tools.db
 from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.schema import ForeignKey, Index
 from sqlalchemy.sql.sqltypes import Integer
+
+import udb.tools.db  # noqa: import cherrypy.tools.db
 
 from ._user import User
 
@@ -39,20 +40,15 @@ class Follower(Base):
 
 
 # Create a unique index for username
-Index('follower_index', Follower.model,
-      Follower.model_id, Follower.user_id, unique=True)
+Index('follower_index', Follower.model, Follower.model_id, Follower.user_id, unique=True)
 
 
-class FollowerMixin():
-
+class FollowerMixin:
     def add_follower(self, user, commit=True):
         assert self.id
         assert user
         if not self.is_following(user):
-            f = Follower(
-                model=self.__tablename__,
-                model_id=self.id,
-                user=user)
+            f = Follower(model=self.__tablename__, model_id=self.id, user=user)
             f.add(commit=commit)
 
     def remove_follower(self, user):
@@ -60,9 +56,8 @@ class FollowerMixin():
         assert user
         assert user.id
         f = Follower.query.where(
-            Follower.model == self.__tablename__,
-            Follower.model_id == self.id,
-            Follower.user == user).first()
+            Follower.model == self.__tablename__, Follower.model_id == self.id, Follower.user == user
+        ).first()
         if f:
             f.delete()
 
@@ -76,7 +71,9 @@ class FollowerMixin():
         """
         Check if the given user is following this object.
         """
-        return Follower.query.where(
-            Follower.model == self.__tablename__,
-            Follower.model_id == self.id,
-            Follower.user == user).first() is not None
+        return (
+            Follower.query.where(
+                Follower.model == self.__tablename__, Follower.model_id == self.id, Follower.user == user
+            ).first()
+            is not None
+        )

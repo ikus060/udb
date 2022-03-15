@@ -14,8 +14,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import cherrypy
 import base64
+
+import cherrypy
 
 SESSION_KEY = '_cp_username'
 
@@ -44,5 +45,4 @@ def basic_auth(realm, checkpassword, debug=False, session_key=SESSION_KEY):
         cherrypy.session[session_key] = cherrypy.request.login
 
 
-cherrypy.tools.auth_basic = cherrypy.Tool(
-    'before_handler', basic_auth, priority=70)
+cherrypy.tools.auth_basic = cherrypy.Tool('before_handler', basic_auth, priority=70)

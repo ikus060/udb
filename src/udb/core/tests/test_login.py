@@ -21,13 +21,14 @@ Created on Apr. 10, 2020
 '''
 
 from unittest.mock import MagicMock
+
 import cherrypy
+
 from udb.controller.tests import WebCase
 from udb.core.model import User
 
 
 class TestLogin(WebCase):
-
     def setUp(self):
         self.listener = MagicMock()
         self.listener.authenticate.return_value = False
@@ -74,9 +75,7 @@ class TestLogin(WebCase):
 
 class TestLoginWithAddMissing(WebCase):
 
-    default_config = {
-        'add-missing-user': True
-    }
+    default_config = {'add-missing-user': True}
 
     def setUp(self):
         self.listener = MagicMock()

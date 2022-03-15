@@ -20,7 +20,6 @@ from udb.controller.tests import WebCase
 
 
 class TestApp(WebCase):
-
     def test_index(self):
         # Given the application is started
         # When making a query to index page

@@ -19,6 +19,7 @@ import logging
 
 import cherrypy
 from cherrypy.process.plugins import SimplePlugin
+
 from udb.core.model import User
 from udb.core.passwd import check_password
 from udb.tools.auth_form import SESSION_KEY
@@ -72,9 +73,7 @@ class LoginPlugin(SimplePlugin):
                 # At this point, we need to create a new user in database.
                 # In case default values are invalid, let evaluate them
                 # before creating the user in database.
-                userobj = User(
-                    username=real_username,
-                    role=self.add_user_default_role)
+                userobj = User(username=real_username, role=self.add_user_default_role)
                 User.session.add(userobj)
                 User.session.commit()
             except Exception:
@@ -92,5 +91,4 @@ class LoginPlugin(SimplePlugin):
 cherrypy.login = LoginPlugin(cherrypy.engine)
 cherrypy.login.subscribe()
 
-cherrypy.config.namespaces['login'] = lambda key, value: setattr(
-    cherrypy.login, key, value)
+cherrypy.config.namespaces['login'] = lambda key, value: setattr(cherrypy.login, key, value)

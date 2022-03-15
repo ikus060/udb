@@ -20,13 +20,12 @@ from base64 import b64encode
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DnsZone, Subnet, User, DnsRecord, DhcpRecord
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User
 
 
-class CommonTest():
+class CommonTest:
 
-    authorization = [('Authorization', 'Basic %s' %
-                      b64encode(b'admin:admin').decode('ascii'))]
+    authorization = [('Authorization', 'Basic %s' % b64encode(b'admin:admin').decode('ascii'))]
 
     def test_get_list_page(self):
         # Given the application is started
@@ -57,9 +56,7 @@ class CommonTest():
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         # When trying to update it's name
-        self.getPage(url_for(self.base_url, obj.id, 'edit'),
-                     method='POST',
-                     body=self.edit_data)
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=self.edit_data)
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
@@ -75,9 +72,7 @@ class CommonTest():
         # When trying to update the owner
         payload = dict(self.new_data)
         payload['owner'] = User.query.first().id
-        self.getPage(url_for(self.base_url, obj.id, 'edit'),
-                     method='POST',
-                     body=payload)
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=payload)
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
@@ -89,8 +84,7 @@ class CommonTest():
         self.getPage(url_for(obj, 'edit'))
         self.assertInBody('<i>Undefined</i> → %s' % new_obj.owner)
         # Then appropriate owner is selected in edit page
-        self.assertInBody('<option selected value="%s">%s</option>' %
-                          (new_obj.owner.id, new_obj.owner))
+        self.assertInBody('<option selected value="%s">%s</option>' % (new_obj.owner.id, new_obj.owner))
 
     def test_edit_unassign_owner(self):
         # Given a database with a record assigned to a user
@@ -100,9 +94,7 @@ class CommonTest():
         # When trying unassign
         payload = dict(self.new_data)
         payload['owner'] = 'None'
-        self.getPage(url_for(self.base_url, obj.id, 'edit'),
-                     method='POST',
-                     body=payload)
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=payload)
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
@@ -114,9 +106,7 @@ class CommonTest():
     def test_new(self):
         # Given an empty database
         # When trying to create a new dns zone
-        self.getPage(url_for(self.base_url, 'new'),
-                     method='POST',
-                     body=self.new_data)
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
@@ -134,9 +124,7 @@ class CommonTest():
         # Given a a database with a record
         obj = self.obj_cls(**self.new_data).add()
         # When trying to post a message
-        self.getPage(url_for(obj, 'post'),
-                     method='POST',
-                     body={'body': 'this is my message'})
+        self.getPage(url_for(obj, 'post'), method='POST', body={'body': 'this is my message'})
         # Then user is redirected to the edit page
         self.assertStatus(303)
         obj = self.obj_cls.query.first()
@@ -153,8 +141,7 @@ class CommonTest():
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         # When trying follow that record
-        self.getPage(url_for(obj, 'follow', 1),
-                     method='POST')
+        self.getPage(url_for(obj, 'follow', 1), method='POST')
         self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
@@ -172,8 +159,7 @@ class CommonTest():
         obj.add_follower(userobj)
         self.session.commit()
         # When trying unfollow that record
-        self.getPage(url_for(self.base_url, obj.id, 'unfollow', 1),
-                     method='POST')
+        self.getPage(url_for(self.base_url, obj.id, 'unfollow', 1), method='POST')
         # Then user is redirected to the edit page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
@@ -231,7 +217,7 @@ class CommonTest():
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
-        self.assertInBody('Invalid status: invalid')
+        self.assertInBody('Invalid value: invalid')
         # Then object status is enabled is removed to the record
         self.assertEqual('enabled', self.obj_cls.query.first().status)
 
@@ -246,8 +232,7 @@ class CommonTest():
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         # When querying the list of records
-        data = self.getJson(url_for('api', self.base_url),
-                            headers=self.authorization)
+        data = self.getJson(url_for('api', self.base_url), headers=self.authorization)
         # Then our records is part of the list
         self.assertStatus(200)
         self.assertEqual(len(data), 1)
@@ -259,8 +244,7 @@ class CommonTest():
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         # When querying the records from API
-        data = self.getJson(url_for('api', self.base_url, obj.id),
-                            headers=self.authorization)
+        data = self.getJson(url_for('api', self.base_url, obj.id), headers=self.authorization)
         # Then our records is return as json
         self.assertStatus(200)
         self.assertEqual(data['id'], obj.id)
@@ -271,10 +255,12 @@ class CommonTest():
         # Given a valid payload
         payload = json.dumps(self.new_data)
         # When sending a POST request to the API
-        data = self.getJson(url_for('api', self.base_url),
-                            headers=[('Content-Type', 'application/json'),
-                                     ('Content-Length', str(len(payload)))] + self.authorization,
-                            method='POST', body=payload)
+        data = self.getJson(
+            url_for('api', self.base_url),
+            headers=[('Content-Type', 'application/json'), ('Content-Length', str(len(payload)))] + self.authorization,
+            method='POST',
+            body=payload,
+        )
         # Then a new record is created
         self.assertStatus(200)
         for k, v in self.new_data.items():
@@ -286,10 +272,12 @@ class CommonTest():
         # Given a valid payload
         payload = json.dumps(self.edit_data)
         # When sending a PUT request to the API
-        data = self.getJson(url_for('api', self.base_url, obj.id),
-                            headers=[('Content-Type', 'application/json'),
-                                     ('Content-Length', str(len(payload)))] + self.authorization,
-                            method='PUT', body=payload)
+        data = self.getJson(
+            url_for('api', self.base_url, obj.id),
+            headers=[('Content-Type', 'application/json'), ('Content-Length', str(len(payload)))] + self.authorization,
+            method='PUT',
+            body=payload,
+        )
         # Then record get updated
         self.assertStatus(200)
         for k, v in self.edit_data.items():
@@ -310,9 +298,7 @@ class DnsZoneTest(WebCase, CommonTest):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         # When trying to update it's name
-        self.getPage(url_for(self.base_url, obj.id, 'edit'),
-                     method='POST',
-                     body={'name': 'invalid new name'})
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'name': 'invalid new name'})
         self.session.commit()
         # Then edit page is displayed with an error message
         self.assertStatus(200)
@@ -321,30 +307,30 @@ class DnsZoneTest(WebCase, CommonTest):
     def test_edit_with_subnet(self):
         # Given a database with a record
         subnet = Subnet(**{'ip_cidr': '192.168.0.1/24'}).add()
-        obj = self.obj_cls(
-            **{'name': 'examples.com', 'subnets': [subnet]}).add()
+        obj = self.obj_cls(**{'name': 'examples.com', 'subnets': [subnet]}).add()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         # Then subnets are select
         self.assertStatus(200)
         self.assertInBody(
-            '<input class="form-check-input"  type="checkbox" name="subnets" value="1" id="subnets-%s" checked>' % subnet.id)
+            '<input class="form-check-input"  type="checkbox" name="subnets" value="1" id="subnets-%s" checked>'
+            % subnet.id
+        )
 
     def test_edit_add_subnet(self):
         # Given a database with a record
         subnet = Subnet(**{'ip_cidr': '192.168.0.1/24'}).add()
-        obj = self.obj_cls(
-            **{'name': 'examples.com', 'subnets': []}).add()
+        obj = self.obj_cls(**{'name': 'examples.com', 'subnets': []}).add()
         # When editing the record
-        self.getPage(url_for(self.base_url, obj.id, 'edit'),
-                     method='POST',
-                     body={'subnets': subnet.id})
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'subnets': subnet.id})
         self.assertStatus(303)
         # Then subnets are select
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
         self.assertInBody(
-            '<input class="form-check-input"  type="checkbox" name="subnets" value="1" id="subnets-%s" checked>' % subnet.id)
+            '<input class="form-check-input"  type="checkbox" name="subnets" value="1" id="subnets-%s" checked>'
+            % subnet.id
+        )
 
 
 class SubnetTest(WebCase, CommonTest):
@@ -353,17 +339,15 @@ class SubnetTest(WebCase, CommonTest):
 
     obj_cls = Subnet
 
-    new_data = {'ip_cidr': '192.168.0.1/24'}
+    new_data = {'ip_cidr': '192.168.0.0/24'}
 
-    edit_data = {'ip_cidr': '192.168.100.1/24', 'vrf': 4}
+    edit_data = {'ip_cidr': '192.168.100.0/24', 'vrf': 4}
 
     def test_edit_invalid(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         # When trying to update it's name
-        self.getPage(url_for(self.base_url, obj.id, 'edit'),
-                     method='POST',
-                     body={'ip_cidr': 'invalid cidr'})
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'ip_cidr': 'invalid cidr'})
         self.session.commit()
         # Then edit page is displayed with an error message
         self.assertStatus(200)
@@ -378,22 +362,35 @@ class SubnetTest(WebCase, CommonTest):
         # Then the zone is selected
         self.assertStatus(200)
         self.assertInBody(
-            '<input class="form-check-input"  type="checkbox" name="dnszones" value="1" id="dnszones-%s" checked>' % zone.id)
+            '<input class="form-check-input"  type="checkbox" name="dnszones" value="1" id="dnszones-%s" checked>'
+            % zone.id
+        )
 
     def test_edit_add_dnszone(self):
         # Given a database with a record
         zone = DnsZone(name='examples.com').add()
         obj = self.obj_cls(ip_cidr='192.168.0.1/24', dnszones=[]).add()
         # When editing the record
-        self.getPage(url_for(self.base_url, obj.id, 'edit'),
-                     method='POST',
-                     body={'dnszones': zone.id})
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'dnszones': zone.id})
         self.assertStatus(303)
         # Then the zone is selected
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
         self.assertInBody(
-            '<input class="form-check-input"  type="checkbox" name="dnszones" value="1" id="dnszones-%s" checked>' % zone.id)
+            '<input class="form-check-input"  type="checkbox" name="dnszones" value="1" id="dnszones-%s" checked>'
+            % zone.id
+        )
+
+    def test_new_duplicate(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data)
+        obj.add()
+        self.session.commit()
+        # When trying to create the same record.
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
+        # Then error is repported to the user.
+        self.assertStatus(200)
+        self.assertInBody('A record already exists in database with the same value.')
 
 
 class DnsRecordTest(WebCase, CommonTest):
@@ -402,19 +399,15 @@ class DnsRecordTest(WebCase, CommonTest):
 
     obj_cls = DnsRecord
 
-    new_data = {'name': 'foo.example.com', 'type': 'CNAME',
-                'value': 'bar.example.com'}
+    new_data = {'name': 'foo.example.com', 'type': 'CNAME', 'value': 'bar.example.com'}
 
-    edit_data = {'name': 'foo.example.com', 'type': 'CNAME',
-                 'value': 'bar.example.com', 'notes': 'new comment'}
+    edit_data = {'name': 'foo.example.com', 'type': 'CNAME', 'value': 'bar.example.com', 'notes': 'new comment'}
 
     def test_edit_invalid(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         # When trying to update it's name
-        self.getPage(url_for(self.base_url, obj.id, 'edit'),
-                     method='POST',
-                     body={'value': 'invalid_cname'})
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'value': 'invalid_cname'})
         self.session.commit()
         # Then edit page is displayed with an error message
         self.assertStatus(200)
@@ -422,21 +415,39 @@ class DnsRecordTest(WebCase, CommonTest):
 
     def test_new_ptr_invalid(self):
         # Given an invalid PTR record.
-        data = {'name': 'foo.example.com',
-                'type': 'PTR', 'value': 'bar.example.com'}
+        data = {'name': 'foo.example.com', 'type': 'PTR', 'value': 'bar.example.com'}
         # When trying to create a new record
-        self.getPage(url_for(self.base_url, 'new'),
-                     method='POST',
-                     body=data)
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
         self.session.commit()
         # Then edit page is displayed with an error message
         self.assertStatus(200)
-        self.assertInBody(
-            'PTR records must ends with `.in-addr.arpa` or `.ip6.arpa`')
+        self.assertInBody('PTR records must ends with `.in-addr.arpa` or `.ip6.arpa`')
+
+
+class DhcpRecordTest(WebCase, CommonTest):
+
+    base_url = 'dhcprecord'
+
+    obj_cls = DhcpRecord
+
+    new_data = {'ip': '1.2.3.4', 'mac': '02:42:d7:e4:aa:58'}
+
+    edit_data = {'ip': '1.2.3.5', 'mac': '02:42:d7:e4:aa:67'}
+
+    def test_new_duplicate(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data)
+        obj.add()
+        self.session.commit()
+        # When trying to create the same record.
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
+        self.session.commit()
+        # Then error is repported to the user.
+        self.assertStatus(200)
+        self.assertInBody('A record already exists in database with the same value.')
 
 
 class IPTest(WebCase):
-
     def test_no_owner_filter(self):
         # Given a database with records
         DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
@@ -468,17 +479,17 @@ class RoleTest(WebCase):
     """
     Test role verification.
     """
+
     login = False
 
-    authorization = [('Authorization', 'Basic %s' %
-                      b64encode(b'guest:password').decode('ascii'))]
+    authorization = [('Authorization', 'Basic %s' % b64encode(b'guest:password').decode('ascii'))]
 
     def setUp(self):
         super().setUp()
-        user = User.create(username='guest', password='password',
-                           role=User.ROLE_GUEST).add()
-        self.getPage("/login/", method='POST',
-                     body={'username': user.username, 'password': 'password', 'redirect': '/'})
+        user = User.create(username='guest', password='password', role=User.ROLE_GUEST).add()
+        self.getPage(
+            "/login/", method='POST', body={'username': user.username, 'password': 'password', 'redirect': '/'}
+        )
         self.assertStatus('303 See Other')
 
     def test_list_as_guest(self):
@@ -496,9 +507,7 @@ class RoleTest(WebCase):
         # Given a DnsZone
         zone = DnsZone(name='examples.com').add()
         # When trying to edit a record
-        self.getPage(url_for(zone, 'edit'),
-                     method='POST',
-                     body={'name': 'newname.com'})
+        self.getPage(url_for(zone, 'edit'), method='POST', body={'name': 'newname.com'})
         # Then a 403 Forbidden is raised
         self.assertStatus(403)
 
@@ -514,9 +523,7 @@ class RoleTest(WebCase):
     def test_new_as_guest(self):
         # Given a 'guest' user authenticated
         # When trying to create a record
-        self.getPage(url_for('dnszone', 'new'),
-                     method='POST',
-                     body={'name': 'newname.com'})
+        self.getPage(url_for('dnszone', 'new'), method='POST', body={'name': 'newname.com'})
         # Then a 403 Forbidden is raised
         self.assertStatus(403)
 
@@ -524,10 +531,12 @@ class RoleTest(WebCase):
         # Given a valid payload
         payload = json.dumps({'name': 'newname.com'})
         # When sending a POST request to the API
-        self.getPage(url_for('api', 'dnszone'),
-                     headers=[('Content-Type', 'application/json'),
-                              ('Content-Length', str(len(payload)))] + self.authorization,
-                     method='POST', body=payload)
+        self.getPage(
+            url_for('api', 'dnszone'),
+            headers=[('Content-Type', 'application/json'), ('Content-Length', str(len(payload)))] + self.authorization,
+            method='POST',
+            body=payload,
+        )
         # Then a 403 Forbidden is raised
         self.assertStatus(403)
 
@@ -537,9 +546,11 @@ class RoleTest(WebCase):
         # Given a valid payload
         payload = json.dumps({'name': 'newname.com'})
         # When sending a PUT request to the API
-        self.getPage(url_for('api', 'dnszone', obj.id),
-                     headers=[('Content-Type', 'application/json'),
-                              ('Content-Length', str(len(payload)))] + self.authorization,
-                     method='PUT', body=payload)
+        self.getPage(
+            url_for('api', 'dnszone', obj.id),
+            headers=[('Content-Type', 'application/json'), ('Content-Length', str(len(payload)))] + self.authorization,
+            method='PUT',
+            body=payload,
+        )
         # Then a 403 Forbidden is raised
         self.assertStatus(403)
