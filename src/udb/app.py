@@ -103,6 +103,7 @@ class Root(object):
             {
                 # Configure database plugins
                 'tools.db.uri': cfg.database_uri,
+                'tools.db.debug': cfg.debug,
                 # Configure session storage
                 'tools.sessions.storage_type': 'file' if cfg.session_dir else 'ram',
                 'tools.sessions.storage_path': cfg.session_dir,
@@ -140,15 +141,16 @@ class Root(object):
         if created and cfg.database_create_demo_data:
             User.create(username='guest', fullname='Default Guest', password='guest', role=User.ROLE_GUEST)
             User.create(username='user', fullname='Default User', password='user', role=User.ROLE_USER)
-            DnsZone(name='bfh.ch', notes='This is a note').add()
-            DnsZone(name='bfh.science', notes='This is a note').add()
-            DnsZone(name='bfh.info', notes='This is a note').add()
 
             # Subnet
+            subnet = Subnet(ip_cidr='147.87.250.0/24', name='DMZ', vrf=1, notes='public').add()
             Subnet(ip_cidr='147.87.0.0/16', name='its-main-4', vrf=1, notes='main').add()
             Subnet(ip_cidr='2002::1234:abcd:ffff:c0a8:101/64', name='its-main-6', vrf=1, notes='main').add()
-            Subnet(ip_cidr='147.87.250.0/24', name='DMZ', vrf=1, notes='public').add()
             Subnet(ip_cidr='147.87.208.0/24', name='ARZ', vrf=1, notes='BE.net').add()
+
+            DnsZone(name='bfh.ch', notes='This is a note', subnets=[subnet]).add()
+            DnsZone(name='bfh.science', notes='This is a note').add()
+            DnsZone(name='bfh.info', notes='This is a note').add()
 
             # DHCP
             DhcpRecord(ip='147.87.250.1', mac='00:ba:d5:a2:34:56', notes='webserver bla bla bla').add()

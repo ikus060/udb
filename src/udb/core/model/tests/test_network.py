@@ -89,8 +89,9 @@ class DnsZoneTest(WebCase):
         self.assertEqual(0, DnsZone.query.count())
         # When trying to create a new DnsZone with an invalid fqdn
         # Then an excpetion is raised
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             DnsZone(name='invalid/name').add()
+        self.assertEqual(cm.exception.args, ('name', mock.ANY))
 
     def test_duplicate_name(self):
         # Given a database with an existing record
@@ -195,10 +196,8 @@ class SubnetTest(WebCase):
                 'ip_cidr': '192.168.1.0/24',
                 'modified_at': mock.ANY,
                 'name': 'test',
-                'network_address': '192.168.1.0',
                 'notes': '',
                 'owner_id': None,
-                'prefixlen': 24,
                 'status': 'enabled',
                 'vrf': 3,
             },
@@ -212,8 +211,6 @@ class SubnetTest(WebCase):
         # Then a new record is created
         subnet = Subnet.query.first()
         self.assertEqual('192.168.1.0/24', subnet.ip_cidr)
-        self.assertEqual('192.168.1.0', subnet.network_address)
-        self.assertEqual(24, subnet.prefixlen)
 
     def test_add_ipv6(self):
         # Given an empty database
@@ -223,15 +220,14 @@ class SubnetTest(WebCase):
         # Then a new record is created
         subnet = Subnet.query.first()
         self.assertEqual('2002:0:0:1234::/64', subnet.ip_cidr)
-        self.assertEqual('2002:0:0:1234::', subnet.network_address)
-        self.assertEqual(64, subnet.prefixlen)
 
     def test_invalid_ipv4(self):
         # Given an empty database
         self.assertEqual(0, Subnet.query.count())
         # When adding a Subnet with an invalid IP
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             Subnet(ip_cidr='a.168.1.0/24').add()
+        self.assertEqual(cm.exception.args, ('ip_cidr', mock.ANY))
         # Then a record is not created
         self.assertEqual(0, Subnet.query.count())
 
@@ -312,7 +308,9 @@ class SubnetTest(WebCase):
 
 class DnsRecordTest(WebCase):
     def test_json(self):
-        # Given a DnsZone
+        # Given a DnsRecord
+        subnet = Subnet(ip_cidr='192.0.2.0/24')
+        DnsZone(name='example.com', subnets=[subnet]).add()
         obj = DnsRecord(name='foo.example.com', type='A', value='192.0.2.23').add()
         # When serializing the object to json
         data = obj.to_json()
@@ -323,7 +321,9 @@ class DnsRecordTest(WebCase):
         self.assertEqual(data['value'], '192.0.2.23')
 
     def test_add_a_record(self):
-        # Given an empty database
+        # Given a database with a subnet and a dnszone
+        subnet = Subnet(ip_cidr='192.0.2.0/24')
+        DnsZone(name='example.com', subnets=[subnet]).add()
         self.assertEqual(0, DnsRecord.query.count())
         # When adding a DnsRecord
         DnsRecord(name='foo.example.com', type='A', value='192.0.2.23').add()
@@ -335,14 +335,35 @@ class DnsRecordTest(WebCase):
         self.assertEqual(0, DnsRecord.query.count())
         # When adding a DnsRecord with an invalid value
         # Then an exception is raised
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             DnsRecord(name='foo.example.com', type='A', value='invalid').add()
+        self.assertEqual(cm.exception.args, ('value', mock.ANY))
 
-    def test_add_aaaa_record(self):
+    def test_add_a_record_without_valid_dnszone(self):
         # Given an empty database
         self.assertEqual(0, DnsRecord.query.count())
         # When adding a DnsRecord
-        DnsRecord(name='foo.example.com', type='AAAA', value='2002::1234:abcd:ffff:c0a8:101').add()
+        # Then an exception is raised
+        with self.assertRaises(ValueError) as cm:
+            DnsRecord(name='foo.example.com', type='A', value='192.0.2.23').add()
+        self.assertEqual(cm.exception.args, ('name', mock.ANY))
+
+    def test_add_a_record_without_valid_subnet(self):
+        # Given a database with a Subnet and a DnsZone
+        subnet = Subnet(ip_cidr='10.255.0.0/16').add()
+        DnsZone(name='example.com', subnets=[subnet]).add()
+        # When adding a DnsRecord
+        # Then an exception is raised
+        with self.assertRaises(ValueError) as cm:
+            DnsRecord(name='foo.example.com', type='A', value='192.0.2.23').add()
+        self.assertEqual(cm.exception.args, ('value', mock.ANY))
+
+    def test_add_aaaa_record(self):
+        # Given an empty database
+        subnet = Subnet(ip_cidr='2002:0:0:1234::/64')
+        DnsZone(name='example.com', subnets=[subnet]).add()
+        # When adding a DnsRecord
+        DnsRecord(name='foo.example.com', type='AAAA', value='2002::1234:abcd:ffff:c0a9:101').add()
         # Then a new record is created
         self.assertEqual(1, DnsRecord.query.count())
 
@@ -351,12 +372,32 @@ class DnsRecordTest(WebCase):
         self.assertEqual(0, DnsRecord.query.count())
         # When adding a DnsRecord with an invalid value
         # Then an exception is raised
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             DnsRecord(name='foo.example.com', type='AAAA', value='invalid').add()
+        self.assertEqual(cm.exception.args, ('value', mock.ANY))
 
-    def test_add_cname_record(self):
+    def test_add_aaaa_record_without_valid_dnszone(self):
         # Given an empty database
         self.assertEqual(0, DnsRecord.query.count())
+        # When adding a DnsRecord
+        # Then an error is raised
+        with self.assertRaises(ValueError) as cm:
+            DnsRecord(name='foo.example.com', type='AAAA', value='2002::1234:abcd:ffff:c0a7:101').add()
+        self.assertEqual(cm.exception.args, ('name', mock.ANY))
+
+    def test_add_aaaa_record_without_valid_subnet(self):
+        # Given a database with a valid DNSZone
+        subnet = Subnet(ip_cidr='10.0.0.0/8')
+        DnsZone(name='example.com', subnets=[subnet]).add()
+        # When adding a DnsRecord
+        # Then an error is raised
+        with self.assertRaises(ValueError) as cm:
+            DnsRecord(name='foo.example.com', type='AAAA', value='2002::1234:abcd:ffff:c0a6:101').add()
+        self.assertEqual(cm.exception.args, ('value', mock.ANY))
+
+    def test_add_cname_record(self):
+        # Given a DnsZone
+        DnsZone(name='example.com').add()
         # When adding a DnsRecord
         DnsRecord(name='foo.example.com', type='CNAME', value='bar.example.com').add()
         # Then a new record is created
@@ -367,12 +408,22 @@ class DnsRecordTest(WebCase):
         self.assertEqual(0, DnsRecord.query.count())
         # When adding a DnsRecord with an invalid value
         # Then an exception is raised
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             DnsRecord(name='foo.example.com', type='CNAME', value='192.0.2.23').add()
+        self.assertEqual(cm.exception.args, ('value', mock.ANY))
+
+    def test_add_cname_record_without_valid_dnszone(self):
+        # Given an empty database
+        self.assertEqual(0, DnsRecord.query.count())
+        # When adding a DnsRecord with an invalid name
+        # Then an exception is raised
+        with self.assertRaises(ValueError) as cm:
+            DnsRecord(name='foo.example.com', type='CNAME', value='bar.example.com').add()
+        self.assertEqual(cm.exception.args, ('name', mock.ANY))
 
     def test_add_txt_record(self):
         # Given an empty database
-        self.assertEqual(0, DnsRecord.query.count())
+        DnsZone(name='example.com').add()
         # When adding a DnsRecord
         DnsRecord(name='foo.example.com', type='TXT', value='some data').add()
         # Then a new record is created
@@ -380,11 +431,21 @@ class DnsRecordTest(WebCase):
 
     def test_add_txt_record_with_invalid_value(self):
         # Given an empty database
-        self.assertEqual(0, DnsRecord.query.count())
+        DnsZone(name='examples.com').add()
         # When adding a DnsRecord with an invalid value
         # Then an exception is raised
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             DnsRecord(name='foo.example.com', type='TXT', value='').add()
+        self.assertEqual(cm.exception.args, ('value', mock.ANY))
+
+    def test_add_txt_record_without_valid_dnszone(self):
+        # Given an empty database
+        self.assertEqual(0, DnsRecord.query.count())
+        # When adding a DnsRecord
+        # Then an error is raise
+        with self.assertRaises(ValueError) as cm:
+            DnsRecord(name='foo.example.com', type='TXT', value='some data').add()
+        self.assertEqual(cm.exception.args, ('name', mock.ANY))
 
     def test_add_ipv4_ptr_record(self):
         # Given an empty database
@@ -419,12 +480,22 @@ class DnsRecordTest(WebCase):
         self.assertEqual(0, DnsRecord.query.count())
         # When adding a DnsRecord with an invalid value
         # Then an exception is raised
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             DnsRecord(name='foo.example.com', type='PTR', value='192.0.2.23').add()
+        self.assertEqual(cm.exception.args, ('value', mock.ANY))
+
+    def test_add_ptr_record_with_invalid_name(self):
+        # Given an empty database
+        self.assertEqual(0, DnsRecord.query.count())
+        # When adding a DnsRecord with an invalid value
+        # Then an exception is raised
+        with self.assertRaises(ValueError) as cm:
+            DnsRecord(name='foo.example.com', type='PTR', value='foo.example.com').add()
+        self.assertEqual(cm.exception.args, ('name', mock.ANY))
 
     def test_add_ns_record(self):
         # Given an empty database
-        self.assertEqual(0, DnsRecord.query.count())
+        DnsZone(name='example.com').add()
         # When adding a DnsRecord
         DnsRecord(name='foo.example.com', type='NS', value='bar.example.com').add()
         # Then a new record is created
@@ -435,8 +506,9 @@ class DnsRecordTest(WebCase):
         self.assertEqual(0, DnsRecord.query.count())
         # When adding a DnsRecord with an invalid value
         # Then an exception is raised
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             DnsRecord(name='foo.example.com', type='NS', value='192.0.2.23').add()
+        self.assertEqual(cm.exception.args, ('value', mock.ANY))
 
 
 class DhcpRecordTest(WebCase):
@@ -470,20 +542,25 @@ class DhcpRecordTest(WebCase):
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord with invalid data
         # Then an exception is raised
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             DhcpRecord(ip='a.0.2.23', mac='00:00:5e:00:53:af').add()
+        self.assertEqual(cm.exception.args, ('ip', mock.ANY))
 
     def test_add_with_invalid_mac(self):
         # Given an empty database
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord with invalid data
         # Then an exception is raised
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             DhcpRecord(ip='192.0.2.23', mac='invalid').add()
+        self.assertEqual(cm.exception.args, ('mac', mock.ANY))
 
 
 class IpTest(WebCase):
     def test_ip(self):
+        # Given valid DnsZone with subnet
+        subnet = Subnet(ip_cidr='192.0.2.0/24').add()
+        DnsZone(name='example.com', subnets=[subnet]).add()
         # Given a list of DhcpRecord and DnsRecord
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
         DhcpRecord(ip='192.0.2.24', mac='00:00:5e:00:53:df').add()
@@ -508,6 +585,9 @@ class IpTest(WebCase):
         self.assertEqual(len(objs), 0)
 
     def test_ip_with_dns_deleted_status(self):
+        # Given valid DnsZone with subnet
+        subnet = Subnet(ip_cidr='192.0.2.0/24').add()
+        DnsZone(name='example.com', subnets=[subnet]).add()
         # Given a deleted DnsRecord
         DnsRecord(name='foo.example.com', type='A', value='192.0.2.20', status='deleted').add()
         # When querying list of IPs
@@ -516,6 +596,9 @@ class IpTest(WebCase):
         self.assertEqual(len(objs), 0)
 
     def test_ip_get_dns_records(self):
+        # Given valid DnsZone with subnet
+        subnet = Subnet(ip_cidr='192.0.2.0/24').add()
+        DnsZone(name='example.com', subnets=[subnet]).add()
         # Given a list of DnsRecords and DhcpRecord
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
         DnsRecord(name='bar.example.com', type='A', value='192.0.2.23').add()
@@ -528,6 +611,9 @@ class IpTest(WebCase):
         self.assertEqual(objs[1].name, 'bar.example.com')
 
     def test_ip_get_dhcp_records(self):
+        # Given valid DnsZone with subnet
+        subnet = Subnet(ip_cidr='192.0.2.0/24').add()
+        DnsZone(name='example.com', subnets=[subnet]).add()
         # Given a list of DnsRecords and DhcpRecord
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
         DnsRecord(name='bar.example.com', type='A', value='192.0.2.23').add()
@@ -539,6 +625,9 @@ class IpTest(WebCase):
         self.assertEqual(objs[0].mac, '00:00:5e:00:53:bf')
 
     def test_ipv6_related_records(self):
+        # Given a DnsZone with valid subnet
+        subnet = Subnet(ip_cidr='2001:db8:85a3::/64').add()
+        DnsZone(name='example.com', subnets=[subnet]).add()
         # Given a list of DnsRecords and DhcpRecord with ipv6
         DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf').add()
         DnsRecord(name='bar.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add()
@@ -549,6 +638,9 @@ class IpTest(WebCase):
         self.assertEqual(len(obj.related_dns_records), 1)
 
     def test_dns_aaaa_ipv6(self):
+        # Given a DnsZone with valid subnet
+        subnet = Subnet(ip_cidr='2001:db8:85a3::/64').add()
+        DnsZone(name='example.com', subnets=[subnet]).add()
         # Given a DnsRecords with ipv6
         DnsRecord(name='bar.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add()
         # When querying list of related DnsRecord on a Ip.

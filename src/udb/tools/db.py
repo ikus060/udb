@@ -95,14 +95,13 @@ class SQLA(cherrypy.Tool):
         cherrypy.Tool.__init__(self, None, None, priority=20)
 
     def _setup(self):
-        conf = self._merged_args()
-        cherrypy.request.hooks.attach('on_start_resource', self.on_start_resource, **conf)
         cherrypy.request.hooks.attach('on_end_resource', self.on_end_resource)
 
     def create_all(self):
         if self._base.metadata.bind is None:
             dburi = cherrypy.config.get('tools.db.uri')
-            self._base.metadata.bind = create_engine(dburi, echo=False)
+            debug = cherrypy.config.get('tools.db.debug')
+            self._base.metadata.bind = create_engine(dburi, echo=debug)
         self._base.metadata.create_all()
 
     def drop_all(self):
@@ -123,11 +122,9 @@ class SQLA(cherrypy.Tool):
 
         return self._session
 
-    def on_start_resource(self, echo=None, **kwargs):
-        if echo is not None:
-            self._session.bind.echo = echo
-
     def on_end_resource(self):
+        if self._session is None:
+            return
         try:
             self._session.flush()
             self._session.commit()

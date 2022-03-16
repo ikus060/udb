@@ -403,6 +403,10 @@ class DnsRecordTest(WebCase, CommonTest):
 
     edit_data = {'name': 'foo.example.com', 'type': 'CNAME', 'value': 'bar.example.com', 'notes': 'new comment'}
 
+    def setUp(self):
+        super().setUp()
+        DnsZone(name='example.com').add()
+
     def test_edit_invalid(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
