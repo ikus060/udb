@@ -11,13 +11,16 @@ Build-Depends:
  python3-babel,
  python3-cherrypy3,
  python3-configargparse,
+ python3-email-validator,
  python3-jinja2,
- python3-ldap,
- python3-mockldap,
+ python3-ldap3,
  python3-pip,
+ python3-pytest,
+ python3-requests,
  python3-setuptools,
  python3-setuptools-scm,
  python3-sqlalchemy,
+ python3-validators,
  python3-wtforms,
 Rules-Requires-Root: no
 Standards-Version: 4.5.1
@@ -28,16 +31,6 @@ Vcs-Browser: https://gitlab.com/ikus-soft/udb
 Package: udb
 Architecture: all
 Depends:
- python3,
- python3-apscheduler,
- python3-cheroot,
- python3-cherrypy3,
- python3-configargparse,
- python3-email-validator,
- python3-jinja2,
- python3-ldap,
- python3-sqlalchemy,
- python3-wtforms,
  ${misc:Depends},
  ${python3:Depends},
  ${sphinxdoc:Depends},

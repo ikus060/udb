@@ -412,7 +412,7 @@ class Ip(Base):
         """
         return DnsRecord.query.filter(
             or_(
-                DnsRecord.name.in_(select(DnsRecord.name).filter(DnsRecord.value == self.ip).subquery()),
+                DnsRecord.name.in_(select(DnsRecord.name).filter(DnsRecord.value == self.ip)),
                 DnsRecord.name == ipaddress.ip_address(self.ip).reverse_pointer,
             )
         ).all()
