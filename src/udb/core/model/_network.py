@@ -19,7 +19,7 @@ import ipaddress
 
 import cherrypy
 import validators
-from sqlalchemy import Column, ForeignKey, Index, Table, TypeDecorator, event, func, or_, select, union
+from sqlalchemy import Column, ForeignKey, Index, Table, TypeDecorator, event, func, literal, or_, select, union
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.types import Integer, String
@@ -266,7 +266,7 @@ class DnsRecord(CommonMixin, Base):
         Return list of DnsZone matching our name.
         """
         return DnsZone.query.filter(
-            Column(self.name).endswith(DnsZone.name),
+            literal(self.name).endswith(DnsZone.name),
             DnsZone.status != DnsZone.STATUS_DELETED,
         ).all()
 
@@ -280,7 +280,7 @@ class DnsRecord(CommonMixin, Base):
         return (
             Subnet.query.join(Subnet.dnszones)
             .filter(
-                Column(self.name).endswith(DnsZone.name),
+                literal(self.name).endswith(DnsZone.name),
                 Subnet.ip_cidr.contains(self.value),
                 DnsZone.status != DnsZone.STATUS_DELETED,
                 Subnet.status != Subnet.STATUS_DELETED,
