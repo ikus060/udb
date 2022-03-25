@@ -4,22 +4,38 @@
 
 {% block body %}
 <div class="d-flex justify-content-between">
-    <h2 class="flex-fill">{{display_name}}</h2>
+    <h4 class="flex-fill">{{display_name}}</h2>
     <div class="align-self-center">
-        {% include "common/filter.html" %}
         {% if has_new %}
         {% set new_disabled = not currentuser.allow_new_record() %}
         <a class="btn btn-primary {% if new_disabled %}disabled{% endif %}" href="{{url_for(model, 'new')}}"
             role="button" {% if new_disabled %}aria-disabled="true" {% endif %}>{%trans%}Create{%endtrans%}
             {{display_name}}</a>
         {% endif %}
+        {% include "common/filter.html" %}
     </div>
 </div>
 <table class="table table-hover">
     <thead>
         <tr>
             {% for field in form %}
-            <th scope="col">{{ field.label.text }}</th>
+            <th scope="col">
+                {% if field.name in sortable_fields %}
+                {% set toggle_sort = field.name + '_desc' if sort == field.name + '_asc' else field.name + '_asc' %}
+                {% set active = sort == field.name + '_asc' or sort == field.name + '_desc' %}
+                <a href="{{ url_for(sort=toggle_sort) }}"
+                    class="{%if active %}link-primary{% else %}link-dark{% endif %}">
+                    {{ field.label.text }}
+                    {% if sort == field.name + '_asc' %}
+                    <i class="bi bi-caret-up-fill"></i>
+                    {% elif sort == field.name + '_desc' %}
+                    <i class="bi bi-caret-down-fill"></i>
+                    {% endif %}
+                </a>
+                {% else %}
+                {{ field.label.text }}
+                {% endif %}
+            </th>
             {% endfor %}
             <th scope="col" style="width: 100px">
                 <span class="visually-hidden">{%trans%}Actions{%endtrans%}</span>

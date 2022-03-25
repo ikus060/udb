@@ -72,7 +72,14 @@ def url_for(*args, **kwargs):
                 path += "/"
         else:
             raise ValueError('invalid positional arguments, url_for accept str, bytes, int: %r' % chunk)
-    qs = [(k, v) for k, v in sorted(kwargs.items()) if v is not None]
+    # When path is empty, we are browsing the same page.
+    # Let keep the original query_string to avoid loosing it.
+    if path == "":
+        params = cherrypy.request.params.copy()
+        params.update(kwargs)
+        qs = [(k, v) for k, v in sorted(params.items()) if v is not None]
+    else:
+        qs = [(k, v) for k, v in sorted(kwargs.items()) if v is not None]
     return cherrypy.url(path=path, qs=qs)
 
 

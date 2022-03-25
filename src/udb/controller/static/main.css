@@ -52,3 +52,8 @@ main {
 tr:hover .btn-hover {
     opacity:1;
 }
+
+/* Disable underline for link in table header used for sorting */
+th > a {
+    text-decoration: none;
+}
