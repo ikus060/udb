@@ -23,7 +23,7 @@ from sqlalchemy.sql.sqltypes import Integer
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.core.passwd import hash_password
-from udb.tools.i18n import gettext as _
+from udb.tools.i18n import gettext_lazy as _
 
 from ._status import StatusMixing
 
@@ -31,6 +31,7 @@ Base = cherrypy.tools.db.get_base()
 
 
 class User(StatusMixing, Base):
+    display_name = _('User')
     __tablename__ = 'user'
 
     ROLE_ADMIN = 0

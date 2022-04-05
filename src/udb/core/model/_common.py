@@ -17,6 +17,7 @@
 
 
 from sqlalchemy import Column, String
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_mixin, declared_attr, relationship
 from sqlalchemy.sql.functions import func
 from sqlalchemy.sql.schema import ForeignKey
@@ -24,11 +25,12 @@ from sqlalchemy.sql.sqltypes import DateTime, Integer
 
 from ._follower import FollowerMixin
 from ._message import MessageMixin
+from ._search_vector import SearchableMixing
 from ._status import StatusMixing
 
 
 @declarative_mixin
-class CommonMixin(StatusMixing, MessageMixin, FollowerMixin):
+class CommonMixin(StatusMixing, MessageMixin, FollowerMixin, SearchableMixing):
     """
     Mixin for common item properties.
     """
@@ -48,6 +50,10 @@ class CommonMixin(StatusMixing, MessageMixin, FollowerMixin):
     def owner(cls):
         return relationship("User")
 
+    @classmethod
+    def _search_string(cls):
+        return cls.notes
+
     id = Column(Integer, primary_key=True)
     notes = Column(String, nullable=False, default='')
     created_at = Column(DateTime, nullable=False, server_default=func.now())
@@ -59,8 +65,15 @@ class CommonMixin(StatusMixing, MessageMixin, FollowerMixin):
                 return value.isoformat()
             return value
 
-        return {c.name: _value(getattr(self, c.name)) for c in self.__table__.columns}
+        return {c.name: _value(getattr(self, c.name)) for c in self.__table__.columns if not c.name.startswith('_')}
 
     def from_json(self, data):
         for k, v in data.items():
             setattr(self, k, v)
+
+    @hybrid_property
+    def summary(self):
+        """
+        Used to display a short hand description of this record.
+        """
+        return self.notes

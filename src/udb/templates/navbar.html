@@ -24,14 +24,16 @@
     <div id="sidebarMenu" class="collapse navbar-collapse flex-column align-items-start w-100 mt-3">
 
       <!-- Search form -->
-      <form class="d-flex">
+      {% if not hide_search %}
+      <form class="d-flex" method="GET" action="{{url_for('search')}}">
         <div class="input-group mb-1">
-          <input type="text" class="form-control" placeholder="Search TODO" aria-label="Search"
-            aria-describedby="button-addon2">
-          <button class="btn btn-outline-secondary" type="button" id="button-addon2"><i
+          <input type="text" class="form-control" placeholder="Search" aria-label="Search" name="q"
+            aria-describedby="button-search">
+          <button class="btn btn-outline-secondary" id="button-search" type="submit"><i
               class="fas fa-search"></i></button>
         </div>
       </form>
+      {% endif %}
 
       <!-- Menu items -->
       <div class="navbar-text mt-2 text-white">
@@ -76,7 +78,7 @@
 
       <hr class="mb-auto" />
       <div class="dropdown dropup">
-        <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle " id="dropdownUser1"
+        <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-white" id="dropdownUser1"
           data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fas fa-user fa-fw me-3"></i> <strong>{{ username }}</strong>
         </a>

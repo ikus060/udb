@@ -27,10 +27,6 @@ class UserForm(CherryForm):
 
     object_cls = User
 
-    @staticmethod
-    def get_display_name():
-        return _('User')
-
     username = StringField(_('Username'), validators=[data_required()])
 
     fullname = StringField(_('Fullname'))

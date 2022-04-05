@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
+import re
 from functools import cached_property
 
 import cherrypy
@@ -71,15 +72,22 @@ class CommonPage(object):
             # For value error, repport the invalidvalue either as flash message or form error.
             if form and len(e.args) == 2 and getattr(form, e.args[0], None):
                 getattr(form, e.args[0]).errors.append(e.args[1])
+            elif len(e.args) == 2:
+                flash(_('Invalid value: %s') % e.args[1], level='error')
             else:
                 flash(_('Invalid value: %s') % e, level='error')
-        elif isinstance(e, IntegrityError) and 'UNIQUE' in str(e):
-            # For database integrity error, try to identify the field in form. Or repport error as flash.
+        elif isinstance(e, IntegrityError) and 'unique' in str(e.orig).lower():
+            # For Unique constrain violation, we try to identify the field causing the problem to properly
+            # attach the error to the fields. If the fields cannot be found using the constrain
+            # name, we simply show a flash error message.
             msg = _('A record already exists in database with the same value.')
-            field = str(e.orig).split('.')[-1]
-            if form and getattr(form, field, None):
-                getattr(form, field).errors.append(msg)
+            # Postgresql: duplicate key value violates unique constraint "subnet_name_key"\nDETAIL:  Key (name)=() already exists.\n
+            # SQLite: UNIQUE constrain: subnet.name
+            m = re.search(r'Key \((.*?)\)', str(e.orig)) or re.search(r'.*\.(.*)', str(e.orig))
+            if m and form and getattr(form, m[1], None):
+                getattr(form, m[1]).errors.append(msg)
             else:
+                # Or repport error as flash.
                 flash(msg, level='error')
         else:
             flash(_('Database error: %s') % e, level='error')
@@ -167,7 +175,7 @@ class CommonPage(object):
             'model': self.model,
             'model_name': self.model.__name__.lower(),
             'obj_list': obj_list,
-            'display_name': self.object_form.get_display_name(),
+            'display_name': self.model.display_name,
         }
 
     @cherrypy.expose
@@ -191,7 +199,7 @@ class CommonPage(object):
             'model': self.model,
             'model_name': self.model.__name__.lower(),
             'form': form,
-            'display_name': self.object_form.get_display_name(),
+            'display_name': self.model.display_name,
         }
 
     @cherrypy.expose
@@ -224,7 +232,7 @@ class CommonPage(object):
                 obj.add()
             except Exception as e:
                 self.model.session.rollback()
-                self._handle_exception(e)
+                self._handle_exception(e, form)
             else:
                 raise cherrypy.HTTPRedirect(url_for(self.model))
         # Return object form
@@ -239,7 +247,7 @@ class CommonPage(object):
             'form': form,
             'message_form': MessageForm(),
             'obj': obj,
-            'display_name': self.object_form.get_display_name(),
+            'display_name': self.model.display_name,
         }
 
     @cherrypy.expose
