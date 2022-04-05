@@ -4,7 +4,7 @@
 
 {% block body %}
 <div class="d-flex justify-content-between">
-    <h4 class="flex-fill">{{display_name}}</h2>
+    <h4 class="flex-fill">{{macro.icon(model_name)}} {{display_name}}</h2>
     <div class="align-self-center">
         {% if has_new %}
         {% set new_disabled = not currentuser.allow_new_record() %}
@@ -65,7 +65,7 @@
             <td>
                 <a class="btn btn-primary btn-circle btn-hover" href="{{url_for(obj, 'edit')}}" data-bs-toggle="tooltip"
                     data-bs-placement="top" title="{% trans %}View more detail{% endtrans %}">
-                    <i class="fas fa-angle-right"></i>
+                    <i class="bi bi-chevron-right"></i>
                     <span class="visually-hidden">edit</span>
                 </a>
             </td>

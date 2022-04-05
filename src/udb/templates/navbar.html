@@ -1,3 +1,4 @@
+{% import 'macro.html' as macro %}
 <!--Main Navigation-->
 <header>
 
@@ -10,7 +11,7 @@
       <!-- Toggle -->
       <button class="navbar-toggler me-3" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu"
         aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
-        <i class="fas fa-bars"></i>
+        <i class="bi bi-list"></i>
       </button>
 
       <!-- Brand -->
@@ -30,7 +31,7 @@
           <input type="text" class="form-control" placeholder="Search" aria-label="Search" name="q"
             aria-describedby="button-search">
           <button class="btn btn-outline-secondary" id="button-search" type="submit"><i
-              class="fas fa-search"></i></button>
+              class="fbi bi-search"></i></button>
         </div>
       </form>
       {% endif %}
@@ -41,17 +42,17 @@
       </div>
       <ul class="nav nav-pills flex-column w-100">
         {% set items = [
-        (url_for('dnszone'), _('DNS Zone'), 'fas fa-network-wired'),
-        (url_for('subnet'), _('IP Subnet'), 'fas fa-project-diagram'),
-        (url_for('dnsrecord'), _('DNS Record'), 'fab fa-hive'),
-        (url_for('dhcprecord'), _('DHCP Record'), 'fas fa-layer-group'),
-        (url_for('ip'), _('Ip'), 'fas fa-layer-group'),
+        ('dnszone', _('DNS Zone')),
+        ('subnet', _('IP Subnet')),
+        ('dnsrecord', _('DNS Record')),
+        ('dhcprecord', _('DHCP Record')),
+        ('ip', _('Ip')),
         ]%}
-        {% for url, name, icon in items %}
+        {% for model, name in items %}
         <li class="nav-item">
-          {% set active = current_url.startswith(url) %}
-          <a href="{{ url }}" class="nav-link text-white {% if active %}active{% endif %}">
-            <i class="{{icon}} fa-fw me-3"></i><span>{{ name }}</span>
+          {% set active = current_url.startswith(url_for(model)) %}
+          <a href="{{ url_for(model) }}" class="nav-link text-white {% if active %}active{% endif %}">
+            {{ macro.icon(model, 'me-3') }}<span>{{ name }}</span>
           </a>
         </li>
         {% endfor %}
@@ -63,13 +64,13 @@
       </div>
       <ul class="nav nav-pills flex-column w-100">
         {% set items = [
-        (url_for('user'), _('Users'), 'fas fa-users'),
+        ('user', _('Users')),
         ]%}
-        {% for url, name, icon in items %}
+        {% for model, name in items %}
         <li class="nav-item">
-          {% set active = current_url.startswith(url) %}
-          <a href="{{ url }}" class="nav-link text-white {% if active %}active{% endif %}">
-            <i class="{{icon}} fa-fw me-3"></i><span>{{ name }}</span>
+          {% set active = current_url.startswith(url_for(model)) %}
+          <a href="{{ url_for(model) }}" class="nav-link text-white {% if active %}active{% endif %}">
+            {{ macro.icon(model, 'me-3') }}<span>{{ name }}</span>
           </a>
         </li>
         {% endfor %}
@@ -80,7 +81,7 @@
       <div class="dropdown dropup">
         <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-white" id="dropdownUser1"
           data-bs-toggle="dropdown" aria-expanded="false">
-          <i class="fas fa-user fa-fw me-3"></i> <strong>{{ username }}</strong>
+          <i class="bi bi-person-fill me-3"></i> <strong>{{ username }}</strong>
         </a>
         <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser1">
           <li><a class="dropdown-item" href="{{ url_for('profile') }}">{%trans%}Edit profile{%endtrans%}</a></li>
