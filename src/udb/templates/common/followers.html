@@ -16,7 +16,7 @@
         <li>
             {{ macro.user(userobj) }}
             <a href="{{url_for(obj, 'unfollow', userobj.id)}}" title="{%trans%}unfollow{%endtrans%}"><i
-                    class="fas fa-times"></i><span class="visually-hidden">{%trans%}unfollow{%endtrans%}</span></a>
+                    class="bi bi-x-lg"></i><span class="visually-hidden">{%trans%}unfollow{%endtrans%}</span></a>
         </li>
         {% endfor %}
     </ul>
