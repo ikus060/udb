@@ -180,6 +180,20 @@ class DnsZoneTest(WebCase):
         messages = d.get_messages()
         self.assertEqual(3, len(messages))
 
+    def test_search(self):
+        # Given a database with records
+        main = DnsZone(name='example.com', notes='This is the main zone').add()
+        science = DnsZone(name='science.example.com', notes='testing').add()
+        DnsZone(name='dmz.example.com', notes='Use for DMZ').add()
+        # When searching for a term in notes
+        records = DnsZone.query.filter(DnsZone._search_vector.websearch('main')).all()
+        # Then a single record is returned
+        self.assertEqual(main, records[0])
+        # When searching for a term in name
+        records = DnsZone.query.filter(DnsZone._search_vector.websearch('science.example.com')).all()
+        # Then a single record is returned
+        self.assertEqual(science, records[0])
+
 
 class SubnetTest(WebCase):
     def test_json(self):
@@ -304,6 +318,27 @@ class SubnetTest(WebCase):
         subnets = subnet2.related_supernets
         # Then the list contains our subnet
         self.assertEqual([subnet1], subnets)
+
+    def test_search(self):
+        # Given a database with records
+        Subnet(ip_cidr='192.168.1.0/24', name='foo', notes='This is a foo subnet').add()
+        Subnet(ip_cidr='192.168.1.128/30', name='bar', notes='This is a bar subnet').add()
+        subnet = Subnet(ip_cidr='10.0.255.0/24', name='test', notes='This a specific test subnet').add()
+
+        # When searching for a term in notes
+        records = Subnet.query.filter(Subnet._search_vector.websearch('specific')).all()
+        # Then a single record is returned
+        self.assertEqual(subnet, records[0])
+
+        # When searching for a term in name
+        records = Subnet.query.filter(Subnet._search_vector.websearch('test')).all()
+        # Then a single record is returned
+        self.assertEqual(subnet, records[0])
+
+        # When searching for a term in ip_cidr
+        records = Subnet.query.filter(Subnet._search_vector.websearch('10.0.255.0')).all()
+        # Then a single record is returned
+        self.assertEqual(subnet, records[0])
 
 
 class DnsRecordTest(WebCase):

@@ -72,6 +72,8 @@ class CommonPage(object):
             # For value error, repport the invalidvalue either as flash message or form error.
             if form and len(e.args) == 2 and getattr(form, e.args[0], None):
                 getattr(form, e.args[0]).errors.append(e.args[1])
+            elif len(e.args) == 2:
+                flash(_('Invalid value: %s') % e.args[1], level='error')
             else:
                 flash(_('Invalid value: %s') % e, level='error')
         elif isinstance(e, IntegrityError) and 'unique' in str(e.orig).lower():
@@ -173,7 +175,7 @@ class CommonPage(object):
             'model': self.model,
             'model_name': self.model.__name__.lower(),
             'obj_list': obj_list,
-            'display_name': self.object_form.get_display_name(),
+            'display_name': self.model.display_name,
         }
 
     @cherrypy.expose
@@ -197,7 +199,7 @@ class CommonPage(object):
             'model': self.model,
             'model_name': self.model.__name__.lower(),
             'form': form,
-            'display_name': self.object_form.get_display_name(),
+            'display_name': self.model.display_name,
         }
 
     @cherrypy.expose
@@ -230,7 +232,7 @@ class CommonPage(object):
                 obj.add()
             except Exception as e:
                 self.model.session.rollback()
-                self._handle_exception(e)
+                self._handle_exception(e, form)
             else:
                 raise cherrypy.HTTPRedirect(url_for(self.model))
         # Return object form
@@ -245,7 +247,7 @@ class CommonPage(object):
             'form': form,
             'message_form': MessageForm(),
             'obj': obj,
-            'display_name': self.object_form.get_display_name(),
+            'display_name': self.model.display_name,
         }
 
     @cherrypy.expose

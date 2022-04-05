@@ -1,0 +1,85 @@
+{% extends 'layout.html' %}
+{% import 'macro.html' as macro %}
+{% import "common/status.html" as _status %}
+{% set hide_search = True %}
+{% block body %}
+<h4>{% trans %}Search{% endtrans %}</h4>
+
+<div class="d-flex align-items-center">
+    <form class="flex-grow-1 me-2" method="GET" action="{{url_for()}}">
+        {{form.personal}}
+        {{form.deleted}}
+        {{form.sort}}
+        <div class="input-group">
+            <input type="text" class="form-control" placeholder="Search" aria-label="Search" name="q"
+                value="{{form.q.data}}" aria-describedby="button-search">
+            <button class="btn btn-outline-secondary" type="submit" id="button-search"><i
+                    class="fas fa-search"></i></button>
+        </div>
+    </form>
+    {% set has_status=True %}
+    {% set has_owner=True %}
+    {% include "common/filter.html" %}
+</div>
+
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th scope="col" colspan="2">
+                <span>{%trans%}Summary{%endtrans%}</span>
+            </th>
+            <th scope="col">
+                <span>{%trans%}Notes{%endtrans%}</span>
+            </th>
+            <th scope="col">
+                <span>{%trans%}Owner{%endtrans%}</span>
+            </th>
+            <th scope="col" style="width: 100px">
+                <span class="visually-hidden">{%trans%}Actions{%endtrans%}</span>
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for obj in obj_list %}
+        <tr>
+            <td class="align-middle" style="width: 25px">
+                <a href="{{url_for(obj.model, obj.id, 'edit')}}">
+                    {{ macro.icon(obj.model, "h4") }}
+                </a>
+            </td>
+            <td>
+                <a href="{{url_for(obj.model, obj.id, 'edit')}}">
+                    <strong>{{obj.model | capitalize}}</strong> {{ _status.badge(obj) }}
+                    <br />{{obj.summary}}
+                </a>
+            </td>
+            <td>
+                {{obj.notes}}
+            </td>
+            <td>
+                {% if obj.owner %}{{obj.owner}}{% else %}-{% endif %}
+            </td>
+            <td class="align-middle">
+                <a class="btn btn-primary btn-circle btn-hover" href="{{url_for(obj.model, obj.id, 'edit')}}"
+                    data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans %}View more detail{% endtrans %}">
+                    <i class="fas fa-angle-right"></i>
+                    <span class="visually-hidden">{%trans%}Edit{%endtrans%}</span>
+                </a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" class="text-center p-5">
+                <i class="bi bi-search display-4 fw-bold"></i><br />
+                <p>
+                    {% trans %}Sorry, that filter combination has no result.{% endtrans %}
+                    <br />
+                    {% trans %}Please try different criteria.{% endtrans %}
+                </p>
+            </td>
+        </tr>
+        {% endfor%}
+
+    </tbody>
+</table>
+{% endblock %}

@@ -14,8 +14,29 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from ._message import Message  # noqa
-from ._network import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet  # noqa
-from ._user import User  # noqa
 
-from ._search import Search  # noqa # isort: skip
+from sqlalchemy import Column, Computed, Index
+from sqlalchemy.orm import declared_attr, deferred
+from sqlalchemy.sql.functions import func
+
+from ._tsvector import TSVectorType
+
+
+class SearchableMixing(object):
+    """
+    Searchable mixin to support tsvector.
+    """
+
+    @declared_attr
+    def _search_vector(cls):
+        return deferred(
+            Column(TSVectorType, Computed(func.to_tsvector('english', cls._search_string()), persisted=True))
+        )
+
+    @declared_attr
+    def __table_args__(cls):
+        return (Index('idx_%s_search_vector' % cls.__tablename__, '_search_vector', postgresql_using='gin'),)
+
+    @classmethod
+    def _search_string(cls):
+        raise NotImplementedError()

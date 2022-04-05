@@ -19,14 +19,16 @@ import ipaddress
 
 import cherrypy
 import validators
-from sqlalchemy import Column, ForeignKey, Index, Table, TypeDecorator, event, func, literal, or_, select, union
+from sqlalchemy import Column, ForeignKey, Index, Table, event, func, literal, or_, select, union
 from sqlalchemy.engine import Engine
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.types import Integer, String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
-from udb.tools.i18n import gettext as _
+from udb.tools.i18n import gettext_lazy as _
 
+from ._cidr import CidrType
 from ._common import CommonMixin
 
 Base = cherrypy.tools.db.get_base()
@@ -55,8 +57,8 @@ def _sqlite_reverse(string):
 @event.listens_for(Engine, "connect")
 def _register_sqlite_functions(dbapi_con, unused):
     if 'sqlite' in repr(dbapi_con):
-        dbapi_con.create_function("split_part", 3, _sqlite_split_part)
-        dbapi_con.create_function("reverse", 1, _sqlite_reverse)
+        dbapi_con.create_function("split_part", 3, _sqlite_split_part, deterministic=True)
+        dbapi_con.create_function("reverse", 1, _sqlite_reverse, deterministic=True)
 
 
 dnszone_subnet = Table(
@@ -68,10 +70,15 @@ dnszone_subnet = Table(
 
 
 class DnsZone(CommonMixin, Base):
+    display_name = _('DNS Zone')
     name = Column(String, unique=True, nullable=False)
     subnets = relationship(
         "Subnet", secondary=dnszone_subnet, backref="dnszones", active_history=True, sync_backref=True
     )
+
+    @classmethod
+    def _search_string(cls):
+        return cls.name + " " + cls.notes
 
     @validates('name')
     def validate_name(self, key, value):
@@ -82,84 +89,25 @@ class DnsZone(CommonMixin, Base):
     def __str__(self):
         return self.name
 
+    @hybrid_property
+    def summary(self):
+        return self.name
+
 
 # Make DNS Zone name (FQDN) unique without case-sensitive
 Index('dnszone_name_index', func.lower(DnsZone.name), unique=True)
 
 
-class NetworkType(TypeDecorator):
-    """
-    Type decorator to store CIDR 192.168.0.1/24 into string.
-    """
-
-    impl = String(128 + 4)
-    cache_ok = True
-
-    @classmethod
-    def _ip_address_to_bits(cls, address: str):
-        """
-        Convert from `192.168.0.1` to `0101010101010....`
-        """
-        if address is None:
-            return address
-        network = ipaddress.ip_network(address, strict=False)
-        return '{:#b}/{}'.format(network.network_address, network.prefixlen)[2:]
-
-    @classmethod
-    def _bits_to_ip_address(cls, binary: str):
-        """
-        Convert from `0101010101010....` to `192.168.0.1`
-        """
-        if binary is None:
-            return binary
-        network_address, prefixlen = binary.split('/', 2)
-        network = ipaddress.ip_network((eval('0b' + network_address), prefixlen))
-        return str(network)
-
-    def process_bind_param(self, value: str, dialect):
-        if value is None or '%' in value:
-            return value
-        return NetworkType._ip_address_to_bits(value)
-
-    def process_result_value(self, value: str, dialect):
-        return NetworkType._bits_to_ip_address(value)
-
-    class comparator_factory(String.Comparator):
-        def contains(self, other, **kwargs):
-            """
-            Construct a query to look for subnets containing the given ip address.
-            """
-            binary_address = '{:#b}'.format(ipaddress.ip_address(other))[2:]
-            return func.substr(self, 0, func.split_part(self, '/', 2).cast(Integer)).__eq__(
-                func.substr(binary_address, 0, func.split_part(self, '/', 2).cast(Integer))
-            )
-
-        def subnet_of(self, other):
-            """
-            Construct a query to look for subnet of given network.
-            """
-            network = ipaddress.ip_network(other)
-            binary_address = '{:#b}'.format(network.network_address)[2:]
-            suffixlen = network.max_prefixlen - network.prefixlen
-            binary_prefix = binary_address[0 : network.prefixlen]
-            pattern = binary_prefix + '_' * suffixlen + '/%'
-            # WHERE subnet.ip_cidr LIKE ? AND CAST(split_part(subnet.ip_cidr, ?, ?) AS INT) > ?
-            return self.like(pattern).__and__(func.split_part(self, '/', 2).cast(Integer) > network.prefixlen)
-
-        def supernet_of(self, other):
-            """
-            Construct a query to look for supernet of given network.
-            """
-            other_network = ipaddress.ip_network(other)
-            supernets = [str(other_network.supernet(prefixlen_diff=i)) for i in range(1, other_network.prefixlen + 1)]
-            return self.in_(supernets)
-
-
 class Subnet(CommonMixin, Base):
+    display_name = _('IP Subnet')
     name = Column(String, unique=True, nullable=False, default='')
     # Database are not very friendly when it come to storing 128bits for this reason, we are storing the network address as bit into a string field.
-    ip_cidr = Column(NetworkType, unique=True, nullable=False)
+    ip_cidr = Column(CidrType, unique=True, nullable=False)
     vrf = Column(Integer, nullable=True)
+
+    @classmethod
+    def _search_string(cls):
+        return cls.name + " " + cls.notes + " " + cls.ip_cidr.text()
 
     @validates('ip_cidr')
     def validate_ip(self, key, value):
@@ -178,6 +126,10 @@ class Subnet(CommonMixin, Base):
 
     def __str__(self):
         return "%s (%s)" % (self.ip_cidr, self.name)
+
+    @hybrid_property
+    def summary(self):
+        return self.ip_cidr + " (" + self.name + ")"
 
 
 class DnsRecord(CommonMixin, Base):
@@ -200,11 +152,15 @@ class DnsRecord(CommonMixin, Base):
         'MX': lambda value: value and isinstance(value, str),
         'NS': validators.domain,
     }
-
+    display_name = _('DNS Record')
     name = Column(String, unique=False, nullable=False)
     type = Column(String, nullable=False)
     ttl = Column(Integer, nullable=False, default=3600)
     value = Column(String, nullable=False)
+
+    @classmethod
+    def _search_string(cls):
+        return cls.name + " " + cls.type + " " + cls.value
 
     @classmethod
     def _validate_reverse_ipv4(cls, value):
@@ -281,7 +237,7 @@ class DnsRecord(CommonMixin, Base):
             Subnet.query.join(Subnet.dnszones)
             .filter(
                 literal(self.name).endswith(DnsZone.name),
-                Subnet.ip_cidr.contains(self.value),
+                Subnet.ip_cidr.supernet_of(self.value),
                 DnsZone.status != DnsZone.STATUS_DELETED,
                 Subnet.status != Subnet.STATUS_DELETED,
             )
@@ -303,6 +259,10 @@ class DnsRecord(CommonMixin, Base):
     def __str__(self):
         return "%s = %s (%s)" % (self.name, self.value, self.type)
 
+    @hybrid_property
+    def summary(self):
+        return self.name + " = " + self.value + "(" + self.type + ")"
+
 
 @event.listens_for(DnsRecord, "before_update")
 def before_update(mapper, connection, instance):
@@ -315,8 +275,13 @@ def before_insert(mapper, connection, instance):
 
 
 class DhcpRecord(CommonMixin, Base):
+    display_name = _('DHCP Record')
     ip = Column(String, nullable=False, unique=True)
     mac = Column(String, nullable=False, unique=True)
+
+    @classmethod
+    def _search_string(cls):
+        return cls.ip + " " + cls.mac + " " + cls.notes
 
     @validates('ip')
     def validate_ip(self, key, value):
@@ -332,6 +297,10 @@ class DhcpRecord(CommonMixin, Base):
 
     def __str__(self):
         return "%s (%s)" % (self.ip, self.mac)
+
+    @hybrid_property
+    def summary(self):
+        return self.ip + " (" + self.mac + ")"
 
 
 # Create a non-traditional mapping with multiple table.
@@ -399,6 +368,7 @@ class Ip(Base):
     This ORM is a view on all IP address declared in various record type.
     """
 
+    display_name = _('IP Address')
     __table__ = ip_entry
     __mapper_args__ = {'primary_key': [ip_entry.c.ip]}
 

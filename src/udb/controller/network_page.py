@@ -42,10 +42,6 @@ class DnsZoneForm(CherryForm):
 
     object_cls = DnsZone
 
-    @staticmethod
-    def get_display_name():
-        return _('DNS Zone')
-
     name = StringField(
         _('Name'), validators=[DataRequired(), validate_domain], render_kw={"placeholder": _("Enter a FQDN")}
     )
@@ -65,10 +61,6 @@ class DnsZoneForm(CherryForm):
 class SubnetForm(CherryForm):
 
     object_cls = Subnet
-
-    @staticmethod
-    def get_display_name():
-        return _('IP Subnet')
 
     ip_cidr = StringField(
         _('Subnet'),
@@ -90,10 +82,6 @@ class SubnetForm(CherryForm):
 class DnsRecordForm(CherryForm):
 
     object_cls = DnsRecord
-
-    @staticmethod
-    def get_display_name():
-        return _('DNS Record')
 
     name = StringField(
         _('Name'), validators=[DataRequired(), validate_domain], render_kw={"placeholder": _("Enter a FQDN")}
@@ -126,10 +114,6 @@ class DhcpRecordForm(CherryForm):
     """
 
     object_cls = DhcpRecord
-
-    @staticmethod
-    def get_display_name():
-        return _('DHCP Record')
 
     ip = StringField(
         _('IP'),
@@ -173,10 +157,6 @@ class IpForm(CherryForm):
     """
 
     object_cls = Ip
-
-    @staticmethod
-    def get_display_name():
-        return _('IP Address')
 
     ip = StringField(_('IP Address'), validators=[DataRequired()], render_kw={"readonly": True})
 

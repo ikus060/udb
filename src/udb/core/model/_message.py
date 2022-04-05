@@ -26,6 +26,8 @@ from sqlalchemy.sql.sqltypes import DateTime, Integer
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
 
+from ._search_vector import SearchableMixing
+
 Base = cherrypy.tools.db.get_base()
 Session = cherrypy.tools.db.get_session()
 
@@ -110,7 +112,7 @@ def after_flush(session, flush_context):
             obj.add_message(message, commit=False)
 
 
-class Message(Base):
+class Message(SearchableMixing, Base):
     __tablename__ = 'message'
     id = Column(Integer, primary_key=True)
     model = Column(String, nullable=False)
@@ -134,6 +136,10 @@ class Message(Base):
             return json.loads(self.body)
         except Exception:
             return None
+
+    @classmethod
+    def _search_string(cls):
+        return cls.body + " " + cls.subject
 
 
 class MessageMixin:
