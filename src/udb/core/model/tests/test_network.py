@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # udb, A web interface to manage IT network
-# Copyright (C) 2021 IKUS Software inc.
+# Copyright (C) 2022 IKUS Software inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -126,7 +126,7 @@ class DnsZoneTest(WebCase):
         d.add()
         self.session.commit()
         # Then a new message with changes is append to the object.
-        messages = d.get_messages()
+        messages = d.messages
         self.assertEqual(2, len(messages))
         self.assertEqual({'owner': [None, 'test']}, messages[-1].changes)
 
@@ -146,10 +146,10 @@ class DnsZoneTest(WebCase):
         self.assertEqual(1, len(zone.subnets[0].dnszones))
         self.assertEqual(zone, zone.subnets[0].dnszones[0])
         # Then an audit message is created for both objects
-        self.assertEqual(2, len(zone.get_messages()))
-        self.assertEqual(zone.get_messages()[-1].changes, {'subnets': [[], ['192.168.1.0/24 (test)']]})
-        self.assertEqual(2, len(subnet.get_messages()))
-        self.assertEqual(subnet.get_messages()[-1].changes, {'dnszones': [[], ['bfh.ch']]})
+        self.assertEqual(2, len(zone.messages))
+        self.assertEqual(zone.messages[-1].changes, {'subnets': [[], ['192.168.1.0/24 (test)']]})
+        self.assertEqual(2, len(subnet.messages))
+        self.assertEqual(subnet.messages[-1].changes, {'dnszones': [[], ['bfh.ch']]})
 
     def test_get_messages(self):
         # Given a database with an existing record
@@ -164,20 +164,17 @@ class DnsZoneTest(WebCase):
         # When adding a comments
         d.add_message(Message(body='this is a comments'))
         # Then a message with type 'new' exists
-        messages = d.get_messages('new')
-        self.assertEqual(1, len(messages))
+        messages = d.changes
+        self.assertEqual(2, len(messages))
         self.assertEqual(messages[0].changes, {'name': [None, 'bfh.ch']})
-        # Then a message with type 'dirty' exists
-        messages = d.get_messages('dirty')
-        self.assertEqual(1, len(messages))
-        self.assertEqual(messages[0].changes, {'owner': [None, 'test']})
+        self.assertEqual(messages[1].changes, {'owner': [None, 'test']})
         # Then a message with type 'comment' exists
-        messages = d.get_messages('comment')
+        messages = d.comments
         self.assertEqual(1, len(messages))
         self.assertEqual(messages[0].changes, None)
         self.assertEqual(messages[0].body, 'this is a comments')
         # Then the list of message contains all tre message
-        messages = d.get_messages()
+        messages = d.messages
         self.assertEqual(3, len(messages))
 
     def test_search(self):
@@ -296,10 +293,10 @@ class SubnetTest(WebCase):
         self.assertEqual(1, len(subnet.dnszones[0].subnets))
         self.assertEqual(subnet, subnet.dnszones[0].subnets[0])
         # Then an audit message is created for both objects
-        self.assertEqual(2, len(subnet.get_messages()))
-        self.assertEqual(subnet.get_messages()[-1].changes, {'dnszones': [[], ['bfh.ch']]})
-        self.assertEqual(2, len(zone.get_messages()))
-        self.assertEqual(zone.get_messages()[-1].changes, {'subnets': [[], ['192.168.1.0/24 (foo)']]})
+        self.assertEqual(2, len(subnet.messages))
+        self.assertEqual(subnet.messages[-1].changes, {'dnszones': [[], ['bfh.ch']]})
+        self.assertEqual(2, len(zone.messages))
+        self.assertEqual(zone.messages[-1].changes, {'subnets': [[], ['192.168.1.0/24 (foo)']]})
 
     def test_subnets(self):
         # Given a database with an existing record

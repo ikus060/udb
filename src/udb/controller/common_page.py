@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # udb, A web interface to manage IT network
-# Copyright (C) 2021 IKUS Software inc.
+# Copyright (C) 2022 IKUS Software inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -54,8 +54,8 @@ class CommonPage(object):
         self.has_new = has_new
         self.has_status = hasattr(self.model, 'status')
         self.has_owner = hasattr(self.model, 'owner')
-        self.has_followers = hasattr(self.model, 'get_followers')
-        self.has_messages = hasattr(self.model, 'get_messages')
+        self.has_followers = hasattr(self.model, 'followers')
+        self.has_messages = hasattr(self.model, 'messages')
 
     def _get_or_404(self, key):
         """

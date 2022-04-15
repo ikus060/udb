@@ -28,11 +28,11 @@
 {% endif %}
 {% endmacro %}
 
-{% macro list_messages(type) -%}
+{% macro list_messages(messages) -%}
 <div class="list-group list-group-flush">
-    {% for message in obj.get_messages(type=type)|sort(attribute="date",reverse=True) %}
+    {% for message in messages|sort(attribute="date",reverse=True) %}
     <div class="list-group-item list-group-item-action" aria-current="true">
-        <small>{%trans%}By {%endtrans%} {{ macro.user(message.author) }} • {{ message.date }}
+        <small>{%trans%}By {%endtrans%} {{ message.author_name }} • {{ message.date }}
             ({{message.date|lastupdated}})</small>
         {{ show_message(message) }}
     </div>
@@ -69,10 +69,10 @@
                     </form>
                 </div>
             </div>
-            {{ list_messages('comment') }}
+            {{ list_messages(obj.comments) }}
         </div>
         <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
-            {{ list_messages(['new','dirty']) }}
+            {{ list_messages(obj.changes) }}
         </div>
     </div>
 </div>

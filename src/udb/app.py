@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # udb, A web interface to manage IT network
-# Copyright (C) 2021 IKUS Software inc.
+# Copyright (C) 2022 IKUS Software inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,9 @@ import jinja2
 import pkg_resources
 
 import udb.core.login  # noqa
+import udb.core.notification  # noqa
 import udb.plugins.ldap  # noqa
+import udb.plugins.smtp  # noqa
 import udb.tools.auth_basic  # noqa: import cherrypy.tools.auth_basic
 import udb.tools.auth_form  # noqa: import cherrypy.tools.auth_form
 import udb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
@@ -86,13 +88,6 @@ def _error_page(**kwargs):
 @cherrypy.tools.auth_form()
 @cherrypy.tools.currentuser(userobj=lambda username: User.query.filter_by(username=username).first())
 @cherrypy.tools.i18n(mo_dir=pkg_resources.resource_filename('udb', 'locales'), default='en_US', domain='messages')
-@cherrypy.config(
-    **{
-        'error_page.default': _error_page,
-        'tools.jinja2.env': env,
-        'tools.jinja2.extra_processor': template_processor,
-    }
-)
 class Root(object):
     """
     Root entry point exposed using cherrypy.
@@ -102,12 +97,16 @@ class Root(object):
         self.cfg = cfg
         cherrypy.config.update(
             {
+                'error_page.default': _error_page,
                 # Configure database plugins
                 'tools.db.uri': cfg.database_uri,
                 'tools.db.debug': cfg.debug,
                 # Configure session storage
                 'tools.sessions.storage_type': 'file' if cfg.session_dir else 'ram',
                 'tools.sessions.storage_path': cfg.session_dir,
+                # Configure jinja2 templating engine
+                'tools.jinja2.env': env,
+                'tools.jinja2.extra_processor': template_processor,
                 # Configure LDAP plugin
                 'ldap.uri': cfg.ldap_uri,
                 'ldap.base_dn': cfg.ldap_base_dn,
@@ -133,6 +132,9 @@ class Root(object):
                 # Configure login
                 'login.add_missing_user': cfg.add_missing_user,
                 'login.add_user_default_role': User.coerce_role_name(cfg.add_user_default_role),
+                # Configure notification
+                'notification.env': env,
+                'notification.header_name': cfg.header_name,
             }
         )
         # Create database if required

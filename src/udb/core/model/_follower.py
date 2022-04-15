@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # udb, A web interface to manage IT network
-# Copyright (C) 2021 IKUS Software inc.
+# Copyright (C) 2022 IKUS Software inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 
 
 import cherrypy
-from sqlalchemy import Column, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, String, and_, join
+from sqlalchemy.orm import declared_attr, relationship
 from sqlalchemy.sql.schema import ForeignKey, Index
 from sqlalchemy.sql.sqltypes import Integer
 
@@ -61,11 +61,17 @@ class FollowerMixin:
         if f:
             f.delete()
 
-    def get_followers(self):
-        """
-        Return list of followers for this object.
-        """
-        return User.query.join(Follower).where(Follower.model == self.__tablename__, Follower.model_id == self.id).all()
+    @declared_attr
+    def followers(cls):
+        return relationship(
+            User,
+            secondary=lambda: join(User, Follower, User.id == Follower.user_id),
+            primaryjoin=lambda: and_(Follower.model == cls.__tablename__, Follower.model_id == cls.id),
+            secondaryjoin=lambda: User.id == Follower.user_id,
+            viewonly=True,
+            lazy=True,
+            uselist=True,
+        )
 
     def is_following(self, user):
         """

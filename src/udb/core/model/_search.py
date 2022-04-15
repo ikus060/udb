@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # udb, A web interface to manage IT network
-# Copyright (C) 2021 IKUS Software inc.
+# Copyright (C) 2022 IKUS Software inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
-from sqlalchemy import literal, select, union
-from sqlalchemy.orm import relationship
+from sqlalchemy import and_, literal, select, union
+from sqlalchemy.orm import foreign, relationship, remote
 
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Message, Subnet, User
 
@@ -47,6 +47,10 @@ class Search(Base):
     owner = relationship(User, lazy=False)
     messages = relationship(
         Message,
-        primaryjoin="and_(Search.model==remote(foreign(Message.model)), Search.id==remote(foreign(Message.model_id)), Message.type == 'comment')",
+        primaryjoin=lambda: and_(
+            Search.model == remote(foreign(Message.model)),
+            Search.id == remote(foreign(Message.model_id)),
+            Message.type == Message.TYPE_COMMENT,
+        ),
         viewonly=True,
     )
