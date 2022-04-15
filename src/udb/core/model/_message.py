@@ -16,15 +16,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+from functools import cached_property
 
 import cherrypy
-from sqlalchemy import Column, String, event, inspect
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, String, and_, event, inspect
+from sqlalchemy.orm import declared_attr, foreign, relationship, remote
 from sqlalchemy.sql.functions import func
 from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.sql.sqltypes import DateTime, Integer
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
+from udb.tools.i18n import gettext as _
 
 from ._search_vector import SearchableMixing
 
@@ -113,14 +115,18 @@ def after_flush(session, flush_context):
 
 
 class Message(SearchableMixing, Base):
+    TYPE_COMMENT = 'comment'
+    TYPE_NEW = 'new'
+    TYPE_DIRTY = 'dirty'
+
     __tablename__ = 'message'
     id = Column(Integer, primary_key=True)
     model = Column(String, nullable=False)
     model_id = Column(Integer, nullable=False)
     author_id = Column(Integer, ForeignKey('user.id'), nullable=True)
-    author = relationship("User")
+    author = relationship("User", lazy=False)
     subject = Column(String, nullable=False, default='')
-    type = Column(String, nullable=False, default='comment')
+    type = Column(String, nullable=False, default=TYPE_COMMENT)
     # When body start with a "{" the content is a json changes.
     body = Column(String, nullable=False)
     date = Column(DateTime, default=func.now())
@@ -130,7 +136,7 @@ class Message(SearchableMixing, Base):
         """
         Return Json changes stored in body.
         """
-        if not self.body or not self.body[0] == '{':
+        if not self.body or self.body[0] != '{':
             return None
         try:
             return json.loads(self.body)
@@ -141,26 +147,75 @@ class Message(SearchableMixing, Base):
     def _search_string(cls):
         return cls.body + " " + cls.subject
 
+    def _get_model(self):
+        """
+        Return the model class related to this message.
+        """
+        for c in Base.registry._class_registry.values():
+            if hasattr(c, '__tablename__') and c.__tablename__ == self.model:
+                return c
+
+    @cached_property
+    def model_obj(self):
+        """
+        Return the model instance related to this message.
+        """
+        cls = self._get_model()
+        if not cls:
+            return None
+        return cls.query.where(cls.id == self.model_id).first()
+
+    @property
+    def author_name(self):
+        if self.author is None:
+            return _('nobody')
+        return str(self.author)
+
 
 class MessageMixin:
     """
     Mixin to support messages.
     """
 
-    def get_messages(self, type=None):
-        """
-        Return list of messages related to this object for the given type.
-        """
-        query = Message.query.where(Message.model == self.__tablename__, Message.model_id == self.id)
-        if type is not None:
-            if isinstance(type, (tuple, list)):
-                query = query.where(Message.type.in_(type))
-            else:
-                query = query.where(Message.type == type)
-        return query.all()
-
     def add_message(self, message, commit=True):
         assert self.id
         message.model = self.__tablename__
         message.model_id = self.id
         message.add(commit=commit)
+
+    @declared_attr
+    def messages(cls):
+        return relationship(
+            Message,
+            primaryjoin=lambda: and_(
+                cls.__tablename__ == remote(foreign(Message.model)), cls.id == remote(foreign(Message.model_id))
+            ),
+            viewonly=True,
+            lazy=True,
+        )
+
+    @declared_attr
+    def comments(cls):
+        return relationship(
+            Message,
+            primaryjoin=lambda: and_(
+                cls.__tablename__ == remote(foreign(Message.model)),
+                cls.id == remote(foreign(Message.model_id)),
+                Message.type == Message.TYPE_COMMENT,
+            ),
+            viewonly=True,
+            lazy=True,
+        )
+
+    @declared_attr
+    def changes(cls):
+        return relationship(
+            Message,
+            primaryjoin=lambda: and_(
+                cls.__tablename__ == remote(foreign(Message.model)),
+                cls.id == remote(foreign(Message.model_id)),
+                Message.type.in_([Message.TYPE_NEW, Message.TYPE_DIRTY]),
+            ),
+            viewonly=True,
+            lazy=True,
+        )

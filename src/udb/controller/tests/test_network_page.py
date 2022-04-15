@@ -128,7 +128,7 @@ class CommonTest:
         for k, v in self.new_data.items():
             self.assertEqual(v, getattr(obj, k))
         # Then a audit message is created
-        message = obj.get_messages()[-1]
+        message = obj.messages[-1]
         self.assertIsNotNone(message.changes)
         self.assertEqual('new', message.type)
 
@@ -142,7 +142,7 @@ class CommonTest:
         obj = self.obj_cls.query.first()
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then a new message is added to the record.
-        message = obj.get_messages()[-1]
+        message = obj.messages[-1]
         self.assertEqual('this is my message', message.body)
         self.assertEqual('comment', message.type)
         # Then this message is displayed on edit page
@@ -160,7 +160,7 @@ class CommonTest:
         obj = self.obj_cls.query.first()
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then a new follower is added to the record
-        follower = obj.get_followers()[0]
+        follower = obj.followers[0]
         self.assertEqual(1, follower.id)
 
     def test_unfollow(self):
@@ -176,7 +176,7 @@ class CommonTest:
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then a follower is removed to the record
-        self.assertEqual([], self.obj_cls.query.first().get_followers())
+        self.assertEqual([], self.obj_cls.query.first().followers)
 
     def test_status_disabled(self):
         # Given a database with a record
