@@ -66,6 +66,9 @@ class LoginPlugin(SimplePlugin):
         if not authenticates:
             return None
         real_username = authenticates[0][0]
+        extra_attrs = authenticates[0][1]
+        fullname = extra_attrs.get('_fullname', None)
+        email = extra_attrs.get('_email', None)
         # When enabled, create missing userobj in database.
         userobj = User.query.filter_by(username=username).first()
         if userobj is None and self.add_missing_user:
@@ -73,13 +76,25 @@ class LoginPlugin(SimplePlugin):
                 # At this point, we need to create a new user in database.
                 # In case default values are invalid, let evaluate them
                 # before creating the user in database.
-                userobj = User(username=real_username, role=self.add_user_default_role)
-                User.session.add(userobj)
-                User.session.commit()
+                userobj = User(
+                    username=real_username, fullname=fullname, email=email, role=self.add_user_default_role
+                ).add()
             except Exception:
                 logger.warning('fail to create new user', exc_info=1)
+        if userobj is None:
+            # User doesn't exists in database
+            return None
 
-        # TODO Update user attributes from LDAP ? e.g.: Email and full name ?
+        # Update user attributes
+        dirty = False
+        if fullname:
+            userobj.fullname = fullname
+            dirty = True
+        if email:
+            userobj.email = email
+            dirty = True
+        if dirty:
+            userobj.add()
 
         # Save username in session if session is enabled.
         if cherrypy.request.config and cherrypy.request.config.get('tools.sessions.on', False):

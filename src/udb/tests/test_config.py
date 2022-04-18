@@ -40,3 +40,11 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(cfg.server_port, 5000)
         self.assertEqual(cfg.log_file, '/path/to/log')
         self.assertEqual(cfg.log_access_file, '/path/to/log2')
+
+    def test_parse_ldap_fullname_attribute(self):
+        # Given a valid list of arguemnts
+        args = ['--ldap-fullname-attribute', 'sn']
+        # When parsing the arguments list
+        cfg = parse_args(args)
+        # Then configuration matches the arguments value
+        self.assertEqual(cfg.ldap_fullname_attribute, ['sn'])

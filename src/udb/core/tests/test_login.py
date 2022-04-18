@@ -54,6 +54,36 @@ class TestLogin(WebCase):
         self.assertEqual('user01', userobj.username)
         self.assertEqual(User.ROLE_USER, userobj.role)
 
+    def test_login_update_email(self):
+        # Given valids credentials from mock
+        username = 'user01'
+        password = 'password'
+        User.create(username=username, role=User.ROLE_USER)
+        self.listener.authenticate.return_value = ('user01', {'_email': 'john@test.com'})
+        # When trying to login with those credentials
+        login = cherrypy.engine.publish('login', username, password)
+        # Then user is login
+        self.assertTrue(login[0])
+        # Then user is created in database with default role
+        userobj = User.query.filter_by(username=username).first()
+        self.assertEqual('user01', userobj.username)
+        self.assertEqual('john@test.com', userobj.email)
+
+    def test_login_update_fullname(self):
+        # Given valids credentials from mock
+        username = 'user01'
+        password = 'password'
+        User.create(username=username, role=User.ROLE_USER)
+        self.listener.authenticate.return_value = ('user01', {'_fullname': 'John Kennedy'})
+        # When trying to login with those credentials
+        login = cherrypy.engine.publish('login', username, password)
+        # Then user is login
+        self.assertTrue(login[0])
+        # Then user is created in database with default role
+        userobj = User.query.filter_by(username=username).first()
+        self.assertEqual('user01', userobj.username)
+        self.assertEqual('John Kennedy', userobj.fullname)
+
     def test_login_with_invalid_username(self):
         # Given a valid user in database
         User.create(username='user01', password='password', role=User.ROLE_USER)
@@ -100,6 +130,21 @@ class TestLoginWithAddMissing(WebCase):
         userobj = User.query.filter_by(username=username).first()
         self.assertEqual('user01', userobj.username)
         self.assertEqual(User.ROLE_GUEST, userobj.role)
+
+    def test_login_with_email_and_fullname(self):
+        # Given valids credentials from mock with email and fullname
+        username = 'user01'
+        password = 'password'
+        self.listener.authenticate.return_value = ('user01', {'_email': 'john@test.com', '_fullname': 'John Kennedy'})
+        # When trying to login with those credentials
+        login = cherrypy.engine.publish('login', username, password)
+        # Then user is login
+        self.assertTrue(login[0])
+        # Then user is created in database with email and fullname
+        userobj = User.query.filter_by(username=username).first()
+        self.assertEqual('user01', userobj.username)
+        self.assertEqual('john@test.com', userobj.email)
+        self.assertEqual('John Kennedy', userobj.fullname)
 
 
 class TestLoginWithAddMissingAndRole(WebCase):

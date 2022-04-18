@@ -123,6 +123,10 @@ class Root(object):
                 'ldap.timeout': cfg.ldap_timeout,
                 'ldap.encoding': cfg.ldap_encoding,
                 'ldap.check_shadow_expire': cfg.ldap_check_shadow_expire,
+                'ldap.fullname_attribute': cfg.ldap_fullname_attribute,
+                'ldap.firstname_attribute': cfg.ldap_firstname_attribute,
+                'ldap.lastname_attribute': cfg.ldap_lastname_attribute,
+                'ldap.email_attribute': cfg.ldap_email_attribute,
                 # Configure SMTP plugin
                 'smtp.server': cfg.smtp_server,
                 'smtp.username': cfg.smtp_username,
