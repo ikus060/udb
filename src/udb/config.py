@@ -128,7 +128,6 @@ def parse_args(args=None, config_file_contents=None):
     # LDAP
     parser.add_argument(
         '--ldap-uri',
-        '--ldapuri',
         help='URL to the LDAP server used to validate user credentials. e.g.: ldap://localhost:389',
     )
 
@@ -142,7 +141,6 @@ def parse_args(args=None, config_file_contents=None):
 
     parser.add_argument(
         '--ldap-scope',
-        '--ldapscope',
         help='scope of the search. Can be either base, onelevel or subtree',
         choices=['base', 'onelevel', 'subtree'],
         default="subtree",
@@ -152,7 +150,6 @@ def parse_args(args=None, config_file_contents=None):
 
     parser.add_argument(
         '--ldap-username-attribute',
-        '--ldapattribute',
         metavar='ATTRIBUTE',
         help="The attribute to search username. If no attributes are provided, the default is to use `uid`. It's a good idea to choose an attribute that will be unique across all entries in the subtree you will be using.",
         default='uid',
@@ -160,21 +157,18 @@ def parse_args(args=None, config_file_contents=None):
 
     parser.add_argument(
         '--ldap-filter',
-        '--ldapfilter',
         help="search filter to limit LDAP lookup. If not provided, defaults to (objectClass=*), which searches for all objects in the tree.",
         default='(objectClass=*)',
     )
 
     parser.add_argument(
         '--ldap-required-group',
-        '--ldaprequiredgroup',
         metavar='GROUPNAME',
         help="name of the group of which the user must be a member to access the application. Should be used with ldap-group-attribute and ldap-group-attribute-is-dn.",
     )
 
     parser.add_argument(
         '--ldap-group-attribute',
-        '--ldapgroupattribute',
         metavar='ATTRIBUTE',
         help="name of the attribute defining the groups of which the user is a member. Should be used with ldap-required-group and ldap-group-attribute-is-dn.",
         default='member',
@@ -182,14 +176,12 @@ def parse_args(args=None, config_file_contents=None):
 
     parser.add_argument(
         '--ldap-group-attribute-is-dn',
-        '--ldapgroupattributeisdn',
         help="True if the content of the attribute `ldap-group-attribute` is a DN.",
         action='store_true',
     )
 
     parser.add_argument(
         '--ldap-bind-dn',
-        '--ldapbinddn',
         metavar='DN',
         help="optional DN used to bind to the server when searching for entries. If not provided, will use an anonymous bind.",
         default="",
@@ -197,7 +189,6 @@ def parse_args(args=None, config_file_contents=None):
 
     parser.add_argument(
         '--ldap-bind-password',
-        '--ldapbindpassword',
         metavar='PASSWORD',
         help="password to use in conjunction with LdapBindDn. Note that the bind password is probably sensitive data, and should be properly protected. You should only use the LdapBindDn and LdapBindPassword if you absolutely need them to search the directory.",
         default="",
@@ -205,8 +196,6 @@ def parse_args(args=None, config_file_contents=None):
 
     parser.add_argument(
         '--ldap-version',
-        '--ldapversion',
-        '--ldapprotocolversion',
         help="version of LDAP in use either 2 or 3. Default to 3.",
         default=3,
         type=int,
@@ -215,7 +204,6 @@ def parse_args(args=None, config_file_contents=None):
 
     parser.add_argument(
         '--ldap-network-timeout',
-        '--ldapnetworktimeout',
         metavar='SECONDS',
         help="timeout in seconds value used for LDAP connection",
         default=100,
@@ -224,7 +212,6 @@ def parse_args(args=None, config_file_contents=None):
 
     parser.add_argument(
         '--ldap-timeout',
-        '--ldaptimeout',
         metavar='SECONDS',
         help="timeout in seconds value used for LDAP request",
         default=300,
@@ -233,7 +220,6 @@ def parse_args(args=None, config_file_contents=None):
 
     parser.add_argument(
         '--ldap-encoding',
-        '--ldapencoding',
         metavar='ENCODING',
         help="encoding used by your LDAP server.",
         default="utf-8",
@@ -241,10 +227,37 @@ def parse_args(args=None, config_file_contents=None):
 
     parser.add_argument(
         '--ldap-check-shadow-expire',
-        '--ldapcheckshadowexpire',
         help="enable validation of shadow expired when validating user's credential. User will not be allowed to login if the account expired.",
         default=False,
         action='store_true',
+    )
+
+    parser.add_argument(
+        '--ldap-fullname-attribute',
+        help="LDAP attribute for user display name. If `fullname` is blank, the fullname is taken from the `firstname` and `lastname`. Attributes 'cn', or 'displayName' commonly carry full names.",
+        default=[],
+        action='append',
+    )
+
+    parser.add_argument(
+        '--ldap-firstname-attribute',
+        help="LDAP attribute for user first name. Used when the attribute configured for name does not exist. e.g.: `givenName`",
+        default=[],
+        action='append',
+    )
+
+    parser.add_argument(
+        '--ldap-lastname-attribute',
+        help="LDAP attribute for user last name. Used when the attribute configured for name does not exist. e.g.: `sn`",
+        default=[],
+        action='append',
+    )
+
+    parser.add_argument(
+        '--ldap-email-attribute',
+        help="LDAP attribute for user email. e.g.: mail, email, userPrincipalName",
+        default=[],
+        action='append',
     )
 
     # Email
