@@ -1,10 +1,10 @@
 {% macro check_square(selected) %}
-{% if selected %}<i class="bi bi-check"></i>{% else %}<i class="bi bi-check opacity-0"></i>{% endif %}
+{% if selected %}<i class="bi bi-check" aria-hidden="true"></i>{% else %}<i class="bi bi-check opacity-0" aria-hidden="true"></i>{% endif %}
 {% endmacro %}
 <div class="btn-group">
     <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
         aria-expanded="false">
-        <i class="bi bi-toggles2"></i>
+        <i class="bi bi-toggles2" aria-hidden="true"></i>
         {% trans %}Display Options{% endtrans %}
     </button>
     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">

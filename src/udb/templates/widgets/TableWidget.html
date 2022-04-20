@@ -3,7 +3,7 @@
 <div class="card">
     <div class="card-body bg-light p-2">
         {% if field.object_data %}
-        <table class="table table-sm table-hover mb-2">
+        <table class="table table-sm table-hover mb-2" aria-label="{{ subfield.label.text }}">
             <thead>
                 <tr>
                     {% for subfield in field|first %}
@@ -33,7 +33,7 @@
                         <a class="btn btn-primary btn-circle btn-sm btn-hover"
                             href="{{url_for(row.object_data, 'edit')}}" data-bs-toggle="tooltip" data-bs-placement="top"
                             title="{% trans %}Edit detail{% endtrans %}">
-                            <i class="bi bi-chevron-right"></i>
+                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
                             <span class="visually-hidden">edit</span>
                         </a>
                     </td>
