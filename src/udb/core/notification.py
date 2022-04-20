@@ -28,6 +28,7 @@ Session = cherrypy.tools.db.get_session()
 class NotifiationPlugin(SimplePlugin):
     env = None
     header_name = ''
+    catch_all_email = None
 
     def start(self):
         self.bus.log('Start Notification plugins')
@@ -39,18 +40,23 @@ class NotifiationPlugin(SimplePlugin):
         remove(Session, "after_flush", self._after_flush)
 
     def _after_flush(self, session, flush_context):
-        messages = [obj for obj in session.new if isinstance(obj, Message)]
+        """
+        Send email notification on object changes.
+        """
+        messages = [msg for msg in session.new if isinstance(msg, Message)]
         if not messages:
             return
         # Collect list of model
-        obj_list = sorted([msg.model_obj for msg in messages], key=lambda obj: (obj.display_name, obj.id))
+        obj_list = sorted([msg.model_object for msg in messages], key=lambda obj: (obj.display_name, obj.id))
         if not obj_list:
             return
         # Send email to each follower except the author
         bcc = list(
             {user.email for obj in obj_list for user in obj.followers if messages[0].author_id != user.id if user.email}
         )
-        # TODO If enabled, send email to catch-all notification email.
+        # Send email to catch-all notification email.
+        if self.catch_all_email:
+            bcc += [self.catch_all_email]
         if not bcc:
             return
 
@@ -67,14 +73,14 @@ class NotifiationPlugin(SimplePlugin):
             )
         elif messages[0].type == Message.TYPE_COMMENT:
             subject = _('Comment on %s %s by %s') % (
-                messages[0].model_obj.display_name,
-                messages[0].model_obj.summary,
+                messages[0].model_object.display_name,
+                messages[0].model_object.summary,
                 messages[0].author_name,
             )
         else:
             subject = _('%s %s modified by %s') % (
-                messages[0].model_obj.display_name,
-                messages[0].model_obj.summary,
+                messages[0].model_object.display_name,
+                messages[0].model_object.summary,
                 messages[0].author_name,
             )
         message_body = template.render(**values)

@@ -61,8 +61,7 @@ class User(StatusMixing, Base):
         if not password.startswith('{SSHA}'):
             password = hash_password(password)
         user = cls(username=default_username, password=password, role=User.ROLE_ADMIN)
-        cls.session.add(user)
-        return user
+        return user.add()
 
     @classmethod
     def create(cls, username, password=None, **kwargs):
@@ -72,8 +71,7 @@ class User(StatusMixing, Base):
         assert username
         password = hash_password(password) if password else None
         user = cls(username=username, password=password, **kwargs)
-        cls.session.add(user)
-        return user
+        return user.add()
 
     @classmethod
     def coerce_role_name(cls, name):
