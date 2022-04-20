@@ -27,9 +27,9 @@
                     class="{%if active %}link-primary{% else %}link-dark{% endif %}">
                     {{ field.label.text }}
                     {% if sort == field.name + '_asc' %}
-                    <i class="bi bi-caret-up-fill"></i>
+                    <i class="bi bi-caret-up-fill" aria-hidden="true"></i>
                     {% elif sort == field.name + '_desc' %}
-                    <i class="bi bi-caret-down-fill"></i>
+                    <i class="bi bi-caret-down-fill" aria-hidden="true"></i>
                     {% endif %}
                 </a>
                 {% else %}
@@ -65,7 +65,7 @@
             <td>
                 <a class="btn btn-primary btn-circle btn-hover" href="{{url_for(obj, 'edit')}}" data-bs-toggle="tooltip"
                     data-bs-placement="top" title="{% trans %}View more detail{% endtrans %}">
-                    <i class="bi bi-chevron-right"></i>
+                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
                     <span class="visually-hidden">edit</span>
                 </a>
             </td>

@@ -25,16 +25,16 @@
 
 {% macro icon(model, extra_class=None) %}
 {%- if model == 'dnszone' -%}
-<i class="bi bi-collection {{extra_class}}"></i>
+<i class="bi bi-collection {{extra_class}}" aria-hidden="true"></i>
 {%- elif model == 'subnet' -%}
-<i class="bi bi-diagram-3-fill {{extra_class}}"></i>
+<i class="bi bi-diagram-3-fill {{extra_class}}" aria-hidden="true"></i>
 {%- elif model == 'dnsrecord' -%}
-<i class="bi bi-signpost-split-fill {{extra_class}}"></i>
+<i class="bi bi-signpost-split-fill {{extra_class}}" aria-hidden="true"></i>
 {%- elif model == 'dhcprecord' -%}
-<i class="bi bi-ethernet {{extra_class}}"></i>
+<i class="bi bi-ethernet {{extra_class}}" aria-hidden="true"></i>
 {%- elif model == 'ip' -%}
-<i class="bi bi-geo-fill {{extra_class}}"></i>
+<i class="bi bi-geo-fill {{extra_class}}" aria-hidden="true"></i>
 {%- elif model == 'user' -%}
-<i class="bi bi-person-fill {{extra_class}}"></i>
+<i class="bi bi-person-fill {{extra_class}}" aria-hidden="true"></i>
 {%- endif -%}
 {% endmacro %}
