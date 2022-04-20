@@ -33,14 +33,14 @@ class Follower(Base):
     __tablename__ = 'follower'
 
     id = Column(Integer, primary_key=True)
-    model = Column(String, nullable=False)
+    model_name = Column(String, nullable=False)
     model_id = Column(Integer, nullable=False)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
     user = relationship(User)
 
 
 # Create a unique index for username
-Index('follower_index', Follower.model, Follower.model_id, Follower.user_id, unique=True)
+Index('follower_index', Follower.model_name, Follower.model_id, Follower.user_id, unique=True)
 
 
 class FollowerMixin:
@@ -48,7 +48,7 @@ class FollowerMixin:
         assert self.id
         assert user
         if not self.is_following(user):
-            f = Follower(model=self.__tablename__, model_id=self.id, user=user)
+            f = Follower(model_name=self.__tablename__, model_id=self.id, user=user)
             f.add(commit=commit)
 
     def remove_follower(self, user):
@@ -56,7 +56,7 @@ class FollowerMixin:
         assert user
         assert user.id
         f = Follower.query.where(
-            Follower.model == self.__tablename__, Follower.model_id == self.id, Follower.user == user
+            Follower.model_name == self.__tablename__, Follower.model_id == self.id, Follower.user == user
         ).first()
         if f:
             f.delete()
@@ -66,7 +66,7 @@ class FollowerMixin:
         return relationship(
             User,
             secondary=lambda: join(User, Follower, User.id == Follower.user_id),
-            primaryjoin=lambda: and_(Follower.model == cls.__tablename__, Follower.model_id == cls.id),
+            primaryjoin=lambda: and_(Follower.model_name == cls.__tablename__, Follower.model_id == cls.id),
             secondaryjoin=lambda: User.id == Follower.user_id,
             viewonly=True,
             lazy=True,
@@ -79,7 +79,7 @@ class FollowerMixin:
         """
         return (
             Follower.query.where(
-                Follower.model == self.__tablename__, Follower.model_id == self.id, Follower.user == user
+                Follower.model_name == self.__tablename__, Follower.model_id == self.id, Follower.user == user
             ).first()
             is not None
         )

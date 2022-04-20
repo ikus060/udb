@@ -24,11 +24,13 @@ from udb.core.model import DnsZone, Message, Subnet, User
 
 class NotificationPluginTest(WebCase):
     def setUp(self):
+        cherrypy.config.update({'notification.catch_all_email': None})
         self.listener = mock.MagicMock()
         cherrypy.engine.subscribe("queue_mail", self.listener.queue_mail, priority=50)
         return super().setUp()
 
     def tearDown(self):
+        cherrypy.config.update({'notification.catch_all_email': None})
         cherrypy.engine.unsubscribe("queue_mail", self.listener.queue_mail)
         return super().tearDown()
 
@@ -42,6 +44,7 @@ class NotificationPluginTest(WebCase):
         record.add_follower(follower)
         # When a comment is made on that record
         record.add_message(Message(body='This is my comment', author=author))
+        record.add()
         # Then notifications are sent to the followers
         self.listener.queue_mail.assert_called_once_with(
             bcc=['follower@test.com'], subject='Comment on DNS Zone my.zone.com by admin', message=mock.ANY
@@ -79,8 +82,33 @@ class NotificationPluginTest(WebCase):
             bcc=['follower@test.com'], subject='my.zone.com, 192.168.0.0/24 (home) modified by nobody', message=mock.ANY
         )
 
-    def test_with_catchall(self):
+    def test_with_new_catchall(self):
         # Given a catchall notification email in configuration
-        # When a changes is made
+        cherrypy.config.update({'notification.catch_all_email': 'my@email.com'})
+        # When creating a new record
+        DnsZone(name='my.zone.com').add()
         # Then a notification is sent to catchall email
-        pass
+        self.listener.queue_mail.assert_called_once_with(
+            bcc=['my@email.com'],
+            subject='DNS Zone my.zone.com modified by nobody',
+            message=mock.ANY,
+        )
+
+    def test_with_changes_catchall(self):
+        # Given a record with followers
+        follower = User.create(
+            username='afollower', password='password', email='follower@test.com', role=User.ROLE_USER
+        ).add()
+        record = DnsZone(name='my.zone.com').add()
+        record.add_follower(follower)
+        # Given a catchall notification email in configuration
+        cherrypy.config.update({'notification.catch_all_email': 'my@email.com'})
+        # When a changes is made
+        record.notes = 'This is a modification to the notes field.'
+        record.add()
+        # Then a notification is sent to catchall email
+        self.listener.queue_mail.assert_called_once_with(
+            bcc=['follower@test.com', 'my@email.com'],
+            subject='DNS Zone my.zone.com modified by nobody',
+            message=mock.ANY,
+        )

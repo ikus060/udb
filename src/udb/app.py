@@ -139,6 +139,7 @@ class Root(object):
                 # Configure notification
                 'notification.env': env,
                 'notification.header_name': cfg.header_name,
+                'notification.catch_all_email': cfg.notification_catch_all_email,
             }
         )
         # Create database if required

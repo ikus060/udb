@@ -15,12 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import itertools
 import json
-from functools import cached_property
 
 import cherrypy
 from sqlalchemy import Column, String, and_, event, inspect
-from sqlalchemy.orm import declared_attr, foreign, relationship, remote
+from sqlalchemy.orm import backref, declared_attr, foreign, relationship, remote
 from sqlalchemy.sql.functions import func
 from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.sql.sqltypes import DateTime, Integer
@@ -34,7 +34,7 @@ Base = cherrypy.tools.db.get_base()
 Session = cherrypy.tools.db.get_session()
 
 
-def _get_model_changes(model):
+def _get_model_changes(model, ignore=['messages']):
     """
     Return a dictionary containing changes made to the model since it was
     fetched from the database.
@@ -54,7 +54,7 @@ def _get_model_changes(model):
     changes = {}
     for attr in state.attrs:
         hist = attr.load_history()
-        if not hist.has_changes():
+        if not hist.has_changes() or attr.key in ignore:
             continue
         if isinstance(attr.value, (list, tuple)) or len(hist.deleted) > 1 or len(hist.added) > 1:
             # If array, store array
@@ -65,11 +65,12 @@ def _get_model_changes(model):
                 hist.deleted[0] if len(hist.deleted) >= 1 else None,
                 hist.added[0] if len(hist.added) >= 1 else None,
             ]
-    return changes
+    change_type = 'dirty' if state.has_identity else 'new'
+    return change_type, changes
 
 
 @event.listens_for(Session, "before_flush")
-def before_flush(session, flush_context, instances):
+def create_messages(session, flush_context, instances):
     """
     When object get updated, add an audit message.
     """
@@ -78,40 +79,18 @@ def before_flush(session, flush_context, instances):
     currentuser = getattr(cherrypy.serving.request, 'currentuser', None)
     if currentuser:
         author_id = currentuser.id
-    # Create message if object changed.
-    for obj in session.dirty:
+    # Create message if object is created.
+    for obj in itertools.chain(session.new, session.dirty):
         if hasattr(obj, 'add_message'):
-            changes = _get_model_changes(obj)
+            change_type, changes = _get_model_changes(obj)
             if not changes:
                 continue
             try:
                 body = json.dumps(changes, default=str)
             except Exception:
                 body = str(changes)
-            message = Message(author_id=author_id, body=body, type='dirty')
-            obj.add_message(message, commit=False)
-
-
-@event.listens_for(Session, "after_flush")
-def after_flush(session, flush_context):
-    """
-    When object get created, add an audit message.
-    """
-    # Get current user
-    author_id = None
-    currentuser = getattr(cherrypy.serving.request, 'currentuser', None)
-    if currentuser:
-        author_id = currentuser.id
-    # Create message if object is created.
-    for obj in session.new:
-        if hasattr(obj, 'add_message'):
-            changes = _get_model_changes(obj)
-            try:
-                body = json.dumps(changes, default=str)
-            except Exception:
-                body = str(changes)
-            message = Message(author_id=author_id, body=body, type='new')
-            obj.add_message(message, commit=False)
+            message = Message(author_id=author_id, body=body, type=change_type)
+            obj.add_message(message)
 
 
 class Message(SearchableMixing, Base):
@@ -121,7 +100,7 @@ class Message(SearchableMixing, Base):
 
     __tablename__ = 'message'
     id = Column(Integer, primary_key=True)
-    model = Column(String, nullable=False)
+    model_name = Column(String, nullable=False)
     model_id = Column(Integer, nullable=False)
     author_id = Column(Integer, ForeignKey('user.id'), nullable=True)
     author = relationship("User", lazy=False)
@@ -147,23 +126,14 @@ class Message(SearchableMixing, Base):
     def _search_string(cls):
         return cls.body + " " + cls.subject
 
-    def _get_model(self):
+    @property
+    def model_object(self):
         """
-        Return the model class related to this message.
+        Return the model instance related to this message. All object supporting messages create a backref with <tablename>_model.
         """
-        for c in Base.registry._class_registry.values():
-            if hasattr(c, '__tablename__') and c.__tablename__ == self.model:
-                return c
-
-    @cached_property
-    def model_obj(self):
-        """
-        Return the model instance related to this message.
-        """
-        cls = self._get_model()
-        if not cls:
+        if self.model_name is None:
             return None
-        return cls.query.where(cls.id == self.model_id).first()
+        return getattr(self, "%s_object" % self.model_name)
 
     @property
     def author_name(self):
@@ -177,21 +147,25 @@ class MessageMixin:
     Mixin to support messages.
     """
 
-    def add_message(self, message, commit=True):
-        assert self.id
-        message.model = self.__tablename__
-        message.model_id = self.id
-        message.add(commit=commit)
+    def add_message(self, message):
+        message.model_name = self.__tablename__
+        self.messages.append(message)
 
     @declared_attr
     def messages(cls):
         return relationship(
             Message,
             primaryjoin=lambda: and_(
-                cls.__tablename__ == remote(foreign(Message.model)), cls.id == remote(foreign(Message.model_id))
+                cls.__tablename__ == remote(foreign(Message.model_name)), cls.id == remote(foreign(Message.model_id))
             ),
-            viewonly=True,
             lazy=True,
+            cascade="all, delete",
+            overlaps="messages,dnsrecord_object,dnszone_object,subnet_object,dhcprecord_object",
+            backref=backref(
+                '%s_object' % cls.__tablename__,
+                lazy=True,
+                overlaps="messages,dnsrecord_object,dnszone_object,subnet_object,dhcprecord_object",
+            ),
         )
 
     @declared_attr
@@ -199,7 +173,7 @@ class MessageMixin:
         return relationship(
             Message,
             primaryjoin=lambda: and_(
-                cls.__tablename__ == remote(foreign(Message.model)),
+                cls.__tablename__ == remote(foreign(Message.model_name)),
                 cls.id == remote(foreign(Message.model_id)),
                 Message.type == Message.TYPE_COMMENT,
             ),
@@ -212,7 +186,7 @@ class MessageMixin:
         return relationship(
             Message,
             primaryjoin=lambda: and_(
-                cls.__tablename__ == remote(foreign(Message.model)),
+                cls.__tablename__ == remote(foreign(Message.model_name)),
                 cls.id == remote(foreign(Message.model_id)),
                 Message.type.in_([Message.TYPE_NEW, Message.TYPE_DIRTY]),
             ),
