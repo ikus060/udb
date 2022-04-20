@@ -462,6 +462,23 @@ class DhcpRecordTest(WebCase, CommonTest):
         self.assertStatus(200)
         self.assertInBody('A record already exists in database with the same value.')
 
+    def test_edit_owner_and_notes(self):
+        # Given a database with a record
+        user_obj = User.query.first()
+        obj = self.obj_cls(**self.new_data)
+        obj.add()
+        self.session.commit()
+        self.assertEqual(1, len(obj.messages))
+        # When editing notes and owner
+        self.getPage(
+            url_for(self.base_url, obj.id, 'edit'),
+            method='POST',
+            body={'notes': 'Change me to get notification !', 'owner': user_obj.id},
+        )
+        self.session.commit()
+        # Then a single message is added to the record
+        self.assertEqual(2, len(obj.messages))
+
 
 class IPTest(WebCase):
     def test_no_owner_filter(self):

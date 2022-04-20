@@ -30,7 +30,13 @@ class SearchableMixing(object):
     @declared_attr
     def _search_vector(cls):
         return deferred(
-            Column(TSVectorType, Computed(func.to_tsvector('english', cls._search_string()), persisted=True))
+            Column(
+                TSVectorType,
+                Computed(
+                    func.to_tsvector('english', cls._search_string()),
+                    persisted=True,
+                ),
+            )
         )
 
     @declared_attr

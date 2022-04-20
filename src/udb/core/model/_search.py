@@ -26,7 +26,7 @@ Base = cherrypy.tools.db.get_base()
 search_query = union(
     *[
         select(
-            literal(model.__name__.lower()).label('model'),
+            literal(model.__name__.lower()).label('model_name'),
             # literal(str(model.display_name)).label('display_name'),
             model.id,
             model.summary,
@@ -43,12 +43,12 @@ search_query = union(
 
 class Search(Base):
     __table__ = search_query
-    __mapper_args__ = {'primary_key': [search_query.c.id, search_query.c.model]}
+    __mapper_args__ = {'primary_key': [search_query.c.id, search_query.c.model_name]}
     owner = relationship(User, lazy=False)
     messages = relationship(
         Message,
         primaryjoin=lambda: and_(
-            Search.model == remote(foreign(Message.model)),
+            Search.model_name == remote(foreign(Message.model_name)),
             Search.id == remote(foreign(Message.model_id)),
             Message.type == Message.TYPE_COMMENT,
         ),

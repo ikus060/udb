@@ -287,6 +287,13 @@ def parse_args(args=None, config_file_contents=None):
         help='type of encryption to be used when establishing communication with SMTP server',
     )
 
+    parser.add_argument(
+        '--notification-catch-all-email',
+        metavar='EMAIL',
+        help='When defined, all notification email will be sent to this email address.',
+        default=None,
+    )
+
     # Branding
     parser.add_argument(
         '--header-name',

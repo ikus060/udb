@@ -46,7 +46,7 @@
                                       <tbody>
                                         <tr>
                                           <td style="line-height: 24px; font-size: 16px; width: 100%; margin: 0; padding: 20px;" align="left">
-                                            <h1 class="h3" style="padding-top: 0; padding-bottom: 0; font-weight: 500; vertical-align: baseline; font-size: 28px; line-height: 33.6px; margin: 0;" align="left">{{header_name}}</h1>
+                                            <h1 class="" style="padding-top: 0; padding-bottom: 0; font-weight: 500; vertical-align: baseline; font-size: 36px; line-height: 43.2px; margin: 0;" align="left">{{header_name}}</h1>
                                             <table class="s-2 w-full" role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%;" width="100%">
                                               <tbody>
                                                 <tr>
@@ -84,37 +84,11 @@
                                               </tbody>
                                             </table>
                                             <div class="space-y-3">
-                                              <h2 style="padding-top: 0; padding-bottom: 0; font-weight: 500; vertical-align: baseline; font-size: 32px; line-height: 38.4px; margin: 0;" align="left">{{model_display_name}} {{message.model_obj.summary}}</h2>
+                                              <h2 style="padding-top: 0; padding-bottom: 0; font-weight: 500; vertical-align: baseline; font-size: 32px; line-height: 38.4px; margin: 0;" align="left">{{model_display_name}} {{message.model_object.summary}}</h2>
                                               {% import "common/messages.html" as messages %}
                                               {{messages.show_message(message)}}
                                             </div>
-                                            <table class="s-5 w-full" role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%;" width="100%">
-                                              <tbody>
-                                                <tr>
-                                                  <td style="line-height: 20px; font-size: 20px; width: 100%; height: 20px; margin: 0;" align="left" width="100%" height="20">
-                                                    &#160;
-                                                  </td>
-                                                </tr>
-                                              </tbody>
-                                            </table>
-                                            <table class="hr" role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%;">
-                                              <tbody>
-                                                <tr>
-                                                  <td style="line-height: 24px; font-size: 16px; border-top-width: 1px; border-top-color: #e2e8f0; border-top-style: solid; height: 1px; width: 100%; margin: 0;" align="left">
-                                                  </td>
-                                                </tr>
-                                              </tbody>
-                                            </table>
-                                            <table class="s-5 w-full" role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%;" width="100%">
-                                              <tbody>
-                                                <tr>
-                                                  <td style="line-height: 20px; font-size: 20px; width: 100%; height: 20px; margin: 0;" align="left" width="100%" height="20">
-                                                    &#160;
-                                                  </td>
-                                                </tr>
-                                              </tbody>
-                                            </table>
-                                            <a href="{{url_for('TODO')}}" target="_blank" style="color: #0d6efd;">
+                                            <a href="{{url_for(message.model_object, 'edit#history')}}" style="color: #0d6efd;">
                                               {% trans %}View in browser{% endtrans %}
                                             </a>
                                             {% endfor %}

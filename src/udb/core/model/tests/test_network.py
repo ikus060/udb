@@ -36,9 +36,12 @@ class DnsZoneTest(WebCase):
         # Given an empty database
         self.assertEqual(0, DnsZone.query.count())
         # When adding a new Dns Zone
-        DnsZone(name='bfh.ch').add()
+        zone = DnsZone(name='bfh.ch').add()
         # then a new DnsZone entry exists in database
         self.assertEqual(1, DnsZone.query.count())
+        # Then a messages was added to the zone
+        self.assertEqual(1, len(zone.messages))
+        self.assertEqual(1, len(zone.changes))
 
     def test_delete(self):
         # Given a database with a DnsZone
@@ -48,19 +51,24 @@ class DnsZoneTest(WebCase):
         self.session.commit()
         # When trying to delete a given dns zone
         obj.delete()
-        # When the entry is removed from database
+        # Then the entry is removed from database
         self.assertEqual(0, DnsZone.query.count())
+        # Then related messages are deleted from database
+        self.assertEqual(0, Message.query.count())
 
     def test_soft_delete(self):
         # Given a datavase with a DnsZone
         obj = DnsZone(name='bfh.ch').add()
         self.assertEqual(1, DnsZone.query.count())
+        self.assertEqual(1, Message.query.count())
         # When updating it's status to deleted
         obj.status = DnsZone.STATUS_DELETED
         obj.add()
         # When the object still exists in database
         self.assertEqual(1, DnsZone.query.count())
         self.assertEqual(DnsZone.STATUS_DELETED, DnsZone.query.first().status)
+        # Then related messages are kept
+        self.assertEqual(2, Message.query.count())
 
     def test_enabled(self):
         # Given a datavase with a DnsZone
@@ -163,6 +171,7 @@ class DnsZoneTest(WebCase):
         self.session.commit()
         # When adding a comments
         d.add_message(Message(body='this is a comments'))
+        self.session.commit()
         # Then a message with type 'new' exists
         messages = d.changes
         self.assertEqual(2, len(messages))
