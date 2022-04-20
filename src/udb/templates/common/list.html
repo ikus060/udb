@@ -4,7 +4,7 @@
 
 {% block body %}
 <div class="d-flex justify-content-between">
-    <h4 class="flex-fill">{{macro.icon(model_name)}} {{display_name}}</h2>
+    <h4 class="flex-fill" id="title">{{macro.icon(model_name)}} {% trans %}List of{% endtrans %} {{display_name}}</h2>
     <div class="align-self-center">
         {% if has_new %}
         {% set new_disabled = not currentuser.allow_new_record() %}
@@ -15,7 +15,7 @@
         {% include "common/filter.html" %}
     </div>
 </div>
-<table class="table table-hover">
+<table class="table table-hover" aria-describedby="title">
     <thead>
         <tr>
             {% for field in form %}

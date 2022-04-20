@@ -3,7 +3,7 @@
 <div class="card">
     <div class="card-body bg-light p-2">
         {% if field.object_data %}
-        <table class="table table-sm table-hover mb-2">
+        <table class="table table-sm table-hover mb-2" aria-label="{{ subfield.label.text }}">
             <thead>
                 <tr>
                     {% for subfield in field|first %}
