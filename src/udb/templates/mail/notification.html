@@ -88,7 +88,7 @@
                                               {% import "common/messages.html" as messages %}
                                               {{messages.show_message(message)}}
                                             </div>
-                                            <a href="{{url_for(message.model_object, 'edit#history')}}" target="_blank" style="color: #0d6efd;">
+                                            <a href="{{url_for(message.model_object, 'edit#history')}}" style="color: #0d6efd;">
                                               {% trans %}View in browser{% endtrans %}
                                             </a>
                                             {% endfor %}
