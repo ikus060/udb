@@ -27,7 +27,6 @@ search_query = union(
     *[
         select(
             literal(model.__name__.lower()).label('model_name'),
-            # literal(str(model.display_name)).label('display_name'),
             model.id,
             model.summary,
             model.notes,

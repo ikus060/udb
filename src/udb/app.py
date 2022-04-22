@@ -35,6 +35,7 @@ from udb.controller.common_page import CommonApi, CommonPage
 from udb.controller.login_page import LoginPage
 from udb.controller.logout_page import LogoutPage
 from udb.controller.network_page import DhcpRecordForm, DnsRecordForm, DnsZoneForm, IpForm, SubnetForm
+from udb.controller.notifications_page import NotificationsPage
 from udb.controller.profile_page import ProfilePage
 from udb.controller.search_page import SearchPage
 from udb.controller.static import Static
@@ -173,6 +174,7 @@ class Root(object):
         self.api = Api()
         self.login = LoginPage()
         self.logout = LogoutPage()
+        self.notifications = NotificationsPage()
         self.profile = ProfilePage()
         self.search = SearchPage()
         self.static = Static()

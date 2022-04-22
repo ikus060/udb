@@ -44,12 +44,12 @@
         <tr>
             <td class="align-middle" style="width: 25px">
                 <a href="{{url_for(obj.model_name, obj.id, 'edit')}}">
-                    {{ macro.icon(obj.model, "h4") }}
+                    {{ macro.icon(obj.model_name, "h4") }}
                 </a>
             </td>
             <td>
                 <a href="{{url_for(obj.model_name, obj.id, 'edit')}}">
-                    <strong>{{obj.model | capitalize}}</strong> {{ _status.badge(obj) }}
+                    <strong>{{obj.model_name | capitalize}}</strong> {{ _status.badge(obj) }}
                     <br />{{obj.summary}}
                 </a>
             </td>
