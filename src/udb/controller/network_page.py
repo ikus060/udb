@@ -14,12 +14,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import cherrypy
-import validators
 from wtforms.fields import FieldList, FormField, IntegerField, SelectField, StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.form import Form
-from wtforms.validators import DataRequired, IPAddress, MacAddress, Optional, ValidationError
+from wtforms.validators import DataRequired, IPAddress, MacAddress, Optional
 
 from udb.controller import url_for
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User
@@ -28,23 +28,11 @@ from udb.tools.i18n import gettext as _
 from .form import CherryForm, SelectMultiCheckbox, SelectMultipleObjectField, SelectObjectField, TableWidget
 
 
-def validate_domain(form, field):
-    if not validators.domain(field.data):
-        raise ValidationError(_('Invalid FQDN'))
-
-
-def validate_ip_cidr(form, field):
-    if not validators.ipv4_cidr(field.data) and not validators.ipv6_cidr(field.data):
-        raise ValidationError(_('Invalid subnet'))
-
-
 class DnsZoneForm(CherryForm):
 
     object_cls = DnsZone
 
-    name = StringField(
-        _('Name'), validators=[DataRequired(), validate_domain], render_kw={"placeholder": _("Enter a FQDN")}
-    )
+    name = StringField(_('Name'), validators=[DataRequired()], render_kw={"placeholder": _("Enter a FQDN")})
 
     notes = TextAreaField(
         _('Notes'),
@@ -64,7 +52,7 @@ class SubnetForm(CherryForm):
 
     ip_cidr = StringField(
         _('Subnet'),
-        validators=[DataRequired(), validate_ip_cidr],
+        validators=[DataRequired()],
         render_kw={"placeholder": _("Enter a subnet IP/CIDR")},
     )
     name = StringField(_('Name'), validators=[], render_kw={"placeholder": _("Enter a description")})
@@ -83,9 +71,7 @@ class DnsRecordForm(CherryForm):
 
     object_cls = DnsRecord
 
-    name = StringField(
-        _('Name'), validators=[DataRequired(), validate_domain], render_kw={"placeholder": _("Enter a FQDN")}
-    )
+    name = StringField(_('Name'), validators=[DataRequired()], render_kw={"placeholder": _("Enter a FQDN")})
 
     type = SelectField(_('Type'), validators=[DataRequired()], choices=list(zip(DnsRecord.TYPES, DnsRecord.TYPES)))
 

@@ -34,6 +34,22 @@ from ._common import CommonMixin
 Base = cherrypy.tools.db.get_base()
 
 
+def _validate_ipv4(value):
+    try:
+        ipaddress.IPv4Address(value)
+        return True
+    except ValueError:
+        return False
+
+
+def _validate_ipv6(value):
+    try:
+        ipaddress.IPv6Address(value)
+        return True
+    except ValueError:
+        return False
+
+
 def _sqlite_split_part(string, delimiter, position):
     """
     SQLite implementation of split_part.
@@ -108,11 +124,11 @@ class Subnet(CommonMixin, Base):
         return cls.name + " " + cls.notes + " " + cls.ip_cidr.text()
 
     @validates('ip_cidr')
-    def validate_ip(self, key, value):
+    def validate_ip_cidr(self, key, value):
         try:
             return str(ipaddress.ip_network(value, strict=False))
-        except ValueError as e:
-            raise ValueError('ip_cidr', str(e))
+        except ValueError:
+            raise ValueError('ip_cidr', _('does not appear to be a valid IPv4 or IPv6 network'))
 
     @property
     def related_supernets(self):
@@ -133,8 +149,8 @@ class Subnet(CommonMixin, Base):
 class DnsRecord(CommonMixin, Base):
     TYPES = {
         'CNAME': validators.domain,
-        'A': validators.ipv4,
-        'AAAA': validators.ipv6,
+        'A': _validate_ipv4,
+        'AAAA': _validate_ipv6,
         'TXT': lambda value: value and isinstance(value, str),
         'SRV': lambda value: value and isinstance(value, str),
         'PTR': validators.domain,
@@ -208,10 +224,12 @@ class DnsRecord(CommonMixin, Base):
             if not dnszones:
                 raise ValueError('name', _('FQDN must be defined within a valid DNS Zone.'))
 
-            # Validate IP according
-            if self.type in ['A', 'AAAA'] and not self.related_subnets:
-                suggest_subnet = ', '.join([', '.join(map(lambda x: x.ip_cidr, zone.subnets)) for zone in dnszones])
-                raise ValueError('value', _('IP address must be defined within the DNS Zone: %s') % suggest_subnet)
+            # IP should be within the corresponding DNS Zone
+            if self.type in ['A', 'AAAA']:
+                self.value = str(ipaddress.ip_address(self.value))
+                if not self.related_subnets:
+                    suggest_subnet = ', '.join([', '.join(map(lambda x: x.ip_cidr, zone.subnets)) for zone in dnszones])
+                    raise ValueError('value', _('IP address must be defined within the DNS Zone: %s') % suggest_subnet)
 
     @property
     def related_dnszones(self):
@@ -281,9 +299,10 @@ class DhcpRecord(CommonMixin, Base):
 
     @validates('ip')
     def validate_ip(self, key, value):
-        if not validators.ipv4(value) and not validators.ipv6(value):
+        try:
+            return str(ipaddress.ip_address(value))
+        except ValueError:
             raise ValueError('ip', _('expected a valid ipv4 or ipv6'))
-        return value
 
     @validates('mac')
     def validate_mac(self, key, value):
@@ -322,7 +341,7 @@ _reverse_ptr_ipv4 = (
 # Create a field to convert
 # `b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa` to
 # `4321:0:1:2:3:4:567:89ab`
-_reverse_ptr_ipv6 = (
+_reverse_ptr_ipv6 = func.replace(
     _ipv6_part(DnsRecord.name, 56)
     + ':'
     + _ipv6_part(DnsRecord.name, 48)
@@ -337,12 +356,16 @@ _reverse_ptr_ipv6 = (
     + ':'
     + _ipv6_part(DnsRecord.name, 8)
     + ':'
-    + _ipv6_part(DnsRecord.name, 0)
+    + _ipv6_part(DnsRecord.name, 0),
+    ':::',
+    '::',
 )
 
 # Create a query to list all existing IP address in various record type.
 ip_entry = union(
-    select(DhcpRecord.ip.label('ip')).filter(DhcpRecord.status != DhcpRecord.STATUS_DELETED),
+    select(DhcpRecord.ip.label('ip')).filter(
+        DhcpRecord.status != DhcpRecord.STATUS_DELETED,
+    ),
     select(DnsRecord.value.label('ip')).filter(
         DnsRecord.type.in_(['A', 'AAAA']), DnsRecord.status != DnsRecord.STATUS_DELETED
     ),
@@ -376,12 +399,16 @@ class Ip(Base):
         Return list of related DNS record. That include all DNS record with FQDN matching our current IP address and reverse pointer (PTR).
         """
         return DnsRecord.query.filter(
+            DnsRecord.status != DnsRecord.STATUS_DELETED,
             or_(
                 DnsRecord.name.in_(select(DnsRecord.name).filter(DnsRecord.value == self.ip)),
                 DnsRecord.name == ipaddress.ip_address(self.ip).reverse_pointer,
-            )
+            ),
         ).all()
 
     @property
     def related_dhcp_records(self):
-        return DhcpRecord.query.filter(DhcpRecord.ip == self.ip).all()
+        return DhcpRecord.query.filter(
+            DhcpRecord.status != DhcpRecord.STATUS_DELETED,
+            DhcpRecord.ip == self.ip,
+        ).all()

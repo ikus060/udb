@@ -314,7 +314,7 @@ class DnsZoneTest(WebCase, CommonTest):
         self.session.commit()
         # Then edit page is displayed with an error message
         self.assertStatus(200)
-        self.assertInBody('Invalid FQDN')
+        self.assertInBody('expected a valid FQDN')
 
     def test_edit_with_subnet(self):
         # Given a database with a record
@@ -363,7 +363,7 @@ class SubnetTest(WebCase, CommonTest):
         self.session.commit()
         # Then edit page is displayed with an error message
         self.assertStatus(200)
-        self.assertInBody('Invalid subnet')
+        self.assertInBody('does not appear to be a valid IPv4 or IPv6 network')
 
     def test_edit_with_dnszone(self):
         # Given a database with a record
