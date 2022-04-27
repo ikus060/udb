@@ -408,6 +408,16 @@ class DnsRecordTest(WebCase):
         # Then a new record is created
         self.assertEqual(1, DnsRecord.query.count())
 
+    def test_add_aaaa_norm_ipv6(self):
+        # Given a DNS Record created with leading zero
+        subnet = Subnet(ip_cidr='2001:db8:85a3::/64')
+        DnsZone(name='example.com', subnets=[subnet]).add()
+        DnsRecord(name='foo.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add()
+        # When querying the record
+        dns = DnsRecord.query.first()
+        # Then the IP Address is properly formated
+        self.assertEqual('2001:db8:85a3::8a2e:370:7334', dns.value)
+
     def test_add_aaaa_record_with_invalid_value(self):
         # Given an empty database
         self.assertEqual(0, DnsRecord.query.count())
@@ -578,6 +588,14 @@ class DhcpRecordTest(WebCase):
         # Then a new record is created
         self.assertEqual(1, DhcpRecord.query.count())
 
+    def test_norm_ipv6(self):
+        # Given a DHCP Record with IPv6
+        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:af').add()
+        # When querying the object
+        dhcp = DhcpRecord.query.first()
+        # Then the IPv6 is reformated
+        self.assertEqual('2001:db8:85a3::8a2e:370:7334', dhcp.ip)
+
     def test_add_with_invalid_ip(self):
         # Given an empty database
         self.assertEqual(0, DhcpRecord.query.count())
@@ -673,6 +691,7 @@ class IpTest(WebCase):
         DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf').add()
         DnsRecord(name='bar.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add()
         # When querying list of related DnsRecord on a Ip.
+        self.assertEqual(1, Ip.query.count())
         obj = Ip.query.order_by('ip').first()
         # Then the list include all DnsRecord matching the fqdn
         self.assertEqual(len(obj.related_dhcp_records), 1)
@@ -720,3 +739,61 @@ class IpTest(WebCase):
         # Then is include the IP Address of the PTR record
         self.assertEqual('4321::1:2:3:4:567:89ab', obj.ip)
         self.assertEqual(len(obj.related_dns_records), 1)
+
+    def test_related_dhcp_record_ipv6(self):
+        # Given a DNS Record
+        dns = DnsRecord(
+            name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
+            type='PTR',
+            value='bar.example.com',
+        ).add()
+        # Given a deleted DHCP Record
+        dhcp = DhcpRecord(
+            ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
+            mac='00:00:5e:00:53:bf',
+        ).add()
+        # When querying list of IP
+        self.assertEqual(1, Ip.query.count())
+        obj = Ip.query.order_by('ip').first()
+        # Then is include the IP Address of the PTR record
+        self.assertEqual('2001:db8:85a3::8a2e:370:7334', obj.ip)
+        self.assertEqual([dhcp], obj.related_dhcp_records)
+        self.assertEqual([dns], obj.related_dns_records)
+
+    def test_related_dns_record_with_deleted(self):
+        # Given a DHCP Record
+        DhcpRecord(
+            ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
+            mac='00:00:5e:00:53:bf',
+        ).add()
+        # Given a deleted DNS Record
+        DnsRecord(
+            name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
+            type='PTR',
+            value='bar.example.com',
+            status=DnsRecord.STATUS_DELETED,
+        ).add()
+        # When querying list of IP
+        obj = Ip.query.order_by('ip').first()
+        # Then is include the IP Address of the PTR record
+        self.assertEqual('2001:db8:85a3::8a2e:370:7334', obj.ip)
+        self.assertEqual(len(obj.related_dns_records), 0)
+
+    def test_related_dhcp_record_with_deleted(self):
+        # Given a DNS Record
+        DnsRecord(
+            name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
+            type='PTR',
+            value='bar.example.com',
+        ).add()
+        # Given a deleted DHCP Record
+        DhcpRecord(
+            ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
+            mac='00:00:5e:00:53:bf',
+            status=DhcpRecord.STATUS_DELETED,
+        ).add()
+        # When querying list of IP
+        obj = Ip.query.order_by('ip').first()
+        # Then is include the IP Address of the PTR record
+        self.assertEqual('2001:db8:85a3::8a2e:370:7334', obj.ip)
+        self.assertEqual(len(obj.related_dhcp_records), 0)
