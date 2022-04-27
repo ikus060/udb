@@ -175,9 +175,6 @@ class LdapPlugin(SimplePlugin):
             conn.unbind()
         return None
 
-    def _get_display_name(self, attributes):
-        pass
-
 
 cherrypy.ldap = LdapPlugin(cherrypy.engine)
 cherrypy.ldap.subscribe()

@@ -84,7 +84,8 @@
           <i class="bi bi-person-fill me-3" aria-hidden="true"></i> <strong>{{ username }}</strong>
         </a>
         <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser1">
-          <li><a class="dropdown-item" href="{{ url_for('profile') }}">{%trans%}Edit profile{%endtrans%}</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('profile') }}">{%trans%}Edit user profile{%endtrans%}</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('notifications') }}">{%trans%}Edit notification preferences{%endtrans%}</a></li>
           <li>
             <hr class="dropdown-divider">
           </li>

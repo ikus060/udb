@@ -14,9 +14,21 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from ._follower import Follower  # noqa
-from ._message import Message  # noqa
-from ._network import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet  # noqa
-from ._user import User  # noqa
 
-from ._search import Search  # noqa # isort: skip
+
+import cherrypy
+from sqlalchemy import and_
+
+from udb.core.model import Follower, Search
+
+
+class NotificationsPage:
+    @cherrypy.expose()
+    @cherrypy.tools.jinja2(template=['notifications.html'])
+    def index(self, **kwargs):
+        userobj = cherrypy.request.currentuser
+        query = Search.query.join(
+            Follower, and_(Search.model_name == Follower.model_name, Search.id == Follower.model_id)
+        ).filter(Follower.user_id == userobj.id)
+        obj_list = query.all()
+        return {'obj_list': obj_list}

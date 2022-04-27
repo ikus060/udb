@@ -148,6 +148,18 @@ class CommonPage(object):
         """
         return getattr(obj, self.primary_key)
 
+    def _redirect(self, default, obj=None):
+        redirect_table = {
+            'notifications': url_for('notifications'),
+            'edit': url_for(obj, 'edit'),
+            'list': url_for(self.model),
+        }
+        redirect = cherrypy.request.params.get('redirect', default)
+        redirect_url = redirect_table.get(redirect, None)
+        if redirect_url:
+            raise cherrypy.HTTPRedirect(redirect_url)
+        raise cherrypy.HTTPError(400, 'invalid redirect value')
+
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/list.html', 'common/list.html'])
     def index(self, deleted=False, personal=False, sort=None, filter=None):
@@ -175,7 +187,6 @@ class CommonPage(object):
             'model': self.model,
             'model_name': self.model.__name__.lower(),
             'obj_list': obj_list,
-            'display_name': self.model.display_name,
         }
 
     @cherrypy.expose
@@ -193,13 +204,12 @@ class CommonPage(object):
                 self.model.session.rollback()
                 self._handle_exception(e, form)
             else:
-                raise cherrypy.HTTPRedirect(url_for(self.model))
+                raise self._redirect('list', obj)
         # return data form template
         return {
             'model': self.model,
             'model_name': self.model.__name__.lower(),
             'form': form,
-            'display_name': self.model.display_name,
         }
 
     @cherrypy.expose
@@ -215,7 +225,7 @@ class CommonPage(object):
         except Exception as e:
             self.model.session.rollback()
             self._handle_exception(e)
-        raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
+        raise self._redirect('edit', obj)
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/edit.html', 'common/edit.html'])
@@ -234,7 +244,7 @@ class CommonPage(object):
                 self.model.session.rollback()
                 self._handle_exception(e, form)
             else:
-                raise cherrypy.HTTPRedirect(url_for(self.model))
+                raise self._redirect('list', obj)
         # Return object form
         return {
             'has_new': self.has_new,
@@ -247,7 +257,6 @@ class CommonPage(object):
             'form': form,
             'message_form': MessageForm(),
             'obj': obj,
-            'display_name': self.model.display_name,
         }
 
     @cherrypy.expose
@@ -274,7 +283,8 @@ class CommonPage(object):
         if userobj and obj.is_following(userobj):
             obj.remove_follower(userobj)
             obj.add()
-        raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
+        # Redirect to referer if defined
+        raise self._redirect('edit', obj)
 
     @cherrypy.expose
     def post(self, key, **kwargs):
@@ -284,7 +294,7 @@ class CommonPage(object):
         if form.validate_on_submit():
             message = Message(body=form.body.data, author=cherrypy.request.currentuser)
             obj.add_message(message)
-        raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
+        raise self._redirect('edit', obj)
 
 
 @cherrypy.tools.errors(

@@ -45,14 +45,15 @@ class ProfileTest(WebCase):
         # Given a user
         # When updating my profile information
         self.getPage(
-            url_for('profile', ''), method='POST', body={'fullname': 'New Name', 'email': 'newmail@example.com'}
+            url_for('profile', ''), method='POST', body={'fullname': 'New Name', 'email': 'newmail@ikus-soft.com'}
         )
         self.assertStatus(200)
+        # Then the user is updated
+        self.assertInBody('User profile updated successfully.')
         # Then the information is updated in database
         obj = User.query.filter_by(username='admin').first()
         self.assertEqual('New Name', obj.fullname)
-        self.assertEqual('newmail@example.com', obj.email)
-        self.assertInBody('User profile updated successfully.')
+        self.assertEqual('newmail@ikus-soft.com', obj.email)
 
     def test_update_profile_username(self):
         # Given a user

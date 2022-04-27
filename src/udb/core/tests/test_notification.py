@@ -79,7 +79,9 @@ class NotificationPluginTest(WebCase):
         record.add()
         # Then a single notification is sent to the followers
         self.listener.queue_mail.assert_called_once_with(
-            bcc=['follower@test.com'], subject='my.zone.com, 192.168.0.0/24 (home) modified by nobody', message=mock.ANY
+            bcc=['follower@test.com'],
+            subject='DNS Zone my.zone.com, IP Subnet 192.168.0.0/24 (home) modified by nobody',
+            message=mock.ANY,
         )
 
     def test_with_new_catchall(self):

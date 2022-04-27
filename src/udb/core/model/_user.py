@@ -31,7 +31,6 @@ Base = cherrypy.tools.db.get_base()
 
 
 class User(StatusMixing, Base):
-    display_name = _('User')
     __tablename__ = 'user'
 
     ROLE_ADMIN = 0

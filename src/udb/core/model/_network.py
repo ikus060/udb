@@ -70,7 +70,6 @@ dnszone_subnet = Table(
 
 
 class DnsZone(CommonMixin, Base):
-    display_name = _('DNS Zone')
     name = Column(String, unique=True, nullable=False)
     subnets = relationship(
         "Subnet", secondary=dnszone_subnet, backref="dnszones", active_history=True, sync_backref=True
@@ -99,7 +98,6 @@ Index('dnszone_name_index', func.lower(DnsZone.name), unique=True)
 
 
 class Subnet(CommonMixin, Base):
-    display_name = _('IP Subnet')
     name = Column(String, unique=True, nullable=False, default='')
     # Database are not very friendly when it come to storing 128bits for this reason, we are storing the network address as bit into a string field.
     ip_cidr = Column(CidrType, unique=True, nullable=False)
@@ -152,7 +150,6 @@ class DnsRecord(CommonMixin, Base):
         'MX': lambda value: value and isinstance(value, str),
         'NS': validators.domain,
     }
-    display_name = _('DNS Record')
     name = Column(String, unique=False, nullable=False)
     type = Column(String, nullable=False)
     ttl = Column(Integer, nullable=False, default=3600)
@@ -275,7 +272,6 @@ def before_insert(mapper, connection, instance):
 
 
 class DhcpRecord(CommonMixin, Base):
-    display_name = _('DHCP Record')
     ip = Column(String, nullable=False, unique=True)
     mac = Column(String, nullable=False, unique=True)
 
@@ -368,7 +364,6 @@ class Ip(Base):
     This ORM is a view on all IP address declared in various record type.
     """
 
-    display_name = _('IP Address')
     __table__ = ip_entry
     __mapper_args__ = {'primary_key': [ip_entry.c.ip]}
 
