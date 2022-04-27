@@ -49,7 +49,7 @@
             </td>
             <td>
                 <a href="{{url_for(obj.model_name, obj.id, 'edit')}}">
-                    <strong>{{obj.model_name | capitalize}}</strong> {{ _status.badge(obj) }}
+                    <strong>{{macro.display_name(obj.model_name) }}</strong> {{ _status.badge(obj) }}
                     <br />{{obj.summary}}
                 </a>
             </td>

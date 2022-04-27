@@ -187,7 +187,6 @@ class CommonPage(object):
             'model': self.model,
             'model_name': self.model.__name__.lower(),
             'obj_list': obj_list,
-            'display_name': self.model.display_name,
         }
 
     @cherrypy.expose
@@ -211,7 +210,6 @@ class CommonPage(object):
             'model': self.model,
             'model_name': self.model.__name__.lower(),
             'form': form,
-            'display_name': self.model.display_name,
         }
 
     @cherrypy.expose
@@ -259,7 +257,6 @@ class CommonPage(object):
             'form': form,
             'message_form': MessageForm(),
             'obj': obj,
-            'display_name': self.model.display_name,
         }
 
     @cherrypy.expose

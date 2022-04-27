@@ -1,9 +1,19 @@
+{% import "macro.html" as macro %}
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Not used</title>
+    <title>
+        {%- if messages[0].changes is none -%}
+        Comment on {{ macro.display_name(messages[0].model_name) }} {{ messages[0].model_object.summary }} by {{
+        messages[0].author_name }}
+        {%- else -%}
+        {%- for msg in messages %}{{ macro.display_name(msg.model_name) }} {{ msg.model_object.summary }}{{ ", " if not
+        loop.last else " " }}{% endfor -%}
+        modified by {{messages[0].author_name}}
+        {%- endif -%}
+    </title>
 </head>
 
 <body class="bg-light">
@@ -14,7 +24,7 @@
                 {% for message in messages %}
                 <hr>
                 <div class="space-y-3">
-                    <h2>{{model_display_name}} {{message.model_object.summary}}</h2>
+                    <h2>{{macro.display_name(message.model_name)}} {{message.model_object.summary}}</h2>
                     {% import "common/messages.html" as messages %}
                     {{messages.show_message(message)}}
                 </div>
