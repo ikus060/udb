@@ -250,15 +250,27 @@ class DnsRecord(CommonMixin, Base):
 
         if self.type == 'PTR':
             # Validate name according to record type
-            if not (self.name.endswith('.in-addr.arpa') or self.name.endswith('.ip6.arpa')):
-                raise ValueError('name', _('PTR records must ends with `.in-addr.arpa` or `.ip6.arpa`'))
             if not self.reverse_ip:
-                raise ValueError('name', _('PTR records must define a reverse pointer'))
+                raise ValueError(
+                    'name',
+                    _(
+                        'PTR records must ends with `.in-addr.arpa` or `.ip6.arpa` and define a valid IPv4 or IPv6 address'
+                    ),
+                )
 
-            # PTR Record value must be withing a dnszone
+            # Every record type must be defined within a DNS Zone
+            dnszones = self.related_dnszones
+            if not dnszones:
+                raise ValueError('value', _('FQDN must be defined within a valid DNS Zone.'))
+
+            # IP should be within the corresponding DNS Zone
+            if not self.related_subnets:
+                suggest_subnet = ', '.join([', '.join(map(lambda x: x.ip_cidr, zone.subnets)) for zone in dnszones])
+                raise ValueError('name', _('IP address must be defined within the DNS Zone: %s') % suggest_subnet)
 
         else:
-            # Every other record type must be defined within a DNS Zone
+
+            # Every record type must be defined within a DNS Zone
             dnszones = self.related_dnszones
             if not dnszones:
                 raise ValueError('name', _('FQDN must be defined within a valid DNS Zone.'))
@@ -302,12 +314,11 @@ class DnsRecord(CommonMixin, Base):
                 .all()
             )
         elif self.type == 'PTR':
-
             return (
                 Subnet.query.join(Subnet.dnszones)
                 .filter(
                     literal(self.value).endswith(DnsZone.name),
-                    Subnet.ip_cidr.supernet_of(self.name),
+                    Subnet.ip_cidr.supernet_of(self.reverse_ip),
                     DnsZone.status != DnsZone.STATUS_DELETED,
                     Subnet.status != Subnet.STATUS_DELETED,
                 )
