@@ -12,3 +12,4 @@ data.db
 /.pybuild
 /build
 .sass-cache
+.vscode
