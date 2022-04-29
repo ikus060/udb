@@ -72,6 +72,22 @@ class TestLogin(WebCase):
         self.assertStatus('303 See Other')
         self.assertHeaderItemValue("Location", self.baseurl + "/dnszone/")
 
+    def test_login_with_invalid_redirect(self):
+        # Given a login form submited with a redirect value.
+        username = "admin"
+        password = "admin"
+        User.create(username=username, password=password)
+        self.session.commit()
+        # When trying to login
+        self.getPage(
+            "/login/",
+            method="POST",
+            body={"username": username, "password": password, "redirect": "invalid"},
+        )
+        # Then user is redirect to the proper URL.
+        self.assertStatus('200 OK')
+        self.assertInBody('redirect: invalid redirect url')
+
     def test_login_with_redirect_query_string(self):
         # Given a user redirected to login page with a query string.
         # When trying to login
@@ -79,6 +95,14 @@ class TestLogin(WebCase):
         # Then the form contains a redirect value
         self.assertStatus("200 OK")
         self.assertInBody('value="/dnszone/"')
+
+    def test_login_with_redirect_invalid_query_string(self):
+        # When a user redirected to login page with an invalid query string.
+        self.getPage("/login/?redirect=invalid", method="GET")
+        # Then the form contains the invalid redirect value
+        self.assertStatus("200 OK")
+        self.assertNotInBody('invalid redirect url')
+        self.assertInBody('value="invalid"')
 
     def test_login_invalid_credentials(self):
         # Given invalid credentials.
@@ -143,7 +167,7 @@ class TestLogin(WebCase):
         self.getPage("/")
         # Then user is redirected to login page.
         self.assertStatus('303 See Other')
-        self.assertHeaderItemValue('Location', self.baseurl + '/login/?redirect=%2F')
+        self.assertHeaderItemValue('Location', self.baseurl + '/login/')
 
     def test_redirect_to_login_with_url(self):
         # When trying to access a proptected page.
@@ -151,3 +175,10 @@ class TestLogin(WebCase):
         # Then user is redirected to login page.
         self.assertStatus('303 See Other')
         self.assertHeaderItemValue('Location', self.baseurl + '/login/?redirect=%2Fdnszone%2F')
+
+    def test_redirect_to_login_with_url_and_qs(self):
+        # When trying to access a proptected page.
+        self.getPage("/dnszone/?sort=type_asc")
+        # Then user is redirected to login page.
+        self.assertStatus('303 See Other')
+        self.assertHeaderItemValue('Location', self.baseurl + '/login/?redirect=%2Fdnszone%2F%3Fsort%3Dtype_asc')
