@@ -213,10 +213,12 @@ class CommonPage(object):
         }
 
     @cherrypy.expose
-    def status(self, status, key, **kwargs):
+    def status(self, key, status=None, **kwargs):
         """
         Soft-delete the record.
         """
+        if cherrypy.request.method not in ['POST', 'PUT']:
+            raise cherrypy.HTTPError(405)
         self._verify_role(self.edit_role)
         obj = self._get_or_404(key)
         try:
