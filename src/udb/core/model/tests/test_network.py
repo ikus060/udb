@@ -17,6 +17,7 @@
 
 from unittest import mock
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from udb.controller.tests import WebCase
@@ -361,6 +362,50 @@ class DnsRecordTest(WebCase):
         self.assertEqual(data['ttl'], 3600)
         self.assertEqual(data['value'], '192.0.2.23')
 
+    def test_reverse_ipv4(self):
+        # Given a reverse pointer
+        reverse_pointer = '1.0.0.127.in-addr.arpa'
+        # When calling reverse ipv4
+        value = DnsRecord._reverse_ipv4(reverse_pointer)
+        # Then an ip address is returned
+        self.assertEqual('127.0.0.1', value)
+
+    def test_reverse_ipv6(self):
+        # Given a reverse pointer
+        reverse_pointer = '1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa'
+        # When calling reverse ipv4
+        value = DnsRecord._reverse_ipv6(reverse_pointer)
+        # Then an ip address is returned
+        self.assertEqual('2001:db8::1', value)
+
+    def test_reverse_ip_with_ipv4(self):
+        # Given a DnsRecord
+        subnet = Subnet(ip_cidr='192.0.2.0/24')
+        DnsZone(name='example.com', subnets=[subnet]).add()
+        DnsRecord(name='1.2.0.192.in-addr.arpa', value='foo.example.com', type='PTR').add()
+        # When using reverse_ip to make a query
+        record = DnsRecord.query.filter(DnsRecord.reverse_ip == '192.0.2.1').first()
+        # Then a value is returned
+        self.assertIsNotNone(record)
+
+    def test_reverse_ip_with_ipv6(self):
+        # Given a DnsRecord
+        subnet = Subnet(ip_cidr='2001:db8::/127')
+        DnsZone(name='example.com', subnets=[subnet]).add()
+        DnsRecord(
+            name='1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa',
+            value='foo.example.com',
+            type='PTR',
+        ).add()
+        # When using reverse_ip to make a query
+        values = DnsRecord.session.execute(select(DnsRecord.reverse_ip)).all()
+        # Then a value is returned
+        self.assertEqual([('2001:db8::1',)], values)
+
+    def test_add_without_type(self):
+        with self.assertRaises(ValueError):
+            DnsRecord(name='foo.example.com', value='192.0.2.23').add()
+
     def test_add_a_record(self):
         # Given a database with a subnet and a dnszone
         subnet = Subnet(ip_cidr='192.0.2.0/24')
@@ -499,16 +544,30 @@ class DnsRecordTest(WebCase):
         self.assertEqual(cm.exception.args, ('name', mock.ANY))
 
     def test_add_ipv4_ptr_record(self):
-        # Given an empty database
-        self.assertEqual(0, DnsRecord.query.count())
+        # Given a valid DNS Zone
+        subnet = Subnet(ip_cidr='192.0.2.0/24')
+        DnsZone(name='example.com', subnets=[subnet]).add()
         # When adding a DnsRecord
         DnsRecord(name='255.2.0.192.in-addr.arpa', type='PTR', value='bar.example.com').add()
         # Then a new record is created
         self.assertEqual(1, DnsRecord.query.count())
+        # Then revice_ip is valid
+        record = DnsRecord.query.first()
+        self.assertEqual('192.0.2.255', record.reverse_ip)
+
+    def test_add_ipv4_ptr_record_without_valid_dnszone(self):
+        # Given a valid DNS Zone
+        subnet = Subnet(ip_cidr='192.0.5.0/24')
+        DnsZone(name='example.com', subnets=[subnet]).add()
+        # When adding a DnsRecord with invalid DNS Zone
+        with self.assertRaises(ValueError) as cm:
+            DnsRecord(name='255.2.0.192.in-addr.arpa', type='PTR', value='bar.example.com').add()
+        self.assertEqual(cm.exception.args, ('name', 'IP address must be defined within the DNS Zone: 192.0.5.0/24'))
 
     def test_add_ipv6_ptr_record(self):
-        # Given an empty database
-        self.assertEqual(0, DnsRecord.query.count())
+        # Given a valid DNS Zone
+        subnet = Subnet(ip_cidr='4321:0:1:2:3:4:567:0/112')
+        DnsZone(name='example.com', subnets=[subnet]).add()
         # When adding a DnsRecord
         DnsRecord(
             name='b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
@@ -518,7 +577,25 @@ class DnsRecordTest(WebCase):
         # Then a new record is created
         self.assertEqual(1, DnsRecord.query.count())
 
+    def test_add_ipv6_ptr_record_without_valid_dnszone(self):
+        # Given a valid DNS Zone
+        subnet = Subnet(ip_cidr='4321:0:1:2:3:4:567:0/128')
+        DnsZone(name='example.com', subnets=[subnet]).add()
+        # When adding a DnsRecord
+        with self.assertRaises(ValueError) as cm:
+            DnsRecord(
+                name='b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
+                type='PTR',
+                value='bar.example.com',
+            ).add()
+        self.assertEqual(
+            cm.exception.args, ('name', 'IP address must be defined within the DNS Zone: 4321:0:1:2:3:4:567:0/128')
+        )
+
     def test_add_ipv6_ptr_uppercase(self):
+        # Given a valid DNS Zone
+        subnet = Subnet(ip_cidr='4321:0:1:2:3:4:567:0/112')
+        DnsZone(name='example.com', subnets=[subnet]).add()
         # Given an ipv6 record in uppercase
         name = 'b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.IP6.ARPA'
         # When adding the record to the database
@@ -719,7 +796,9 @@ class IpTest(WebCase):
         self.assertEqual(len(obj.related_dns_records), 0)
 
     def test_related_dns_record_with_ptr_ipv4(self):
-        # Given a valid PTR record
+        # Given a valid PTR record in DNS Zone
+        subnet = Subnet(ip_cidr='192.168.2.0/24').add()
+        DnsZone(name='example.com', subnets=[subnet]).add()
         DnsRecord(name='255.2.168.192.in-addr.arpa', type='PTR', value='bar.example.com').add()
         # When querying list of IP
         obj = Ip.query.order_by('ip').first()
@@ -728,7 +807,9 @@ class IpTest(WebCase):
         self.assertEqual(len(obj.related_dns_records), 1)
 
     def test_related_dns_record_with_ptr_ipv6(self):
-        # Given a valid PTR record
+        # Given a valid PTR record in DNS Zone
+        subnet = Subnet(ip_cidr='4321:0:1:2:3:4:567:0/112').add()
+        DnsZone(name='example.com', subnets=[subnet]).add()
         DnsRecord(
             name='b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
             type='PTR',
@@ -741,7 +822,9 @@ class IpTest(WebCase):
         self.assertEqual(len(obj.related_dns_records), 1)
 
     def test_related_dhcp_record_ipv6(self):
-        # Given a DNS Record
+        # Given a DNS Record within a valid DNS Zone
+        subnet = Subnet(ip_cidr='2001:db8:85a3::8a2e:370:7330/124').add()
+        DnsZone(name='example.com', subnets=[subnet]).add()
         dns = DnsRecord(
             name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
             type='PTR',
@@ -767,6 +850,8 @@ class IpTest(WebCase):
             mac='00:00:5e:00:53:bf',
         ).add()
         # Given a deleted DNS Record
+        subnet = Subnet(ip_cidr='2001:db8:85a3::8a2e:370:7334/126').add()
+        DnsZone(name='example.com', subnets=[subnet]).add()
         DnsRecord(
             name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
             type='PTR',
@@ -780,7 +865,9 @@ class IpTest(WebCase):
         self.assertEqual(len(obj.related_dns_records), 0)
 
     def test_related_dhcp_record_with_deleted(self):
-        # Given a DNS Record
+        # Given a DNS Record in DNS Zone
+        subnet = Subnet(ip_cidr='2001:db8:85a3::8a2e:370:7334/126').add()
+        DnsZone(name='example.com', subnets=[subnet]).add()
         DnsRecord(
             name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
             type='PTR',
