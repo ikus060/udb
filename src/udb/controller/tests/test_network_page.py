@@ -153,7 +153,7 @@ class CommonTest:
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         # When trying follow that record
-        self.getPage(url_for(obj, 'follow', 1), method='POST')
+        self.getPage(url_for(obj, 'follow'), method='POST', body={"user_id": 1})
         self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
@@ -163,6 +163,13 @@ class CommonTest:
         follower = obj.followers[0]
         self.assertEqual(1, follower.id)
 
+    def test_follow_get(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add()
+        # When trying follow that record
+        self.getPage(url_for(obj, 'follow'), method='GET')
+        self.assertStatus(405)
+
     def test_unfollow(self):
         # Given a database with a record
         userobj = User.query.filter_by(id=1).first()
@@ -171,19 +178,26 @@ class CommonTest:
         obj.add_follower(userobj)
         self.session.commit()
         # When trying unfollow that record
-        self.getPage(url_for(self.base_url, obj.id, 'unfollow', 1), method='POST')
+        self.getPage(url_for(self.base_url, obj.id, 'unfollow'), method='POST', body={"user_id": 1})
         # Then user is redirected to the edit page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then a follower is removed to the record
         self.assertEqual([], self.obj_cls.query.first().followers)
 
+    def test_unfollow_get(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add()
+        # When trying follow that record
+        self.getPage(url_for(obj, 'unfollow'), method='GET')
+        self.assertStatus(405)
+
     def test_status_disabled(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data)
         obj.add()
         # When trying disabled
-        self.getPage(url_for(self.base_url, obj.id, 'status', 'disabled'))
+        self.getPage(url_for(self.base_url, obj.id, 'status'), method='POST', body={'status': 'disabled'})
         self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
@@ -196,7 +210,7 @@ class CommonTest:
         obj = self.obj_cls(**self.new_data)
         obj.add()
         # When trying delete
-        self.getPage(url_for(self.base_url, obj.id, 'status', 'deleted'))
+        self.getPage(url_for(self.base_url, obj.id, 'status'), method='POST', body={'status': 'deleted'})
         self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
@@ -210,7 +224,7 @@ class CommonTest:
         obj.status = 'disabled'
         obj.add()
         # When trying enabled
-        self.getPage(url_for(self.base_url, obj.id, 'status', 'enabled'))
+        self.getPage(url_for(self.base_url, obj.id, 'status'), method='POST', body={'status': 'enabled'})
         self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
@@ -223,7 +237,7 @@ class CommonTest:
         obj = self.obj_cls(**self.new_data)
         obj.add()
         # When trying enabled
-        self.getPage(url_for(self.base_url, obj.id, 'status', 'invalid'))
+        self.getPage(url_for(self.base_url, obj.id, 'status'), method='POST', body={'status': 'invalid'})
         self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
@@ -549,7 +563,7 @@ class RoleTest(WebCase):
         # Given a DnsZone
         zone = DnsZone(name='examples.com').add()
         # When trying to edit a record
-        self.getPage(url_for(zone, 'status', 'disabled'))
+        self.getPage(url_for(zone, 'status'), method='POST', body={'status': 'disabled'})
         # Then a 403 Forbidden is raised
         self.assertStatus(403)
 
