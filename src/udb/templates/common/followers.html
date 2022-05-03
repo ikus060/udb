@@ -2,23 +2,27 @@
 <!-- Followers -->
 <h4>{%trans%}Followers{%endtrans%}</h4>
 <div if="followers" class="followers-list">
-    {% if not obj.is_following(currentuser) %}
-    <a href="{{url_for(obj, 'follow', currentuser.id)}}">Start following</a>
-    {% else %}
-    <a href="{{url_for(obj, 'unfollow', currentuser.id)}}">Stop following</a>
-    {% endif %}
-
-    {% if not obj.followers %}
-    <p>{% trans %}No followers{% endtrans %}</p>
-    {% endif %}
     <ul>
         {% for userobj in obj.followers %}
         <li>
             {{ macro.user(userobj) }}
-            <a href="{{url_for(obj, 'unfollow', userobj.id)}}" title="{%trans%}unfollow{%endtrans%}"><i
-                    class="bi bi-x-lg"></i><span class="visually-hidden">{%trans%}unfollow{%endtrans%}</span></a>
         </li>
+        {% else %}
+        <li>{% trans %}No followers{% endtrans %}</li>
         {% endfor %}
     </ul>
+
+    {% if not obj.is_following(currentuser) %}
+    <form method="POST" action="{{url_for(obj, 'follow')}}">
+        <input type="hidden" id="user_id" name="user_id" value="{{currentuser.id}}">
+        <button type="submit" class="btn btn-link">{% trans %}Start following{% endtrans %}</button>
+    </form>
+    {% else %}
+    <form method="POST" action="{{url_for(obj, 'unfollow')}}">
+        <input type="hidden" id="user_id" name="user_id" value="{{currentuser.id}}">
+        <button type="submit" class="btn btn-link">{% trans %}Stop following{% endtrans %}</button>
+    </form>
+    {% endif %}
+
 </div>
 {% endif %}
