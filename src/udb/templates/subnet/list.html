@@ -1,13 +1,20 @@
 {% extends 'common/list.html' %}
-{# Overwrite Allowed DNS Zone #}
-{% block loop_field scoped %}
-{% if field.name == 'dnszones'%}
-{% for value, label, checked in field.iter_choices() %}
-{% if checked %}
-<a href="{{url_for('dnszone',value,'edit')}}"><span class="badge rounded-pill bg-secondary">{{label}}</span></a>
-{% endif %}
-{% endfor %}
-{% else %}
-{{super()}}
-{% endif %}
+
+{% block table_list scoped %}
+{% call(obj) _table.table(obj_list, table_extra_columns = [('name', form.name.label.text, True), ('ip_cidr', form.ip_cidr.label.text, True), ('vrf', form.vrf.label.text, True), ('dnszones', form.dnszones.label.text, False)]) %}
+<td>
+    {{obj.name}}
+</td>
+<td>
+    {{obj.ip_cidr}}
+</td>
+<td>
+    {{obj.vrf}}
+</td>
+<td>
+    {% for zone in obj.dnszones %}
+    <a href="{{url_for(zone, 'edit')}}"><span class="badge rounded-pill bg-secondary">{{zone.summary}}</span></a>
+    {% endfor %}
+</td>
+{% endcall %}
 {% endblock %}

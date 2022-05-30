@@ -25,7 +25,14 @@ from udb.controller import url_for
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User
 from udb.tools.i18n import gettext as _
 
-from .form import CherryForm, SelectMultiCheckbox, SelectMultipleObjectField, SelectObjectField, TableWidget
+from .form import (
+    CherryForm,
+    SelectMultiCheckbox,
+    SelectMultipleObjectField,
+    SelectObjectField,
+    SubnetTableWidget,
+    TableWidget,
+)
 
 
 class DnsZoneForm(CherryForm):
@@ -64,7 +71,7 @@ class SubnetForm(CherryForm):
         render_kw={"placeholder": _("Enter details information about this subnet")},
     )
     owner = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)
-    dnszones = SelectMultipleObjectField(_('Allowed DNS zone'), object_cls=DnsZone, widget=SelectMultiCheckbox())
+    dnszones = SelectMultipleObjectField(_('Allowed DNS zone(s)'), object_cls=DnsZone, widget=SelectMultiCheckbox())
 
 
 class DnsRecordForm(CherryForm):
@@ -124,17 +131,22 @@ class DhcpRecordForm(CherryForm):
 class RelatedDnsRecordFrom(Form):
 
     name = StringField(_('Name'), render_kw={"readonly": True})
-
     type = StringField(_('Type'), render_kw={"readonly": True})
-
     ttl = IntegerField(_('TTL'), render_kw={"readonly": True})
-
     value = StringField(_('Value'), render_kw={"readonly": True})
 
 
 class RelatedDhcpRecordForm(Form):
 
     mac = StringField(_('MAC'), render_kw={"readonly": True})
+
+
+class RelatedSubnetForm(Form):
+
+    ip_cidr = StringField(_('Subnet'), render_kw={"readonly": True})
+    name = StringField(_('Name'), render_kw={"readonly": True})
+    vrf = IntegerField(_('VRF'), render_kw={"readonly": True})
+    dnszones = SelectMultipleObjectField(_('DNS zones'), object_cls=DnsZone)
 
 
 class IpForm(CherryForm):
@@ -156,4 +168,10 @@ class IpForm(CherryForm):
         FormField(RelatedDhcpRecordForm),
         label=_('Related DHCP Records'),
         widget=TableWidget(create_new_url=url_for(DhcpRecord, 'new')),
+    )
+
+    related_subnets = FieldList(
+        FormField(RelatedSubnetForm),
+        label=_('Supernets'),
+        widget=SubnetTableWidget(),
     )

@@ -142,7 +142,6 @@ Index('dnszone_name_index', func.lower(DnsZone.name), unique=True)
 
 class Subnet(CommonMixin, Base):
     name = Column(String, unique=True, nullable=False, default='')
-    # Database are not very friendly when it come to storing 128bits for this reason, we are storing the network address as bit into a string field.
     ip_cidr = Column(CidrType, unique=True, nullable=False)
     vrf = Column(Integer, nullable=True)
 
@@ -476,6 +475,10 @@ class Ip(Base):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    @hybrid_property
+    def summary(self):
+        return self.ip
+
     @property
     def related_dns_records(self):
         """
@@ -495,3 +498,14 @@ class Ip(Base):
             DhcpRecord.status != DhcpRecord.STATUS_DELETED,
             DhcpRecord.ip == self.ip,
         ).all()
+
+    @property
+    def related_subnets(self):
+        return (
+            Subnet.query.filter(
+                Subnet.ip_cidr.supernet_of(self.ip),
+                Subnet.status != Subnet.STATUS_DELETED,
+            )
+            .order_by(Subnet.ip_cidr)
+            .all()
+        )

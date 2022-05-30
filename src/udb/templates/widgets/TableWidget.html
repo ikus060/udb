@@ -1,9 +1,10 @@
 {% import "common/status.html" as _status %}
+{% import "common/table.html" as _table %}
 
 <div class="card">
     <div class="card-body bg-light p-2">
         {% if field.object_data %}
-        <table class="table table-sm table-hover mb-2" aria-label="{{ subfield.label.text }}">
+        <table class="table table-sm table-hover mb-2" aria-label="{{field.name}}">
             <thead>
                 <tr>
                     {% for subfield in field|first %}
@@ -21,9 +22,10 @@
                     <td scope="row">
                         {% if loop.first %}
                         <a href="{{url_for(row.object_data, 'edit')}}">{{ subfield.data }}</a>
-                        {# _status.badge(obj) #}
                         {% elif subfield.data %}
+                        {% block table_widget_field scoped %}
                         {{ subfield.data }}
+                        {% endblock %}
                         {% else %}
                         -
                         {% endif %}

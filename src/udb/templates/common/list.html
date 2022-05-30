@@ -1,6 +1,6 @@
 {% extends 'layout.html' %}
 {% import "macro.html" as macro %}
-{% import "common/status.html" as _status %}
+{% import "common/table.html" as _table with context %}
 
 {% block body %}
 <div class="d-flex justify-content-between">
@@ -15,65 +15,28 @@
         {% include "common/filter.html" %}
     </div>
 </div>
-<table class="table table-hover" aria-describedby="title">
-    <thead>
-        <tr>
-            {% for field in form %}
-            <th scope="col">
-                {% if field.name in sortable_fields %}
-                {% set toggle_sort = field.name + '_desc' if sort == field.name + '_asc' else field.name + '_asc' %}
-                {% set active = sort == field.name + '_asc' or sort == field.name + '_desc' %}
-                <a href="{{ url_for(sort=toggle_sort) }}"
-                    class="{%if active %}link-primary{% else %}link-dark{% endif %}">
-                    {{ field.label.text }}
-                    {% if sort == field.name + '_asc' %}
-                    <i class="bi bi-caret-up-fill" aria-hidden="true"></i>
-                    {% elif sort == field.name + '_desc' %}
-                    <i class="bi bi-caret-down-fill" aria-hidden="true"></i>
-                    {% endif %}
-                </a>
-                {% else %}
-                {{ field.label.text }}
-                {% endif %}
-            </th>
-            {% endfor %}
-            <th scope="col" style="width: 100px">
-                <span class="visually-hidden">{%trans%}Actions{%endtrans%}</span>
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for obj in obj_list %}
-        <tr>
-            {% set unused = form.process(obj=obj) %}
-            {% for field in form %}
-            <td scope="row">
-                {% block loop_field scoped %}
-                {% if loop.first %}
-                <a href="{{url_for(obj, 'edit')}}">{{ field.data }}</a>
-                {{ _status.badge(obj) }}
-                {% elif field.name in ['owner'] and field.object_data %}
-                {{ field.object_data }}
-                {% elif field.data %}
-                {{ field.data }}
-                {% else %}
-                -
-                {% endif %}
-                {% endblock %}
-            </td>
-            {% endfor %}
-            <td>
-                <a class="btn btn-primary btn-circle btn-hover" href="{{url_for(obj, 'edit')}}" data-bs-toggle="tooltip"
-                    data-bs-placement="top" title="{% trans %}View more detail{% endtrans %}">
-                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                    <span class="visually-hidden">edit</span>
-                </a>
-            </td>
-        </tr>
-        {% endfor%}
-    </tbody>
-</table>
-{% endblock %}
+
+{# Default a default columns list #}
+{% set table_default_columns = [] %}
+{% if obj_list and obj_list[0].notes is defined() %}
+{%- set table_default_columns = table_default_columns + [('notes', _('Notes'), True)] -%}
+{% endif %}
+{% if obj_list and obj_list[0].owner is defined() %}
+{%- set table_default_columns = table_default_columns + [('owner_name', _('Owner'), True)] -%}
+{% endif %}
+
+{# Show default table #}
+{% block table_list scoped %}
+{% call(obj) _table.table(obj_list, table_extra_columns=table_extra_columns|d(table_default_columns)) %}
+    {% for col in table_extra_columns|d(table_default_columns) %}
+    <td>
+        {{ obj|attr(col[0]) or "-" }}
+    </td>
+    {% endfor %}
+{% endcall %}
+{% endblock table_list %}
+{% endblock body %}
+
 {% block script %}
 <script>
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))

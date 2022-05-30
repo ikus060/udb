@@ -4,7 +4,10 @@
     <div class="row d-flex align-items-center h-100">
         <div class="col-md-8 col-lg-6 col-xl-5 col-xxl-3">
             <div class="card p-3">
-                <h2>{{ header_name }}</h2>
+                <h2 class="d-flex align-items-center">
+                    <img src="{{url_for('static', 'favicon.svg')}}" class="d-inline-block me-2" height="24" alt="logo"/>
+                    {{ header_name }}
+                </h2>
 
                 {% include "flash.html" %}
                 <form method="POST">
