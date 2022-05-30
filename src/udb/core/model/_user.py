@@ -17,6 +17,7 @@
 
 import cherrypy
 from sqlalchemy import Column, String, event, inspect
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
@@ -106,8 +107,9 @@ class User(StatusMixing, Base):
     def allow_edit_record(self):
         return self.is_user()
 
-    def __repr__(self):
-        return "<User(name='%s', email='%s')>" % (self.username, self.email)
+    @hybrid_property
+    def summary(self):
+        return self.fullname or self.username
 
     def __str__(self):
         return self.fullname or self.username

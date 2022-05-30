@@ -172,6 +172,10 @@ class TableWidget(JinjaWidget):
     filename = 'widgets/TableWidget.html'
 
 
+class SubnetTableWidget(JinjaWidget):
+    filename = 'widgets/SubnetTableWidget.html'
+
+
 class SelectMultipleObjectField(SelectMultipleField):
     """
     Field to select one or more sqlalchemy object.

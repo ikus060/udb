@@ -884,3 +884,21 @@ class IpTest(WebCase):
         # Then is include the IP Address of the PTR record
         self.assertEqual('2001:db8:85a3::8a2e:370:7334', obj.ip)
         self.assertEqual(len(obj.related_dhcp_records), 0)
+
+    def test_related_subnets(self):
+        # Given a DNS Record in DNS Zone
+        subnet = Subnet(ip_cidr='2001:db8:85a3::8a2e:370:7334/126').add()
+        DnsZone(name='example.com', subnets=[subnet]).add()
+        DnsRecord(
+            name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
+            type='PTR',
+            value='bar.example.com',
+        ).add()
+        # Given a deleted DHCP Record
+        DhcpRecord(
+            ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
+            mac='00:00:5e:00:53:bf',
+        ).add()
+        # When querying the related subnets
+        obj = Ip.query.order_by('ip').first()
+        self.assertEqual([subnet], obj.related_subnets)

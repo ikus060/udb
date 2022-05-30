@@ -521,6 +521,15 @@ class IPTest(WebCase):
         # Then no create new exists
         self.assertNotInBody('Create IP Address')
 
+    def test_edit_ip(self):
+        # Given a database with records
+        DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        # When browsing IP view
+        self.getPage('/ip/1.2.3.4/edit')
+        # Then no create new exists
+        self.assertStatus(200)
+        self.assertInBody('02:42:d7:e4:aa:59')
+
 
 class RoleTest(WebCase):
     """

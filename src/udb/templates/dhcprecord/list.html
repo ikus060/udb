@@ -1,0 +1,6 @@
+{% extends 'common/list.html' %}
+{% set table_extra_columns = [
+    ('ip', form.ip.label.text, True),
+    ('mac', form.mac.label.text, True),
+    ('notes', _('Notes'), True),
+    ('owner_name', _('Owner'), True)] %}

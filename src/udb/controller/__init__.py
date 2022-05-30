@@ -58,6 +58,8 @@ def url_for(*args, **kwargs):
         elif isinstance(chunk, int):
             path += "/"
             path += str(chunk)
+        elif hasattr(chunk, 'model_name') and hasattr(chunk, 'id'):
+            path += "/%s/%s" % (chunk.model_name, chunk.id)
         elif hasattr(chunk, '_sa_instance_state'):
             # SQLAlchemy object
             base = chunk.__class__.__name__.lower()
