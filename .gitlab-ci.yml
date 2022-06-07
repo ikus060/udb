@@ -104,6 +104,7 @@ test-package:deb:
     - curl http://localhost:8080
 
 upload:deb:
+  image: buildpack-deps:bookworm
   needs:
     - package:deb
   only:
