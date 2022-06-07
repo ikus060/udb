@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
 from unittest import mock
 
 from sqlalchemy import select
@@ -171,6 +172,7 @@ class DnsZoneTest(WebCase):
         d.add()
         self.session.commit()
         # When adding a comments
+        now = datetime.datetime.now(datetime.timezone.utc)
         d.add_message(Message(body='this is a comments'))
         self.session.commit()
         # Then a message with type 'new' exists
@@ -183,6 +185,7 @@ class DnsZoneTest(WebCase):
         self.assertEqual(1, len(messages))
         self.assertEqual(messages[0].changes, None)
         self.assertEqual(messages[0].body, 'this is a comments')
+        self.assertAlmostEqual(messages[0].date, now, delta=datetime.timedelta(seconds=1))
         # Then the list of message contains all tre message
         messages = d.messages
         self.assertEqual(3, len(messages))

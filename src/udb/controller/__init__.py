@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import datetime
-import time
 from collections import namedtuple
 
 import cherrypy
@@ -93,7 +92,10 @@ def lastupdated(value, now=None):
     """
     if not value:
         return ""
-    now = datetime.datetime.fromtimestamp(time.time())
+    if value.tzinfo:
+        now = datetime.datetime.now(datetime.timezone.utc)
+    else:
+        now = datetime.datetime.now()
     delta = now - value
     if delta.days > 365:
         return _('%d years ago') % (delta.days / 365)

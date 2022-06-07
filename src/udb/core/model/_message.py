@@ -23,12 +23,13 @@ from sqlalchemy import Column, String, and_, event, inspect
 from sqlalchemy.orm import backref, declared_attr, foreign, relationship, remote
 from sqlalchemy.sql.functions import func
 from sqlalchemy.sql.schema import ForeignKey
-from sqlalchemy.sql.sqltypes import DateTime, Integer
+from sqlalchemy.sql.sqltypes import Integer
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext as _
 
 from ._search_vector import SearchableMixing
+from ._timestamp import Timestamp
 
 Base = cherrypy.tools.db.get_base()
 Session = cherrypy.tools.db.get_session()
@@ -108,7 +109,7 @@ class Message(SearchableMixing, Base):
     type = Column(String, nullable=False, default=TYPE_COMMENT)
     # When body start with a "{" the content is a json changes.
     body = Column(String, nullable=False)
-    date = Column(DateTime, default=func.now())
+    date = Column(Timestamp, default=func.now())
 
     @property
     def changes(self):

@@ -3,8 +3,8 @@
 {% endmacro%}
 
 {% macro show_message(message) %}
-<small>{%trans%}By {%endtrans%} {{ message.author_name }} • {{ message.date }}
-    ({{message.date|lastupdated}})</small>
+<small>{%trans%}By {%endtrans%} {{ message.author_name }} • 
+    <time datetime="{{ message.date }}">{{ message.date | lastupdated }}</time></small>
 {% if message.type == 'new' %}
 {% trans %}Record created{% endtrans %}
 <ul class="mb-0">
