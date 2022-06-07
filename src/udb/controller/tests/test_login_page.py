@@ -138,12 +138,14 @@ class TestLogin(WebCase):
         self.session.commit()
         self.getPage("/login/", method='POST', body={'username': username, 'password': password})
         self.assertStatus('303 See Other')
-        self.getPage("/")
+        self.assertHeaderItemValue("Location", self.baseurl + "/")
+        self.getPage("/dashboard/")
         self.assertStatus('200 OK')
         # When trying to query the login page.
         self.getPage("/login/")
         # Then user is redirect to main page
         self.assertStatus('303 See Other')
+        self.assertHeaderItemValue("Location", self.baseurl + "/")
 
     def test_login_with_deleted_user(self):
         # Given an authentication user
@@ -153,7 +155,8 @@ class TestLogin(WebCase):
         self.session.commit()
         self.getPage("/login/", method='POST', body={'username': username, 'password': password})
         self.assertStatus('303 See Other')
-        self.getPage("/")
+        self.assertHeaderItemValue("Location", self.baseurl + "/")
+        self.getPage("/dashboard/")
         self.assertStatus('200 OK')
         # When deleting this user from database
         userobj.delete()

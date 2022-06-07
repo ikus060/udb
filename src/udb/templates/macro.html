@@ -32,7 +32,7 @@
 {%- else -%}
 {%- set model_name = value -%}
 {%- endif -%}
-<i class="bi {{icon_table.get(model_name, '')}} {{extra_class}}" aria-hidden="true"></i>
+<i class="bi {{icon_table.get(model_name, '')}} {{extra_class or ''}}" aria-hidden="true"></i>
 {% endmacro %}
 
 {%- set display_name_table = {'dnszone': _('DNS Zone'), 'subnet':_('IP Subnet'), 'dnsrecord': _('DNS Record'), 'dhcprecord':_('DHCP Record'), 'ip':_('Ip'), 'user': _('Users') } -%}

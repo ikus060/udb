@@ -3,8 +3,10 @@
 {% endmacro%}
 
 {% macro show_message(message) %}
+<small>{%trans%}By {%endtrans%} {{ message.author_name }} • {{ message.date }}
+    ({{message.date|lastupdated}})</small>
 {% if message.type == 'new' %}
-<br />{% trans %}Record created{% endtrans %}
+{% trans %}Record created{% endtrans %}
 <ul class="mb-0">
     {% for key, values in message.changes.items() -%}
     <li><b>{{key}}</b>: {{show_value(values[1])}} </li>
@@ -32,8 +34,6 @@
 <div class="list-group list-group-flush">
     {% for message in messages|sort(attribute="date",reverse=True) %}
     <div class="list-group-item list-group-item-action" aria-current="true">
-        <small>{%trans%}By {%endtrans%} {{ message.author_name }} • {{ message.date }}
-            ({{message.date|lastupdated}})</small>
         {{ show_message(message) }}
     </div>
     {% endfor %}

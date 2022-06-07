@@ -19,11 +19,10 @@
 from udb.controller.tests import WebCase
 
 
-class TestApp(WebCase):
-    def test_index(self):
+class TestDashboardPage(WebCase):
+    def test_dashboard(self):
         # Given the application is started
         # When making a query to index page
-        self.getPage('/')
+        self.getPage('/dashboard/')
         # Then an html page is returned
-        self.assertStatus(303)
-        self.assertHeaderItemValue("Location", self.baseurl + "/dashboard/")
+        self.assertInBody("Last activities")

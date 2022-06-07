@@ -1,6 +1,6 @@
 {% extends 'layout.html' %}
 {% import "macro.html" as macro %}
-{% import "common/table.html" as _table with context %}
+{% import "components/table.html" as _table with context %}
 
 {% block body %}
 <div class="d-flex justify-content-between">
@@ -18,10 +18,10 @@
 
 {# Default a default columns list #}
 {% set table_default_columns = [] %}
-{% if obj_list and obj_list[0].notes is defined() %}
+{% if obj_list and obj_list|list|length > 0 and obj_list[0].notes is defined() %}
 {%- set table_default_columns = table_default_columns + [('notes', _('Notes'), True)] -%}
 {% endif %}
-{% if obj_list and obj_list[0].owner is defined() %}
+{% if obj_list and obj_list|list|length > 0 and obj_list[0].owner is defined() %}
 {%- set table_default_columns = table_default_columns + [('owner_name', _('Owner'), True)] -%}
 {% endif %}
 

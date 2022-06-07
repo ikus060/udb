@@ -18,7 +18,7 @@
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DnsZone
+from udb.core.model import DnsZone, Message
 
 
 class TestApp(WebCase):
@@ -32,3 +32,11 @@ class TestApp(WebCase):
         # When creating URL for that object
         # Then URL is create with object name and object id
         self.assertEqual(url_for(obj), 'http://%s:%s/dnszone/%s' % (self.HOST, self.PORT, obj.id))
+
+    def test_url_for_with_message(self):
+        # Given a database with a record
+        obj = DnsZone(name='bfh.ch').add()
+        # When creating URL using the message
+        msg = Message.query.first()
+        # Then URL is create with object name and object id
+        self.assertEqual(url_for(msg), 'http://%s:%s/dnszone/%s' % (self.HOST, self.PORT, obj.id))
