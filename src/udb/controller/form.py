@@ -114,7 +114,7 @@ class CherryForm(Form):
 
         def generator():
             for id, field in self._fields.items():
-                if field.type == 'HiddenField':
+                if getattr(field.widget, 'input_type', None) == 'hidden':
                     yield field()
                 else:
                     # Get proper bootstrap class for the widget

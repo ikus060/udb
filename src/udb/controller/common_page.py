@@ -21,7 +21,7 @@ from functools import cached_property
 import cherrypy
 from sqlalchemy.exc import DatabaseError, IntegrityError
 from sqlalchemy.inspection import inspect
-from wtforms.fields.simple import TextAreaField
+from wtforms.fields import HiddenField, TextAreaField
 from wtforms.validators import InputRequired
 
 from udb.controller import flash, url_for
@@ -37,6 +37,23 @@ class MessageForm(CherryForm):
     body = TextAreaField(_('Message'), validators=[InputRequired()], render_kw={"placeholder": _("Add a comments")})
 
 
+class RefererField(HiddenField):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, default=lambda: cherrypy.request.headers.get('Referer'), **kwargs)
+
+    def process_formdata(self, valuelist):
+        """
+        Process value received from form data. Validate the URL.
+        """
+        # Make sure the Referer is our web application.
+        if valuelist and valuelist[0].startswith(cherrypy.request.base):
+            self.data = valuelist[0]
+
+    def populate_obj(self, obj, name):
+        # Do nothing
+        pass
+
+
 @cherrypy.popargs('key')
 class CommonPage(object):
     def __init__(
@@ -46,6 +63,7 @@ class CommonPage(object):
         assert object_form
         self.model = model
         self.object_form = object_form
+        self.object_form.referer = RefererField()
         self.list_role = list_role
         self.edit_role = edit_role
         # Support a primary key based on sqlalquemy
@@ -148,18 +166,6 @@ class CommonPage(object):
         """
         return getattr(obj, self.primary_key)
 
-    def _redirect(self, default, obj=None):
-        redirect_table = {
-            'notifications': url_for('notifications'),
-            'edit': url_for(obj, 'edit'),
-            'list': url_for(self.model),
-        }
-        redirect = cherrypy.request.params.get('redirect', default)
-        redirect_url = redirect_table.get(redirect, None)
-        if redirect_url:
-            raise cherrypy.HTTPRedirect(redirect_url)
-        raise cherrypy.HTTPError(400, 'invalid redirect value')
-
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/list.html', 'common/list.html'])
     def index(self, deleted=False, personal=False, sort=None, filter=None):
@@ -204,7 +210,7 @@ class CommonPage(object):
                 self.model.session.rollback()
                 self._handle_exception(e, form)
             else:
-                raise self._redirect('list', obj)
+                raise cherrypy.HTTPRedirect(form.referer.data or url_for(self.model))
         # return data form template
         return {
             'model': self.model,
@@ -227,7 +233,7 @@ class CommonPage(object):
         except Exception as e:
             self.model.session.rollback()
             self._handle_exception(e)
-        raise self._redirect('edit', obj)
+        raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/edit.html', 'common/edit.html'])
@@ -246,7 +252,7 @@ class CommonPage(object):
                 self.model.session.rollback()
                 self._handle_exception(e, form)
             else:
-                raise self._redirect('list', obj)
+                raise cherrypy.HTTPRedirect(form.referer.data or url_for(self.model))
         # Return object form
         return {
             'has_new': self.has_new,
@@ -290,7 +296,7 @@ class CommonPage(object):
             obj.remove_follower(userobj)
             obj.add()
         # Redirect to referer if defined
-        raise self._redirect('edit', obj)
+        raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
     @cherrypy.expose
     def post(self, key, **kwargs):
@@ -300,7 +306,7 @@ class CommonPage(object):
         if form.validate_on_submit():
             message = Message(body=form.body.data, author=cherrypy.request.currentuser)
             obj.add_message(message)
-        raise self._redirect('edit', obj)
+        raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
 
 @cherrypy.tools.errors(
