@@ -53,7 +53,7 @@ class CommonMixin(StatusMixing, MessageMixin, FollowerMixin, SearchableMixing):
 
     @declared_attr
     def owner_name(cls):
-        return column_property(select([User.summary]).where(User.id == cls.owner_id))
+        return column_property(select([User.summary]).where(User.id == cls.owner_id).scalar_subquery())
 
     @classmethod
     def _search_string(cls):
