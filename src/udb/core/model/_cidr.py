@@ -56,10 +56,12 @@ def _register_sqlite_cidr_functions(dbapi_con, unused):
 
 class subnet_of(GenericFunction):
     name = "subnet_of"
+    inherit_cache = True
 
 
 class supernet_of(GenericFunction):
     name = "supernet_of"
+    inherit_cache = True
 
 
 @compiles(subnet_of, "postgresql")

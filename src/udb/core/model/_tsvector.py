@@ -43,6 +43,7 @@ def _register_sqlite_tsvector_functions(dbapi_con, unused):
 
 class websearch(GenericFunction):
     name = "websearch"
+    inherit_cache = True
 
 
 @compiles(websearch, "postgresql")
