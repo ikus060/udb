@@ -33,7 +33,7 @@ class TestLogout(WebCase):
     def test_login_logout(self):
         # Given a authenticated user
         self._login()
-        self.getPage("/")
+        self.getPage("/dashboard/")
         self.assertStatus('200 OK')
         # When trying to access the logout page.
         self.getPage("/logout/")

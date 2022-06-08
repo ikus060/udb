@@ -14,16 +14,23 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from datetime import datetime, timezone
+
+from sqlalchemy import TypeDecorator
+from sqlalchemy.sql.sqltypes import DateTime
 
 
-from udb.controller.tests import WebCase
+class Timestamp(TypeDecorator):
+    cache_ok = True
+    impl = DateTime
+    LOCAL_TIMEZONE = datetime.utcnow().astimezone().tzinfo
 
+    def process_bind_param(self, value: datetime, dialect):
+        if value.tzinfo is None:
+            value = value.astimezone(self.LOCAL_TIMEZONE)
+        return value.astimezone(timezone.utc)
 
-class TestApp(WebCase):
-    def test_index(self):
-        # Given the application is started
-        # When making a query to index page
-        self.getPage('/')
-        # Then an html page is returned
-        self.assertStatus(303)
-        self.assertHeaderItemValue("Location", self.baseurl + "/dashboard/")
+    def process_result_value(self, value, dialect):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)

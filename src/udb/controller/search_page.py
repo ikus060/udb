@@ -61,7 +61,6 @@ class SearchPage:
         """
         Build a query with supported feature of the current object class.
         """
-        # TODO We need to quote the term to avoid error with "00:ba:d5:a2:34:56"
         query = Search.query.filter(
             or_(Search._search_vector.websearch(term), Search.messages.any(Message._search_vector.websearch(term)))
         )

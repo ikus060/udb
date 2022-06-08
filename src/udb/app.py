@@ -32,6 +32,7 @@ import udb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
 from udb.controller import lastupdated, template_processor, url_for
 from udb.controller.api import Api
 from udb.controller.common_page import CommonApi, CommonPage
+from udb.controller.dashboard_page import DashboardPage
 from udb.controller.login_page import LoginPage
 from udb.controller.logout_page import LogoutPage
 from udb.controller.network_page import DhcpRecordForm, DnsRecordForm, DnsZoneForm, IpForm, SubnetForm
@@ -172,6 +173,7 @@ class Root(object):
 
         User.session.commit()
         self.api = Api()
+        self.dashboard = DashboardPage()
         self.login = LoginPage()
         self.logout = LogoutPage()
         self.notifications = NotificationsPage()
@@ -194,4 +196,4 @@ class Root(object):
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='index.html')
     def index(self):
-        return {}
+        raise cherrypy.HTTPRedirect(url_for('dashboard', ''))

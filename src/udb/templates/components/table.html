@@ -2,7 +2,7 @@
 {% import "common/status.html" as _status %}
 
 {% macro table(obj_list, table_extra_columns=[], empty_message=_('List is empty')) %}
-<table class="table table-hover" aria-label="{% if obj_list %}{{macro.display_name(obj_list|first)}}{% else %}{{empty_message}}{% endif %}">
+<table class="table table-hover" aria-label="{% if obj_list and obj_list|list|length > 0 %}{{macro.display_name(obj_list|first)}}{% else %}{{empty_message}}{% endif %}">
     <thead>
         <tr>
             <th scope="col" colspan="2">
@@ -35,7 +35,7 @@
     <tbody>
         {% for obj in obj_list %}
         <tr>
-            <td class="align-middle" style="width: 25px">
+            <td class="align-top" style="width: 25px">
                 <a href="{{url_for(obj, 'edit')}}">
                     {{ macro.icon(obj, "h4") }}
                 </a>
@@ -57,7 +57,7 @@
         </tr>
         {% else %}
         <tr>
-            <td colspan="5" class="text-center p-5">
+            <td colspan="{{ 5 + table_extra_columns|length }}" class="text-center p-5">
                 <i class="bi bi-search display-4 fw-bold" aria-hidden="true"></i><br />
                 <p>
                     {{ empty_message }}

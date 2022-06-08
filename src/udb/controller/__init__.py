@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import datetime
-import time
 from collections import namedtuple
 
 import cherrypy
@@ -58,8 +57,8 @@ def url_for(*args, **kwargs):
         elif isinstance(chunk, int):
             path += "/"
             path += str(chunk)
-        elif hasattr(chunk, 'model_name') and hasattr(chunk, 'id'):
-            path += "/%s/%s" % (chunk.model_name, chunk.id)
+        elif hasattr(chunk, 'model_name') and hasattr(chunk, 'model_id'):
+            path += "/%s/%s" % (chunk.model_name, chunk.model_id)
         elif hasattr(chunk, '_sa_instance_state'):
             # SQLAlchemy object
             base = chunk.__class__.__name__.lower()
@@ -93,7 +92,10 @@ def lastupdated(value, now=None):
     """
     if not value:
         return ""
-    now = datetime.datetime.fromtimestamp(time.time())
+    if value.tzinfo:
+        now = datetime.datetime.now(datetime.timezone.utc)
+    else:
+        now = datetime.datetime.now()
     delta = now - value
     if delta.days > 365:
         return _('%d years ago') % (delta.days / 365)

@@ -27,6 +27,14 @@ class CommonTest:
 
     authorization = [('Authorization', 'Basic %s' % b64encode(b'admin:admin').decode('ascii'))]
 
+    def test_get_list_page_empty(self):
+        # Given a database without record
+        # When making a query to list page
+        self.getPage(url_for(self.base_url, ''))
+        # Then an html page is returned with a table
+        self.assertStatus(200)
+        self.assertInBody('<table')
+
     def test_get_list_page(self):
         # Given a database with a record
         self.obj_cls(**self.new_data).add()

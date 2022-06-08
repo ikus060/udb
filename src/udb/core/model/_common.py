@@ -20,12 +20,13 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import column_property, declarative_mixin, declared_attr, relationship
 from sqlalchemy.sql.functions import func
 from sqlalchemy.sql.schema import ForeignKey
-from sqlalchemy.sql.sqltypes import DateTime, Integer
+from sqlalchemy.sql.sqltypes import Integer
 
 from ._follower import FollowerMixin
 from ._message import MessageMixin
 from ._search_vector import SearchableMixing
 from ._status import StatusMixing
+from ._timestamp import Timestamp
 from ._user import User
 
 
@@ -60,8 +61,8 @@ class CommonMixin(StatusMixing, MessageMixin, FollowerMixin, SearchableMixing):
 
     id = Column(Integer, primary_key=True)
     notes = Column(String, nullable=False, default='')
-    created_at = Column(DateTime, nullable=False, server_default=func.now())
-    modified_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    created_at = Column(Timestamp, nullable=False, server_default=func.now())
+    modified_at = Column(Timestamp, nullable=False, server_default=func.now(), onupdate=func.now())
 
     def to_json(self):
         def _value(value):

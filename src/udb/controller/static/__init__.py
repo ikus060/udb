@@ -35,6 +35,11 @@ class Static:
         return cherrypy.lib.static.serve_file(fn)
 
     @cherrypy.expose()
+    def main_js(self):
+        fn = pkg_resources.resource_filename('udb.controller.static', 'main.js')
+        return cherrypy.lib.static.serve_file(fn)
+
+    @cherrypy.expose()
     def favicon_svg(self):
         fn = pkg_resources.resource_filename('udb.controller.static', 'udb_16.svg')
         return cherrypy.lib.static.serve_file(fn)
