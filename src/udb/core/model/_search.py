@@ -27,7 +27,7 @@ search_query = union(
     *[
         select(
             literal(model.__name__.lower()).label('model_name'),
-            model.id,
+            model.id.label('model_id'),
             model.summary,
             model.notes,
             model.status,
@@ -42,13 +42,13 @@ search_query = union(
 
 class Search(Base):
     __table__ = search_query
-    __mapper_args__ = {'primary_key': [search_query.c.id, search_query.c.model_name]}
+    __mapper_args__ = {'primary_key': [search_query.c.model_id, search_query.c.model_name]}
     owner = relationship(User, lazy=False)
     messages = relationship(
         Message,
         primaryjoin=lambda: and_(
             Search.model_name == remote(foreign(Message.model_name)),
-            Search.id == remote(foreign(Message.model_id)),
+            Search.model_id == remote(foreign(Message.model_id)),
             Message.type == Message.TYPE_COMMENT,
         ),
         viewonly=True,
