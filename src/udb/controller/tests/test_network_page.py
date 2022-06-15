@@ -64,6 +64,15 @@ class CommonTest:
         self.assertStatus(200)
         self.assertInBody('Save changes')
 
+    def test_get_edit_with_referer(self):
+        # Given a database with a record.
+        obj = self.obj_cls(**self.new_data).add()
+        # When editing the record with a referer
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), headers=[('Referer', url_for('notifications'))])
+        # Then referer is store in form
+        self.assertStatus(200)
+        self.assertInBody('<input id="referer" name="referer" type="hidden" value="%s">' % url_for('notifications'))
+
     def test_get_new_page(self):
         # Given an empty database
         # When querying the new page
@@ -85,6 +94,22 @@ class CommonTest:
         new_obj = self.obj_cls.query.first()
         for k, v in self.edit_data.items():
             self.assertEqual(getattr(new_obj, k), v)
+
+    def test_edit_with_referer(self):
+        # Given a database with a record.
+        obj = self.obj_cls(**self.new_data).add()
+        # When editing the record with a referer
+        body = {'referer': url_for('notifications')}
+        body.update(self.edit_data)
+        self.getPage(
+            url_for(self.base_url, obj.id, 'edit'),
+            headers=[('Referer', url_for(self.base_url, obj.id, 'edit'))],
+            method='POST',
+            body=body,
+        )
+        # Then user is redirected to referer
+        self.assertStatus(303)
+        self.assertHeaderItemValue('Location', url_for('notifications'))
 
     def test_edit_assign_owner(self):
         # Given a database with a record

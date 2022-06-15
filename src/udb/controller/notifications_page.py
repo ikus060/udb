@@ -28,7 +28,7 @@ class NotificationsPage:
     def index(self, **kwargs):
         userobj = cherrypy.request.currentuser
         query = Search.query.join(
-            Follower, and_(Search.model_name == Follower.model_name, Search.id == Follower.model_id)
+            Follower, and_(Search.model_name == Follower.model_name, Search.model_id == Follower.model_id)
         ).filter(Follower.user_id == userobj.id)
         obj_list = query.all()
         return {'obj_list': obj_list}

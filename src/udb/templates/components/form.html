@@ -1,0 +1,29 @@
+{% set bootstrap_class_table = {
+    'Select': 'form-select',
+    'TextInput': 'form-control',
+    'TextArea': 'form-control',
+    'PasswordInput': 'form-control',
+    'EmailInput': 'form-control'} %}
+{% for id, field in form._fields.items() %}
+{% if field.widget['input_type'] == 'hidden' %}
+{{ field() }}
+{% else %}
+{% set extra_label_class = field.errors and ' is-invalid' or '' %}
+{% set field_class = bootstrap_class_table.get(field.widget.__class__.__name__) %}
+{% if floating and field.widget.__class__.__name__ != 'SelectMultiCheckbox' %}
+<div class="form-floating mb-2">
+    {{ field(class=field_class) }}
+    {{ field.label(class='form-label' + extra_label_class) }}
+    {% if field.description %}<div class="form-text">field.description</div>{% endif %}
+    {% for error in field.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+</div>
+{% else %}
+<div class="mb-3">
+    {{ field.label(class='form-label' + extra_label_class) }}
+    {{ field(class=field_class) }}
+    {% if field.description %}<div class="form-text">{{ field.description }}</div>{% endif %}
+    {% for error in field.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+</div>
+{% endif %}
+{% endif %}
+{% endfor %}

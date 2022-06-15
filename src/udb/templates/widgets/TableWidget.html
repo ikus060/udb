@@ -1,53 +1,45 @@
 {% import "common/status.html" as _status %}
 {% import "components/table.html" as _table %}
 
-<div class="card">
-    <div class="card-body bg-light p-2">
-        {% if field.object_data %}
-        <table class="table table-sm table-hover mb-2" aria-label="{{field.name}}">
-            <thead>
-                <tr>
-                    {% for subfield in field|first %}
-                    <th scope="col">{{ subfield.label.text }}</th>
-                    {% endfor %}
-                    <th scope="col" style="width: 100px">
-                        <span class="visually-hidden">{%trans%}Actions{%endtrans%}</span>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in field %}
-                <tr>
-                    {% for subfield in row %}
-                    <td scope="row">
-                        {% if loop.first %}
-                        <a href="{{url_for(row.object_data, 'edit')}}">{{ subfield.data }}</a>
-                        {% elif subfield.data %}
-                        {% block table_widget_field scoped %}
-                        {{ subfield.data }}
-                        {% endblock %}
-                        {% else %}
-                        -
-                        {% endif %}
-                    </td>
-                    {% endfor %}
-                    <td>
-                        <a class="btn btn-primary btn-circle btn-sm btn-hover"
-                            href="{{url_for(row.object_data, 'edit')}}" data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="{% trans %}Edit detail{% endtrans %}">
-                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                            <span class="visually-hidden">edit</span>
-                        </a>
-                    </td>
-                </tr>
-                {% endfor%}
-            </tbody>
-        </table>
-        {% endif %}
-        {% if create_new_url %}
-        <div class="text-end">
-            <a class="btn btn-sm btn-primary" href="{{ create_new_url }}">{%trans%}Create new{%endtrans%}</a>
-        </div>
-        {% endif %}
-    </div>
-</div>
+{% if field.object_data %}
+<table class="table table-sm table-hover mb-2" aria-label="{{field.name}}">
+    <thead>
+        <tr>
+            {% for subfield in field|first %}
+            <th scope="col">{{ subfield.label.text }}</th>
+            {% endfor %}
+            <th scope="col" style="width: 100px">
+                <span class="visually-hidden">{%trans%}Actions{%endtrans%}</span>
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in field %}
+        <tr>
+            {% for subfield in row %}
+            <td scope="row">
+                {% if loop.first %}
+                <a href="{{url_for(row.object_data, 'edit')}}">{{ subfield.data }}</a>
+                {% elif subfield.data %}
+                {% block table_widget_field scoped %}
+                {{ subfield.data }}
+                {% endblock %}
+                {% else %}
+                -
+                {% endif %}
+            </td>
+            {% endfor %}
+            <td>
+                <a class="btn btn-primary btn-circle btn-sm btn-hover" href="{{url_for(row.object_data, 'edit')}}"
+                    data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans %}Edit detail{% endtrans %}">
+                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    <span class="visually-hidden">edit</span>
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="text-center">{% trans %}List is empty{% endtrans %}</p>
+{% endif %}
