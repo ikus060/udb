@@ -54,6 +54,17 @@ class TestLogin(WebCase):
         self.assertEqual('user01', userobj.username)
         self.assertEqual(User.ROLE_USER, userobj.role)
 
+    def test_login_with_invalid_challenge(self):
+        # Given a user created with "raw" password.
+        username = 'user01'
+        password = 'password'
+        User(username=username, password=password, role=User.ROLE_USER).add()
+        self.session.commit()
+        # When trying to login with those credentials
+        login = cherrypy.engine.publish('login', username, password)
+        # Then user is not login
+        self.assertIsNone(login[0])
+
     def test_login_update_email(self):
         # Given valids credentials from mock
         username = 'user01'

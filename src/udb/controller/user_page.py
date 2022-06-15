@@ -14,10 +14,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from wtforms.fields import SelectField, StringField
+from wtforms.fields import PasswordField, SelectField, StringField, SubmitField
 from wtforms.validators import data_required, email, optional
 
 from udb.core.model import User
+from udb.core.passwd import hash_password
 from udb.tools.i18n import gettext as _
 
 from .form import CherryForm
@@ -43,3 +44,23 @@ class UserForm(CherryForm):
             (User.ROLE_ADMIN, _('Administrator - All permissions')),
         ],
     )
+
+    password = PasswordField(
+        _('Password'),
+        validators=[optional()],
+        description=_(
+            'To create a local user, set a password. To create an external user, validating the password with LDAP, do not set a password.'
+        ),
+    )
+
+    clear_password = SubmitField(_('Clear password'))
+
+    def populate_obj(self, obj):
+        obj.username = self.username.data
+        obj.fullname = self.fullname.data
+        obj.email = self.email.data
+        obj.role = self.role.data
+        if self.clear_password.data:
+            obj.password = None
+        elif self.password.data:
+            obj.password = hash_password(self.password.data)
