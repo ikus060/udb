@@ -21,7 +21,6 @@ from wtforms.fields.simple import TextAreaField
 from wtforms.form import Form
 from wtforms.validators import DataRequired, IPAddress, MacAddress, Optional
 
-from udb.controller import url_for
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User
 from udb.tools.i18n import gettext as _
 
@@ -161,13 +160,13 @@ class IpForm(CherryForm):
     related_dns_records = FieldList(
         FormField(RelatedDnsRecordFrom),
         label=_('Related DNS Records'),
-        widget=TableWidget(create_new_url=url_for(DnsRecord, 'new')),
+        widget=TableWidget(),
     )
 
     related_dhcp_records = FieldList(
         FormField(RelatedDhcpRecordForm),
         label=_('Related DHCP Records'),
-        widget=TableWidget(create_new_url=url_for(DhcpRecord, 'new')),
+        widget=TableWidget(),
     )
 
     related_subnets = FieldList(
