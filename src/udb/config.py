@@ -38,6 +38,7 @@ def parse_args(args=None, config_file_contents=None):
 
     parser = configargparse.ArgumentParser(
         description='A web interface to manage IT network',
+        default_config_files=['/etc/udb/udb.conf', '/etc/udb/udb.conf.d/*.conf'],
         add_env_var_help=True,
         auto_env_var_prefix='UDB_',
     )

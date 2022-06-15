@@ -99,8 +99,8 @@ test-package:deb:
   script:
     - apt update && apt install -y ./dist/$DIST/udb*.deb
     - udb --version
-    - (/usr/bin/udb &)
-    - apt install -y curl
+    - (/usr/bin/udb --database-uri sqlite:///data.db &)
+    - sleep 5
     - curl http://localhost:8080
 
 upload:deb:
