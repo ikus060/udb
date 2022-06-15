@@ -32,4 +32,6 @@ class Api:
     This class is a node to set all the configuration to access /api/
     """
 
-    pass
+    @cherrypy.expose
+    def index(self, *kwargs):
+        return {'status': 'OK'}
