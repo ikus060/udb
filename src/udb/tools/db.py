@@ -27,37 +27,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 logger = logging.getLogger(__name__)
 
 
-def add(self, commit=True):
-    """
-    Add current object to session.
-    """
-    self.__class__.session.add(self)
-    if commit:
-        self.__class__.session.commit()
-    return self
-
-
-def delete(self, commit=True):
-    """
-    Delete current object to session.
-    """
-    self.__class__.session.delete(self)
-    if commit:
-        self.__class__.session.commit()
-    return self
-
-
-def merge(self, commit=True):
-    """
-    Merge current object to session.
-    """
-    self.__class__.session.merge(self)
-    if commit:
-        self.__class__.session.commit()
-    return self
-
-
-class BaseExtensions(DeclarativeMeta):
+class Base:
     '''
     Extends declarative base to provide convenience methods to models similar to
     functionality found in Elixir. Works in python3.
@@ -71,12 +41,35 @@ class BaseExtensions(DeclarativeMeta):
     changed = User.from_dict({}) # update record based on dict argument passed in and returns any keys changed
     '''
 
-    def __init__(self, name, bases, class_dict):
-        DeclarativeMeta.__init__(self, name, bases, class_dict)
-        self.add = add
-        self.delete = delete
-        self.merge = merge
+    def add(self, commit=True):
+        """
+        Add current object to session.
+        """
+        self.__class__.session.add(self)
+        if commit:
+            self.__class__.session.commit()
+        return self
 
+    def delete(self, commit=True):
+        """
+        Delete current object to session.
+        """
+        self.__class__.session.delete(self)
+        if commit:
+            self.__class__.session.commit()
+        return self
+
+    def merge(self, commit=True):
+        """
+        Merge current object to session.
+        """
+        self.__class__.session.merge(self)
+        if commit:
+            self.__class__.session.commit()
+        return self
+
+
+class BaseExtensions(DeclarativeMeta):
     @property
     def query(self):
         return self.session.query(self)
@@ -114,7 +107,7 @@ class SQLA(cherrypy.Tool):
 
     def get_base(self):
         if self._base is None:
-            self._base = declarative_base(metaclass=BaseExtensions)
+            self._base = declarative_base(metaclass=BaseExtensions, cls=Base)
         return self._base
 
     def get_session(self):
