@@ -137,6 +137,15 @@ class Message(SearchableMixing, Base):
         return getattr(self, "%s_object" % self.model_name)
 
     @property
+    def summary(self):
+        """
+        Provide a summary to be displayed in table.
+        """
+        model_object = getattr(self, "%s_object" % self.model_name, None)
+        if model_object:
+            return model_object.summary
+
+    @property
     def author_name(self):
         if self.author is None:
             return _('nobody')

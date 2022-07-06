@@ -42,8 +42,8 @@
             </td>
             <td>
                 <a href="{{url_for(obj, 'edit')}}">
-                    <strong>{{macro.display_name(obj) }}</strong> {{ _status.badge(obj) }}
-                    <br />{{obj.summary}}
+                    <strong>{{obj.summary}}</strong> {{ _status.badge(obj) }}
+                    <br />{{macro.display_name(obj) }}
                 </a>
             </td>
             {{ caller(obj) }}

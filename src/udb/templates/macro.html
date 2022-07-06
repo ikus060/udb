@@ -35,7 +35,7 @@
 <i class="bi {{icon_table.get(model_name, '')}} {{extra_class or ''}}" aria-hidden="true"></i>
 {% endmacro %}
 
-{%- set display_name_table = {'dnszone': _('DNS Zone'), 'subnet':_('IP Subnet'), 'dnsrecord': _('DNS Record'), 'dhcprecord':_('DHCP Record'), 'ip':_('Ip'), 'user': _('Users') } -%}
+{%- set display_name_table = {'dnszone': _('DNS Zone'), 'subnet':_('IP Subnet'), 'dnsrecord': _('DNS Record'), 'dhcprecord':_('DHCP Record'), 'ip':_('Ip'), 'user': _('User') } -%}
 {% macro display_name(value)%}
 {%- if value.model_name is defined() -%}
 {%- set model_name = value.model_name -%}
