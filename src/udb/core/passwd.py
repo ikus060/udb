@@ -40,13 +40,15 @@ def check_password(password, challenge):
     Check if the password matches the challenge.
     The challenge is an encrypted password.
     """
-    if not password or not challenge:
+    if not password or not isinstance(password, str):
         return False
-    assert isinstance(password, str)
-    assert isinstance(challenge, str)
-    assert challenge.startswith('{SSHA}')
-    digest_salt = b64decode(challenge[6:])
-    digest = digest_salt[:20]
-    sha = hashlib.sha1(password.encode(encoding='utf8'))
-    sha.update(digest_salt[20:])
-    return digest == sha.digest()
+    if not challenge or not isinstance(challenge, str) or not challenge.startswith('{SSHA}'):
+        return False
+    try:
+        digest_salt = b64decode(challenge[6:])
+        digest = digest_salt[:20]
+        sha = hashlib.sha1(password.encode(encoding='utf8'))
+        sha.update(digest_salt[20:])
+        return digest == sha.digest()
+    except Exception:
+        return False

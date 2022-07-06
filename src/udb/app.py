@@ -65,11 +65,15 @@ def _error_page(**kwargs):
     Custom error page to return plain text error message.
     """
     # Check expected response type.
-    mtype = cherrypy.tools.accept.callable(['text/html', 'text/plain', 'application/json'])  # @UndefinedVariable
+    mtype = cherrypy.serving.response.headers.get('Content-Type') or cherrypy.tools.accept.callable(
+        ['text/html', 'text/plain', 'application/json']
+    )
     if mtype == 'text/plain':
         return kwargs.get('message')
     elif mtype == 'application/json':
-        return {'message': kwargs.get('message', ''), 'status': kwargs.get('status', '')}
+        import json
+
+        return json.dumps({'message': kwargs.get('message', ''), 'status': kwargs.get('status', '')})
     # Try to build a nice error page.
     try:
         env = cherrypy.request.config.get('tools.jinja2.env')
