@@ -16,7 +16,7 @@
 
       <!-- Brand -->
       <a class="navbar-brand" href="{{ url_for('') }}">
-        <img src="{{url_for('static', 'favicon.svg')}}" class="d-inline-block align-text-top" height="24" alt="logo"/>
+        <img src="{{url_for('static', 'favicon.svg')}}" class="d-inline-block align-text-top" height="24" alt="logo" />
         {{ header_name }}
       </a>
 
@@ -28,10 +28,11 @@
       {% if not hide_search %}
       <form class="d-flex" method="GET" action="{{url_for('search')}}">
         <div class="input-group mb-1">
-          <input type="text" class="form-control" placeholder="Search" aria-label="Search" name="q"
-            aria-describedby="button-search">
-          <button class="btn btn-outline-secondary" id="button-search" type="submit"><i
-              class="fbi bi-search"></i></button>
+          <input type="text" class="form-control" placeholder="{% trans %}Search all{% endtrans %}"
+            aria-label="{% trans %}Search all{% endtrans %}" name="q" aria-describedby="button-search">
+          <button class="btn btn-outline-secondary" id="button-search" type="submit">
+            <i class="fbi bi-search" aria-hidden="true"></i>
+          </button>
         </div>
       </form>
       {% endif %}
@@ -85,7 +86,8 @@
         </a>
         <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser1">
           <li><a class="dropdown-item" href="{{ url_for('profile') }}">{%trans%}Edit user profile{%endtrans%}</a></li>
-          <li><a class="dropdown-item" href="{{ url_for('notifications') }}">{%trans%}Edit notification preferences{%endtrans%}</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('notifications') }}">{%trans%}Edit notification
+              preferences{%endtrans%}</a></li>
           <li>
             <hr class="dropdown-divider">
           </li>
