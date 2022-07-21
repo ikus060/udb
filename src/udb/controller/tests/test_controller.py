@@ -48,3 +48,15 @@ class TestApp(WebCase):
         msg = Search.query.first()
         # Then URL is create with object name and object id
         self.assertEqual(url_for(msg), 'http://%s:%s/dnszone/%s' % (self.HOST, self.PORT, obj.id))
+
+    def test_with_proxy(self):
+        self.getPage('/dashboard/', headers=[('X-Forwarded-Host', 'http://www.example.test')])
+        self.assertInBody('http://www.example.test/static/main.css')
+        self.assertInBody('http://www.example.test/static/main.js')
+        self.assertInBody('http://www.example.test/static/favicon.svg')
+
+    def test_with_https_proxy(self):
+        self.getPage('/dashboard/', headers=[('X-Forwarded-Host', 'https://www.example.test')])
+        self.assertInBody('https://www.example.test/static/main.css')
+        self.assertInBody('https://www.example.test/static/main.js')
+        self.assertInBody('https://www.example.test/static/favicon.svg')

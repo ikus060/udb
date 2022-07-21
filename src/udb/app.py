@@ -90,6 +90,7 @@ def _error_page(**kwargs):
 
 
 @cherrypy.tools.db()
+@cherrypy.tools.proxy()
 @cherrypy.tools.sessions()
 @cherrypy.tools.auth_form()
 @cherrypy.tools.currentuser(userobj=lambda username: User.query.filter_by(username=username).first())
