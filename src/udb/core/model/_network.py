@@ -141,7 +141,8 @@ Index('dnszone_name_index', func.lower(DnsZone.name), unique=True)
 
 
 class Subnet(CommonMixin, Base):
-    name = Column(String, unique=True, nullable=False, default='')
+
+    name = Column(String, nullable=False, default='')
     ip_cidr = Column(CidrType, unique=True, nullable=False)
     vrf = Column(Integer, nullable=True)
 
@@ -152,15 +153,15 @@ class Subnet(CommonMixin, Base):
     @validates('ip_cidr')
     def validate_ip_cidr(self, key, value):
         try:
-            return str(ipaddress.ip_network(value, strict=False))
+            return str(ipaddress.ip_network(value.strip(), strict=False))
         except ValueError:
             raise ValueError('ip_cidr', _('does not appear to be a valid IPv4 or IPv6 network'))
 
-    @property
+    @hybrid_property
     def related_supernets(self):
         return Subnet.query.filter(Subnet.ip_cidr.supernet_of(self.ip_cidr)).all()
 
-    @property
+    @hybrid_property
     def related_subnets(self):
         return Subnet.query.filter(Subnet.ip_cidr.subnet_of(self.ip_cidr)).all()
 
@@ -170,6 +171,10 @@ class Subnet(CommonMixin, Base):
     @hybrid_property
     def summary(self):
         return self.ip_cidr + " (" + self.name + ")"
+
+    @property
+    def ip_network(self):
+        return ipaddress.ip_network(self.ip_cidr)
 
 
 class DnsRecord(CommonMixin, Base):

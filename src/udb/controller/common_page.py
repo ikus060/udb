@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 import re
-from functools import cached_property
 
 import cherrypy
 from sqlalchemy.exc import DatabaseError, IntegrityError
@@ -119,21 +118,7 @@ class CommonPage(object):
         if user is None or not user.has_role(role):
             raise cherrypy.HTTPError(403, 'Insufficient privileges')
 
-    def _verify_sort(self, sort):
-        """
-        Sort should be formated as follow: <fieldname>_[asc|desc]
-        """
-        assert sort
-        try:
-            if sort.endswith('_asc') and hasattr(self.model, sort[0:-4]):
-                return getattr(self.model, sort[0:-4]).asc()
-            elif sort.endswith('_desc') and hasattr(self.model, sort[0:-5]):
-                return getattr(self.model, sort[0:-5]).desc()
-        except (AttributeError, NotImplementedError):
-            pass
-        raise cherrypy.HTTPError(404, 'invalid sort value:' + sort)
-
-    def _query(self, deleted, personal, sort):
+    def _query(self, deleted, personal):
         """
         Build a query with supported feature of the current object class.
         """
@@ -142,23 +127,7 @@ class CommonPage(object):
             query = query.filter(self.model.status != self.model.STATUS_DELETED)
         if personal and hasattr(self.model, 'owner'):
             query = query.filter(self.model.owner == cherrypy.request.currentuser)
-        if sort:
-            query = query.order_by(self._verify_sort(sort))
         return query
-
-    @cached_property
-    def _sortable_fields(self):
-        """
-        Return list of sortables fields for the current model.
-        """
-        fields = []
-        for field in self.object_form():
-            try:
-                getattr(self.model, field.name).asc()
-                fields.append(field.name)
-            except (AttributeError, NotImplementedError):
-                pass
-        return fields
 
     def _key(self, obj):
         """
@@ -168,14 +137,14 @@ class CommonPage(object):
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/list.html', 'common/list.html'])
-    def index(self, deleted=False, personal=False, sort=None, filter=None):
+    def index(self, deleted=False, personal=False, filter=None):
         self._verify_role(self.list_role)
         # Convert from string to boolean
         with cherrypy.HTTPError.handle(ValueError, 400):
             deleted = deleted in [True, 'True', 'true']
             personal = personal in [True, 'True', 'true']
         # Build query
-        obj_list = self._query(deleted, personal, sort)
+        obj_list = self._query(deleted, personal)
         # return data for templates
         return {
             'has_new': self.has_new,
@@ -183,12 +152,10 @@ class CommonPage(object):
             'has_owner': self.has_owner,
             'has_followers': self.has_followers,
             'has_messages': self.has_messages,
-            'sortable_fields': self._sortable_fields,
             # TODO Rename those attributes to filter_status
             'deleted': deleted,
             # TODO filter_owner
             'personal': personal,
-            'sort': sort,
             'form': self.object_form(),
             'model': self.model,
             'model_name': self.model.__name__.lower(),

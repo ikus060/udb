@@ -1,33 +1,17 @@
 {% import "macro.html" as macro %}
-{% import "common/status.html" as _status %}
-
-{% macro table(obj_list, table_extra_columns=[], empty_message=_('List is empty')) %}
-<table class="table table-hover" aria-label="{% if obj_list and obj_list|list|length > 0 %}{{macro.display_name(obj_list|first)}}{% else %}{{empty_message}}{% endif %}">
+{% set table_count = 1 %}
+{% macro table(obj_list, table_extra_columns=[], empty_message=_('List is empty'), filter_location_id=None) %}
+{% set id = 'table' + table_count|string %}
+<table id="{{id}}" class="table table-hover"
+    aria-label="{% if obj_list and obj_list|list|length > 0 %}{{macro.display_name(obj_list|first)}}{% else %}{{empty_message}}{% endif %}">
     <thead>
         <tr>
-            <th scope="col" colspan="2">
-                <span>{%trans%}Summary{%endtrans%}</span>
-            </th>
             {% for name, label, sortable in table_extra_columns %}
-            <th scope="col">
-                {% if sortable %}
-                {% set toggle_sort = name + '_desc' if sort == name + '_asc' else name + '_asc' %}
-                {% set active = sort == name + '_asc' or sort == name + '_desc' %}
-                <a href="{{ url_for(sort=toggle_sort) }}"
-                    class="{%if active %}link-primary{% else %}link-dark{% endif %}">
-                    {{ label }}
-                    {% if sort == name + '_asc' %}
-                    <i class="bi bi-caret-up-fill" aria-hidden="true"></i>
-                    {% elif sort == name + '_desc' %}
-                    <i class="bi bi-caret-down-fill" aria-hidden="true"></i>
-                    {% endif %}
-                </a>
-                {% else %}
+            <th scope="col" data-orderable="{{'true' if sortable else 'false'}}">
                 {{ label }}
-                {% endif %}
             </th>
             {% endfor %}
-            <th scope="col" style="width: 100px">
+            <th scope="col" style="width: 100px" data-orderable="false">
                 <span class="visually-hidden">{%trans%}Actions{%endtrans%}</span>
             </th>
         </tr>
@@ -35,37 +19,71 @@
     <tbody>
         {% for obj in obj_list %}
         <tr>
-            <td class="align-top" style="width: 25px">
-                <a href="{{url_for(obj, 'edit')}}">
-                    {{ macro.icon(obj, "h4") }}
-                </a>
-            </td>
-            <td>
-                <a href="{{url_for(obj, 'edit')}}">
-                    <strong>{{obj.summary}}</strong> {{ _status.badge(obj) }}
-                    <br />{{macro.display_name(obj) }}
-                </a>
-            </td>
             {{ caller(obj) }}
             <td class="align-middle">
-                <a class="btn btn-primary btn-circle btn-hover" href="{{url_for(obj, 'edit')}}"
-                    data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans %}View more detail{% endtrans %}">
+                <a class="btn btn-primary btn-circle btn-hover" href="{{url_for(obj, 'edit')}}" data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="{% trans %}View more detail{% endtrans %}">
                     <i class="bi bi-chevron-right" aria-hidden="true"></i>
                     <span class="visually-hidden">{%trans%}Edit{%endtrans%}</span>
                 </a>
-            </td>
-        </tr>
-        {% else %}
-        <tr>
-            <td colspan="{{ 5 + table_extra_columns|length }}" class="text-center p-5">
-                <i class="bi bi-search display-4 fw-bold" aria-hidden="true"></i><br />
-                <p>
-                    {{ empty_message }}
-                </p>
             </td>
         </tr>
         {% endfor %}
 
     </tbody>
 </table>
+<script>
+    {% set search_enabled = 'true' if filter_location_id else 'false' %}
+    $(document).ready(function () {
+        $('#{{id}}').DataTable({
+            dom: "f" +
+                "<'row'<'col-sm-12'tr>>" +
+                "<'row'<'col-sm-12'i>>",
+            language: {
+                "aria": {
+                    "sortAscending": ": {%trans%}activate to sort column ascending{%endtrans%}",
+                    "sortDescending": ": {%trans%}activate to sort column descending{%endtrans%}"
+                },
+                "info": "{%trans%}Showing _START_ of _TOTAL_ entries{%endtrans%}",
+                "infoFiltered": "{%trans%}(filtered from _MAX_ total entries){%endtrans%}",
+                "infoEmpty": "{%trans%}Showing 0 of 0 entries{%endtrans%}",
+                "search": "{%trans%}Filter: {%endtrans%}",
+                "zeroRecords": "{{ empty_message }}",
+            },
+            initComplete: function () {
+                {%- if filter_location_id %}
+                $("#{{id}}_filter input").detach().appendTo('{{filter_location_id}}');
+                $("#{{id}}_filter").detach();
+                {%- endif %}
+            },
+            paging: false,
+            searching: {{search_enabled}},
+            stateSave: true,
+            drawCallback: function (settings) {
+                var table = this;
+                var api = this.api();
+                var rows = api.rows({ page: 'current' }).nodes();
+                var last = null;
+                var order = api.order();
+                if(order) {
+                    // Adjust depth according to data-depth attributes
+                    api
+                        .column(order[0], { page: 'current' })
+                        .nodes()
+                        .to$()
+                        .each(function (node) {
+                            var depth = $(this).attr('data-depth');
+                            if(depth){
+                                $(this).parent().addClass('depth-' + depth);
+                            } else {
+                                for(var i=0; i<=4; i++) {
+                                    $(this).parent().removeClass('depth-' + i);
+                                }
+                            }
+                        });
+                }
+            }
+        });
+    });
+</script>
 {% endmacro %}

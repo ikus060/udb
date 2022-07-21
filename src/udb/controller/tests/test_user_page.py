@@ -36,17 +36,6 @@ class UserTest(WebCase):
         self.assertStatus(200)
         self.assertInBody('<table')
 
-    def test_get_list_with_sort(self):
-        # Given a database with a record
-        User(**self.new_data).add()
-        # When making a query to list records with sorted column
-        field = list(self.new_data.keys())[0]
-        self.getPage(url_for('user', '', sort=field + '_asc'))
-        # Then an html page is returned with a table
-        self.assertStatus(200)
-        self.assertInBody('<table')
-        self.assertInBody(field + '_desc')
-
     def test_get_edit_page(self):
         # Given a database with a record
         obj = User(**self.new_data).add()

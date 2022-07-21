@@ -24,7 +24,20 @@
     {% include "common/filter.html" %}
 </div>
 
-{% call(obj) _table.table(obj_list, empty_message=_('Sorry, that filter combination has no result. Please try different criteria.')) %}
+{% set extra_columns = [('summary', _('Summary'), True), ('notes', _('Notes'), True), ('owner_name', _('Owner'), True)] %}
+{% call(obj) _table.table(obj_list, table_extra_columns = extra_columns, empty_message=_('Sorry, that filter combination has no result. Please try different criteria.')) %}
+<td>
+    <a href="{{url_for(obj, 'edit')}}" data-sort="{{obj.summary}}">
+        {{ macro.icon(obj, "h4 float-start pe-2") }}
+        <strong>{{obj.summary}}</strong> {{ _status.badge(obj) }}
+        <br />{{macro.display_name(obj) }}
+    </a>
+</td>
+<td>
+    {{ obj.notes }}
+</td>
+<td>
+    {% if obj.owner_name %}{{obj.owner_name}}{% endif %}
+</td>
 {% endcall %}
-
 {% endblock %}

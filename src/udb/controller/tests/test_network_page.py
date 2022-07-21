@@ -44,17 +44,6 @@ class CommonTest:
         self.assertStatus(200)
         self.assertInBody('<table')
 
-    def test_get_list_with_sort(self):
-        # Given a database with a record
-        self.obj_cls(**self.new_data).add()
-        # When making a query to list records with sorted column
-        field = list(self.new_data.keys())[0]
-        self.getPage(url_for(self.base_url, '', sort=field + '_asc'))
-        # Then an html page is returned with a table
-        self.assertStatus(200)
-        self.assertInBody('<table')
-        self.assertInBody(field + '_desc')
-
     def test_get_edit_page(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()

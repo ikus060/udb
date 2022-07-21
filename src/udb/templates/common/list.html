@@ -5,6 +5,9 @@
 {% block body %}
 <div class="d-flex justify-content-between">
     <h4 class="flex-fill" id="title">{{macro.icon(model_name)}} {% trans %}List of{% endtrans %} {{macro.display_name(model_name)}}</h2>
+    <div class="btn bg-light align-self-center me-2">
+        {%trans%}Filter:{% endtrans %} <span id="filter-location" />
+    </div>
     <div class="align-self-center">
         {% if has_new %}
         {% set new_disabled = not currentuser.allow_new_record() %}
@@ -16,21 +19,27 @@
     </div>
 </div>
 
-{# Default a default columns list #}
-{% set table_default_columns = [] %}
-{% if obj_list and obj_list|list|length > 0 and obj_list[0].notes is defined() %}
-{%- set table_default_columns = table_default_columns + [('notes', _('Notes'), True)] -%}
+{# Default a default columns list from form #}
+{% set ns = namespace(table_default_columns=[]) %}
+{% for field in form %}
+{% if field.widget['input_type'] != 'hidden' %}
+{% set ns.table_default_columns = ns.table_default_columns + [(field.name, field.label.text, True)] %}
 {% endif %}
-{% if obj_list and obj_list|list|length > 0 and obj_list[0].owner is defined() %}
-{%- set table_default_columns = table_default_columns + [('owner_name', _('Owner'), True)] -%}
-{% endif %}
+{% endfor %}
 
 {# Show default table #}
 {% block table_list scoped %}
-{% call(obj) _table.table(obj_list, table_extra_columns=table_extra_columns|d(table_default_columns)) %}
-    {% for col in table_extra_columns|d(table_default_columns) %}
+{% call(obj) _table.table(obj_list, table_extra_columns=table_extra_columns|d(ns.table_default_columns), filter_location_id='#filter-location') %}
+    {% for col in table_extra_columns|d(ns.table_default_columns) %}
     <td>
+        {% if loop.first %}
+        <a href="{{url_for(obj, 'edit')}}">
+            {{ macro.icon(obj, "float-start pe-2") }}
+            {{ obj|attr(col[0]) or "-" }}
+        </a>        
+        {% else %}
         {{ obj|attr(col[0]) or "-" }}
+        {% endif %}
     </td>
     {% endfor %}
 {% endcall %}

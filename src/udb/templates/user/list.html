@@ -10,9 +10,11 @@
 
 
 {% block table_list scoped %}
-{% call(obj) _table.table(obj_list, table_extra_columns = [('username', form.username.label.text, True), ('fullname', form.fullname.label.text, True), ('email', form.email.label.text, True), ('role', form.role.label.text, True)] ) %}
+{% set extra_columns = [('username', form.username.label.text, True), ('fullname', form.fullname.label.text, True), ('email', form.email.label.text, True), ('role', form.role.label.text, True)] %}
+{% call(obj) _table.table(obj_list, table_extra_columns = extra_columns, filter_location_id='#filter-location') %}
 <td>
-    {{obj.username}} {{ local() if obj.is_local() else external() }}
+    <a href="{{url_for(obj, 'edit')}}">{{ macro.icon(obj, "float-start pe-2") }} {{obj.username}}</a>
+    {{ local() if obj.is_local() else external() }}
 </td>
 <td>
     {{obj.fullname}}

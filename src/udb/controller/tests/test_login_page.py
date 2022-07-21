@@ -181,7 +181,7 @@ class TestLogin(WebCase):
 
     def test_redirect_to_login_with_url_and_qs(self):
         # When trying to access a proptected page.
-        self.getPage("/dnszone/?sort=type_asc")
+        self.getPage("/dnszone/?key=value")
         # Then user is redirected to login page.
         self.assertStatus('303 See Other')
-        self.assertHeaderItemValue('Location', self.baseurl + '/login/?redirect=%2Fdnszone%2F%3Fsort%3Dtype_asc')
+        self.assertHeaderItemValue('Location', self.baseurl + '/login/?redirect=%2Fdnszone%2F%3Fkey%3Dvalue')

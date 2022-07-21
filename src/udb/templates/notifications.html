@@ -1,5 +1,7 @@
 {% extends 'layout.html' %}
 {% import "components/table.html" as _table %}
+{% import "common/status.html" as _status %}
+{% import "macro.html" as macro %}
 {% block body %}
 {# Title #}
 <h2>{%trans%}Edit notification preferences{%endtrans%}</h2>
@@ -13,7 +15,14 @@
             them.{%endtrans%}</p>
     </div>
     <div class="col-md-9">
-        {% call(obj) _table.table(obj_list, empty_message=_('You are not following any record.')) %}
+        {% call(obj) _table.table(obj_list, empty_message=_('You are not following any record.'), table_extra_columns = [('summary', _('Summary'), True)] ) %}
+        <td>
+            <a href="{{url_for(obj, 'edit')}}" data-sort="{{obj.summary}}">
+                {{ macro.icon(obj, "h4 float-start pe-2") }}
+                <strong>{{obj.summary}}</strong> {{ _status.badge(obj) }}
+                <br />{{macro.display_name(obj) }}
+            </a>
+        </td>
         {% endcall %}
     </div>
 </div>

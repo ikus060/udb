@@ -1,6 +1,7 @@
 {% extends 'layout.html' %}
 {% import "components/table.html" as _table with context %}
 {% import "common/messages.html" as _messages with context %}
+{% import "common/status.html" as _status %}
 {% import "macro.html" as macro %}
 
 {% macro dashboard_card(model_name, count, color) %}
@@ -52,11 +53,18 @@
             </div>
             <!-- Card Body -->
             <div class="card-body" style="height: 420px; overflow-y: auto;">
-                {% set table_extra_columns = [ ('body', _('Changes'), False)] %}
+                {% set table_extra_columns = [('summary', _('Summary'), True), ('body', _('Changes'), False)] %}
                 {% call(obj) _table.table(
                 activity_list,
                 table_extra_columns=table_extra_columns,
                 empty_message=_('No activities')) %}
+                <td>
+                    <a href="{{url_for(obj, 'edit')}}" data-sort="{{obj.summary}}">
+                        {{ macro.icon(obj, "h4 float-start pe-2") }}
+                        <strong>{{obj.summary}}</strong> {{ _status.badge(obj) }}
+                        <br />{{macro.display_name(obj) }}
+                    </a>
+                </td>
                 <td>
                     {{ _messages.show_message(obj) }}
                 </td>

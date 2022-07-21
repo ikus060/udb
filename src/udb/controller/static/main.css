@@ -57,3 +57,53 @@ tr:hover .btn-hover {
 th > a {
     text-decoration: none;
 }
+
+/* Fix datatable filter alignment*/
+#filter-location input {
+    display: inline;
+    width: auto;
+}
+
+/* Custom class for subnet depth */
+table.dataTable tr.depth-0 {
+    background: var(--bs-gray-500);
+}
+table.dataTable tr.depth-1 {
+    background: var(--bs-gray-400);
+}
+table.dataTable tr.depth-1 td:first-child {
+    padding-left: 2em;
+}
+table.dataTable tr.depth-2 {
+    background: var(--bs-gray-300);
+}
+table.dataTable tr.depth-2 td:first-child {
+    padding-left: 4em;
+}
+table.dataTable tr.depth-3 {
+    background: var(--bs-gray-200);
+}
+table.dataTable tr.depth-3 td:first-child {
+    padding-left: 6em;
+}
+table.dataTable tr.depth-4 {
+    background: var(--bs-gray-100);
+}
+table.dataTable tr.depth-4 td:first-child {
+    padding-left: 8em;
+}
+table.dataTable tr.depth-5 td:first-child {
+    padding-left: 10em;
+}
+table.dataTable tr.depth-6 td:first-child {
+    padding-left: 12em;
+}
+table.dataTable tr.depth-7 td:first-child {
+    padding-left: 14em;
+}
+table.dataTable tr.depth-8 td:first-child {
+    padding-left: 16em;
+}
+table.dataTable tr.depth-9 td:first-child {
+    padding-left: 18em;
+}

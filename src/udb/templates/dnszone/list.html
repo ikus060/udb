@@ -1,13 +1,23 @@
 {% extends 'common/list.html' %}
 {% block table_list scoped %}
-{% call(obj) _table.table(obj_list, table_extra_columns = [('name', form.name.label.text, True), ('subnets', form.subnets.label.text, False)], ) %}
+{% set extra_columns = [('name', form.name.label.text, True), ('subnets', form.subnets.label.text, True), ('notes', _('Notes'), True), ('owner_name', _('Owner'), True)] %}
+{% call(obj) _table.table(obj_list, table_extra_columns=extra_columns, filter_location_id='#filter-location') %}
 <td>
-    {{obj.name}}
+    <a href="{{url_for(obj, 'edit')}}" data-sort="{{obj.name}}">
+        {{ macro.icon(obj, "float-start pe-2") }}
+        {{obj.name}}
+    </a>
 </td>
 <td>
     {% for subnet in obj.subnets %}
     <a href="{{url_for(subnet, 'edit')}}"><span class="badge rounded-pill bg-secondary">{{subnet.summary}}</span></a>
     {% endfor %}
+</td>
+<td>
+    {{ obj.notes }}
+</td>
+<td>
+    {% if obj.owner_name %}{{ obj.owner_name }}{% endif %}
 </td>
 {% endcall %}
 {% endblock %}

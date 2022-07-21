@@ -30,7 +30,6 @@ class SearchForm(CherryForm):
     q = StringField(validators=[input_required()])
     personal = HiddenField()
     deleted = HiddenField()
-    sort = HiddenField()
 
     def is_submitted(self):
         return cherrypy.request.method in ['GET']
@@ -39,7 +38,7 @@ class SearchForm(CherryForm):
 class SearchPage:
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['search.html'])
-    def index(self, deleted=False, personal=False, sort=None, **kwargs):
+    def index(self, deleted=False, personal=False, **kwargs):
         with cherrypy.HTTPError.handle(ValueError, 400):
             deleted = deleted in [True, 'True', 'true']
             personal = personal in [True, 'True', 'true']
@@ -48,16 +47,15 @@ class SearchPage:
             flash('TODO ERROR MESSAGE')
             obj_list = []
         else:
-            obj_list = self._query(form.q.data, deleted, personal, sort)
+            obj_list = self._query(form.q.data, deleted, personal)
         return {
             'form': form,
             'obj_list': obj_list,
             'deleted': deleted,
             'personal': personal,
-            'sort': sort,
         }
 
-    def _query(self, term, deleted, personal, sort):
+    def _query(self, term, deleted, personal):
         """
         Build a query with supported feature of the current object class.
         """
@@ -68,12 +66,7 @@ class SearchPage:
             query = query.filter(Search.status != User.STATUS_DELETED)
         if personal:
             query = query.filter(Search.owner == cherrypy.request.currentuser)
-        if sort:
-            query = query.order_by(self._verify_sort(sort))
-        else:
-            query = query.order_by(Search.modified_at)
+        query = query.order_by(Search.modified_at)
         # TODO Limit record (50 by default)
-        # TODO Make pagination work
         # TODO Filter record types
-        # TODO Support sorting
         return query.all()
