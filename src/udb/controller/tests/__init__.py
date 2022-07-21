@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import json
 import os
+import tempfile
 import unittest
 from urllib.parse import urlencode
 
@@ -60,10 +60,8 @@ class WebCase(BaseClass):
         # Get defaultconfig from test class
         default_config = getattr(cls, 'default_config', {})
         # Replace database url
-        dburi = os.environ.get('TEST_DATABASE_URI', None)
-        if dburi:
-            default_config['database-uri'] = dburi
-
+        dburi = os.environ.get('TEST_DATABASE_URI', 'sqlite:///' + tempfile.gettempdir() + '/test_udb_data.db')
+        default_config['database-uri'] = dburi
         cfg = parse_args(args=[], config_file_contents='\n'.join('%s=%s' % (k, v) for k, v in default_config.items()))
         app = Root(cfg)
         cherrypy.tree.mount(app)

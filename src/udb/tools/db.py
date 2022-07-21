@@ -20,11 +20,23 @@ SQLAlchemy Tool for CherryPy.
 import logging
 
 import cherrypy
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
+from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 logger = logging.getLogger(__name__)
+
+
+@event.listens_for(Engine, 'connect')
+def _set_sqlite_journal_mode_wal(connection, connection_record):
+    """
+    Enable WAL journaling for concurrent read and write operation.
+    """
+    if 'sqlite3' in str(connection.__class__):
+        cursor = connection.cursor()
+        cursor.execute('PRAGMA journal_mode=WAL;')
+        cursor.close()
 
 
 class Base:
@@ -68,6 +80,9 @@ class Base:
             self.__class__.session.commit()
         return self
 
+    def expire(self):
+        self.__class__.session.expire(self)
+
 
 class BaseExtensions(DeclarativeMeta):
     @property
@@ -91,19 +106,24 @@ class SQLA(cherrypy.Tool):
         cherrypy.request.hooks.attach('on_end_resource', self.on_end_resource)
 
     def create_all(self):
-        if self._base.metadata.bind is None:
+        # Release opened sessions.
+        self.on_end_resource()
+        # Create new metadata binding
+        base = self.get_base()
+        if base.metadata.bind is None:
             dburi = cherrypy.config.get('tools.db.uri')
             debug = cherrypy.config.get('tools.db.debug')
-            self._base.metadata.bind = create_engine(dburi)
+            base.metadata.bind = create_engine(dburi)
             if debug:
                 logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
-        self._base.metadata.create_all()
+        base.metadata.create_all()
 
     def drop_all(self):
-        # Release open session.
+        # Release opened sessions.
         self.on_end_resource()
         # Drop all
-        self._base.metadata.drop_all()
+        base = self.get_base()
+        base.metadata.drop_all()
 
     def get_base(self):
         if self._base is None:
@@ -113,8 +133,7 @@ class SQLA(cherrypy.Tool):
     def get_session(self):
         if self._session is None:
             self._session = scoped_session(sessionmaker(autoflush=False, autocommit=False))
-            self._session.configure(bind=self._base.metadata.bind)
-
+            self._session.configure(bind=self.get_base().metadata.bind)
         return self._session
 
     def on_end_resource(self):
