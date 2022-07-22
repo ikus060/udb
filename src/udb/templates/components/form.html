@@ -1,10 +1,11 @@
 {% set bootstrap_class_table = {
-    'Select': 'form-select',
-    'TextInput': 'form-control',
-    'TextArea': 'form-control',
-    'PasswordInput': 'form-control',
     'EmailInput': 'form-control',
-    'SubmitInput': 'btn btn-secondary'} %}
+    'NumberInput': 'form-control',
+    'PasswordInput': 'form-control',
+    'Select': 'form-select',
+    'SubmitInput': 'btn btn-secondary',
+    'TextArea': 'form-control',
+    'TextInput': 'form-control'}%}    
 {% for id, field in form._fields.items() %}
 {% if field.widget['input_type'] == 'hidden' %}
 {{ field() }}

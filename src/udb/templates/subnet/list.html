@@ -2,10 +2,17 @@
 {# Subnet are sorted a in specific wayt to mimic the IP CIDR ordering. #}
 {# data-depth is used by datatables to create a "tree" representation of the data. #}
 {% block table_list scoped %}
-{% set extra_columns = [('ip_cidr', form.ip_cidr.label.text, True), ('name', form.name.label.text, True), ('vrf', form.vrf.label.text, True), ('dnszones', form.dnszones.label.text, False)] %}
-{% call(obj) _table.table(obj_list|sort(attribute='ip_cidr', reverse=True), table_extra_columns = extra_columns, filter_location_id='#filter-location') %}
+{% set extra_columns = [
+    ('ip_cidr', form.ip_cidr.label.text, True), 
+    ('name', form.name.label.text, True), 
+    ('vrf', form.vrf.label.text, True), 
+    ('l3vni', form.l3vni.label.text, True), 
+    ('l2vni', form.l2vni.label.text, True), 
+    ('vlan', form.vlan.label.text, True),
+    ('dnszones', form.dnszones.label.text, False)] %}
+{% call(obj) _table.table(obj_list|sort(attribute='ip_cidr', reverse=True), table_extra_columns = extra_columns) %}
 {% set ip_network = obj.ip_network %}
-<td data-depth="{{obj.related_supernets|length}}" data-order="{{ ip_network._version }}#{{ ip_network.network_address.exploded }}#{{ ip_network.prefixlen }}">
+<td data-order="{{ obj.vrf_id }}{{ ip_network._version }}#{{ ip_network.network_address.exploded }}#{{ ip_network.prefixlen }}" data-depth="{{obj.depth}}">
     <a href="{{url_for(obj, 'edit')}}" data-sort="{{obj.ip_cidr}}">
         {{ macro.icon(obj, "float-start pe-2") }}
         {{ obj.ip_cidr }}
@@ -16,6 +23,15 @@
 </td>
 <td>
     {% if obj.vrf %}{{obj.vrf}}{% endif %}
+</td>
+<td>
+    {% if obj.l3vni %}{{obj.l3vni}}{% endif %}
+</td>
+<td>
+    {% if obj.l2vni %}{{obj.l2vni}}{% endif %}
+</td>
+<td>
+    {% if obj.vlan %}{{obj.vlan}}{% endif %}
 </td>
 <td>
     {% for zone in obj.dnszones %}

@@ -133,7 +133,7 @@ class SQLA(cherrypy.Tool):
     def get_session(self):
         if self._session is None:
             self._session = scoped_session(sessionmaker(autoflush=False, autocommit=False))
-            self._session.configure(bind=self.get_base().metadata.bind)
+        self._session.configure(bind=self.get_base().metadata.bind)
         return self._session
 
     def on_end_resource(self):

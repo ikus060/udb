@@ -17,25 +17,26 @@
 
 
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Message, Subnet, User
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Message, Subnet, User, Vrf
 
 
 class TestSearchPage(WebCase):
     def add_records(self):
         self.user = User(username='test')
-        self.subnet = Subnet(ip_cidr='147.87.250.0/24', name='DMZ', vrf=1, notes='public', owner=self.user).add()
+        self.vrf = Vrf(name='(default)')
+        self.subnet = Subnet(ip_cidr='147.87.250.0/24', name='DMZ', vrf=self.vrf, notes='public', owner=self.user).add()
         self.subnet.add_message(Message(body='Message on subnet', author=self.user))
-        Subnet(ip_cidr='147.87.0.0/16', name='its-main-4', vrf=1, notes='main', owner=self.user).add()
+        Subnet(ip_cidr='147.87.0.0/16', name='its-main-4', vrf=self.vrf, notes='main', owner=self.user).add()
         Subnet(
-            ip_cidr='2002::1234:abcd:ffff:c0a8:101/64', name='its-main-6', vrf=1, notes='main', owner=self.user
+            ip_cidr='2002::1234:abcd:ffff:c0a8:101/64', name='its-main-6', vrf=self.vrf, notes='main', owner=self.user
         ).add()
-        Subnet(ip_cidr='147.87.208.0/24', name='ARZ', vrf=1, notes='BE.net', owner=self.user).add()
+        Subnet(ip_cidr='147.87.208.0/24', name='ARZ', vrf=self.vrf, notes='BE.net', owner=self.user).add()
         self.zone = DnsZone(name='bfh.ch', notes='DMZ Zone', subnets=[self.subnet], owner=self.user).add()
         self.zone.add_message(Message(body='Here is a message', author=self.user))
         DnsZone(name='bfh.science', notes='This is a note', owner=self.user).add()
         DnsZone(name='bfh.info', notes='This is a note', owner=self.user).add()
         DhcpRecord(ip='147.87.250.1', mac='00:ba:d5:a2:34:56', notes='webserver bla bla bla', owner=self.user).add()
-        self.dnsrecord = DnsRecord(name='foo.bfh.ch', type='A', value='147.87.250.0', owner=self.user).add()
+        self.dnsrecord = DnsRecord(name='foo.bfh.ch', type='A', value='147.87.250.3', owner=self.user).add()
         self.dnsrecord.add_message(Message(body='This is a message', author=self.user))
         DnsRecord(name='bar.bfh.ch', type='A', value='147.87.250.1', owner=self.user).add()
         DnsRecord(name='bar.bfh.ch', type='CNAME', value='www.bar.bfh.ch', owner=self.user).add()
@@ -59,4 +60,3 @@ class TestSearchPage(WebCase):
         # Then results are displayed
         self.assertStatus(200)
         self.assertInBody('147.87.250.0/24 (DMZ)')
-        self.assertNotInBody('Sorry, that filter combination has no result.')

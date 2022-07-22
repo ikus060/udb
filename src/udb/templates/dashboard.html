@@ -57,6 +57,7 @@
                 {% call(obj) _table.table(
                 activity_list,
                 table_extra_columns=table_extra_columns,
+                search_enabled=False,
                 empty_message=_('No activities')) %}
                 <td>
                     <a href="{{url_for(obj, 'edit')}}" data-sort="{{obj.summary}}">

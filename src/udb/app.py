@@ -33,15 +33,21 @@ from udb.controller import lastupdated, template_processor, url_for
 from udb.controller.api import Api
 from udb.controller.common_page import CommonApi, CommonPage
 from udb.controller.dashboard_page import DashboardPage
+from udb.controller.dhcprecord_page import DhcpRecordPage
+from udb.controller.dnsrecord_page import DnsRecordPage
+from udb.controller.dnszone_page import DnsZonePage
+from udb.controller.ip_page import IpPage
+from udb.controller.load_page import LoadPage
 from udb.controller.login_page import LoginPage
 from udb.controller.logout_page import LogoutPage
-from udb.controller.network_page import DhcpRecordForm, DnsRecordForm, DnsZoneForm, IpForm, SubnetForm
 from udb.controller.notifications_page import NotificationsPage
 from udb.controller.profile_page import ProfilePage
 from udb.controller.search_page import SearchPage
 from udb.controller.static import Static
+from udb.controller.subnet_page import SubnetPage
 from udb.controller.user_page import UserForm
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, User
+from udb.controller.vrf_page import VrfPage
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User, Vrf
 from udb.tools.i18n import gettext, ngettext
 
 #
@@ -157,11 +163,13 @@ class Root(object):
             User.create(username='guest', fullname='Default Guest', password='guest', role=User.ROLE_GUEST)
             User.create(username='user', fullname='Default User', password='user', role=User.ROLE_USER)
 
+            vrf = Vrf(name='default').add()
+
             # Subnet
-            subnet = Subnet(ip_cidr='147.87.250.0/24', name='DMZ', vrf=1, notes='public').add()
-            Subnet(ip_cidr='147.87.0.0/16', name='its-main-4', vrf=1, notes='main').add()
-            Subnet(ip_cidr='2002::1234:abcd:ffff:c0a8:101/64', name='its-main-6', vrf=1, notes='main').add()
-            Subnet(ip_cidr='147.87.208.0/24', name='ARZ', vrf=1, notes='BE.net').add()
+            subnet = Subnet(ip_cidr='147.87.250.0/24', name='DMZ', vrf=vrf, notes='public').add()
+            Subnet(ip_cidr='147.87.0.0/16', name='its-main-4', vrf=vrf, notes='main').add()
+            Subnet(ip_cidr='2002::1234:abcd:ffff:c0a8:101/64', name='its-main-6', vrf=vrf, notes='main').add()
+            Subnet(ip_cidr='147.87.208.0/24', name='ARZ', vrf=vrf, notes='BE.net').add()
 
             DnsZone(name='bfh.ch', notes='This is a note', subnets=[subnet]).add()
             DnsZone(name='bfh.science', notes='This is a note').add()
@@ -171,12 +179,13 @@ class Root(object):
             DhcpRecord(ip='147.87.250.1', mac='00:ba:d5:a2:34:56', notes='webserver bla bla bla').add()
 
             # DNS
-            DnsRecord(name='foo.bfh.ch', type='A', value='147.87.250.0').add()
             DnsRecord(name='bar.bfh.ch', type='A', value='147.87.250.1').add()
             DnsRecord(name='bar.bfh.ch', type='CNAME', value='www.bar.bfh.ch').add()
             DnsRecord(name='baz.bfh.ch', type='A', value='147.87.250.2').add()
+            DnsRecord(name='foo.bfh.ch', type='A', value='147.87.250.3').add()
 
-        User.session.commit()
+        # Commit changes to database.
+        cherrypy.tools.db.get_session().commit()
         self.api = Api()
         self.dashboard = DashboardPage()
         self.login = LoginPage()
@@ -184,19 +193,22 @@ class Root(object):
         self.notifications = NotificationsPage()
         self.profile = ProfilePage()
         self.search = SearchPage()
+        self.load = LoadPage()
         self.static = Static()
         # Import modules to be added to this app.
-        self.dnszone = CommonPage(DnsZone, DnsZoneForm)
-        self.subnet = CommonPage(Subnet, SubnetForm)
-        self.dnsrecord = CommonPage(DnsRecord, DnsRecordForm)
-        self.dhcprecord = CommonPage(DhcpRecord, DhcpRecordForm)
-        self.ip = CommonPage(Ip, IpForm, has_new=False)
+        self.vrf = VrfPage()
+        self.dnszone = DnsZonePage()
+        self.subnet = SubnetPage()
+        self.dnsrecord = DnsRecordPage()
+        self.dhcprecord = DhcpRecordPage()
+        self.ip = IpPage()
         self.user = CommonPage(User, UserForm, list_role=User.ROLE_ADMIN, edit_role=User.ROLE_ADMIN)
         # Api
         self.api.dnszone = CommonApi(DnsZone)
         self.api.subnet = CommonApi(Subnet)
         self.api.dnsrecord = CommonApi(DnsRecord)
         self.api.dhcprecord = CommonApi(DhcpRecord)
+        self.api.vrf = CommonApi(Vrf)
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='index.html')

@@ -61,3 +61,23 @@ $(document).ready(function () {
         }
     })
 });
+
+/** Filter button for DataTables */
+$.fn.dataTable.ext.buttons.filter = {
+    text: 'Filter',
+    action: function (e, dt, node, config) {
+        if (node.hasClass('active')) {
+            dt.column(config.column).search('');
+        } else {
+            dt.column(config.column).search(config.search);
+        }
+        // Update each buttons status
+        dt.buttons().each(function (data, idx) {
+            let conf = data.inst.s.buttons[idx].conf;
+            if (conf && conf.column) {
+                dt.button(idx).active(dt.column(conf.column).search() === conf.search);
+            }
+        });
+        dt.draw(true);
+    }
+};

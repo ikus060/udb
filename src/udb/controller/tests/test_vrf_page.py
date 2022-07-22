@@ -15,29 +15,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsZone, User
+from udb.core.model import Vrf
+
+from .test_network_page import CommonTest
 
 
-class NotificationsTest(WebCase):
-    def test_get_page(self):
-        # Given a user not following anything
-        # When browser the notifications page
-        self.getPage(url_for('notifications', ''))
+class VrfTest(WebCase, CommonTest):
+
+    base_url = 'vrf'
+
+    obj_cls = Vrf
+
+    new_data = {'name': 'test'}
+
+    edit_data = {'name': 'new name', 'notes': 'test'}
+
+    def test_new_duplicate(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data)
+        obj.add()
+        self.session.commit()
+        # When trying to create the same record.
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
+        # Then error is repported to the user.
         self.assertStatus(200)
-
-    def test_get_page_with_following(self):
-        # Given a user following multiple record
-        user = User.query.first()
-        zone = DnsZone(name='boo.com').add()
-        zone.add_follower(user)
-        dhcp = DhcpRecord(mac='00:00:5e:00:53:af', ip='10.255.67.12').add()
-        dhcp.add_follower(user)
-        # When browser the notifications page
-        self.getPage(url_for('notifications', ''))
-        self.assertStatus(200)
-        # Then list display subscribed items
-        self.assertInBody('boo.com')
-        self.assertInBody('00:00:5e:00:53:af')
+        self.assertInBody('A record already exists in database with the same value.')

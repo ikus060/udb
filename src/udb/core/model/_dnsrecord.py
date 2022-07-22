@@ -20,49 +20,20 @@ import re
 
 import cherrypy
 import validators
-from sqlalchemy import (
-    CheckConstraint,
-    Column,
-    ForeignKey,
-    Index,
-    Table,
-    and_,
-    case,
-    event,
-    func,
-    literal,
-    or_,
-    select,
-    union,
-)
+from sqlalchemy import CheckConstraint, Column, and_, case, event, func, literal
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy.orm import validates
 from sqlalchemy.types import Integer, String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
 
-from ._cidr import CidrType
 from ._common import CommonMixin
+from ._dnszone import DnsZone
+from ._subnet import Subnet
 
 Base = cherrypy.tools.db.get_base()
-
-
-def _validate_ipv4(value):
-    try:
-        ipaddress.IPv4Address(value)
-        return True
-    except ValueError:
-        return False
-
-
-def _validate_ipv6(value):
-    try:
-        ipaddress.IPv6Address(value)
-        return True
-    except ValueError:
-        return False
 
 
 def _sqlite_split_part(string, delimiter, position):
@@ -100,81 +71,24 @@ def _register_sqlite_functions(dbapi_con, unused):
         dbapi_con.create_function("regexp_replace", 3, _sqlite_regexp_replace, deterministic=True)
 
 
+def _validate_ipv4(value):
+    try:
+        ipaddress.IPv4Address(value)
+        return True
+    except ValueError:
+        return False
+
+
+def _validate_ipv6(value):
+    try:
+        ipaddress.IPv6Address(value)
+        return True
+    except ValueError:
+        return False
+
+
 def _ipv6_part(col, start):
     return func.ltrim(func.replace(func.reverse(func.substring(col, start, 8)), '.', ''), '0')
-
-
-dnszone_subnet = Table(
-    'dnszone_subnet',
-    Base.metadata,
-    Column('dnszone_id', ForeignKey('dnszone.id')),
-    Column('subnet_id', ForeignKey('subnet.id')),
-)
-
-
-class DnsZone(CommonMixin, Base):
-    name = Column(String, unique=True, nullable=False)
-    subnets = relationship(
-        "Subnet", secondary=dnszone_subnet, backref="dnszones", active_history=True, sync_backref=True
-    )
-
-    @classmethod
-    def _search_string(cls):
-        return cls.name + " " + cls.notes
-
-    @validates('name')
-    def validate_name(self, key, value):
-        if not validators.domain(value):
-            raise ValueError('name', _('expected a valid FQDN'))
-        return value
-
-    def __str__(self):
-        return self.name
-
-    @hybrid_property
-    def summary(self):
-        return self.name
-
-
-# Make DNS Zone name (FQDN) unique without case-sensitive
-Index('dnszone_name_index', func.lower(DnsZone.name), unique=True)
-
-
-class Subnet(CommonMixin, Base):
-
-    name = Column(String, nullable=False, default='')
-    ip_cidr = Column(CidrType, unique=True, nullable=False)
-    vrf = Column(Integer, nullable=True)
-
-    @classmethod
-    def _search_string(cls):
-        return cls.name + " " + cls.notes + " " + cls.ip_cidr.text()
-
-    @validates('ip_cidr')
-    def validate_ip_cidr(self, key, value):
-        try:
-            return str(ipaddress.ip_network(value.strip(), strict=False))
-        except ValueError:
-            raise ValueError('ip_cidr', _('does not appear to be a valid IPv4 or IPv6 network'))
-
-    @hybrid_property
-    def related_supernets(self):
-        return Subnet.query.filter(Subnet.ip_cidr.supernet_of(self.ip_cidr)).all()
-
-    @hybrid_property
-    def related_subnets(self):
-        return Subnet.query.filter(Subnet.ip_cidr.subnet_of(self.ip_cidr)).all()
-
-    def __str__(self):
-        return "%s (%s)" % (self.ip_cidr, self.name)
-
-    @hybrid_property
-    def summary(self):
-        return self.ip_cidr + " (" + self.name + ")"
-
-    @property
-    def ip_network(self):
-        return ipaddress.ip_network(self.ip_cidr)
 
 
 class DnsRecord(CommonMixin, Base):
@@ -421,96 +335,3 @@ def before_insert(mapper, connection, instance):
 
 
 CheckConstraint(DnsRecord.type.in_(DnsRecord.TYPES.keys()), name="dnsrecord_types")
-
-
-class DhcpRecord(CommonMixin, Base):
-    ip = Column(String, nullable=False, unique=True)
-    mac = Column(String, nullable=False, unique=True)
-
-    @classmethod
-    def _search_string(cls):
-        return cls.ip + " " + cls.mac + " " + cls.notes
-
-    @validates('ip')
-    def validate_ip(self, key, value):
-        try:
-            return str(ipaddress.ip_address(value))
-        except ValueError:
-            raise ValueError('ip', _('expected a valid ipv4 or ipv6'))
-
-    @validates('mac')
-    def validate_mac(self, key, value):
-        if not validators.mac_address(value):
-            raise ValueError('mac', _('expected a valid mac'))
-        return value
-
-    def __str__(self):
-        return "%s (%s)" % (self.ip, self.mac)
-
-    @hybrid_property
-    def summary(self):
-        return self.ip + " (" + self.mac + ")"
-
-
-# Create a non-traditional mapping with multiple table.
-# Read more about it here: https://docs.sqlalchemy.org/en/14/orm/nonstandard_mappings.html
-# Create a query to list all existing IP address in various record type.
-ip_entry = union(
-    select(DhcpRecord.ip.label('ip')).filter(
-        DhcpRecord.status != DhcpRecord.STATUS_DELETED,
-    ),
-    select(DnsRecord.value.label('ip')).filter(
-        DnsRecord.type.in_(['A', 'AAAA']), DnsRecord.status != DnsRecord.STATUS_DELETED
-    ),
-    select(DnsRecord.reverse_ip.label('ip')).filter(
-        DnsRecord.type == 'PTR',
-        DnsRecord.status != DnsRecord.STATUS_DELETED,
-    ),
-).subquery()
-
-
-class Ip(Base):
-    """
-    This ORM is a view on all IP address declared in various record type.
-    """
-
-    __table__ = ip_entry
-    __mapper_args__ = {'primary_key': [ip_entry.c.ip]}
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    @hybrid_property
-    def summary(self):
-        return self.ip
-
-    @property
-    def related_dns_records(self):
-        """
-        Return list of related DNS record. That include all DNS record with FQDN matching our current IP address and reverse pointer (PTR).
-        """
-        return DnsRecord.query.filter(
-            DnsRecord.status != DnsRecord.STATUS_DELETED,
-            or_(
-                DnsRecord.name.in_(select(DnsRecord.name).filter(DnsRecord.value == self.ip)),
-                DnsRecord.name == ipaddress.ip_address(self.ip).reverse_pointer,
-            ),
-        ).all()
-
-    @property
-    def related_dhcp_records(self):
-        return DhcpRecord.query.filter(
-            DhcpRecord.status != DhcpRecord.STATUS_DELETED,
-            DhcpRecord.ip == self.ip,
-        ).all()
-
-    @property
-    def related_subnets(self):
-        return (
-            Subnet.query.filter(
-                Subnet.ip_cidr.supernet_of(self.ip),
-                Subnet.status != Subnet.STATUS_DELETED,
-            )
-            .order_by(Subnet.ip_cidr)
-            .all()
-        )

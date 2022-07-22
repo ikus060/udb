@@ -59,8 +59,17 @@ th > a {
 }
 
 /* Fix datatable filter alignment*/
-#filter-location input {
-    display: inline;
+.dataTables_wrapper .dataTables_info{
+    padding-top: 0;
+}
+.dataTables_filter {
+    white-space: nowrap;
+}
+.dataTables_filter label {
+    margin-bottom: 0;
+}
+.dataTables_filter input {
+    display: inline-block; 
     width: auto;
 }
 

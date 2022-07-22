@@ -14,9 +14,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from ._dhcprecord import DhcpRecord  # noqa
+from ._dnsrecord import DnsRecord  # noqa
+from ._dnszone import DnsZone  # noqa
 from ._follower import Follower  # noqa
+from ._ip import Ip  # noqa
 from ._message import Message  # noqa
-from ._network import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet  # noqa
+from ._subnet import Subnet  # noqa
 from ._user import User  # noqa
+from ._vrf import Vrf  # noqa
 
 from ._search import Search  # noqa # isort: skip

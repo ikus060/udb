@@ -35,7 +35,7 @@ Base = cherrypy.tools.db.get_base()
 Session = cherrypy.tools.db.get_session()
 
 
-def _get_model_changes(model, ignore=['messages']):
+def _get_model_changes(model, ignore=['messages', 'depth']):
     """
     Return a dictionary containing changes made to the model since it was
     fetched from the database.

@@ -15,9 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from sqlalchemy import Column, String, select
+from sqlalchemy import Column, String
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import column_property, declarative_mixin, declared_attr, relationship
+from sqlalchemy.orm import declarative_mixin, declared_attr, relationship
 from sqlalchemy.sql.functions import func
 from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.sql.sqltypes import Integer
@@ -51,9 +51,9 @@ class CommonMixin(StatusMixing, MessageMixin, FollowerMixin, SearchableMixing):
     def owner(cls):
         return relationship(User, lazy=False)
 
-    @declared_attr
-    def owner_name(cls):
-        return column_property(select([User.summary]).where(User.id == cls.owner_id).scalar_subquery())
+    @property
+    def owner_name(self):
+        return self.owner.summary
 
     @classmethod
     def _search_string(cls):

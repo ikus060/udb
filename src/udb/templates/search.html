@@ -8,9 +8,6 @@
 
 <div class="d-flex align-items-center">
     <form class="flex-grow-1 me-2" method="GET" action="{{url_for()}}">
-        {{form.personal}}
-        {{form.deleted}}
-        {{form.sort}}
         <div class="input-group">
             <input type="text" class="form-control" placeholder="Search" aria-label="Search" name="q"
                 value="{{form.q.data}}" aria-describedby="button-search">
@@ -19,13 +16,10 @@
             </button>
         </div>
     </form>
-    {% set has_status=True %}
-    {% set has_owner=True %}
-    {% include "common/filter.html" %}
 </div>
 
 {% set extra_columns = [('summary', _('Summary'), True), ('notes', _('Notes'), True), ('owner_name', _('Owner'), True)] %}
-{% call(obj) _table.table(obj_list, table_extra_columns = extra_columns, empty_message=_('Sorry, that filter combination has no result. Please try different criteria.')) %}
+{% call(obj) _table.table(obj_list, table_extra_columns = extra_columns, search_enabled=False, empty_message=_('Sorry, that filter combination has no result. Please try different criteria.')) %}
 <td>
     <a href="{{url_for(obj, 'edit')}}" data-sort="{{obj.summary}}">
         {{ macro.icon(obj, "h4 float-start pe-2") }}

@@ -22,7 +22,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Message, Subnet, User
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Message, Subnet, User, Vrf
 
 
 class DnsZoneTest(WebCase):
@@ -145,7 +145,7 @@ class DnsZoneTest(WebCase):
         zone = DnsZone(name='bfh.ch').add()
         self.session.commit()
         # When trying to add an allowed subnet to the dns zone
-        subnet = Subnet(name='test', ip_cidr='192.168.1.0/24', vrf=3).add()
+        subnet = Subnet(name='test', ip_cidr='192.168.1.0/24').add()
         zone.subnets.append(subnet)
         zone.add()
         # Then a subnet is added
@@ -160,6 +160,15 @@ class DnsZoneTest(WebCase):
         self.assertEqual(zone.messages[-1].changes, {'subnets': [[], ['192.168.1.0/24 (test)']]})
         self.assertEqual(2, len(subnet.messages))
         self.assertEqual(subnet.messages[-1].changes, {'dnszones': [[], ['bfh.ch']]})
+
+    def test_subnets_deleted(self):
+        # Given a database with a deleted subnet
+        subnet = Subnet(name='test', ip_cidr='192.168.1.0/24', status=Subnet.STATUS_DELETED).add()
+        zone = DnsZone(name='bfh.ch', subnets=[subnet]).add()
+        # When querying the list of subnets within a zone
+        subnets = zone.subnets
+        # Then the list doesn't include the deleted subnet
+        self.assertEqual([], subnets)
 
     def test_get_messages(self):
         # Given a database with an existing record
@@ -208,13 +217,15 @@ class DnsZoneTest(WebCase):
 class SubnetTest(WebCase):
     def test_json(self):
         # Given a DnsZone
-        obj = Subnet(name='test', ip_cidr='192.168.1.0/24', vrf=3).add()
+        vrf = Vrf(name='default')
+        obj = Subnet(name='test', ip_cidr='192.168.1.0/24', vrf=vrf).add()
         # When serializing the object to json
         data = obj.to_json()
         # Then a json representation is return
         self.assertEqual(
             data,
             {
+                'depth': 0,
                 'created_at': mock.ANY,
                 'id': 1,
                 'ip_cidr': '192.168.1.0/24',
@@ -223,7 +234,10 @@ class SubnetTest(WebCase):
                 'notes': '',
                 'owner_id': None,
                 'status': 'enabled',
-                'vrf': 3,
+                'vrf_id': vrf.id,
+                'l3vni': None,
+                'l2vni': None,
+                'vlan': None,
             },
         )
 
@@ -269,7 +283,8 @@ class SubnetTest(WebCase):
         # Given an empty database
         self.assertEqual(0, Subnet.query.count())
         # When adding a Subnet with a VRF
-        Subnet(ip_cidr='192.168.1.0/24', vrf=12).add()
+        vrf = Vrf(name='test').add()
+        Subnet(ip_cidr='192.168.1.0/24', vrf=vrf).add()
         # Then a new record is created
         self.assertEqual(1, Subnet.query.count())
 
@@ -283,12 +298,26 @@ class SubnetTest(WebCase):
 
     def test_duplicate_ip_cidr(self):
         # Given a database with an existing record
-        Subnet(ip_cidr='192.168.1.0/24', name='foo').add()
+        Subnet(ip_cidr='192.168.1.0/24', name='foo', vrf=None).add()
         self.assertEqual(1, Subnet.query.count())
         # When trying to add a Subnet with an existing ip_CIDR
         # Then an exception is raised
         with self.assertRaises(IntegrityError):
-            Subnet(ip_cidr='192.168.1.0/24', name='bar').add()
+            Subnet(ip_cidr='192.168.1.0/24', name='bar', vrf=None).add()
+
+    def test_duplicate_ip_cidr_with_vrf(self):
+        # Given a database with an existing record
+        vrf = Vrf(name='default')
+        Subnet(ip_cidr='192.168.1.0/24', name='foo', vrf=vrf).add()
+        self.assertEqual(1, Subnet.query.count())
+        # When trying to add a Subnet with an existing IP CIDR in a different VRF
+        subnet = Subnet(ip_cidr='192.168.1.0/24', name='bar', vrf=None).add()
+        # Then subnet is created without error
+        self.assertIsNotNone(subnet)
+        # When trying to add a Subnet with an existing IP CIDR in same VRF
+        # Then an exception is raised
+        with self.assertRaises(IntegrityError):
+            Subnet(ip_cidr='192.168.1.0/24', name='bar', vrf=vrf).add()
 
     def test_add_dnszonesubnet(self):
         # Given a database with an existing record
@@ -315,19 +344,131 @@ class SubnetTest(WebCase):
         # Given a database with an existing record
         subnet1 = Subnet(ip_cidr='192.168.1.0/24', name='foo').add()
         subnet2 = Subnet(ip_cidr='192.168.1.128/30', name='bar').add()
+        subnet3 = Subnet(ip_cidr='10.255.0.0/16', name='tor').add()
+        subnet4 = Subnet(ip_cidr='192.0.2.23', name='fin').add()
+        subnet5 = Subnet(ip_cidr='2a07:6b40::/32', name='infra').add()
+        subnet6 = Subnet(ip_cidr='2a07:6b40:0::/48', name='infra-any-cast').add()
+        subnet7 = Subnet(ip_cidr='2a07:6b40:0:0::/64', name='infra-any-cast').add()
+        subnet8 = Subnet(ip_cidr='2a07:6b40:1::/48', name='all-anycast-infra-test').add()
         # When querying list of subnets
-        subnets = subnet1.related_subnets
         # Then the list contains our subnet
-        self.assertEqual([subnet2], subnets)
+        self.assertEqual([subnet2], subnet1.related_subnets)
+        self.assertEqual([], subnet2.related_subnets)
+        self.assertEqual([], subnet3.related_subnets)
+        self.assertEqual([], subnet4.related_subnets)
+        self.assertEqual([subnet6, subnet7, subnet8], subnet5.related_subnets)
+        self.assertEqual([subnet7], subnet6.related_subnets)
+        self.assertEqual([], subnet7.related_subnets)
+        self.assertEqual([], subnet8.related_subnets)
 
     def test_supernets(self):
         # Given a database with an existing record
         subnet1 = Subnet(ip_cidr='192.168.1.0/24', name='foo').add()
         subnet2 = Subnet(ip_cidr='192.168.1.128/30', name='bar').add()
+        subnet3 = Subnet(ip_cidr='10.255.0.0/16', name='tor').add()
+        subnet4 = Subnet(ip_cidr='192.0.2.23', name='fin').add()
+        subnet5 = Subnet(ip_cidr='2a07:6b40::/32', name='infra').add()
+        subnet6 = Subnet(ip_cidr='2a07:6b40:0::/48', name='infra-any-cast').add()
+        subnet7 = Subnet(ip_cidr='2a07:6b40:0:0::/64', name='infra-any-cast').add()
+        subnet8 = Subnet(ip_cidr='2a07:6b40:1::/48', name='all-anycast-infra-test').add()
         # When querying list of subnets
-        subnets = subnet2.related_supernets
         # Then the list contains our subnet
-        self.assertEqual([subnet1], subnets)
+        self.assertEqual([], subnet1.related_supernets)
+        self.assertEqual([subnet1], subnet2.related_supernets)
+        self.assertEqual([], subnet3.related_supernets)
+        self.assertEqual([], subnet4.related_supernets)
+        self.assertEqual([], subnet5.related_supernets)
+        self.assertEqual([subnet5], subnet6.related_supernets)
+        self.assertEqual([subnet5, subnet6], subnet7.related_supernets)
+        self.assertEqual([subnet5], subnet8.related_supernets)
+
+    def test_depth(self):
+        # Given a database with an existing record
+        subnet1 = Subnet(ip_cidr='192.168.1.0/24', name='foo').add()
+        subnet2 = Subnet(ip_cidr='192.168.1.128/30', name='bar').add()
+        # When querying depth
+        subnets = Subnet.query_with_depth()
+        # Then the depth matches the subnet indentation
+        self.assertEqual(0, subnets[0].depth)
+        self.assertEqual(1, subnets[1].depth)
+        # Then existing object are also updated
+        self.assertEqual(0, subnet1.depth)
+        self.assertEqual(1, subnet2.depth)
+
+    def test_depth_select(self):
+        # Given a database with an existing record
+        subnet1 = Subnet(ip_cidr='192.168.1.0/24', name='foo').add()
+        subnet2 = Subnet(ip_cidr='192.168.1.128/30', name='bar').add()
+        Subnet.query_with_depth()
+        self.session.flush()
+        # When using depth in query
+        # Then I get one subnet
+        self.assertEqual([subnet1], Subnet.query.filter(Subnet.depth == 0).all())
+        self.assertEqual([subnet2], Subnet.query.filter(Subnet.depth == 1).all())
+
+    def test_depth_index_ipv4(self):
+        # Given a database with an existing record
+        subnet1 = Subnet(ip_cidr='192.168.0.0/16', name='bar').add()
+        subnet2 = Subnet(ip_cidr='192.168.0.0/24', name='bar').add()
+        subnet3 = Subnet(ip_cidr='192.168.0.0/26', name='bar').add()
+        subnet4 = Subnet(ip_cidr='192.168.0.64/26', name='bar').add()
+        subnet5 = Subnet(ip_cidr='192.168.14.0/24', name='bar').add()
+        # When listing subnet with depth
+        Subnet.query_with_depth()
+        self.session.flush()
+        # Then depth is updated
+        self.assertEqual(0, subnet1.depth)
+        self.assertEqual(1, subnet2.depth)
+        self.assertEqual(2, subnet3.depth)
+        self.assertEqual(2, subnet4.depth)
+        self.assertEqual(1, subnet5.depth)
+
+    def test_depth_index_deleted(self):
+        # Given a database with an existing record
+        subnet1 = Subnet(ip_cidr='192.168.0.0/16', name='bar', status=Subnet.STATUS_DELETED).add()
+        subnet2 = Subnet(ip_cidr='192.168.0.0/24', name='bar').add()
+        subnet3 = Subnet(ip_cidr='192.168.0.0/26', name='bar').add()
+        subnet4 = Subnet(ip_cidr='192.168.0.64/26', name='bar').add()
+        subnet5 = Subnet(ip_cidr='192.168.14.0/24', name='bar').add()
+        # When listing subnet with depth
+        Subnet.query_with_depth()
+        self.session.flush()
+        # Then depth is updated
+        self.assertEqual(0, subnet1.depth)
+        self.assertEqual(0, subnet2.depth)
+        self.assertEqual(1, subnet3.depth)
+        self.assertEqual(1, subnet4.depth)
+        self.assertEqual(0, subnet5.depth)
+
+    def test_depth_index_vrf(self):
+        # Given a database with an existing record
+        vrf1 = Vrf(name='test1').add()
+        vrf2 = Vrf(name='test2').add()
+        # No VRF
+        subnet1 = Subnet(ip_cidr='192.168.1.0/24', name='foo').add()
+        subnet2 = Subnet(ip_cidr='192.168.1.128/30', name='bar').add()
+        subnet3 = Subnet(ip_cidr='10.255.0.0/16', name='tor').add()
+        subnet4 = Subnet(ip_cidr='192.0.2.23', name='fin').add()
+        # VRF2
+        subnet5 = Subnet(ip_cidr='2a07:6b40::/32', name='infra', vrf=vrf2).add()
+        subnet6 = Subnet(ip_cidr='2a07:6b40:0::/48', name='infra-any-cast', vrf=vrf2).add()
+        subnet7 = Subnet(ip_cidr='2a07:6b40:0:0::/64', name='infra-any-cast', vrf=vrf2).add()
+        subnet8 = Subnet(ip_cidr='2a07:6b40:1::/48', name='all-anycast-infra-test', vrf=vrf2).add()
+        # VRF1
+        subnet9 = Subnet(ip_cidr='192.168.1.128/30', name='bar', vrf=vrf1).add()
+        # When listing subnet with depth
+        Subnet.query_with_depth()
+        self.session.flush()
+        # Then depth is updated
+        self.assertEqual(0, subnet1.depth)
+        self.assertEqual(1, subnet2.depth)
+        self.assertEqual(0, subnet3.depth)
+        self.assertEqual(0, subnet4.depth)
+        self.assertEqual(0, subnet5.depth)
+        self.assertEqual(1, subnet6.depth)
+        self.assertEqual(2, subnet7.depth)
+        self.assertEqual(1, subnet8.depth)
+        self.assertEqual(0, subnet9.depth)
 
     def test_search(self):
         # Given a database with records
@@ -393,17 +534,17 @@ class DnsRecordTest(WebCase):
 
     def test_reverse_ip_with_ipv6(self):
         # Given a DnsRecord
-        subnet = Subnet(ip_cidr='2001:db8::/127')
+        subnet = Subnet(ip_cidr='2a07:6b43:26:11::/64')
         DnsZone(name='example.com', subnets=[subnet]).add()
         DnsRecord(
-            name='1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa',
+            name='1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.1.0.0.6.2.0.0.3.4.b.6.7.0.a.2.ip6.arpa',
             value='foo.example.com',
             type='PTR',
         ).add()
         # When using reverse_ip to make a query
         values = DnsRecord.session.execute(select(DnsRecord.reverse_ip)).all()
         # Then a value is returned
-        self.assertEqual([('2001:db8::1',)], values)
+        self.assertEqual([('2a07:6b43:26:11::1',)], values)
 
     def test_add_without_type(self):
         with self.assertRaises(ValueError):
@@ -551,12 +692,12 @@ class DnsRecordTest(WebCase):
         subnet = Subnet(ip_cidr='192.0.2.0/24')
         DnsZone(name='example.com', subnets=[subnet]).add()
         # When adding a DnsRecord
-        DnsRecord(name='255.2.0.192.in-addr.arpa', type='PTR', value='bar.example.com').add()
+        DnsRecord(name='254.2.0.192.in-addr.arpa', type='PTR', value='bar.example.com').add()
         # Then a new record is created
         self.assertEqual(1, DnsRecord.query.count())
         # Then revice_ip is valid
         record = DnsRecord.query.first()
-        self.assertEqual('192.0.2.255', record.reverse_ip)
+        self.assertEqual('192.0.2.254', record.reverse_ip)
 
     def test_add_ipv4_ptr_record_without_valid_dnszone(self):
         # Given a valid DNS Zone
@@ -802,11 +943,11 @@ class IpTest(WebCase):
         # Given a valid PTR record in DNS Zone
         subnet = Subnet(ip_cidr='192.168.2.0/24').add()
         DnsZone(name='example.com', subnets=[subnet]).add()
-        DnsRecord(name='255.2.168.192.in-addr.arpa', type='PTR', value='bar.example.com').add()
+        DnsRecord(name='254.2.168.192.in-addr.arpa', type='PTR', value='bar.example.com').add()
         # When querying list of IP
         obj = Ip.query.order_by('ip').first()
         # Then is include the IP Address of the PTR record
-        self.assertEqual('192.168.2.255', obj.ip)
+        self.assertEqual('192.168.2.254', obj.ip)
         self.assertEqual(len(obj.related_dns_records), 1)
 
     def test_related_dns_record_with_ptr_ipv6(self):

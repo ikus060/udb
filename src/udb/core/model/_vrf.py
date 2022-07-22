@@ -14,27 +14,30 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from datetime import datetime, timezone
-
-from sqlalchemy import TypeDecorator
-from sqlalchemy.sql.sqltypes import DateTime
 
 
-class Timestamp(TypeDecorator):
-    cache_ok = True
-    impl = DateTime
-    LOCAL_TIMEZONE = datetime.utcnow().astimezone().tzinfo
+import cherrypy
+from sqlalchemy import Column
+from sqlalchemy.orm import validates
+from sqlalchemy.types import String
 
-    def process_bind_param(self, value: datetime, dialect):
-        if value is None:
-            return None
-        if value.tzinfo is None:
-            value = value.astimezone(self.LOCAL_TIMEZONE)
-        return value.astimezone(timezone.utc)
+import udb.tools.db  # noqa: import cherrypy.tools.db
+from udb.tools.i18n import gettext_lazy as _
 
-    def process_result_value(self, value, dialect):
-        if value is None:
-            return None
-        if value.tzinfo is None:
-            return value.replace(tzinfo=timezone.utc)
-        return value.astimezone(timezone.utc)
+from ._common import CommonMixin
+
+Base = cherrypy.tools.db.get_base()
+
+
+class Vrf(CommonMixin, Base):
+    name = Column(String, unique=True, nullable=False)
+
+    @validates('ip_cidr')
+    def _validate_name(self, key, value):
+        value = value.strip()
+        if not value:
+            raise ValueError('name', _('VRF name cannot be empty.'))
+        return value
+
+    def __str__(self):
+        return self.name
