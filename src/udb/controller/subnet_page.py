@@ -23,6 +23,7 @@ from wtforms.validators import DataRequired, Optional
 from udb.core.model import DnsZone, Subnet, User, Vrf
 from udb.tools.i18n import gettext as _
 
+from . import url_for
 from .common_page import CommonPage
 from .form import CherryForm, SelectMultiCheckbox, SelectMultipleObjectField, SelectObjectField
 
@@ -59,3 +60,14 @@ class SubnetPage(CommonPage):
 
     def _query(self):
         return Subnet.query_with_depth()
+
+    def _to_json(self, subnet):
+        data = subnet.to_json()
+        data.update(
+            {
+                'vrf_name': subnet.vrf.name,
+                'dnszones': [obj.name for obj in subnet.dnszones],
+                'url': url_for(subnet, 'edit'),
+            }
+        )
+        return data

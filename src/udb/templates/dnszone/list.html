@@ -1,21 +1,6 @@
 {% extends 'common/list.html' %}
-{% block table_list scoped %}
-{% set extra_columns = [('name', form.name.label.text, True), ('subnets', form.subnets.label.text, True), ('notes', _('Notes'), True), ('owner_name', _('Owner'), True)] %}
-{% call(obj) _table.table(obj_list, table_extra_columns=extra_columns) %}
-<td>
-    <a href="{{url_for(obj, 'edit')}}" data-sort="{{obj.name}}">
-        {{ macro.icon(obj, "float-start pe-2") }}
-        {{obj.name}}
-    </a>
-</td>
-<td>
-    {% if obj.subnets %}{{obj.subnets|length}}{% else %}-{% endif %}
-</td>
-<td>
-    {{ obj.notes }}
-</td>
-<td>
-    {% if obj.owner_name %}{{ obj.owner_name }}{% endif %}
-</td>
-{% endcall %}
-{% endblock %}
+{% set columns = [
+{'data':'name', 'title':form.name.label.text, 'orderable':True, 'render':'summary'},
+{'data':'subnets_count', 'title':form.subnets.label.text, 'orderable':True},
+{'data':'notes', 'title':form.notes.label.text, 'orderable':True},
+{'name':'owner', 'data':'owner', 'title':form.owner.label.text, 'orderable':True, 'render':'user'}] %}

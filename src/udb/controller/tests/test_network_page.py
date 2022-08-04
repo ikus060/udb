@@ -269,6 +269,12 @@ class CommonTest:
         # Then object status is enabled is removed to the record
         self.assertEqual('enabled', self.obj_cls.query.first().status)
 
+    def test_get_data_json(self):
+        # When requesting data.json
+        self.getPage(url_for(self.base_url, 'data.json'))
+        # Then json data is returned
+        self.assertStatus(200)
+
     def test_api_list_without_credentials(self):
         # Given I don't have credentials
         # When requesting the API
@@ -515,7 +521,7 @@ class RoleTest(WebCase):
         # Given a DnsZone
         DnsZone(name='examples.com').add()
         # When requesting list of records
-        self.getPage(url_for(DnsZone))
+        self.getPage(url_for(DnsZone, 'data.json'))
         # Then the list is available
         self.assertStatus(200)
         self.assertInBody('examples.com')

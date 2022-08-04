@@ -2,59 +2,50 @@
 {% import "macro.html" as macro %}
 {% import "components/table.html" as _table with context %}
 {% block body %}
-    <div class="row">
-        <div class="col">
-            <h4 id="title">
-                {{ macro.icon(model_name)}} {% trans %}List of{% endtrans %} {{ macro.display_name(model_name)}}
-            </h2>
-        </div>
-        <div class="col text-end mb-2">
-            {% if has_new %}
-                {% set new_disabled = not currentuser.allow_new_record() %}
-                <a class="btn btn-primary {% if new_disabled %}disabled{% endif %}"
-                   href="{{ url_for(model, 'new')}}"
-                   role="button"
-                   {% if new_disabled %}aria-disabled="true"{% endif %}>{% trans %}Create{% endtrans %}
-                {{ macro.display_name(model_name)}}</a>
-            {% endif %}
-        </div>
+  <div class="row">
+    <div class="col">
+      <h4 id="title">
+        {{ macro.icon(model_name)}} {% trans %}List of{% endtrans %} {{ macro.display_name(model_name)}}
+      </h2>
     </div>
-    {# Default a default columns list from form #}
-    {% set ns = namespace(table_default_columns=[]) %}
-    {% for field in form %}
-        {% if field.widget['input_type'] != 'hidden' %}
-            {% set ns.table_default_columns = ns.table_default_columns + [(field.name, field.label.text, True)] %}
-        {% endif %}
-    {% endfor %}
-    {% set table_columns = table_extra_columns|d(ns.table_default_columns) %}
-    {# Default filters #}
-    {% set table_default_filter_buttons = [] %}
-    {% if 'owner' in (table_columns|map(attribute=0)|list) %}
-    {% set table_default_filter_buttons = table_default_filter_buttons + [(_('Owned by me'), 'owner', 'ok')] %}
+    <div class="col text-end mb-2">
+      {% if has_new %}
+        {% set new_disabled = not currentuser.allow_new_record() %}
+        <a class="btn btn-primary {% if new_disabled %}disabled{% endif %}"
+           href="{{ url_for(model, 'new')}}"
+           role="button"
+           {% if new_disabled %}aria-disabled="true"{% endif %}>{% trans %}Create{% endtrans %}
+        {{ macro.display_name(model_name)}}</a>
+      {% endif %}
+    </div>
+  </div>
+  {# Default a default columns list from form #}
+  {% set ns = namespace(default_columns=[]) %}
+  {% set table_default_buttons = [] %}
+  {% for field in form %}
+    {% if field.widget['input_type'] != 'hidden' %}
+      {% set ns.default_columns = ns.default_columns + [{'name': field.name, 'data': field.name, 'title': field.label.text, 'orderable':True, 'render': 'user' if field.name=='owner' else 'summary' if loop.first else 'text'}] %}
     {% endif %}
-    {# Show default table #}
-    {% block table_list scoped %}
-        {% call(obj) _table.table(obj_list, table_extra_columns=table_columns, filter_buttons=table_extra_filters|d(table_default_filter_buttons)) %}
-        {% for col in table_columns %}
-            <td>
-                {% if loop.first %}
-                    <a href="{{ url_for(obj, 'edit')}}">
-                        {{ macro.icon(obj, "float-start pe-2") }}
-                        {{ obj|attr(col[0]) or "-" }}
-                    </a>
-                {% else %}
-                    {{ obj|attr(col[0]) or "-" }}
-                {% endif %}
-            </td>
-        {% endfor %}
-    {% endcall %}
-{% endblock table_list %}
+  {% endfor %}
+  {% set table_columns = columns|d(ns.default_columns) %}
+  {# Status column and filter #}
+  {% if has_status %}
+    {% set table_columns = table_columns + [{'name': 'status', 'data': 'status', 'visible': false, 'search': 'enabled'}] %}
+    {% set table_default_buttons = table_default_buttons + [{'text': _('Hide Deleted'), 'extend': 'filter', 'column': 'status:name', 'search': 'enabled'}] %}
+  {% endif %}
+  {# Default filters #}
+  {% if 'owner' in (table_columns|map(attribute='name')|list) %}
+    {% set table_default_buttons = table_default_buttons + [{'text': _('Owned by me'), 'extend': 'filter', 'column': 'owner:name', 'search': currentuser.username}] %}
+  {% endif %}
+  {% set table_default_buttons = table_default_buttons + [{'text': _('Clear'), 'extend': 'clear'}] %}
+  {# Show default table #}
+  {{ _table.table(data="data.json", columns=table_columns, buttons=table_extra_filters|d(table_default_buttons))}}
 {% endblock body %}
 {% block script %}
-    <script>
+  <script>
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl)
     })
-    </script>
+  </script>
 {% endblock %}

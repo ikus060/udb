@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 import cherrypy
 from sqlalchemy import desc, func
 
+from udb.controller import url_for
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Message, Subnet, User
 
 Base = cherrypy.tools.db.get_base()
@@ -28,13 +29,6 @@ class DashboardPage:
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['dashboard.html'])
     def index(self, **kwargs):
-        # List all activities by dates
-        activity_list = (
-            Message.query.filter(Message.type.in_([Message.TYPE_NEW, Message.TYPE_DIRTY]))
-            .order_by(Message.date.desc())
-            .limit(10)
-            .all()
-        )
         # Most active user
         week_ago = datetime.now() - timedelta(days=7)
         user_activities = (
@@ -57,6 +51,28 @@ class DashboardPage:
             'subnet_count': subnet_count,
             'dnsrecord_count': dnsrecord_count,
             'dhcprecord_count': dhcprecord_count,
-            'activity_list': activity_list,
             'user_activities': user_activities,
+        }
+
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def activities_json(self, **kwargs):
+        # List all activities by dates
+        obj_list = (
+            Message.query.filter(Message.type.in_([Message.TYPE_NEW, Message.TYPE_DIRTY]))
+            .order_by(Message.date.desc())
+            .limit(10)
+            .all()
+        )
+        return {
+            'data': [
+                dict(
+                    obj.to_json(),
+                    **{
+                        'url': url_for(obj.model_object, 'edit'),
+                        'summary': obj.summary,
+                    }
+                )
+                for obj in obj_list
+            ]
         }

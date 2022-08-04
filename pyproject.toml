@@ -9,3 +9,6 @@ skip-string-normalization = "True"
 [tool.isort]
 profile = "black"
 line_length = 120
+
+[tool.djlint]
+indent=2

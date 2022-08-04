@@ -19,7 +19,7 @@ from sqlalchemy import or_
 from wtforms.fields import StringField
 from wtforms.validators import input_required
 
-from udb.controller import flash
+from udb.controller import url_for
 from udb.controller.form import CherryForm
 from udb.core.model import Message, Search
 
@@ -38,24 +38,31 @@ class SearchPage:
     @cherrypy.tools.jinja2(template=['search.html'])
     def index(self, **kwargs):
         form = SearchForm()
-        if not form.validate():
-            flash('TODO ERROR MESSAGE')
-            obj_list = []
-        else:
-            obj_list = self._query(form.q.data)
         return {
             'form': form,
-            'obj_list': obj_list,
         }
 
-    def _query(self, term):
-        """
-        Build a query with supported feature of the current object class.
-        """
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def query_json(self, **kwargs):
+        form = SearchForm()
+        if not form.validate():
+            return {'data': []}
         query = Search.query.filter(
-            or_(Search._search_vector.websearch(term), Search.messages.any(Message._search_vector.websearch(term)))
+            or_(
+                Search._search_vector.websearch(form.q.data),
+                Search.messages.any(Message._search_vector.websearch(form.q.data)),
+            )
         )
         query = query.order_by(Search.modified_at)
-        # TODO Limit record (50 by default)
-        # TODO Filter record types
-        return query.all()
+        return {
+            'data': [
+                {
+                    'url': url_for(obj, 'edit'),
+                    'summary': obj.summary,
+                    'owner': obj.owner.to_json() if obj.owner else None,
+                    'notes': obj.notes,
+                }
+                for obj in query.all()
+            ]
+        }

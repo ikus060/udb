@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import undefer
 from wtforms.fields import StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired
@@ -34,6 +34,8 @@ class DnsZoneForm(CherryForm):
 
     name = StringField(_('Name'), validators=[DataRequired()], render_kw={"placeholder": _("Enter a FQDN")})
 
+    subnets = SelectMultipleObjectField(_('Allowed subnets'), object_cls=Subnet, widget=SelectMultiCheckbox())
+
     notes = TextAreaField(
         _('Notes'),
         default='',
@@ -43,12 +45,15 @@ class DnsZoneForm(CherryForm):
 
     owner = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)
 
-    subnets = SelectMultipleObjectField(_('Allowed subnets'), object_cls=Subnet, widget=SelectMultiCheckbox())
-
 
 class DnsZonePage(CommonPage):
     def __init__(self):
         super().__init__(DnsZone, object_form=DnsZoneForm)
 
     def _query(self):
-        return DnsZone.query.options(joinedload(DnsZone.owner), joinedload(DnsZone.subnets))
+        return DnsZone.query.options(undefer(DnsZone.subnets_count))
+
+    def _to_json(self, obj):
+        data = super()._to_json(obj)
+        data['subnets_count'] = obj.subnets_count
+        return data

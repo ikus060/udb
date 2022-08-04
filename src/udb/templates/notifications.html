@@ -3,27 +3,20 @@
 {% import "common/status.html" as _status %}
 {% import "macro.html" as macro %}
 {% block body %}
-{# Title #}
-<h2>{%trans%}Edit notification preferences{%endtrans%}</h2>
-{% include "flash.html" %}
-<hr />
-{# General form #}
-<div class="row">
+  {# Title #}
+  <h2>{% trans %}Edit notification preferences{% endtrans %}</h2>
+  {% include "flash.html" %}
+  <hr />
+  {# General form #}
+  <div class="row">
     <div class="col-md">
-        <h4>{%trans%}Notifications{%endtrans%}</h4>
-        <p>{%trans%}In this view, you can unsubscribe from certain records to stop receiving notifications about
-            them.{%endtrans%}</p>
+      <h4>{% trans %}Notifications{% endtrans %}</h4>
+      <p>
+        {% trans %}In this view, you can unsubscribe from certain records to stop receiving notifications about them.{% endtrans %}
+      </p>
     </div>
     <div class="col-md-9">
-        {% call(obj) _table.table(obj_list, empty_message=_('You are not following any record.'), table_extra_columns = [('summary', _('Summary'), True)] ) %}
-        <td>
-            <a href="{{url_for(obj, 'edit')}}" data-sort="{{obj.summary}}">
-                {{ macro.icon(obj, "h4 float-start pe-2") }}
-                <strong>{{obj.summary}}</strong> {{ _status.badge(obj) }}
-                <br />{{macro.display_name(obj) }}
-            </a>
-        </td>
-        {% endcall %}
+      {{ _table.table('data.json', empty_message=_('You are not following any record.'), columns = [{'data': 'summary', 'title':_('Following'), 'orderable': True, 'render':'summary'}] ) }}
     </div>
-</div>
+  </div>
 {% endblock %}

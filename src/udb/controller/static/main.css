@@ -72,47 +72,44 @@ th > a {
     display: inline-block; 
     width: auto;
 }
+@media screen and (max-width: 640px){
+    .dataTables_wrapper .dt-buttons {
+        text-align: center;
+    }
+}
+table.dataTable.no-footer {
+    border-bottom: 1px solid #dee2e6;
+}
+.dataTables_wrapper .dataTables_processing {
+    height: 100%;
+    background: rgba(255,255,255,0.9);
+}
 
 /* Custom class for subnet depth */
-table.dataTable tr.depth-0 {
-    background: var(--bs-gray-500);
-}
-table.dataTable tr.depth-1 {
-    background: var(--bs-gray-400);
-}
-table.dataTable tr.depth-1 td:first-child {
+table.dataTable.sorted-0 .depth-1 {
     padding-left: 2em;
 }
-table.dataTable tr.depth-2 {
-    background: var(--bs-gray-300);
-}
-table.dataTable tr.depth-2 td:first-child {
+table.dataTable.sorted-0 .depth-2 {
     padding-left: 4em;
 }
-table.dataTable tr.depth-3 {
-    background: var(--bs-gray-200);
-}
-table.dataTable tr.depth-3 td:first-child {
+table.dataTable.sorted-0 .depth-3 {
     padding-left: 6em;
 }
-table.dataTable tr.depth-4 {
-    background: var(--bs-gray-100);
-}
-table.dataTable tr.depth-4 td:first-child {
+table.dataTable.sorted-0 .depth-4 {
     padding-left: 8em;
 }
-table.dataTable tr.depth-5 td:first-child {
+table.dataTable.sorted-0 .depth-5 {
     padding-left: 10em;
 }
-table.dataTable tr.depth-6 td:first-child {
+table.dataTable.sorted-0 .depth-6 {
     padding-left: 12em;
 }
-table.dataTable tr.depth-7 td:first-child {
+table.dataTable.sorted-0 .depth-7 {
     padding-left: 14em;
 }
-table.dataTable tr.depth-8 td:first-child {
+table.dataTable.sorted-0 .depth-8 {
     padding-left: 16em;
 }
-table.dataTable tr.depth-9 td:first-child {
+table.dataTable.sorted-0 .depth-9 {
     padding-left: 18em;
 }

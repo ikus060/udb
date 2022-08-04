@@ -19,6 +19,7 @@
 import cherrypy
 from sqlalchemy import and_
 
+from udb.controller import url_for
 from udb.core.model import Follower, Search
 
 
@@ -26,9 +27,22 @@ class NotificationsPage:
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['notifications.html'])
     def index(self, **kwargs):
+        return {}
+
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def data_json(self, **kwargs):
         userobj = cherrypy.request.currentuser
         query = Search.query.join(
             Follower, and_(Search.model_name == Follower.model_name, Search.model_id == Follower.model_id)
         ).filter(Follower.user_id == userobj.id)
-        obj_list = query.all()
-        return {'obj_list': obj_list}
+        return {
+            'data': [
+                {
+                    'url': url_for(obj),
+                    'summary': obj.summary,
+                    'model_name': obj.model_name,
+                }
+                for obj in query.all()
+            ]
+        }

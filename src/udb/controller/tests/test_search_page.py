@@ -56,7 +56,7 @@ class TestSearchPage(WebCase):
         # Given a database with records
         self.add_records()
         # When making a query to the index page
-        self.getPage('/search/?q=public')
+        self.getPage('/search/query.json?q=public')
         # Then results are displayed
         self.assertStatus(200)
         self.assertInBody('147.87.250.0/24 (DMZ)')

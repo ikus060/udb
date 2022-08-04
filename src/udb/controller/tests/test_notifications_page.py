@@ -36,7 +36,7 @@ class NotificationsTest(WebCase):
         dhcp = DhcpRecord(mac='00:00:5e:00:53:af', ip='10.255.67.12').add()
         dhcp.add_follower(user)
         # When browser the notifications page
-        self.getPage(url_for('notifications', ''))
+        self.getPage(url_for('notifications', 'data.json'))
         self.assertStatus(200)
         # Then list display subscribed items
         self.assertInBody('boo.com')

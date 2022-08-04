@@ -23,6 +23,7 @@ from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.sql.sqltypes import Integer
 
 from ._follower import FollowerMixin
+from ._json import JsonMixin
 from ._message import MessageMixin
 from ._search_vector import SearchableMixing
 from ._status import StatusMixing
@@ -31,7 +32,7 @@ from ._user import User
 
 
 @declarative_mixin
-class CommonMixin(StatusMixing, MessageMixin, FollowerMixin, SearchableMixing):
+class CommonMixin(JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing):
     """
     Mixin for common item properties.
     """
@@ -51,10 +52,6 @@ class CommonMixin(StatusMixing, MessageMixin, FollowerMixin, SearchableMixing):
     def owner(cls):
         return relationship(User, lazy=False)
 
-    @property
-    def owner_name(self):
-        return self.owner.summary
-
     @classmethod
     def _search_string(cls):
         return cls.notes
@@ -63,18 +60,6 @@ class CommonMixin(StatusMixing, MessageMixin, FollowerMixin, SearchableMixing):
     notes = Column(String, nullable=False, default='')
     created_at = Column(Timestamp, nullable=False, server_default=func.now())
     modified_at = Column(Timestamp, nullable=False, server_default=func.now(), onupdate=func.now())
-
-    def to_json(self):
-        def _value(value):
-            if hasattr(value, 'isoformat'):  # datetime
-                return value.isoformat()
-            return value
-
-        return {c.name: _value(getattr(self, c.name)) for c in self.__table__.columns if not c.name.startswith('_')}
-
-    def from_json(self, data):
-        for k, v in data.items():
-            setattr(self, k, v)
 
     @hybrid_property
     def summary(self):

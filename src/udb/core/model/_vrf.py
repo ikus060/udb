@@ -18,6 +18,7 @@
 
 import cherrypy
 from sqlalchemy import Column
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import validates
 from sqlalchemy.types import String
 
@@ -40,4 +41,8 @@ class Vrf(CommonMixin, Base):
         return value
 
     def __str__(self):
+        return self.name
+
+    @hybrid_property
+    def summary(self):
         return self.name

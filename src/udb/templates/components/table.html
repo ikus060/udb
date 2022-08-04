@@ -1,104 +1,35 @@
 {% import "macro.html" as macro %}
-{% set table_count = 1 %}
-{% macro table(obj_list, table_extra_columns=[], empty_message=_('List is empty'), search_enabled=True, filter_buttons=[]) %}
-    {% set id = 'table' + table_count|string %}
-    <table id="{{id}}"
-           class="table table-hover"
-           aria-label="{% if obj_list and obj_list|list|length > 0 %}{{ macro.display_name(obj_list|first)}}{% else %}{{ empty_message }}{% endif %}">
-        <thead>
-            <tr>
-                {% for name, label, sortable in table_extra_columns %}
-                    <th scope="col" data-orderable="{{'true' if sortable else 'false' }}">{{ label }}</th>
-                {% endfor %}
-                <th scope="col" style="width: 100px" data-orderable="false">
-                    <span class="visually-hidden">{% trans %}Actions{% endtrans %}</span>
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for obj in obj_list %}
-                <tr>
-                    {{ caller(obj) }}
-                    <td class="align-middle">
-                        <a class="btn btn-primary btn-circle btn-hover"
-                           href="{{ url_for(obj, 'edit')}}"
-                           data-bs-toggle="tooltip"
-                           data-bs-placement="top"
-                           title="{% trans %}View more detail{% endtrans %}">
-                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                            <span class="visually-hidden">{% trans %}Edit{% endtrans %}</span>
-                        </a>
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <script>
-    $(document).ready(function () {
-        $('#{{id}}').DataTable({
-            dom: "<'d-sm-flex align-items-center'<'mb-1 flex-grow-1'i><'mb-1'f><B>>" +
-                "<'row'<'col-sm-12'tr>>",
-            language: {
-                "aria": {
-                    "sortAscending": ": {%trans%}activate to sort column ascending{%endtrans%}",
-                    "sortDescending": ": {%trans%}activate to sort column descending{%endtrans%}"
-                },
-                "info": "{%trans%}Showing _TOTAL_ entries{%endtrans%}",
-                "infoFiltered": "{%trans%}(filtered from _MAX_ total entries){%endtrans%}",
-                "infoEmpty": "{%trans%}Showing 0 entries{%endtrans%}",
-                "search": "{%trans%}Filter: {%endtrans%}",
-                "zeroRecords": "{{ empty_message }}",
-            },
-            initComplete: function () {
-                $(this).removeClass("no-footer");
-            },
-            paging: false,
-            searching: {{'true' if search_enabled else 'false'}},
-            stateSave: true,
-            responsive: true,
-            buttons: {
-                dom: {
-                  button: {
-                    className: 'btn btn-secondary ms-1 mb-1',
-                    active: 'active',
-                  }
-                },
-                buttons: [
-                  {% for label, column, search in filter_buttons %}
-                  {
-                    text: "{{label}}",
-                    extend: 'filter',
-                    column: "{{(table_extra_columns|map(attribute=0)|list).index(column)}}",
-                    search: "{{search}}",
-                  },
-                 {% endfor %}
-                ],
-            },
-            drawCallback: function (settings) {
-                var table = this;
-                var api = this.api();
-                var rows = api.rows({ page: 'current' }).nodes();
-                var last = null;
-                var order = api.order();
-                if(order) {
-                    // Adjust depth according to data-depth attributes
-                    api
-                        .column(order[0], { page: 'current' })
-                        .nodes()
-                        .to$()
-                        .each(function (node) {
-                            var depth = $(this).attr('data-depth');
-                            if(depth){
-                                $(this).parent().addClass('depth-' + depth);
-                            } else {
-                                for(var i=0; i<=4; i++) {
-                                    $(this).parent().removeClass('depth-' + i);
-                                }
-                            }
-                        });
-                }
-            }
-        });
-    });
-    </script>
+{% macro table(data, columns=[], empty_message=_('List is empty'), searching=True, buttons=[]) %}
+  {% set columns = columns + [{'data':'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px'}] %}
+  {% set language = {
+  "aria": {
+  "sortAscending": _('activate to sort column ascending'),
+  "sortDescending": _('activate to sort column descending')
+  },
+  "deleted": _('Deleted'),
+  "disabled": _('Disabled'),
+  "info": _('Showing _TOTAL_ entries'),
+  "infoFiltered": _('(filtered from _MAX_ total entries)'),
+  "infoEmpty": _('Showing 0 entry'),
+  "processing": _('Loading...'),
+  "search": _('Filter: '),
+  "zeroRecords": empty_message,
+  } %}
+  {% set buttons = {
+  "dom": {
+  "button": {
+  "className": 'btn btn-secondary ms-1 mb-1',
+  "active": 'active',
+  }
+  },
+  "buttons": buttons
+  } %}
+  <table class="table table-hover"
+         data-ajax="{{ data }}"
+         data-columns='{{ columns | tojson }}'
+         data-language='{{ language | tojson }}'
+         data-searching="{{ searching | tojson }}"
+         data-buttons='{{ buttons | tojson }}'
+         data-paging="{{ False | tojson }}">
+  </table>
 {% endmacro %}

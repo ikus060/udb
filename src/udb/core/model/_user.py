@@ -26,12 +26,13 @@ import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.core.passwd import hash_password
 from udb.tools.i18n import gettext_lazy as _
 
+from ._json import JsonMixin
 from ._status import StatusMixing
 
 Base = cherrypy.tools.db.get_base()
 
 
-class User(StatusMixing, Base):
+class User(JsonMixin, StatusMixing, Base):
     __tablename__ = 'user'
 
     ROLE_ADMIN = 0
@@ -113,6 +114,12 @@ class User(StatusMixing, Base):
 
     def __str__(self):
         return self.fullname or self.username
+
+    def to_json(self):
+        data = super().to_json()
+        if 'password' in data:
+            del data['password']
+        return data
 
 
 # Create a unique index for username

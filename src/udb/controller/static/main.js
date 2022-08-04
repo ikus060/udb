@@ -71,13 +71,195 @@ $.fn.dataTable.ext.buttons.filter = {
         } else {
             dt.column(config.column).search(config.search);
         }
-        // Update each buttons status
-        dt.buttons().each(function (data, idx) {
-            let conf = data.inst.s.buttons[idx].conf;
-            if (conf && conf.column) {
-                dt.button(idx).active(dt.column(conf.column).search() === conf.search);
-            }
-        });
         dt.draw(true);
     }
 };
+$.fn.dataTable.ext.buttons.clear = {
+    text: 'Clear',
+    action: function (e, dt, node, config) {
+        dt.search('');
+        dt.columns().search('');
+        dt.draw(true);
+    }
+};
+
+/** Default render */
+function safe(data) {
+    return typeof data === 'string' ?
+        data.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') :
+        data;
+}
+
+$.fn.dataTable.render.action = function () {
+    return {
+        display: function (data, type, row, meta) {
+            return '<a class="btn btn-primary btn-circle btn-hover" href="' + encodeURI(row.url) + '"><i class="bi bi-chevron-right" aria-hidden="true"></i><span class="visually-hidden">Edit</span></a>'
+        },
+    };
+}
+$.fn.dataTable.render.datetime = function () {
+    return {
+        display: function (data, type, row, meta) {
+            return toDate(data).toLocaleString();
+        },
+        sort: function (data, type, row, meta) {
+            return toDate(data).getTime();
+        }
+    };
+}
+$.fn.dataTable.render.link = function () {
+    return {
+        display: function (data, type, row, meta) {
+            return '<a href="' + encodeURI(row.url) + '">' + safe(data) + '</a>'
+        },
+    };
+}
+$.fn.dataTable.render.message_body = function () {
+    return {
+        display: function (data, type, row, meta) {
+            let html = '';
+            switch (row.type) {
+                case 'new':
+                    html += '<ul class="mb-0">';
+                    for (const [key, values] of Object.entries(row.changes)) {
+                        html += '<li><b>' + safe(key) + '</b>: ' + safe(values[1]) + ' </li>';
+                    }
+                    html += '</ul>';
+                    return html;
+                case 'dirty':
+                    html +=
+                        '<ul class="mb-0">';
+                    for (const [key, values] of Object.entries(row.changes)) {
+                        html += '<li><b>' + safe(key) + '</b>: '
+                        if (Array.isArray(values[0])) {
+                            for (const deleted of values[0]) {
+                                html += '<br/> - ' + safe(deleted);
+                            }
+                            for (const added of values[1]) {
+                                html += '<br/> + ' + safe(added);
+                            }
+                        } else {
+                            html += safe(values[0]) + ' → ' + safe(values[1]) + '</li>';
+                        }
+                    }
+                    html += '</ul>';
+                    return html;
+                default:
+                    return safe(row.body);
+            }
+        }
+    };
+}
+$.fn.dataTable.render.subnet = function () {
+    return {
+        display: function (data, type, row, meta) {
+            return '<a href="' + encodeURI(row.url) + '" class="depth-' + safe(row.depth) + '">' +
+                '<i class="bi bi-diagram-3-fill me-1" aria-hidden="true"></i>' +
+                '<strong>' + safe(data) + '</strong>' +
+                '</a>';
+        },
+        sort: function (data, type, row, meta) {
+            return row.order;
+        }
+    };
+}
+$.fn.dataTable.render.summary = function () {
+    let icon_table = {
+        'dnszone': 'bi-collection',
+        'subnet': 'bi-diagram-3-fill',
+        'dhcprecord': 'bi-ethernet',
+        'dnsrecord': 'bi-signpost-split-fill',
+        'ip': 'bi-geo-fill',
+        'user': 'bi-person-fill',
+        'vrf': 'bi-layers'
+    };
+
+    return {
+        display: function (data, type, row, meta) {
+            let html = '<a href="' + encodeURI(row.url) + '">' +
+                '<i class="bi ' + icon_table[row.model_name] + ' me-1" aria-hidden="true"></i>' +
+                '<strong>' + safe(data) + '</strong>' +
+                '</a>';
+            if (row.status == 'disabled') {
+                html += ' <span class="badge bg-secondary">' + meta.settings.oLanguage['disabled'] + '</span>';
+            } else if (row.status == 'deleted') {
+                html += ' <span class="badge bg-danger">' + meta.settings.oLanguage['deleted'] + '</span>';
+            }
+            return html;
+        },
+        sort: function (data, type, row, meta) {
+            return data;
+        }
+    };
+}
+$.fn.dataTable.render.user = function () {
+    return {
+        display: function (data, type, row, meta) {
+            if (data) {
+                return safe(data.fullname || data.username)
+            } else {
+                return '-';
+            }
+        },
+        filter: function (data, type, row, meta) {
+            if (data) {
+                return data.username;
+            } else {
+                return null;
+            }
+        }
+    };
+}
+
+$(document).ready(function () {
+    $('table[data-ajax]').each(function (_idx) {
+        /* Load column manually, to process the render attribute as a function. */
+        let columns = $(this).attr('data-columns');
+        $(this).removeAttr('data-columns');
+        columns = JSON.parse(columns);
+        $.each(columns, function (_index, item) {
+            if (item['render']) {
+                item['render'] = DataTable.render[item['render']]();
+            }
+        });
+        let searchCols = columns.map(function (item, _index) {
+            if (item.search) {
+                return { "search": item.search };
+            }
+            return null;
+        });
+        let dt = $(this).DataTable({
+            columns: columns,
+            searchCols: searchCols,
+            dom: "<'d-sm-flex align-items-center'<'mb-1 flex-grow-1'i><'mb-1'f><B>>" +
+                "<'row'<'col-sm-12'rt>>",
+            drawCallback: function (_settings) {
+                // Remove sorting class
+                this.removeClass(function (_index, className) {
+                    return className.split(/\s+/).filter(function (c) {
+                        return c.startsWith('sorted-');
+                    }).join(' ');
+                });
+                // Add sorting class when sorting without filter
+                if (this.api().order()[0][1] === 'asc' && this.api().order()[0][0] >= 0 && this.api().search() === '') {
+                    this.addClass('sorted-' + this.api().order()[0][0]);
+                }
+            },
+            initComplete: function () {
+                $(this).removeClass("no-footer");
+            },
+            processing: true,
+            responsive: true,
+            stateSave: true,
+        });
+        // Update each buttons status
+        dt.on('search.dt', function (e, settings) {
+            dt.buttons().each(function (data, idx) {
+                let conf = data.inst.s.buttons[idx].conf;
+                if (conf && conf.column) {
+                    dt.button(idx).active(dt.column(conf.column).search() === conf.search);
+                }
+            });
+        });
+    });
+});

@@ -1,2 +1,2 @@
 {% extends 'common/list.html' %}
-{% set table_extra_columns = [('summary', _('IP Address'), True)] %}
+{% set columns = [{'name': 'ip', 'data':'ip', 'title':_('IP Address'), 'orderable':True, 'render':'link'}] %}

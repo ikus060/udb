@@ -1,30 +1,36 @@
 {% extends 'layout.html' %}
 {% block body %}
-<section class="vh-100">
+  <section class="vh-100">
     <div class="row d-flex align-items-center h-100">
-        <div class="col-md-8 col-lg-6 col-xl-5 col-xxl-3">
-            <div class="card p-3">
-                <h2 class="d-flex align-items-center">
-                    <img src="{{url_for('static', 'favicon.svg')}}" class="d-inline-block me-2" height="24" alt="logo"/>
-                    {{ header_name }}
-                </h2>
-
-                {% include "flash.html" %}
-                <form method="POST">
-                    {{form(floating=True)}}
-                    <div class="text-center text-lg-start mt-4 pt-2">
-                        <button type="submit" class="btn btn-primary btn-lg"
-                            style="padding-left: 2.5rem; padding-right: 2.5rem;">{%trans%}Login{%endtrans%}</button>
-                    </div>
-                </form>
+      <div class="col-md-8 col-lg-6 col-xl-5 col-xxl-3">
+        <div class="card p-3">
+          <h2 class="d-flex align-items-center">
+            <img src="{{ url_for('static', 'favicon.svg')}}"
+                 class="d-inline-block me-2"
+                 height="24"
+                 alt="logo"/>
+            {{ header_name }}
+          </h2>
+          {% include "flash.html" %}
+          <form method="POST">
+            {{ form(floating=True)}}
+            <div class="text-center text-lg-start mt-4 pt-2">
+              <button type="submit"
+                      class="btn btn-primary btn-lg"
+                      style="padding-left: 2.5rem;
+                             padding-right: 2.5rem;">
+                {% trans %}Login{% endtrans %}
+              </button>
             </div>
+          </form>
         </div>
+      </div>
     </div>
-</section>
-<style>
+  </section>
+  <style>
     main {
         background: url({{url_for('static', 'login_bg.jpg')}});
         background-size: cover;
     }
-</style>
+  </style>
 {% endblock %}

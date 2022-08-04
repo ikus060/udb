@@ -1,42 +1,11 @@
 {% extends 'common/list.html' %}
 {# Subnet are sorted a in specific wayt to mimic the IP CIDR ordering. #}
 {# data-depth is used by datatables to create a "tree" representation of the data. #}
-{% block table_list scoped %}
-{% set extra_columns = [
-    ('ip_cidr', form.ip_cidr.label.text, True), 
-    ('name', form.name.label.text, True), 
-    ('vrf', form.vrf.label.text, True), 
-    ('l3vni', form.l3vni.label.text, True), 
-    ('l2vni', form.l2vni.label.text, True), 
-    ('vlan', form.vlan.label.text, True),
-    ('dnszones', form.dnszones.label.text, False)] %}
-{% call(obj) _table.table(obj_list|sort(attribute='ip_cidr', reverse=True), table_extra_columns = extra_columns) %}
-{% set ip_network = obj.ip_network %}
-<td data-order="{{ obj.vrf_id }}{{ ip_network._version }}#{{ ip_network.network_address.exploded }}#{{ ip_network.prefixlen }}" data-depth="{{obj.depth}}">
-    <a href="{{url_for(obj, 'edit')}}" data-sort="{{obj.ip_cidr}}">
-        {{ macro.icon(obj, "float-start pe-2") }}
-        {{ obj.ip_cidr }}
-    </a>
-</td>
-<td>
-    {{ obj.name }}
-</td>
-<td>
-    {% if obj.vrf %}{{obj.vrf}}{% endif %}
-</td>
-<td>
-    {% if obj.l3vni %}{{obj.l3vni}}{% endif %}
-</td>
-<td>
-    {% if obj.l2vni %}{{obj.l2vni}}{% endif %}
-</td>
-<td>
-    {% if obj.vlan %}{{obj.vlan}}{% endif %}
-</td>
-<td>
-    {% for zone in obj.dnszones %}
-    <a href="{{url_for(zone, 'edit')}}"><span class="badge rounded-pill bg-secondary">{{zone.summary}}</span></a>
-    {% endfor %}
-</td>
-{% endcall %}
-{% endblock %}
+{% set columns = [
+{'data':'ip_cidr', 'title': form.ip_cidr.label.text, 'orderable':True, 'render':'subnet', 'type':'number'},
+{'data':'name', 'title':form.name.label.text, 'orderable':True},
+{'data':'vrf_name', 'title':form.vrf.label.text, 'orderable':True},
+{'data':'l3vni', 'title':form.l3vni.label.text, 'orderable':True},
+{'data':'l2vni', 'title':form.l2vni.label.text, 'orderable':True},
+{'data':'vlan','title': form.vlan.label.text, 'orderable':True},
+{'data':'dnszones', 'title':form.dnszones.label.text, 'orderable':False}] %}

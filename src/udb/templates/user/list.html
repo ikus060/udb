@@ -1,31 +1,13 @@
 {% extends 'common/list.html' %}
-
+{% set columns = [
+{'data':'username', 'title':form.username.label.text, 'orderable':True, 'render':'link'},
+{'data':'fullname', 'title':form.fullname.label.text, 'orderable': True},
+{'data':'email', 'title':form.email.label.text, 'orderable':True},
+{'data':'role', 'title':form.role.label.text, 'orderable':True}] %}
+{# TODO Add Those badge into a render#}
 {% macro local() %}
-<span class="badge rounded-pill bg-info">{% trans %}local{% endtrans %}</span>
+  <span class="badge rounded-pill bg-info">{% trans %}local{% endtrans %}</span>
 {% endmacro %}
-
 {% macro external() %}
-<span class="badge rounded-pill bg-info">{% trans %}external{% endtrans %}</span>
+  <span class="badge rounded-pill bg-info">{% trans %}external{% endtrans %}</span>
 {% endmacro %}
-
-
-{% block table_list scoped %}
-{% set extra_columns = [('username', form.username.label.text, True), ('fullname', form.fullname.label.text, True), ('email', form.email.label.text, True), ('role', form.role.label.text, True)] %}
-{% call(obj) _table.table(obj_list, table_extra_columns = extra_columns) %}
-<td>
-    <a href="{{url_for(obj, 'edit')}}">{{ macro.icon(obj, "float-start pe-2") }} {{obj.username}}</a>
-    {{ local() if obj.is_local() else external() }}
-</td>
-<td>
-    {{obj.fullname}}
-</td>
-<td>
-    {{obj.email}}
-</td>
-<td>
-    {% for value, label, checked in form.role.iter_choices() %}
-    {% if value == obj.role %}{{label}}{% endif %}
-    {% endfor %}
-</td>
-{% endcall %}
-{% endblock %}

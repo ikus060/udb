@@ -20,7 +20,7 @@ import ipaddress
 import cherrypy
 from sqlalchemy import Column, ForeignKey, Index, func
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import joinedload, relationship, validates
+from sqlalchemy.orm import defer, joinedload, lazyload, raiseload, relationship, undefer, validates
 from sqlalchemy.types import Integer, String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
@@ -42,7 +42,9 @@ class Subnet(CommonMixin, Base):
     l3vni = Column(Integer, nullable=True)
     l2vni = Column(Integer, nullable=True)
     vlan = Column(Integer, nullable=True)
-    depth = Column(Integer, nullable=False, server_default='0')
+    # Transiant fields for ordering
+    depth = None
+    order = None
 
     @classmethod
     def _search_string(cls):
@@ -85,13 +87,24 @@ class Subnet(CommonMixin, Base):
         from ._dnszone import DnsZone
 
         query = Subnet.query.options(
-            joinedload(Subnet.owner),
-            joinedload(Subnet.dnszones).raiseload(DnsZone.owner),
-            joinedload(Subnet.vrf).raiseload(Vrf.owner),
+            lazyload(Subnet.owner),
+            joinedload(Subnet.dnszones).options(
+                defer('*'),
+                undefer(DnsZone.id),
+                undefer(DnsZone.name),
+                raiseload(DnsZone.owner),
+            ),
+            joinedload(Subnet.vrf).options(
+                defer('*'),
+                undefer(Vrf.id),
+                undefer(Vrf.name),
+                raiseload(Vrf.owner),
+            ),
         ).order_by(func.coalesce(Subnet.vrf_id, -1), Subnet.ip_cidr.inet())
         subnets = query.all()
 
         # Update depth
+        order = 0
         prev_subnet = []
         for subnet in subnets:
             while prev_subnet and (
@@ -100,11 +113,20 @@ class Subnet(CommonMixin, Base):
                 or not subnet.ip_network.subnet_of(prev_subnet[-1].ip_network)
             ):
                 prev_subnet.pop()
-            if subnet.depth != len(prev_subnet):
-                subnet.depth = len(prev_subnet)
+            order = order + 1
+            subnet.order = order
+            subnet.depth = len(prev_subnet)
             if subnet.status != Subnet.STATUS_DELETED:
                 prev_subnet.append(subnet)
         return subnets
+
+    def to_json(self):
+        data = super().to_json()
+        if self.order is not None:
+            data['order'] = self.order
+        if self.depth is not None:
+            data['depth'] = self.depth
+        return data
 
 
 # Make sure a subnet is unique within a vrf

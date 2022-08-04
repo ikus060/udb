@@ -34,7 +34,6 @@ class SubnetTest(WebCase):
         self.assertEqual(
             data,
             {
-                'depth': 0,
                 'created_at': mock.ANY,
                 'id': 1,
                 'ip_cidr': '192.168.1.0/24',
@@ -208,17 +207,6 @@ class SubnetTest(WebCase):
         # Then not messages get created for depth changes
         self.assertEqual(1, len(subnet1.messages))
         self.assertEqual(1, len(subnet2.messages))
-
-    def test_depth_select(self):
-        # Given a database with an existing record
-        subnet1 = Subnet(ip_cidr='192.168.1.0/24', name='foo').add()
-        subnet2 = Subnet(ip_cidr='192.168.1.128/30', name='bar').add()
-        Subnet.query_with_depth()
-        self.session.flush()
-        # When using depth in query
-        # Then I get one subnet
-        self.assertEqual([subnet1], Subnet.query.filter(Subnet.depth == 0).all())
-        self.assertEqual([subnet2], Subnet.query.filter(Subnet.depth == 1).all())
 
     def test_depth_index_ipv4(self):
         # Given a database with an existing record

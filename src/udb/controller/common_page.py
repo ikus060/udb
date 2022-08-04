@@ -102,12 +102,21 @@ class CommonPage(object):
         """
         return getattr(obj, self.primary_key)
 
+    def _to_json(self, obj):
+        data = obj.to_json()
+        data['url'] = url_for(obj, 'edit')
+        if self.has_owner:
+            if obj.owner:
+                data['owner'] = obj.owner.to_json()
+                data['owner']['url'] = url_for(obj.owner, 'edit')
+            else:
+                data['owner'] = None
+        return data
+
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/list.html', 'common/list.html'])
     def index(self):
         self._verify_role(self.list_role)
-        # Build query
-        obj_list = self._query()
         # return data for templates
         return {
             'has_new': self.has_new,
@@ -118,8 +127,14 @@ class CommonPage(object):
             'form': self.object_form(),
             'model': self.model,
             'model_name': self.model.__name__.lower(),
-            'obj_list': obj_list,
         }
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def data_json(self, **kwargs):
+        self._verify_role(self.list_role)
+        obj_list = self._query()
+        return {'data': [self._to_json(obj) for obj in obj_list]}
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/new.html', 'common/new.html'])

@@ -78,3 +78,6 @@ class IpForm(CherryForm):
 class IpPage(CommonPage):
     def __init__(self) -> None:
         super().__init__(Ip, IpForm, has_new=False)
+
+    def _to_json(self, obj):
+        return super()._to_json(obj)

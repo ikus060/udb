@@ -3,103 +3,83 @@
 {% import "common/messages.html" as _messages with context %}
 {% import "common/status.html" as _status %}
 {% import "macro.html" as macro %}
-
 {% macro dashboard_card(model_name, count, color) %}
-<div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-{{color}} shadow h-100 py-2">
-        <div class="card-body">
-            <div class="row no-gutters align-items-center">
-                <div class="col mr-2">
-                    <div class="text-xs font-weight-bold text-{{color}} text-uppercase mb-1">
-                        {{macro.display_name(model_name)}}
-                    </div>
-                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{count}}</div>
-                </div>
-                <div class="col-auto">
-                    {{macro.icon(model_name, 'h1 text-secondary')}}
-                </div>
-            </div>
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-{{ color }} shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-{{ color }} text-uppercase mb-1">{{ macro.display_name(model_name)}}</div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ count }}</div>
+          </div>
+          <div class="col-auto">{{ macro.icon(model_name, 'h1 text-secondary')}}</div>
         </div>
+      </div>
     </div>
-</div>
+  </div>
 {% endmacro %}
-
 {% block body %}
-<h1>{% trans %}Dashboard{% endtrans %}</h1>
-
-<div class="row">
+  <h1>{% trans %}Dashboard{% endtrans %}</h1>
+  <div class="row">
     <!-- DNS Zones -->
     {{ dashboard_card('dnszone', dnszone_count, 'primary') }}
-
     <!-- Subnet -->
     {{ dashboard_card('subnet', subnet_count, 'success') }}
-
     <!-- DNS Record -->
     {{ dashboard_card('dnsrecord', dnsrecord_count, 'info') }}
-
     <!-- DHCP Record -->
     {{ dashboard_card('dhcprecord', dhcprecord_count, 'warning') }}
-</div>
-
-
-<div class="row">
-
+  </div>
+  <div class="row">
     <!-- Activity list -->
     <div class="col-xl-8 col-lg-7">
-        <div class="card shadow mb-4">
-            <!-- Card Header - Dropdown -->
-            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                <h6 class="m-0 font-weight-bold text-primary">{% trans %}Last activities{% endtrans %}</h6>
-            </div>
-            <!-- Card Body -->
-            <div class="card-body" style="height: 420px; overflow-y: auto;">
-                {% set table_extra_columns = [('summary', _('Summary'), True), ('body', _('Changes'), False)] %}
-                {% call(obj) _table.table(
-                activity_list,
-                table_extra_columns=table_extra_columns,
-                search_enabled=False,
-                empty_message=_('No activities')) %}
-                <td>
-                    <a href="{{url_for(obj, 'edit')}}" data-sort="{{obj.summary}}">
-                        {{ macro.icon(obj, "h4 float-start pe-2") }}
-                        <strong>{{obj.summary}}</strong> {{ _status.badge(obj) }}
-                        <br />{{macro.display_name(obj) }}
-                    </a>
-                </td>
-                <td>
-                    {{ _messages.show_message(obj) }}
-                </td>
-                {% endcall %}
-            </div>
+      <div class="card shadow mb-4">
+        <!-- Card Header - Dropdown -->
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+          <h6 class="m-0 font-weight-bold text-primary">{% trans %}Last activities{% endtrans %}</h6>
         </div>
+        <!-- Card Body -->
+        <div class="card-body" style="height: 420px; overflow-y: auto;">
+          {% set columns = [
+          {'data': 'summary', 'title':_('Record'), 'orderable': True, 'render':'summary'},
+          {'data': 'date', 'title':_('When'), 'orderable': True, 'render':'datetime'},
+          {'data': 'body', 'title':_('Changes'), 'orderable':False, 'render':'message_body'}] %}
+          {{ _table.table('activities.json', columns=columns, searching=False, empty_message=_('No activities')) }}
+        </div>
+      </div>
     </div>
-
     <!-- Active user -->
     <div class="col-xl-4 col-lg-5">
-        <div class="card shadow mb-4">
-            <!-- Card Header - Dropdown -->
-            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                <h6 class="m-0 font-weight-bold text-primary">
-                    {% trans %}Most active user{% endtrans %}
-                    <small>{% trans %}(last 7 days){% endtrans %}</small>
-                </h6>
-            </div>
-            <!-- Card Body -->
-            <div class="card-body" style="height: 420px; overflow-y: auto;">
-                {% set max_count = user_activities|map(attribute='count')|sum|int %}
-                {% for user, count in user_activities %}
-                <h4 class="small font-weight-bold d-flex justify-content-between">{{user.summary}}
-                    <span>{{count}}</span></h4>
-                <div class="progress mb-4">
-                    <div class="progress-bar bg-{{loop.cycle('danger', 'warning', 'info', 'success', 'primary')}}"
-                        role="progressbar" style="width: {{ (count / max_count * 100)|int }}%" aria-valuenow="20"
-                        aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-                {% else %}
-                {% trans %}No activities{% endtrans %}
-                {% endfor %}
-            </div>
+      <div class="card shadow mb-4">
+        <!-- Card Header - Dropdown -->
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+          <h6 class="m-0 font-weight-bold text-primary">
+            {% trans %}Most active user{% endtrans %}
+            <small>{% trans %}(last 7 days){% endtrans %}</small>
+          </h6>
         </div>
+        <!-- Card Body -->
+        <div class="card-body" style="height: 420px; overflow-y: auto;">
+          {% set max_count = user_activities|map(attribute='count')|sum|int %}
+          {% for user, count in user_activities %}
+            <h4 class="small font-weight-bold d-flex justify-content-between">
+              {{ user.summary }}
+              <span>{{ count }}</span>
+            </h4>
+            <div class="progress mb-4">
+              <div class="progress-bar bg-{{ loop.cycle('danger', 'warning', 'info', 'success', 'primary')}}"
+                   role="progressbar"
+                   style="width: {{ (count / max_count * 100)|int }}%"
+                   aria-valuenow="20"
+                   aria-valuemin="0"
+                   aria-valuemax="100">
+              </div>
+            </div>
+          {% else %}
+            {% trans %}No activities{% endtrans %}
+          {% endfor %}
+        </div>
+      </div>
     </div>
-</div>
+  </div>
 {% endblock %}

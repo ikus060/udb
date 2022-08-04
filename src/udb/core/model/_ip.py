@@ -25,6 +25,7 @@ import udb.tools.db  # noqa: import cherrypy.tools.db
 
 from ._dhcprecord import DhcpRecord
 from ._dnsrecord import DnsRecord
+from ._json import JsonMixin
 from ._subnet import Subnet
 
 Base = cherrypy.tools.db.get_base()
@@ -48,7 +49,7 @@ ip_entry = union(
 ).subquery()
 
 
-class Ip(Base):
+class Ip(JsonMixin, Base):
     """
     This ORM is a view on all IP address declared in various record type.
     """

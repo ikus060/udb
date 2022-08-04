@@ -1,26 +1,32 @@
 {% set status_label = {'enabled':_('Enabled'), 'disabled': _('Disabled'), 'deleted': _('Deleted')} %}
 {% set status_bs_cls = {'enabled': 'success', 'disabled': 'secondary', 'deleted': 'danger'} %}
-
 {% macro dropdown(obj) %}
-<div class="btn-group">
+  <div class="btn-group">
     {% set status_disabled = not currentuser.allow_edit_record() %}
     <form method="POST" action="{{ url_for(obj, 'status') }}">
-    <button type="button" class="btn btn-sm btn-{{status_bs_cls.get(obj.status, 'secondary')}} dropdown-toggle"
-        data-bs-toggle="dropdown" aria-expanded="false" {% if status_disabled %}disabled{% endif %}>
+      <button type="button"
+              class="btn btn-sm btn-{{ status_bs_cls.get(obj.status, 'secondary')}} dropdown-toggle"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              {% if status_disabled %}disabled{% endif %}>
         {{ status_label.get(obj.status, obj.status) }}
-    </button>
-    <ul class="dropdown-menu">
+      </button>
+      <ul class="dropdown-menu">
         {% for status, label in status_label.items() %}
-        <button class="dropdown-item {{ obj.status == status and 'active' }}" type="submit" name="status" value="{{status}}">{{label}}</button>
+          <button class="dropdown-item {{ obj.status == status and 'active' }}"
+                  type="submit"
+                  name="status"
+                  value="{{ status }}">
+            {{ label }}
+          </button>
         {% endfor %}
-    </ul>
-</form>
-</div>
+      </ul>
+    </form>
+  </div>
 {% endmacro %}
-
 {% macro badge(obj) %}
-{% if obj.status != 'enabled' %}
-<span class="badge rounded-pill bg-{{status_bs_cls.get(obj.status, 'secondary')}}">{{ status_label.get(obj.status,
+  {% if obj.status != 'enabled' %}
+    <span class="badge rounded-pill bg-{{ status_bs_cls.get(obj.status, 'secondary')}}">{{ status_label.get(obj.status,
     obj.status) }}</span>
-{% endif %}
+  {% endif %}
 {% endmacro %}

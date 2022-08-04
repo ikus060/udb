@@ -28,6 +28,7 @@ from sqlalchemy.sql.sqltypes import Integer
 import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext as _
 
+from ._json import JsonMixin
 from ._search_vector import SearchableMixing
 from ._timestamp import Timestamp
 
@@ -94,7 +95,7 @@ def create_messages(session, flush_context, instances):
             obj.add_message(message)
 
 
-class Message(SearchableMixing, Base):
+class Message(JsonMixin, SearchableMixing, Base):
     TYPE_COMMENT = 'comment'
     TYPE_NEW = 'new'
     TYPE_DIRTY = 'dirty'
@@ -150,6 +151,13 @@ class Message(SearchableMixing, Base):
         if self.author is None:
             return _('nobody')
         return str(self.author)
+
+    def to_json(self):
+        data = super().to_json()
+        changes = self.changes
+        if changes:
+            data['changes'] = changes
+        return data
 
 
 class MessageMixin:
