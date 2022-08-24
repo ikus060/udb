@@ -66,7 +66,7 @@ class NotifiationPlugin(SimplePlugin):
             return
 
         # Get jinja2 template to generate email body
-        template = self.env.get_template('mail/notification.html')
+        template = self.env.get_template('mail/notification.j2')
         values = {
             'header_name': self.header_name,
             'messages': messages,

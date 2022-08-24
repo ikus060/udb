@@ -15,16 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
-import re
-from functools import cached_property
 
 import cherrypy
-from sqlalchemy.exc import DatabaseError, IntegrityError
+from sqlalchemy.exc import DatabaseError
 from sqlalchemy.inspection import inspect
 from wtforms.fields import HiddenField, TextAreaField
 from wtforms.validators import InputRequired
 
-from udb.controller import flash, url_for
+from udb.controller import handle_exception, url_for
 from udb.core.model import Message, User
 from udb.tools.i18n import gettext as _
 
@@ -84,33 +82,6 @@ class CommonPage(object):
             raise cherrypy.HTTPError(404)
         return obj
 
-    def _handle_exception(self, e, form=None):
-        self.model.session.rollback()
-        if isinstance(e, ValueError):
-            # For value error, repport the invalidvalue either as flash message or form error.
-            if form and len(e.args) == 2 and getattr(form, e.args[0], None):
-                getattr(form, e.args[0]).errors.append(e.args[1])
-            elif len(e.args) == 2:
-                flash(_('Invalid value: %s') % e.args[1], level='error')
-            else:
-                flash(_('Invalid value: %s') % e, level='error')
-        elif isinstance(e, IntegrityError) and 'unique' in str(e.orig).lower():
-            # For Unique constrain violation, we try to identify the field causing the problem to properly
-            # attach the error to the fields. If the fields cannot be found using the constrain
-            # name, we simply show a flash error message.
-            msg = _('A record already exists in database with the same value.')
-            # Postgresql: duplicate key value violates unique constraint "subnet_name_key"\nDETAIL:  Key (name)=() already exists.\n
-            # SQLite: UNIQUE constrain: subnet.name
-            m = re.search(r'Key \((.*?)\)', str(e.orig)) or re.search(r'.*\.(.*)', str(e.orig))
-            if m and form and getattr(form, m[1], None):
-                getattr(form, m[1]).errors.append(msg)
-            else:
-                # Or repport error as flash.
-                flash(msg, level='error')
-        else:
-            flash(_('Database error: %s') % e, level='error')
-            logger.warning('database error', exc_info=1)
-
     def _verify_role(self, role):
         """
         Verify if the current user has the required role.
@@ -119,46 +90,11 @@ class CommonPage(object):
         if user is None or not user.has_role(role):
             raise cherrypy.HTTPError(403, 'Insufficient privileges')
 
-    def _verify_sort(self, sort):
-        """
-        Sort should be formated as follow: <fieldname>_[asc|desc]
-        """
-        assert sort
-        try:
-            if sort.endswith('_asc') and hasattr(self.model, sort[0:-4]):
-                return getattr(self.model, sort[0:-4]).asc()
-            elif sort.endswith('_desc') and hasattr(self.model, sort[0:-5]):
-                return getattr(self.model, sort[0:-5]).desc()
-        except (AttributeError, NotImplementedError):
-            pass
-        raise cherrypy.HTTPError(404, 'invalid sort value:' + sort)
-
-    def _query(self, deleted, personal, sort):
+    def _query(self):
         """
         Build a query with supported feature of the current object class.
         """
-        query = self.model.query
-        if not deleted and hasattr(self.model, 'status'):
-            query = query.filter(self.model.status != self.model.STATUS_DELETED)
-        if personal and hasattr(self.model, 'owner'):
-            query = query.filter(self.model.owner == cherrypy.request.currentuser)
-        if sort:
-            query = query.order_by(self._verify_sort(sort))
-        return query
-
-    @cached_property
-    def _sortable_fields(self):
-        """
-        Return list of sortables fields for the current model.
-        """
-        fields = []
-        for field in self.object_form():
-            try:
-                getattr(self.model, field.name).asc()
-                fields.append(field.name)
-            except (AttributeError, NotImplementedError):
-                pass
-        return fields
+        return self.model.query
 
     def _key(self, obj):
         """
@@ -166,16 +102,21 @@ class CommonPage(object):
         """
         return getattr(obj, self.primary_key)
 
+    def _to_json(self, obj):
+        data = obj.to_json()
+        data['url'] = url_for(obj, 'edit')
+        if self.has_owner:
+            if obj.owner:
+                data['owner'] = obj.owner.to_json()
+                data['owner']['url'] = url_for(obj.owner, 'edit')
+            else:
+                data['owner'] = None
+        return data
+
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/list.html', 'common/list.html'])
-    def index(self, deleted=False, personal=False, sort=None, filter=None):
+    def index(self):
         self._verify_role(self.list_role)
-        # Convert from string to boolean
-        with cherrypy.HTTPError.handle(ValueError, 400):
-            deleted = deleted in [True, 'True', 'true']
-            personal = personal in [True, 'True', 'true']
-        # Build query
-        obj_list = self._query(deleted, personal, sort)
         # return data for templates
         return {
             'has_new': self.has_new,
@@ -183,17 +124,17 @@ class CommonPage(object):
             'has_owner': self.has_owner,
             'has_followers': self.has_followers,
             'has_messages': self.has_messages,
-            'sortable_fields': self._sortable_fields,
-            # TODO Rename those attributes to filter_status
-            'deleted': deleted,
-            # TODO filter_owner
-            'personal': personal,
-            'sort': sort,
             'form': self.object_form(),
             'model': self.model,
             'model_name': self.model.__name__.lower(),
-            'obj_list': obj_list,
         }
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def data_json(self, **kwargs):
+        self._verify_role(self.list_role)
+        obj_list = self._query()
+        return {'data': [self._to_json(obj) for obj in obj_list]}
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/new.html', 'common/new.html'])
@@ -207,8 +148,7 @@ class CommonPage(object):
                 form.populate_obj(obj)
                 obj.add()
             except Exception as e:
-                self.model.session.rollback()
-                self._handle_exception(e, form)
+                handle_exception(e, form)
             else:
                 raise cherrypy.HTTPRedirect(form.referer.data or url_for(self.model))
         # return data form template
@@ -231,8 +171,7 @@ class CommonPage(object):
             obj.status = status
             obj.add()
         except Exception as e:
-            self.model.session.rollback()
-            self._handle_exception(e)
+            handle_exception(e)
         raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
     @cherrypy.expose
@@ -249,8 +188,7 @@ class CommonPage(object):
                 form.populate_obj(obj)
                 obj.add()
             except Exception as e:
-                self.model.session.rollback()
-                self._handle_exception(e, form)
+                handle_exception(e, form)
             else:
                 raise cherrypy.HTTPRedirect(form.referer.data or url_for(self.model))
         # Return object form

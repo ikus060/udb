@@ -1,20 +1,11 @@
 {% extends 'common/list.html' %}
-
-{% block table_list scoped %}
-{% call(obj) _table.table(obj_list, table_extra_columns = [('name', form.name.label.text, True), ('ip_cidr', form.ip_cidr.label.text, True), ('vrf', form.vrf.label.text, True), ('dnszones', form.dnszones.label.text, False)]) %}
-<td>
-    {{obj.name}}
-</td>
-<td>
-    {{obj.ip_cidr}}
-</td>
-<td>
-    {{obj.vrf}}
-</td>
-<td>
-    {% for zone in obj.dnszones %}
-    <a href="{{url_for(zone, 'edit')}}"><span class="badge rounded-pill bg-secondary">{{zone.summary}}</span></a>
-    {% endfor %}
-</td>
-{% endcall %}
-{% endblock %}
+{# Subnet are sorted a in specific wayt to mimic the IP CIDR ordering. #}
+{# data-depth is used by datatables to create a "tree" representation of the data. #}
+{% set columns = [
+{'data':'ip_cidr', 'title': form.ip_cidr.label.text, 'orderable':True, 'render':'subnet', 'type':'number'},
+{'data':'name', 'title':form.name.label.text, 'orderable':True},
+{'data':'vrf_name', 'title':form.vrf.label.text, 'orderable':True},
+{'data':'l3vni', 'title':form.l3vni.label.text, 'orderable':True},
+{'data':'l2vni', 'title':form.l2vni.label.text, 'orderable':True},
+{'data':'vlan','title': form.vlan.label.text, 'orderable':True},
+{'data':'dnszones', 'title':form.dnszones.label.text, 'orderable':False}] %}

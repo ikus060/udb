@@ -15,12 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import datetime
+import logging
+import re
 from collections import namedtuple
 
 import cherrypy
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.inspection import inspect
 
 from udb.tools.i18n import gettext as _
+
+logger = logging.getLogger(__name__)
 
 FlashMessage = namedtuple('FlashMessage', ['message', 'level'])
 
@@ -126,3 +131,33 @@ def template_processor(request):
     if hasattr(cherrypy.serving.request, 'currentuser'):
         values['currentuser'] = cherrypy.serving.request.currentuser
     return values
+
+
+def handle_exception(e, form=None):
+    cherrypy.tools.db.get_session().rollback()
+    if isinstance(e, ValueError):
+        # For value error, repport the invalidvalue either as flash message or form error.
+        if form and len(e.args) == 2 and getattr(form, e.args[0], None):
+            getattr(form, e.args[0]).errors.append(e.args[1])
+        elif len(e.args) == 2:
+            flash(_('Invalid value: %s') % e.args[1], level='error')
+        else:
+            flash(_('Invalid value: %s') % e, level='error')
+    elif isinstance(e, IntegrityError) and 'unique' in str(e.orig).lower():
+        # For Unique constrain violation, we try to identify the field causing the problem to properly
+        # attach the error to the fields. If the fields cannot be found using the constrain
+        # name, we simply show a flash error message.
+        msg = _('A record already exists in database with the same value.')
+        # Postgresql: duplicate key value violates unique constraint "subnet_name_key"\nDETAIL:  Key (name)=() already exists.\n
+        # SQLite: UNIQUE constrain: subnet.name
+        m = re.search(r'Key \((.*?)\)', str(e.orig)) or re.search(r'.*\.(.*)', str(e.orig))
+        if m and form and getattr(form, m[1], None):
+            getattr(form, m[1]).errors.append(msg)
+        elif m:
+            # Or repport error as flash.
+            flash(msg + _(' Field(s): ') + m[1], level='error')
+        else:
+            flash(msg + _(' Index: ') + str(e.orig), level='error')
+    else:
+        flash(_('Database error: %s') % e, level='error')
+        logger.warning('database error', exc_info=1)

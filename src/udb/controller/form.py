@@ -181,8 +181,8 @@ class SelectObjectField(SelectField):
         """
         # TODO Avoid showing deleted records.
         entries = [(obj.id, str(obj)) for obj in self.object_cls.query.all()]
-        if self.data is None:
-            entries.insert(0, (None, _("Not assigned")))
+        if 'required' not in self.flags:
+            entries.insert(0, (None, _("-")))
         return entries
 
     @choices.setter

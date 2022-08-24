@@ -57,3 +57,59 @@ tr:hover .btn-hover {
 th > a {
     text-decoration: none;
 }
+
+/* Fix datatable filter alignment*/
+.dataTables_wrapper .dataTables_info{
+    padding-top: 0;
+}
+.dataTables_filter {
+    white-space: nowrap;
+}
+.dataTables_filter label {
+    margin-bottom: 0;
+}
+.dataTables_filter input {
+    display: inline-block; 
+    width: auto;
+}
+@media screen and (max-width: 640px){
+    .dataTables_wrapper .dt-buttons {
+        text-align: center;
+    }
+}
+table.dataTable.no-footer {
+    border-bottom: 1px solid #dee2e6;
+}
+.dataTables_wrapper .dataTables_processing {
+    height: 100%;
+    background: rgba(255,255,255,0.9);
+}
+
+/* Custom class for subnet depth */
+table.dataTable.sorted-0 .depth-1 {
+    padding-left: 2em;
+}
+table.dataTable.sorted-0 .depth-2 {
+    padding-left: 4em;
+}
+table.dataTable.sorted-0 .depth-3 {
+    padding-left: 6em;
+}
+table.dataTable.sorted-0 .depth-4 {
+    padding-left: 8em;
+}
+table.dataTable.sorted-0 .depth-5 {
+    padding-left: 10em;
+}
+table.dataTable.sorted-0 .depth-6 {
+    padding-left: 12em;
+}
+table.dataTable.sorted-0 .depth-7 {
+    padding-left: 14em;
+}
+table.dataTable.sorted-0 .depth-8 {
+    padding-left: 16em;
+}
+table.dataTable.sorted-0 .depth-9 {
+    padding-left: 18em;
+}

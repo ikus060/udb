@@ -1,88 +1,113 @@
 {% macro show_value(value) %}
-{%- if value is none -%}<i>{%trans%}Undefined{%endtrans%}</i>{%- else -%}{{value}}{%- endif -%}
-{% endmacro%}
-
-{% macro show_message(message) %}
-<small>{%trans%}By {%endtrans%} {{ message.author_name }} • 
-    <time datetime="{{ message.date }}">{{ message.date | lastupdated }}</time></small>
-{% if message.type == 'new' %}
-{% trans %}Record created{% endtrans %}
-<ul class="mb-0">
-    {% for key, values in message.changes.items() -%}
-    <li><b>{{key}}</b>: {{show_value(values[1])}} </li>
-    {%- endfor %}
-</ul>
-{% elif message.type == 'dirty' %}
-<ul class="mb-0">
-    {% for key, values in message.changes.items() %}
-    <li><b>{{key}}</b>:
-        {% if values[0] is not string and values[0] is sequence %}
-        {% for deleted in values[0] %}<br />{%trans%}Removed:{%endtrans%} {{ show_value(deleted) }}{% endfor %}
-        {% for added in values[1] %}<br />{%trans%}Added:{%endtrans%} {{ show_value(added) }}{% endfor %}
-        {% else %}
-        {{show_value(values[0])}} → {{show_value(values[1])}}
-        {% endif %}
-    </li>
-    {% endfor %}
-</ul>
-{% else %}
-<p>{{message.body}}</p>
-{% endif %}
+  {%- if value is none -%}<i>{% trans %}Undefined{% endtrans %}</i>{%- else -%}{{ value }}{%- endif -%}
 {% endmacro %}
-
+{% macro show_message(message) %}
+  <small>{% trans %}By {% endtrans %} {{ message.author_name }} •
+    <time datetime="{{ message.date }}">{{ message.date | lastupdated }}</time></small>
+  {% if message.type == 'new' %}
+    {% trans %}Record created{% endtrans %}
+    <ul class="mb-0">
+      {% for key, values in message.changes.items() -%}
+        <li>
+          <strong>{{ key }}</strong>: {{ show_value(values[1])}}
+        </li>
+      {%- endfor %}
+    </ul>
+  {% elif message.type == 'dirty' %}
+    <ul class="mb-0">
+      {% for key, values in message.changes.items() %}
+        <li>
+          <strong>{{ key }}</strong>:
+          {% if values[0] is not string and values[0] is sequence %}
+            {% for deleted in values[0] %}
+              <br />
+              {% trans %}Removed:{% endtrans %} {{ show_value(deleted) }}
+            {% endfor %}
+            {% for added in values[1] %}
+              <br />
+              {% trans %}Added:{% endtrans %} {{ show_value(added) }}
+            {% endfor %}
+          {% else %}
+            {{ show_value(values[0])}} → {{ show_value(values[1])}}
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>{{ message.body }}</p>
+  {% endif %}
+{% endmacro %}
 {% macro list_messages(messages) -%}
-<div class="list-group list-group-flush">
+  <div class="list-group list-group-flush">
     {% for message in messages|sort(attribute="date",reverse=True) %}
-    <div class="list-group-item list-group-item-action" aria-current="true">
-        {{ show_message(message) }}
-    </div>
+      <div class="list-group-item list-group-item-action" aria-current="true">{{ show_message(message) }}</div>
     {% endfor %}
-</div>
+  </div>
 {%- endmacro %}
-
 {% if has_messages %}
-<div class="card">
+  <div class="card">
     <div class="card-header">
-        <ul class="nav nav-tabs card-header-tabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <a class="nav-link active" id="comments-tab" data-bs-toggle="tab" data-bs-target="#comments"
-                    href="#comments" type="button" role="tab" aria-controls="home"
-                    aria-selected="true">{%trans%}Comments{%endtrans%}</a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" href="#history"
-                    type="button" role="tab" aria-controls="history"
-                    aria-selected="true">{%trans%}History{%endtrans%}</a>
-            </li>
-        </ul>
+      <ul class="nav nav-tabs card-header-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <a class="nav-link active"
+             id="comments-tab"
+             data-bs-toggle="tab"
+             data-bs-target="#comments"
+             href="#comments"
+             type="button"
+             role="tab"
+             aria-controls="home"
+             aria-selected="true">{% trans %}Comments{% endtrans %}</a>
+        </li>
+        <li class="nav-item" role="presentation">
+          <a class="nav-link"
+             id="history-tab"
+             data-bs-toggle="tab"
+             data-bs-target="#history"
+             href="#history"
+             type="button"
+             role="tab"
+             aria-controls="history"
+             aria-selected="true">{% trans %}History{% endtrans %}</a>
+        </li>
+      </ul>
     </div>
     <div class="tab-content" id="nav-tabContent">
-        <div class="tab-pane fade show active" id="comments" role="tabpanel" aria-labelledby="comments-tab">
-            <!--Form -->
-            <div class="card-body">
-                <div class="comment-form">
-                    <form method="post" action="{{url_for(obj, 'post')}}">
-                        <div class="mb-3 form-floating">
-                            <textarea name="body" class="form-control" placeholder="Leave a comment here"
-                                id="floatingTextarea2" style="height: 80px"></textarea>
-                            <label for="floatingTextarea2">{%trans%}Leave a comments{%endtrans%}</label>
-                        </div>
-                        <button type="submit" class="btn btn-secondary">{%trans%}Add comment{%endtrans%}</button>
-                    </form>
-                </div>
-            </div>
-            {{ list_messages(obj.comments) }}
+      <div class="tab-pane fade show active"
+           id="comments"
+           role="tabpanel"
+           aria-labelledby="comments-tab">
+        <!--Form -->
+        <div class="card-body">
+          <div class="comment-form">
+            <form method="post" action="{{ url_for(obj, 'post')}}">
+              <div class="mb-3 form-floating">
+                <textarea name="body"
+                          class="form-control"
+                          placeholder="Leave a comment here"
+                          id="floatingTextarea2"
+                          style="height: 80px"></textarea>
+                <label for="floatingTextarea2">{% trans %}Leave a comments{% endtrans %}</label>
+              </div>
+              <button type="submit" class="btn btn-secondary">{% trans %}Add comment{% endtrans %}</button>
+            </form>
+          </div>
         </div>
-        <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
-            {{ list_messages(obj.changes) }}
-        </div>
+        {{ list_messages(obj.comments) }}
+      </div>
+      <div class="tab-pane fade"
+           id="history"
+           role="tabpanel"
+           aria-labelledby="history-tab">
+        {{ list_messages(obj.changes) }}
+      </div>
     </div>
-</div>
-<script>
+  </div>
+  <script>
 var hash = window.location.hash;
 if(hash && (hash == '#comments' || hash == '#history')){
     var triggerEl = document.querySelector('ul.nav a[href="' + hash + '"]');
     bootstrap.Tab.getOrCreateInstance(triggerEl).show();
 }
-</script>
+  </script>
 {% endif %}

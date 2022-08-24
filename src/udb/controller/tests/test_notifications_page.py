@@ -22,13 +22,11 @@ from udb.core.model import DhcpRecord, DnsZone, User
 
 
 class NotificationsTest(WebCase):
-    def test_get_page_without_following(self):
+    def test_get_page(self):
         # Given a user not following anything
         # When browser the notifications page
         self.getPage(url_for('notifications', ''))
         self.assertStatus(200)
-        # Then nothing get displayed in the list
-        self.assertInBody('You are not following any record.')
 
     def test_get_page_with_following(self):
         # Given a user following multiple record
@@ -38,9 +36,8 @@ class NotificationsTest(WebCase):
         dhcp = DhcpRecord(mac='00:00:5e:00:53:af', ip='10.255.67.12').add()
         dhcp.add_follower(user)
         # When browser the notifications page
-        self.getPage(url_for('notifications', ''))
+        self.getPage(url_for('notifications', 'data.json'))
         self.assertStatus(200)
         # Then list display subscribed items
-        self.assertNotInBody('You are not following any record.')
         self.assertInBody('boo.com')
         self.assertInBody('00:00:5e:00:53:af')

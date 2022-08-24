@@ -44,17 +44,6 @@ class CommonTest:
         self.assertStatus(200)
         self.assertInBody('<table')
 
-    def test_get_list_with_sort(self):
-        # Given a database with a record
-        self.obj_cls(**self.new_data).add()
-        # When making a query to list records with sorted column
-        field = list(self.new_data.keys())[0]
-        self.getPage(url_for(self.base_url, '', sort=field + '_asc'))
-        # Then an html page is returned with a table
-        self.assertStatus(200)
-        self.assertInBody('<table')
-        self.assertInBody(field + '_desc')
-
     def test_get_edit_page(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
@@ -280,6 +269,12 @@ class CommonTest:
         # Then object status is enabled is removed to the record
         self.assertEqual('enabled', self.obj_cls.query.first().status)
 
+    def test_get_data_json(self):
+        # When requesting data.json
+        self.getPage(url_for(self.base_url, 'data.json'))
+        # Then json data is returned
+        self.assertStatus(200)
+
     def test_api_list_without_credentials(self):
         # Given I don't have credentials
         # When requesting the API
@@ -390,66 +385,6 @@ class DnsZoneTest(WebCase, CommonTest):
             '<input class="form-check-input"  type="checkbox" name="subnets" value="1" id="subnets-%s" checked>'
             % subnet.id
         )
-
-
-class SubnetTest(WebCase, CommonTest):
-
-    base_url = 'subnet'
-
-    obj_cls = Subnet
-
-    new_data = {'ip_cidr': '192.168.0.0/24'}
-
-    edit_data = {'ip_cidr': '192.168.100.0/24', 'vrf': 4}
-
-    def test_edit_invalid(self):
-        # Given a database with a record
-        obj = self.obj_cls(**self.new_data).add()
-        # When trying to update it's name
-        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'ip_cidr': 'invalid cidr'})
-        self.session.commit()
-        # Then edit page is displayed with an error message
-        self.assertStatus(200)
-        self.assertInBody('does not appear to be a valid IPv4 or IPv6 network')
-
-    def test_edit_with_dnszone(self):
-        # Given a database with a record
-        zone = DnsZone(name='examples.com').add()
-        obj = self.obj_cls(ip_cidr='192.168.0.1/24', dnszones=[zone]).add()
-        # When editing the record
-        self.getPage(url_for(self.base_url, obj.id, 'edit'))
-        # Then the zone is selected
-        self.assertStatus(200)
-        self.assertInBody(
-            '<input class="form-check-input"  type="checkbox" name="dnszones" value="1" id="dnszones-%s" checked>'
-            % zone.id
-        )
-
-    def test_edit_add_dnszone(self):
-        # Given a database with a record
-        zone = DnsZone(name='examples.com').add()
-        obj = self.obj_cls(ip_cidr='192.168.0.1/24', dnszones=[]).add()
-        # When editing the record
-        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'dnszones': zone.id})
-        self.assertStatus(303)
-        # Then the zone is selected
-        self.getPage(url_for(self.base_url, obj.id, 'edit'))
-        self.assertStatus(200)
-        self.assertInBody(
-            '<input class="form-check-input"  type="checkbox" name="dnszones" value="1" id="dnszones-%s" checked>'
-            % zone.id
-        )
-
-    def test_new_duplicate(self):
-        # Given a database with a record
-        obj = self.obj_cls(**self.new_data)
-        obj.add()
-        self.session.commit()
-        # When trying to create the same record.
-        self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
-        # Then error is repported to the user.
-        self.assertStatus(200)
-        self.assertInBody('A record already exists in database with the same value.')
 
 
 class DnsRecordTest(WebCase, CommonTest):
@@ -586,7 +521,7 @@ class RoleTest(WebCase):
         # Given a DnsZone
         DnsZone(name='examples.com').add()
         # When requesting list of records
-        self.getPage(url_for(DnsZone))
+        self.getPage(url_for(DnsZone, 'data.json'))
         # Then the list is available
         self.assertStatus(200)
         self.assertInBody('examples.com')

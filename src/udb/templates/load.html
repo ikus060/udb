@@ -1,0 +1,30 @@
+{% extends 'layout.html' %}
+{% import "components/table.html" as _table %}
+{% import "common/status.html" as _status %}
+{% import "macro.html" as macro %}
+{% block body %}
+  {# Title #}
+  <h2>{% trans %}Import{% endtrans %}</h2>
+  {% include "flash.html" %}
+  <hr />
+  {# General form #}
+  <div class="row">
+    <div class="col-md">
+      <h4>{% trans %}Load CSV File{% endtrans %}</h4>
+      <p>{% trans %}You may load data from a compatible CSV File format.{% endtrans %}</p>
+      <p>{% trans %}Supported format uses commat (,) as separator and double-quote (") for text delimiter.{% endtrans %}</p>
+      <p>
+        {% trans %}Supported column name:{% endtrans %}
+        <ul>
+          <li>Name</li>
+          <li>Description</li>
+        </ul>
+      </div>
+      <div class="col-md-9">
+        <form method="POST" enctype="multipart/form-data">
+          {{ form }}
+          <button type="submit" class="btn btn-primary">{% trans %}Load{% endtrans %}</button>
+        </form>
+      </div>
+    </div>
+  {% endblock %}

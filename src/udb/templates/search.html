@@ -4,27 +4,27 @@
 {% import "components/table.html" as _table %}
 {% set hide_search = True %}
 {% block body %}
-<h4>{% trans %}Search{% endtrans %}</h4>
-
-<div class="d-flex align-items-center">
-    <form class="flex-grow-1 me-2" method="GET" action="{{url_for()}}">
-        {{form.personal}}
-        {{form.deleted}}
-        {{form.sort}}
-        <div class="input-group">
-            <input type="text" class="form-control" placeholder="Search" aria-label="Search" name="q"
-                value="{{form.q.data}}" aria-describedby="button-search">
-            <button class="btn btn-outline-secondary" type="submit" id="button-search">
-                <i class="bi bi-search" aria-hidden="true"></i>
-            </button>
-        </div>
+  <h4>{% trans %}Search{% endtrans %}</h4>
+  <div class="d-flex align-items-center">
+    <form class="flex-grow-1 me-2" method="GET" action="{{ url_for()}}">
+      <div class="input-group">
+        <input type="text"
+               class="form-control"
+               placeholder="Search"
+               aria-label="Search"
+               name="q"
+               value="{{ form.q.data }}"
+               aria-describedby="button-search">
+        <button class="btn btn-outline-secondary" type="submit" id="button-search">
+          <i class="bi bi-search" aria-hidden="true"></i>
+        </button>
+      </div>
     </form>
-    {% set has_status=True %}
-    {% set has_owner=True %}
-    {% include "common/filter.html" %}
-</div>
-
-{% call(obj) _table.table(obj_list, empty_message=_('Sorry, that filter combination has no result. Please try different criteria.')) %}
-{% endcall %}
-
+  </div>
+  {% set columns = [
+  {'data':'summary', 'title':_('Summary'), 'orderable':True, 'render':'link'},
+  {'data':'notes', 'title':_('Notes'), 'orderable':True},
+  {'data':'owner', 'title':_('Owner'), 'orderable':True, 'render':'user'}
+  ]%}
+  {{ _table.table(url_for('search', 'query.json', q=form.q.data), columns = columns, searching=False, empty_message=_('Sorry, that filter combination has no result. Please try different criteria.')) }}
 {% endblock %}

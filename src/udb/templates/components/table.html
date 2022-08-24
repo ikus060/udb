@@ -1,71 +1,35 @@
 {% import "macro.html" as macro %}
-{% import "common/status.html" as _status %}
-
-{% macro table(obj_list, table_extra_columns=[], empty_message=_('List is empty')) %}
-<table class="table table-hover" aria-label="{% if obj_list and obj_list|list|length > 0 %}{{macro.display_name(obj_list|first)}}{% else %}{{empty_message}}{% endif %}">
-    <thead>
-        <tr>
-            <th scope="col" colspan="2">
-                <span>{%trans%}Summary{%endtrans%}</span>
-            </th>
-            {% for name, label, sortable in table_extra_columns %}
-            <th scope="col">
-                {% if sortable %}
-                {% set toggle_sort = name + '_desc' if sort == name + '_asc' else name + '_asc' %}
-                {% set active = sort == name + '_asc' or sort == name + '_desc' %}
-                <a href="{{ url_for(sort=toggle_sort) }}"
-                    class="{%if active %}link-primary{% else %}link-dark{% endif %}">
-                    {{ label }}
-                    {% if sort == name + '_asc' %}
-                    <i class="bi bi-caret-up-fill" aria-hidden="true"></i>
-                    {% elif sort == name + '_desc' %}
-                    <i class="bi bi-caret-down-fill" aria-hidden="true"></i>
-                    {% endif %}
-                </a>
-                {% else %}
-                {{ label }}
-                {% endif %}
-            </th>
-            {% endfor %}
-            <th scope="col" style="width: 100px">
-                <span class="visually-hidden">{%trans%}Actions{%endtrans%}</span>
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for obj in obj_list %}
-        <tr>
-            <td class="align-top" style="width: 25px">
-                <a href="{{url_for(obj, 'edit')}}">
-                    {{ macro.icon(obj, "h4") }}
-                </a>
-            </td>
-            <td>
-                <a href="{{url_for(obj, 'edit')}}">
-                    <strong>{{obj.summary}}</strong> {{ _status.badge(obj) }}
-                    <br />{{macro.display_name(obj) }}
-                </a>
-            </td>
-            {{ caller(obj) }}
-            <td class="align-middle">
-                <a class="btn btn-primary btn-circle btn-hover" href="{{url_for(obj, 'edit')}}"
-                    data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans %}View more detail{% endtrans %}">
-                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                    <span class="visually-hidden">{%trans%}Edit{%endtrans%}</span>
-                </a>
-            </td>
-        </tr>
-        {% else %}
-        <tr>
-            <td colspan="{{ 5 + table_extra_columns|length }}" class="text-center p-5">
-                <i class="bi bi-search display-4 fw-bold" aria-hidden="true"></i><br />
-                <p>
-                    {{ empty_message }}
-                </p>
-            </td>
-        </tr>
-        {% endfor %}
-
-    </tbody>
-</table>
+{% macro table(data, columns=[], empty_message=_('List is empty'), searching=True, buttons=[]) %}
+  {% set columns = columns + [{'data':'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px'}] %}
+  {% set language = {
+  "aria": {
+  "sortAscending": _('activate to sort column ascending'),
+  "sortDescending": _('activate to sort column descending')
+  },
+  "deleted": _('Deleted'),
+  "disabled": _('Disabled'),
+  "info": _('Showing _TOTAL_ entries'),
+  "infoFiltered": _('(filtered from _MAX_ total entries)'),
+  "infoEmpty": _('Showing 0 entry'),
+  "processing": _('Loading...'),
+  "search": _('Filter: '),
+  "zeroRecords": empty_message,
+  } %}
+  {% set buttons = {
+  "dom": {
+  "button": {
+  "className": 'btn btn-secondary ms-1 mb-1',
+  "active": 'active',
+  }
+  },
+  "buttons": buttons
+  } %}
+  <table class="table table-hover"
+         data-ajax="{{ data }}"
+         data-columns='{{ columns | tojson }}'
+         data-language='{{ language | tojson }}'
+         data-searching="{{ searching | tojson }}"
+         data-buttons='{{ buttons | tojson }}'
+         data-paging="{{ False | tojson }}">
+  </table>
 {% endmacro %}

@@ -16,21 +16,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
 from sqlalchemy import or_
-from wtforms.fields import HiddenField, StringField
+from wtforms.fields import StringField
 from wtforms.validators import input_required
 
-from udb.controller import flash
+from udb.controller import url_for
 from udb.controller.form import CherryForm
-from udb.core.model import Message, Search, User
+from udb.core.model import Message, Search
 
 Base = cherrypy.tools.db.get_base()
 
 
 class SearchForm(CherryForm):
     q = StringField(validators=[input_required()])
-    personal = HiddenField()
-    deleted = HiddenField()
-    sort = HiddenField()
 
     def is_submitted(self):
         return cherrypy.request.method in ['GET']
@@ -39,41 +36,33 @@ class SearchForm(CherryForm):
 class SearchPage:
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['search.html'])
-    def index(self, deleted=False, personal=False, sort=None, **kwargs):
-        with cherrypy.HTTPError.handle(ValueError, 400):
-            deleted = deleted in [True, 'True', 'true']
-            personal = personal in [True, 'True', 'true']
+    def index(self, **kwargs):
         form = SearchForm()
-        if not form.validate():
-            flash('TODO ERROR MESSAGE')
-            obj_list = []
-        else:
-            obj_list = self._query(form.q.data, deleted, personal, sort)
         return {
             'form': form,
-            'obj_list': obj_list,
-            'deleted': deleted,
-            'personal': personal,
-            'sort': sort,
         }
 
-    def _query(self, term, deleted, personal, sort):
-        """
-        Build a query with supported feature of the current object class.
-        """
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def query_json(self, **kwargs):
+        form = SearchForm()
+        if not form.validate():
+            return {'data': []}
         query = Search.query.filter(
-            or_(Search._search_vector.websearch(term), Search.messages.any(Message._search_vector.websearch(term)))
+            or_(
+                Search._search_vector.websearch(form.q.data),
+                Search.messages.any(Message._search_vector.websearch(form.q.data)),
+            )
         )
-        if not deleted:
-            query = query.filter(Search.status != User.STATUS_DELETED)
-        if personal:
-            query = query.filter(Search.owner == cherrypy.request.currentuser)
-        if sort:
-            query = query.order_by(self._verify_sort(sort))
-        else:
-            query = query.order_by(Search.modified_at)
-        # TODO Limit record (50 by default)
-        # TODO Make pagination work
-        # TODO Filter record types
-        # TODO Support sorting
-        return query.all()
+        query = query.order_by(Search.modified_at)
+        return {
+            'data': [
+                {
+                    'url': url_for(obj, 'edit'),
+                    'summary': obj.summary,
+                    'owner': obj.owner.to_json() if obj.owner else None,
+                    'notes': obj.notes,
+                }
+                for obj in query.all()
+            ]
+        }

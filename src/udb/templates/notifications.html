@@ -1,20 +1,22 @@
 {% extends 'layout.html' %}
 {% import "components/table.html" as _table %}
+{% import "common/status.html" as _status %}
+{% import "macro.html" as macro %}
 {% block body %}
-{# Title #}
-<h2>{%trans%}Edit notification preferences{%endtrans%}</h2>
-{% include "flash.html" %}
-<hr />
-{# General form #}
-<div class="row">
+  {# Title #}
+  <h2>{% trans %}Edit notification preferences{% endtrans %}</h2>
+  {% include "flash.html" %}
+  <hr />
+  {# General form #}
+  <div class="row">
     <div class="col-md">
-        <h4>{%trans%}Notifications{%endtrans%}</h4>
-        <p>{%trans%}In this view, you can unsubscribe from certain records to stop receiving notifications about
-            them.{%endtrans%}</p>
+      <h4>{% trans %}Notifications{% endtrans %}</h4>
+      <p>
+        {% trans %}In this view, you can unsubscribe from certain records to stop receiving notifications about them.{% endtrans %}
+      </p>
     </div>
     <div class="col-md-9">
-        {% call(obj) _table.table(obj_list, empty_message=_('You are not following any record.')) %}
-        {% endcall %}
+      {{ _table.table('data.json', empty_message=_('You are not following any record.'), columns = [{'data': 'summary', 'title':_('Following'), 'orderable': True, 'render':'summary'}] ) }}
     </div>
-</div>
+  </div>
 {% endblock %}

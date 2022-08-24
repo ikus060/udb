@@ -1,47 +1,51 @@
 {% extends 'layout.html' %}
 {% import "macro.html" as macro %}
 {% import "components/table.html" as _table with context %}
-
 {% block body %}
-<div class="d-flex justify-content-between">
-    <h4 class="flex-fill" id="title">{{macro.icon(model_name)}} {% trans %}List of{% endtrans %} {{macro.display_name(model_name)}}</h2>
-    <div class="align-self-center">
-        {% if has_new %}
-        {% set new_disabled = not currentuser.allow_new_record() %}
-        <a class="btn btn-primary {% if new_disabled %}disabled{% endif %}" href="{{url_for(model, 'new')}}"
-            role="button" {% if new_disabled %}aria-disabled="true" {% endif %}>{%trans%}Create{%endtrans%}
-            {{macro.display_name(model_name)}}</a>
-        {% endif %}
-        {% include "common/filter.html" %}
+  <div class="row">
+    <div class="col">
+      <h4 id="title">
+        {{ macro.icon(model_name)}} {% trans %}List of{% endtrans %} {{ macro.display_name(model_name)}}
+      </h2>
     </div>
-</div>
-
-{# Default a default columns list #}
-{% set table_default_columns = [] %}
-{% if obj_list and obj_list|list|length > 0 and obj_list[0].notes is defined() %}
-{%- set table_default_columns = table_default_columns + [('notes', _('Notes'), True)] -%}
-{% endif %}
-{% if obj_list and obj_list|list|length > 0 and obj_list[0].owner is defined() %}
-{%- set table_default_columns = table_default_columns + [('owner_name', _('Owner'), True)] -%}
-{% endif %}
-
-{# Show default table #}
-{% block table_list scoped %}
-{% call(obj) _table.table(obj_list, table_extra_columns=table_extra_columns|d(table_default_columns)) %}
-    {% for col in table_extra_columns|d(table_default_columns) %}
-    <td>
-        {{ obj|attr(col[0]) or "-" }}
-    </td>
-    {% endfor %}
-{% endcall %}
-{% endblock table_list %}
+    <div class="col text-end mb-2">
+      {% if has_new %}
+        {% set new_disabled = not currentuser.allow_new_record() %}
+        <a class="btn btn-primary {% if new_disabled %}disabled{% endif %}"
+           href="{{ url_for(model, 'new')}}"
+           role="button"
+           {% if new_disabled %}aria-disabled="true"{% endif %}>{% trans %}Create{% endtrans %}
+        {{ macro.display_name(model_name)}}</a>
+      {% endif %}
+    </div>
+  </div>
+  {# Default a default columns list from form #}
+  {% set ns = namespace(default_columns=[]) %}
+  {% set table_default_buttons = [] %}
+  {% for field in form %}
+    {% if field.widget['input_type'] != 'hidden' %}
+      {% set ns.default_columns = ns.default_columns + [{'name': field.name, 'data': field.name, 'title': field.label.text, 'orderable':True, 'render': 'user' if field.name=='owner' else 'summary' if loop.first else 'text'}] %}
+    {% endif %}
+  {% endfor %}
+  {% set table_columns = columns|d(ns.default_columns) %}
+  {# Status column and filter #}
+  {% if has_status %}
+    {% set table_columns = table_columns + [{'name': 'status', 'data': 'status', 'visible': false, 'search': 'enabled'}] %}
+    {% set table_default_buttons = table_default_buttons + [{'text': _('Hide Deleted'), 'extend': 'filter', 'column': 'status:name', 'search': 'enabled'}] %}
+  {% endif %}
+  {# Default filters #}
+  {% if 'owner' in (table_columns|map(attribute='name')|list) %}
+    {% set table_default_buttons = table_default_buttons + [{'text': _('Owned by me'), 'extend': 'filter', 'column': 'owner:name', 'search': currentuser.username}] %}
+  {% endif %}
+  {% set table_default_buttons = table_default_buttons + [{'text': _('Clear'), 'extend': 'clear'}] %}
+  {# Show default table #}
+  {{ _table.table(data="data.json", columns=table_columns, buttons=table_extra_filters|d(table_default_buttons))}}
 {% endblock body %}
-
 {% block script %}
-<script>
+  <script>
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl)
     })
-</script>
+  </script>
 {% endblock %}

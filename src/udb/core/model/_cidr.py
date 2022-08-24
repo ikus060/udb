@@ -23,24 +23,29 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
 
-def _sqlite_subnet_of(value, other):
+def _sqlite_inet_broadcast(value):
     """
-    Use python function to determine the subnet.
+    Convert ip_network into comparable bytes.
+
     """
-    try:
-        return value != other and ipaddress.ip_network(value).subnet_of(ipaddress.ip_network(other))
-    except (ValueError, TypeError):
-        return False
+    n = ipaddress.ip_network(value)
+    return b'%s%s%s' % (
+        n.version.to_bytes(2, byteorder='big'),
+        n.broadcast_address.packed,
+        n.prefixlen.to_bytes(2, byteorder='big'),
+    )
 
 
-def _sqlite_supernet_of(value, other):
+def _sqlite_inet(value):
     """
-    Use python function to determine the subnet.
+    Convert ip_network into comparable bytes.
     """
-    try:
-        return value != other and ipaddress.ip_network(value).supernet_of(ipaddress.ip_network(other))
-    except (ValueError, TypeError):
-        return False
+    n = ipaddress.ip_network(value)
+    return b'%s%s%s' % (
+        n.version.to_bytes(2, byteorder='big'),
+        n.network_address.packed,
+        n.prefixlen.to_bytes(2, byteorder='big'),
+    )
 
 
 @event.listens_for(Engine, "connect")
@@ -49,9 +54,9 @@ def _register_sqlite_cidr_functions(dbapi_con, unused):
     On SQLite engine, register custom function to support CIDR operations.
     """
     if 'sqlite' in repr(dbapi_con):
-        dbapi_con.create_function("subnet_of", 2, _sqlite_subnet_of, deterministic=True)
-        dbapi_con.create_function("supernet_of", 2, _sqlite_supernet_of, deterministic=True)
+        dbapi_con.create_function("inet_broadcast", 1, _sqlite_inet_broadcast, deterministic=True)
         dbapi_con.create_function("text", 1, str, deterministic=True)
+        dbapi_con.create_function("inet", 1, _sqlite_inet, deterministic=True)
 
 
 class subnet_of(GenericFunction):
@@ -59,9 +64,18 @@ class subnet_of(GenericFunction):
     inherit_cache = True
 
 
-class supernet_of(GenericFunction):
-    name = "supernet_of"
-    inherit_cache = True
+@compiles(subnet_of, "sqlite")
+def _render_subnet_of_sqlite(element, compiler, **kw):
+    """
+    On SQLite, make use of inet() and broadcast()
+    """
+    left, right = element.clauses
+    return "inet(%s) >= inet(%s) AND inet_broadcast(%s) < inet_broadcast(%s)" % (
+        compiler.process(left, **kw),
+        compiler.process(right, **kw),
+        compiler.process(left, **kw),
+        compiler.process(right, **kw),
+    )
 
 
 @compiles(subnet_of, "postgresql")
@@ -74,20 +88,6 @@ def _render_subnet_of_pg(element, compiler, **kw):
     return "%s %s %s" % (
         compiler.process(left, **kw),
         "<<",
-        compiler.process(right, **kw),
-    )
-
-
-@compiles(supernet_of, "postgresql")
-def _render_supernet_of_pg(element, compiler, **kw):
-    """
-    On Postgresql, register compiler to replace funcation calls by operator `>>`.
-    """
-    left, right = element.clauses
-
-    return "%s %s %s" % (
-        compiler.process(left, **kw),
-        ">>",
         compiler.process(right, **kw),
     )
 
@@ -108,10 +108,16 @@ class CidrType(TypeDecorator):
 
     class comparator_factory(String.Comparator):
         def subnet_of(self, other):
-            return func.subnet_of(self, other)
+            return func.subnet_of(self, other).as_comparison(1, 2)
 
         def supernet_of(self, other):
-            return func.supernet_of(self, other)
+            return func.subnet_of(other, self).as_comparison(1, 2)
 
         def text(self):
             return func.text(self)
+
+        def host(self):
+            return func.host(self)
+
+        def inet(self):
+            return func.inet(self)

@@ -1,9 +1,9 @@
-<div id="{{field.id}}">
-    {% for value, label, checked in field.iter_choices() %}
+<div id="{{ field.id }}">
+  {% for value, label, checked in field.iter_choices() %}
     <div class="form-check">
-        {% set options=dict(type='checkbox', name=field.name, value=value, id='%s-%s' % (field.id, value)) %}
-        <input class="form-check-input" {{ options|xmlattr }} {%if checked%}checked{%endif%}>
-        <label for="{{field.id}}">{{label}}</label>
+      {% set options=dict(type='checkbox', name=field.name, value=value, id='%s-%s' % (field.id, value)) %}
+      <input class="form-check-input" {{ options|xmlattr }} {% if checked %}checked{% endif %}>
+      <label for="{{ field.id }}">{{ label }}</label>
     </div>
-    {% endfor %}
+  {% endfor %}
 </div>
