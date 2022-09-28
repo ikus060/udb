@@ -29,6 +29,7 @@ import udb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
 import udb.tools.db  # noqa: import cherrypy.tools.db
 import udb.tools.errors  # noqa
 import udb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
+import udb.tools.secure_headers  # noqa: import cherrypy.tools.secure_headers
 from udb.controller import lastupdated, template_processor, url_for
 from udb.controller.api import Api
 from udb.controller.common_page import CommonApi, CommonPage
@@ -101,6 +102,9 @@ def _error_page(**kwargs):
 @cherrypy.tools.auth_form()
 @cherrypy.tools.currentuser(userobj=lambda username: User.query.filter_by(username=username).first())
 @cherrypy.tools.i18n(mo_dir=pkg_resources.resource_filename('udb', 'locales'), default='en_US', domain='messages')
+@cherrypy.tools.secure_headers(
+    csp="default-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/ https://cdn.datatables.net/;"
+)
 class Root(object):
     """
     Root entry point exposed using cherrypy.

@@ -25,5 +25,5 @@ class LogoutPage:
     def index(self):
         # Remove session key
         cherrypy.session[SESSION_KEY] = None
-        # Redirect users to loginn page
+        # Redirect users to login page
         raise cherrypy.HTTPRedirect('/login/')
