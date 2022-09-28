@@ -23,7 +23,6 @@ import udb.core.login  # noqa
 import udb.core.notification  # noqa
 import udb.plugins.ldap  # noqa
 import udb.plugins.smtp  # noqa
-import udb.tools.auth_basic  # noqa: import cherrypy.tools.auth_basic
 import udb.tools.auth_form  # noqa: import cherrypy.tools.auth_form
 import udb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
 import udb.tools.db  # noqa: import cherrypy.tools.db
