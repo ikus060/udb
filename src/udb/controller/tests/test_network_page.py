@@ -76,9 +76,9 @@ class CommonTest:
         # When trying to update it's name
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=self.edit_data)
         self.session.commit()
-        # Then user is redirected to list page
+        # Then user is redirected
         self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for(self.base_url) + '/')
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then database is updated
         new_obj = self.obj_cls.query.first()
         for k, v in self.edit_data.items():
@@ -98,7 +98,7 @@ class CommonTest:
         )
         # Then user is redirected to referer
         self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for('notifications'))
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
 
     def test_edit_assign_owner(self):
         # Given a database with a record
@@ -108,9 +108,9 @@ class CommonTest:
         payload['owner'] = User.query.first().id
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=payload)
         self.session.commit()
-        # Then user is redirected to list page
+        # Then user is redirected
         self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for(self.base_url) + '/')
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then database is updated
         new_obj = self.obj_cls.query.first()
         self.assertEqual(new_obj.owner, User.query.first())
@@ -132,7 +132,7 @@ class CommonTest:
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for(self.base_url) + '/')
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then database is updated
         new_obj = self.obj_cls.query.first()
         self.assertEqual(new_obj.owner, None)

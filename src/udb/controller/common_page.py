@@ -22,7 +22,7 @@ from sqlalchemy.inspection import inspect
 from wtforms.fields import HiddenField, TextAreaField
 from wtforms.validators import InputRequired
 
-from udb.controller import handle_exception, url_for
+from udb.controller import flash, handle_exception, url_for
 from udb.core.model import Message, User
 from udb.tools.i18n import gettext as _
 
@@ -190,7 +190,8 @@ class CommonPage(object):
             except Exception as e:
                 handle_exception(e, form)
             else:
-                raise cherrypy.HTTPRedirect(form.referer.data or url_for(self.model))
+                flash(_('Record updated successfully'))
+                raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
         # Return object form
         return {
             'has_new': self.has_new,

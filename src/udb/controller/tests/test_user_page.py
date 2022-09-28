@@ -61,7 +61,7 @@ class UserTest(WebCase):
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for('user') + '/')
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then database is updated
         new_obj = User.query.filter_by(username=self.new_data['username']).first()
         for k, v in self.edit_data.items():
@@ -75,7 +75,7 @@ class UserTest(WebCase):
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for('user') + '/')
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then database is updated
         new_obj = User.query.filter_by(username=self.new_data['username']).first()
         self.assertTrue(check_password('newpassword', new_obj.password))
@@ -88,7 +88,7 @@ class UserTest(WebCase):
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for('user') + '/')
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then database is updated
         new_obj = User.query.filter_by(username=self.new_data['username']).first()
         self.assertEqual(None, new_obj.password)
