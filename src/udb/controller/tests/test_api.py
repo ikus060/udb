@@ -38,4 +38,4 @@ class TestApiPage(WebCase):
         self.getPage('/api/invalid', headers=self.authorization)
         # Then status is returned
         self.assertStatus(404)
-        self.assertInBody('{"message": "The path \'/api/invalid\' was not found.", "status": "404 Not Found"}')
+        self.assertInBody('{"message": "Nothing matches the given URI", "status": "404 Not Found"}')

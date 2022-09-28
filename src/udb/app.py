@@ -51,6 +51,16 @@ from udb.controller.vrf_page import VrfPage
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User, Vrf
 from udb.tools.i18n import gettext, ngettext
 
+# Define cherrypy development environment
+cherrypy.config.environments['development'] = {
+    'engine.autoreload.on': True,
+    'checker.on': False,
+    'tools.log_headers.on': True,
+    'request.show_tracebacks': True,
+    'request.show_mismatched_params': True,
+    'log.screen': False,
+}
+
 #
 # Create singleton Jinja2 environement.
 #
@@ -75,6 +85,11 @@ def _error_page(**kwargs):
     mtype = cherrypy.serving.response.headers.get('Content-Type') or cherrypy.tools.accept.callable(
         ['text/html', 'text/plain', 'application/json']
     )
+
+    # Replace message by generic one for 404 to avoid vulnerability.
+    if kwargs.get('status', '') == '404 Not Found':
+        kwargs['message'] = 'Nothing matches the given URI'
+
     if mtype == 'text/plain':
         return kwargs.get('message')
     elif mtype == 'application/json':
@@ -114,6 +129,9 @@ class Root(object):
         self.cfg = cfg
         cherrypy.config.update(
             {
+                # Define cherrypy config based on debug flag.
+                'environment': 'development' if cfg.debug else 'production',
+                # Define error page handler.
                 'error_page.default': _error_page,
                 # Configure database plugins
                 'tools.db.uri': cfg.database_uri,
