@@ -22,7 +22,6 @@ import cherrypy
 from udb.controller import url_for
 from udb.controller.tests import WebCase
 from udb.core.model import User
-from udb.core.passwd import check_password
 
 
 class ProfileTest(WebCase):
@@ -84,13 +83,17 @@ class ProfileTest(WebCase):
         self.getPage(
             url_for('profile', ''),
             method='POST',
-            body={'current_password': self.password, 'new_password': 'newvalue', 'password_confirmation': 'newvalue'},
+            body={
+                'current_password': self.password,
+                'new_password': 'xQPyU9yNqb3e',
+                'password_confirmation': 'xQPyU9yNqb3e',
+            },
         )
         self.assertStatus(303)
         self.assertHeaderItemValue("Location", self.baseurl + "/profile/")
         # Then changes are updated in database
         obj = User.query.filter_by(username=self.username).first()
-        self.assertTrue(check_password('newvalue', obj.password))
+        self.assertTrue(obj.check_password('xQPyU9yNqb3e'))
         self.getPage(url_for('profile', ''))
         self.assertInBody('User profile updated successfully.')
 
@@ -147,6 +150,17 @@ class ProfileTest(WebCase):
         # Then database was not updated
         obj = User.query.filter_by(username=self.username).first()
         self.assertEqual(current_password, obj.password)
+
+    def test_change_password_too_weak(self):
+        # Given a user
+        # When updating the password
+        self.getPage(
+            url_for('profile', ''),
+            method='POST',
+            body={'current_password': self.password, 'new_password': 'test123', 'password_confirmation': 'test123'},
+        )
+        self.assertStatus(200)
+        self.assertInBody('Password too weak.')
 
 
 class ProfileTestWithExternalUser(WebCase):

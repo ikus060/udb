@@ -23,6 +23,7 @@ Build-Depends:
  python3-sqlalchemy,
  python3-validators,
  python3-wtforms,
+ python3-zxcvbn,
 Rules-Requires-Root: no
 Standards-Version: 4.5.1
 Homepage: https://www.ikus-soft.com/en/udb/

@@ -18,7 +18,6 @@
 from udb.controller import url_for
 from udb.controller.tests import WebCase
 from udb.core.model import User
-from udb.core.passwd import check_password
 
 
 class UserTest(WebCase):
@@ -70,15 +69,25 @@ class UserTest(WebCase):
     def test_edit_with_password(self):
         # Given a database with a record
         obj = User(**self.new_data).add()
-        # When trying to update it's name
-        self.getPage(url_for(obj, 'edit'), method='POST', body={'password': 'newpassword'})
+        # When trying to update the password with strong value.
+        self.getPage(url_for(obj, 'edit'), method='POST', body={'password': 'xQPyU9yNqb3e'})
         self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then database is updated
         new_obj = User.query.filter_by(username=self.new_data['username']).first()
-        self.assertTrue(check_password('newpassword', new_obj.password))
+        self.assertTrue(new_obj.check_password('xQPyU9yNqb3e'))
+
+    def test_edit_with_password_too_weak(self):
+        # Given a database with a record
+        obj = User(**self.new_data).add()
+        # When trying to update password with a simple value.
+        self.getPage(url_for(obj, 'edit'), method='POST', body={'password': 'newpassword'})
+        self.session.commit()
+        # Then an error message is displayed
+        self.assertStatus(200)
+        self.assertInBody('Password too weak.')
 
     def test_edit_with_clear_password(self):
         # Given a database with a record

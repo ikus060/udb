@@ -18,7 +18,6 @@ from wtforms.fields import PasswordField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, Optional
 
 from udb.core.model import User
-from udb.core.passwd import hash_password
 from udb.tools.i18n import gettext as _
 
 from .form import CherryForm
@@ -63,4 +62,4 @@ class UserForm(CherryForm):
         if self.clear_password.data:
             obj.password = None
         elif self.password.data:
-            obj.password = hash_password(self.password.data)
+            obj.set_password(self.password.data)

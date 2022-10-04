@@ -22,7 +22,7 @@ from wtforms.validators import DataRequired, Email, EqualTo, InputRequired, Leng
 
 from udb.controller import flash
 from udb.controller.form import CherryForm
-from udb.core.passwd import check_password, hash_password
+from udb.core.model import User
 from udb.tools.i18n import gettext as _
 
 
@@ -90,17 +90,18 @@ class PasswordForm(CherryForm):
 
     def validate_current_password(self, field):
         # If current password is undefined, it's a remote user
-        if cherrypy.request.currentuser.password is None:
+        userobj = cherrypy.request.currentuser
+        if userobj.password is None:
             raise ValidationError(
                 _('Cannot update password for non-local user. Contact your administrator for more detail.')
             )
 
         # Verify if the current password matches current password database
-        if not check_password(field.data, cherrypy.request.currentuser.password):
+        if not userobj.check_password(field.data):
             raise ValidationError(_('Current password is not valid.'))
 
     def populate_obj(self, userobj):
-        userobj.password = hash_password(self.new_password.data)
+        userobj.set_password(self.new_password.data)
 
 
 class ProfilePage:
@@ -122,7 +123,7 @@ class ProfilePage:
                 userobj.add()
             except ValueError as e:
                 # raised by SQLAlchemy validators
-                self.model.session.rollback()
+                User.session.rollback()
                 if len(e.args) == 2 and getattr(form, e.args[0], None):
                     getattr(form, e.args[0]).errors.append(e.args[1])
                 else:

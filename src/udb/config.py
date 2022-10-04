@@ -321,6 +321,13 @@ def parse_args(args=None, config_file_contents=None):
         action=LocaleAction
     )
 
+    parser.add(
+        '--password-score',
+        type=lambda x: max(1, min(int(x), 4)),
+        help="Minimum zxcvbn's score for password. Value from 1 to 4. Default value 2. Read more about it here: https://github.com/dropbox/zxcvbn",
+        default=2,
+    )
+
     return parser.parse_args(args, config_file_contents=config_file_contents)
 
 
