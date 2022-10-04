@@ -102,5 +102,6 @@ class ProfilePage:
                     flash(_('Invalid value: %s') % e, level='error')
             else:
                 flash(_('User profile updated successfully.'), level='success')
+                raise cherrypy.HTTPRedirect("")
 
         return {'form': account_form, 'password_form': password_form}

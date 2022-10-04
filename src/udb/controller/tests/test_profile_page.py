@@ -47,8 +47,10 @@ class ProfileTest(WebCase):
         self.getPage(
             url_for('profile', ''), method='POST', body={'fullname': 'New Name', 'email': 'newmail@ikus-soft.com'}
         )
-        self.assertStatus(200)
+        self.assertStatus(303)
+        self.assertHeaderItemValue("Location", self.baseurl + "/profile/")
         # Then the user is updated
+        self.getPage(url_for('profile', ''))
         self.assertInBody('User profile updated successfully.')
         # Then the information is updated in database
         obj = User.query.filter_by(username='admin').first()
@@ -59,10 +61,12 @@ class ProfileTest(WebCase):
         # Given a user
         # When trying to update the username
         self.getPage(url_for('profile', ''), method='POST', body={'username': 'newusername'})
-        self.assertStatus(200)
+        self.assertStatus(303)
+        self.assertHeaderItemValue("Location", self.baseurl + "/profile/")
         # Then the username is not updated
         obj = User.query.filter_by(username='newusername').first()
         self.assertIsNone(obj)
+        self.getPage(url_for('profile', ''))
         self.assertInBody('User profile updated successfully.')
 
     def test_update_with_invalid_email(self):
@@ -82,10 +86,12 @@ class ProfileTest(WebCase):
             method='POST',
             body={'current_password': self.password, 'new_password': 'newvalue', 'password_confirmation': 'newvalue'},
         )
-        self.assertStatus(200)
+        self.assertStatus(303)
+        self.assertHeaderItemValue("Location", self.baseurl + "/profile/")
         # Then changes are updated in database
         obj = User.query.filter_by(username=self.username).first()
         self.assertTrue(check_password('newvalue', obj.password))
+        self.getPage(url_for('profile', ''))
         self.assertInBody('User profile updated successfully.')
 
     def test_change_password_with_confimation_missing(self):
