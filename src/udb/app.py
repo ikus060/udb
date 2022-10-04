@@ -39,7 +39,6 @@ from udb.controller.dnszone_page import DnsZonePage
 from udb.controller.ip_page import IpPage
 from udb.controller.load_page import LoadPage
 from udb.controller.login_page import LoginPage
-from udb.controller.logout_page import LogoutPage
 from udb.controller.notifications_page import NotificationsPage
 from udb.controller.profile_page import ProfilePage
 from udb.controller.search_page import SearchPage
@@ -210,7 +209,6 @@ class Root(object):
         self.api = Api()
         self.dashboard = DashboardPage()
         self.login = LoginPage()
-        self.logout = LogoutPage()
         self.notifications = NotificationsPage()
         self.profile = ProfilePage()
         self.search = SearchPage()

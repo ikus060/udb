@@ -62,11 +62,15 @@ class TestLogin(WebCase):
         password = "admin"
         User.create(username=username, password=password)
         self.session.commit()
+        # When redirected to login from another page
+        self.getPage("/dnszone/")
+        self.assertStatus(303)
+        self.assertHeaderItemValue("Location", self.baseurl + "/login/")
         # When trying to login
         self.getPage(
             "/login/",
             method="POST",
-            body={"username": username, "password": password, "redirect": "/dnszone/"},
+            body={"username": username, "password": password},
         )
         # Then user is redirect to the proper URL.
         self.assertStatus('303 See Other')
@@ -172,16 +176,21 @@ class TestLogin(WebCase):
         self.assertStatus('303 See Other')
         self.assertHeaderItemValue('Location', self.baseurl + '/login/')
 
-    def test_redirect_to_login_with_url(self):
-        # When trying to access a proptected page.
-        self.getPage("/dnszone/")
-        # Then user is redirected to login page.
+    def test_logout(self):
+        # Given an unauthenticated user.
+        # When trying to access the logout page.
+        self.getPage("/logout")
+        # Then user is redirect to login page
         self.assertStatus('303 See Other')
-        self.assertHeaderItemValue('Location', self.baseurl + '/login/?redirect=%2Fdnszone%2F')
+        self.assertHeaderItemValue('Location', self.baseurl + '/')
 
-    def test_redirect_to_login_with_url_and_qs(self):
-        # When trying to access a proptected page.
-        self.getPage("/dnszone/?key=value")
-        # Then user is redirected to login page.
+    def test_login_logout(self):
+        # Given a authenticated user
+        self._login()
+        self.getPage("/dashboard/")
+        self.assertStatus('200 OK')
+        # When trying to access the logout page.
+        self.getPage("/logout")
+        # Then user is redirect to login page
         self.assertStatus('303 See Other')
-        self.assertHeaderItemValue('Location', self.baseurl + '/login/?redirect=%2Fdnszone%2F%3Fkey%3Dvalue')
+        self.assertHeaderItemValue('Location', self.baseurl + '/')
