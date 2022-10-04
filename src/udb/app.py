@@ -116,7 +116,7 @@ def _error_page(**kwargs):
 @cherrypy.tools.currentuser(userobj=lambda username: User.query.filter_by(username=username).first())
 @cherrypy.tools.i18n(mo_dir=pkg_resources.resource_filename('udb', 'locales'), default='en_US', domain='messages')
 @cherrypy.tools.secure_headers(
-    csp="default-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/ https://cdn.datatables.net/;"
+    csp="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/ https://cdn.datatables.net/; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/ https://cdn.datatables.net/; img-src 'self' data: https://cdn.jsdelivr.net/ https://cdn.datatables.net/;font-src https://cdn.jsdelivr.net/"
 )
 class Root(object):
     """
