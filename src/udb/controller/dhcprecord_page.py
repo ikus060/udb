@@ -18,7 +18,7 @@
 import cherrypy
 from wtforms.fields import StringField
 from wtforms.fields.simple import TextAreaField
-from wtforms.validators import DataRequired, IPAddress, MacAddress
+from wtforms.validators import DataRequired, IPAddress, Length, MacAddress
 
 from udb.core.model import DhcpRecord, User
 from udb.tools.i18n import gettext as _
@@ -47,7 +47,9 @@ class DhcpRecordForm(CherryForm):
     notes = TextAreaField(
         _('Notes'),
         default='',
-        validators=[],
+        validators=[
+            Length(max=256),
+        ],
         render_kw={"placeholder": _("Enter details information about this DHCP Static Record")},
     )
 

@@ -18,7 +18,7 @@
 
 import cherrypy
 from wtforms.fields import PasswordField, StringField
-from wtforms.validators import ValidationError, data_required, email, equal_to, input_required, optional
+from wtforms.validators import DataRequired, Email, EqualTo, InputRequired, Length, Optional, ValidationError
 
 from udb.controller import flash
 from udb.controller.form import CherryForm
@@ -28,11 +28,30 @@ from udb.tools.i18n import gettext as _
 
 class AccountForm(CherryForm):
 
-    username = StringField(_('Username'), validators=[data_required()], render_kw={'readonly': True})
+    username = StringField(
+        _('Username'),
+        validators=[
+            DataRequired(),
+            Length(max=256),
+        ],
+        render_kw={'readonly': True},
+    )
 
-    fullname = StringField(_('Fullname'))
+    fullname = StringField(
+        _('Fullname'),
+        validators=[
+            Length(max=256),
+        ],
+    )
 
-    email = StringField(_('Email'), validators=[optional(), email()])
+    email = StringField(
+        _('Email'),
+        validators=[
+            Optional(),
+            Email(),
+            Length(max=256),
+        ],
+    )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -45,20 +64,28 @@ class PasswordForm(CherryForm):
 
     current_password = PasswordField(
         _('Current password'),
-        validators=[input_required(_("Current password is missing."))],
+        validators=[
+            InputRequired(_("Current password is missing.")),
+            Length(max=256),
+        ],
         description=_('You must provide your current password in order to change it.'),
     )
 
     new_password = PasswordField(
         _('New password'),
         validators=[
-            input_required(_("New password is missing.")),
-            equal_to('password_confirmation', message=_("The new password and its confirmation do not match.")),
+            InputRequired(_("New password is missing.")),
+            EqualTo('password_confirmation', message=_("The new password and its confirmation do not match.")),
+            Length(max=256),
         ],
     )
 
     password_confirmation = PasswordField(
-        _('Password confirmation'), validators=[input_required(_("Confirmation password is missing."))]
+        _('Password confirmation'),
+        validators=[
+            InputRequired(_("Confirmation password is missing.")),
+            Length(max=256),
+        ],
     )
 
     def validate_current_password(self, field):

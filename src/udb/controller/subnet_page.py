@@ -18,7 +18,7 @@
 import cherrypy
 from wtforms.fields import IntegerField, StringField
 from wtforms.fields.simple import TextAreaField
-from wtforms.validators import DataRequired, Optional
+from wtforms.validators import DataRequired, Length, Optional
 
 from udb.core.model import DnsZone, Subnet, User, Vrf
 from udb.tools.i18n import gettext as _
@@ -34,10 +34,10 @@ class SubnetForm(CherryForm):
 
     ip_cidr = StringField(
         _('Subnet'),
-        validators=[DataRequired()],
+        validators=[DataRequired(), Length(max=256)],
         render_kw={"placeholder": _("Enter a subnet IP/CIDR")},
     )
-    name = StringField(_('Name'), validators=[], render_kw={"placeholder": _("Enter a description")})
+    name = StringField(_('Name'), validators=[Length(max=256)], render_kw={"placeholder": _("Enter a description")})
     vrf = SelectObjectField(
         _('VRF'), object_cls=Vrf, validators=[Optional()], render_kw={"placeholder": _("Enter a VRF number (optional)")}
     )
@@ -48,7 +48,7 @@ class SubnetForm(CherryForm):
     notes = TextAreaField(
         _('Notes'),
         default='',
-        validators=[],
+        validators=[Length(max=256)],
         render_kw={"placeholder": _("Enter details information about this subnet")},
     )
     owner = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)

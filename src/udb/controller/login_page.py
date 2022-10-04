@@ -16,32 +16,40 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
-from wtforms.fields import PasswordField, StringField, BooleanField
+from wtforms.fields import BooleanField, PasswordField, StringField
 from wtforms.fields.simple import HiddenField
-from wtforms.validators import input_required, regexp
+from wtforms.validators import InputRequired, Length, Regexp
 
 from udb.config import Option
 from udb.controller import flash
 from udb.controller.form import CherryForm
-from udb.tools.i18n import gettext as _
 from udb.tools.auth_form import LOGIN_PERSISTENT, SESSION_KEY
+from udb.tools.i18n import gettext as _
 
 
 class LoginForm(CherryForm):
     username = StringField(
         _('Username'),
         default=lambda: cherrypy.session.get(SESSION_KEY, None),
-        validators=[input_required()],
+        validators=[
+            InputRequired(),
+            Length(max=256),
+        ],
         render_kw={"placeholder": _("Enter a valid email address")},
     )
     password = PasswordField(
-        _('Password'), validators=[input_required()], render_kw={"placeholder": _("Enter password")}
+        _('Password'),
+        validators=[
+            InputRequired(),
+            Length(max=256),
+        ],
+        render_kw={"placeholder": _("Enter password")},
     )
     persistent = BooleanField(
         _('Remember me'),
         default=lambda: cherrypy.session.get(LOGIN_PERSISTENT, False),
     )
-    redirect = HiddenField(default='/', validators=[regexp('^/', message=_('invalid redirect url'))])
+    redirect = HiddenField(default='/', validators=[Regexp('^/', message=_('invalid redirect url'))])
 
 
 class LoginPage:

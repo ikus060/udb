@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from wtforms.fields import PasswordField, SelectField, StringField, SubmitField
-from wtforms.validators import data_required, email, optional
+from wtforms.validators import DataRequired, Email, Length, Optional
 
 from udb.core.model import User
 from udb.core.passwd import hash_password
@@ -28,11 +28,11 @@ class UserForm(CherryForm):
 
     object_cls = User
 
-    username = StringField(_('Username'), validators=[data_required()])
+    username = StringField(_('Username'), validators=[DataRequired(), Length(max=256)])
 
-    fullname = StringField(_('Fullname'))
+    fullname = StringField(_('Fullname'), validators=[Length(max=256)])
 
-    email = StringField(_('Email'), validators=[optional(), email()])
+    email = StringField(_('Email'), validators=[Optional(), Email(), Length(max=256)])
 
     role = SelectField(
         _('Role'),
@@ -47,7 +47,7 @@ class UserForm(CherryForm):
 
     password = PasswordField(
         _('Password'),
-        validators=[optional()],
+        validators=[Optional(), Length(max=256)],
         description=_(
             'To create a local user, set a password. To create an external user, validating the password with LDAP, do not set a password.'
         ),

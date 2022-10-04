@@ -18,7 +18,7 @@
 import cherrypy
 from wtforms.fields import IntegerField, SelectField, StringField
 from wtforms.fields.simple import TextAreaField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, Length
 
 from udb.core.model import DnsRecord, User
 from udb.tools.i18n import gettext as _
@@ -31,9 +31,23 @@ class DnsRecordForm(CherryForm):
 
     object_cls = DnsRecord
 
-    name = StringField(_('Name'), validators=[DataRequired()], render_kw={"placeholder": _("Enter a FQDN")})
+    name = StringField(
+        _('Name'),
+        validators=[
+            DataRequired(),
+            Length(max=256),
+        ],
+        render_kw={"placeholder": _("Enter a FQDN")},
+    )
 
-    type = SelectField(_('Type'), validators=[DataRequired()], choices=list(zip(DnsRecord.TYPES, DnsRecord.TYPES)))
+    type = SelectField(
+        _('Type'),
+        validators=[
+            DataRequired(),
+            Length(max=256),
+        ],
+        choices=list(zip(DnsRecord.TYPES, DnsRecord.TYPES)),
+    )
 
     ttl = IntegerField(
         _('TTL'),
@@ -42,12 +56,20 @@ class DnsRecordForm(CherryForm):
         render_kw={"placeholder": _("Time-to-live value (default: 3600)")},
     )
 
-    value = StringField(_('Value'), validators=[DataRequired()])
+    value = StringField(
+        _('Value'),
+        validators=[
+            DataRequired(),
+            Length(max=256),
+        ],
+    )
 
     notes = TextAreaField(
         _('Notes'),
         default='',
-        validators=[],
+        validators=[
+            Length(max=256),
+        ],
         render_kw={"placeholder": _("Enter details information about this subnet")},
     )
 

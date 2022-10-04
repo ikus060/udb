@@ -20,7 +20,7 @@ import cherrypy
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.inspection import inspect
 from wtforms.fields import HiddenField, TextAreaField
-from wtforms.validators import InputRequired
+from wtforms.validators import InputRequired, Length
 
 from udb.controller import flash, handle_exception, url_for
 from udb.core.model import Message, User
@@ -32,7 +32,14 @@ logger = logging.getLogger(__name__)
 
 
 class MessageForm(CherryForm):
-    body = TextAreaField(_('Message'), validators=[InputRequired()], render_kw={"placeholder": _("Add a comments")})
+    body = TextAreaField(
+        _('Message'),
+        validators=[
+            InputRequired(),
+            Length(max=65024),
+        ],
+        render_kw={"placeholder": _("Add a comments")},
+    )
 
 
 class RefererField(HiddenField):

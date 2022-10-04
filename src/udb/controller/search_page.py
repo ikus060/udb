@@ -17,7 +17,7 @@
 import cherrypy
 from sqlalchemy import or_
 from wtforms.fields import StringField
-from wtforms.validators import input_required
+from wtforms.validators import InputRequired, Length
 
 from udb.controller import url_for
 from udb.controller.form import CherryForm
@@ -27,7 +27,12 @@ Base = cherrypy.tools.db.get_base()
 
 
 class SearchForm(CherryForm):
-    q = StringField(validators=[input_required()])
+    q = StringField(
+        validators=[
+            InputRequired(),
+            Length(max=256),
+        ]
+    )
 
     def is_submitted(self):
         return cherrypy.request.method in ['GET']
