@@ -192,3 +192,35 @@ class ProfileTestWithExternalUser(WebCase):
         # Then password in database is still empty.
         obj = User.query.filter_by(username='user01').first()
         self.assertIsNone(obj.password)
+
+
+class ProfileRateLimit(WebCase):
+    default_config = {
+        'rate-limit': 20,
+    }
+
+    def test_change_password_rate_limit(self):
+        # Given a user
+        # When submiting invalid credentials
+        for i in range(1, 20):
+            self.getPage(
+                url_for('profile', ''),
+                method='POST',
+                body={
+                    'current_password': 'invalid',
+                    'new_password': 'xQPyU9yNqb3e',
+                    'password_confirmation': 'xQPyU9yNqb3e',
+                },
+            )
+            self.assertStatus(200)
+        # Then user get logged out
+        self.getPage(
+            url_for('profile', ''),
+            method='POST',
+            body={
+                'current_password': 'invalid',
+                'new_password': 'xQPyU9yNqb3e',
+                'password_confirmation': 'xQPyU9yNqb3e',
+            },
+        )
+        self.assertStatus(303)

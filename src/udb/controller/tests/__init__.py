@@ -62,6 +62,8 @@ class WebCase(BaseClass):
         # Replace database url
         dburi = os.environ.get('TEST_DATABASE_URI', 'sqlite:///' + tempfile.gettempdir() + '/test_udb_data.db')
         default_config['database-uri'] = dburi
+        if 'rate-limit' not in default_config:
+            default_config['rate-limit'] = -1
         cfg = parse_args(args=[], config_file_contents='\n'.join('%s=%s' % (k, v) for k, v in default_config.items()))
         app = Root(cfg)
         cherrypy.tree.mount(app)

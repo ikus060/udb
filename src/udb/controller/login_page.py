@@ -61,6 +61,7 @@ class LoginPage:
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='login.html')
+    @cherrypy.tools.ratelimit(methods=['POST'])
     def index(self, **kwargs):
 
         #  When data is submited, validate credentials.

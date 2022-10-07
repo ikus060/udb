@@ -28,6 +28,7 @@ import udb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
 import udb.tools.db  # noqa: import cherrypy.tools.db
 import udb.tools.errors  # noqa
 import udb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
+import udb.tools.ratelimit
 import udb.tools.secure_headers  # noqa: import cherrypy.tools.secure_headers
 from udb.controller import lastupdated, template_processor, url_for
 from udb.controller.api import Api
@@ -125,6 +126,12 @@ class Root(object):
 
     def __init__(self, cfg):
         self.cfg = cfg
+        # Pick the right implementation for storage
+        rate_limit_storage_class = udb.tools.ratelimit.RamRateLimit
+        session_storage_class = cherrypy.lib.sessions.RamSession
+        if cfg.session_dir:
+            rate_limit_storage_class = udb.tools.ratelimit.FileRateLimit
+            session_storage_class = cherrypy.lib.sessions.FileSession
         cherrypy.config.update(
             {
                 # Define cherrypy config based on debug flag.
@@ -135,8 +142,13 @@ class Root(object):
                 'tools.db.uri': cfg.database_uri,
                 'tools.db.debug': cfg.debug,
                 # Configure session storage
-                'tools.sessions.storage_type': 'file' if cfg.session_dir else 'ram',
+                'tools.sessions.storage_class': session_storage_class,
                 'tools.sessions.storage_path': cfg.session_dir,
+                # Configure rate limit
+                'tools.ratelimit.debug': cfg.debug,
+                'tools.ratelimit.limit': cfg.rate_limit,
+                'tools.ratelimit.storage_class': rate_limit_storage_class,
+                'tools.ratelimit.storage_path': cfg.session_dir,
                 # Configure jinja2 templating engine
                 'tools.jinja2.env': env,
                 'tools.jinja2.extra_processor': template_processor,

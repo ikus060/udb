@@ -66,8 +66,17 @@ def parse_args(args=None, config_file_contents=None):
     parser.add(
         '--session-dir',
         '--sessiondir',
+        '--rate-limit-dir',
         metavar='FOLDER',
-        help='location where to store user session information. When undefined, the user sessions are kept in memory.',
+        help='location where to store user session information and rate-limit information. When undefined, the data are kept in memory.',
+    )
+
+    parser.add(
+        '--rate-limit',
+        metavar='LIMIT',
+        type=int,
+        default=20,
+        help='maximum number of requests per hours that can be made on sensitive endpoint. When this limit is reached, an HTTP 429 message is returned to the user or user get logged out. This security measure is used to limit brute force attacks on the login page and the RESTful API.',
     )
 
     # Database

@@ -107,6 +107,7 @@ class PasswordForm(CherryForm):
 class ProfilePage:
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['profile.html'])
+    @cherrypy.tools.ratelimit(methods=['POST'], logout=True)
     def index(self, **kwargs):
         userobj = cherrypy.request.currentuser
         account_form = AccountForm(obj=userobj)

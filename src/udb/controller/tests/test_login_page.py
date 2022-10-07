@@ -16,10 +16,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
 import unittest
 import unittest.mock
 
 import cherrypy
+from parameterized import parameterized_class
 
 from udb.controller.tests import WebCase
 from udb.core.model import User
@@ -194,3 +196,30 @@ class TestLogin(WebCase):
         # Then user is redirect to login page
         self.assertStatus('303 See Other')
         self.assertHeaderItemValue('Location', self.baseurl + '/')
+
+
+@parameterized_class(
+    [
+        {"default_config": {'rate-limit': 20}},
+        {"default_config": {'rate-limit': 20, 'rate-limit-dir': '/tmp'}},
+    ]
+)
+class TestLoginRateLimit(WebCase):
+    login = False
+
+    def setUp(self):
+        if os.path.isfile('/tmp/ratelimit-127.0.0.1'):
+            os.unlink('/tmp/ratelimit-127.0.0.1')
+        if os.path.isfile('/tmp/ratelimit-127.0.0.1..login'):
+            os.unlink('/tmp/ratelimit-127.0.0.1..login')
+        return super().setUp()
+
+    def test_login_rate_limit(self):
+        # Given an anonymous user
+        # When submiting invalid credentials
+        for i in range(1, 20):
+            self.getPage("/login/", method="POST", body={"username": 'username', "password": 'invalid'})
+            self.assertStatus(200)
+        # Then IP address get blocked
+        self.getPage("/login/", method="POST", body={"username": 'username', "password": 'invalid'})
+        self.assertStatus(429)

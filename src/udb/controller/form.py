@@ -23,8 +23,6 @@ from wtforms.form import Form
 
 from udb.tools.i18n import gettext as _
 
-SUBMIT_METHODS = {'POST', 'PUT', 'PATCH', 'DELETE'}
-
 
 class _ProxyFormdata:
     """
@@ -63,9 +61,9 @@ class CherryForm(Form):
     def is_submitted(self):
         """
         Consider the form submitted if there is an active request and
-        the method is ``POST``, ``PUT``, ``PATCH``, or ``DELETE``.
+        the method is ``POST``.
         """
-        return cherrypy.request.method in SUBMIT_METHODS
+        return cherrypy.request.method == 'POST'
 
     def validate_on_submit(self):
         """
