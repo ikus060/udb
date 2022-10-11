@@ -38,4 +38,33 @@ class TestApiPage(WebCase):
         self.getPage('/api/invalid', headers=self.authorization)
         # Then status is returned
         self.assertStatus(404)
-        self.assertInBody('{"message": "The path \'/api/invalid\' was not found.", "status": "404 Not Found"}')
+        self.assertInBody('{"message": "Nothing matches the given URI", "status": "404 Not Found"}')
+
+
+class TestApiPageRateLimit(WebCase):
+    default_config = {
+        'rate-limit': 20,
+    }
+    authorization = [('Authorization', 'Basic %s' % b64encode(b'admin:admin').decode('ascii'))]
+
+    def test_ratelimit(self):
+        # Given multiple request with valid password
+        for i in range(1, 40):
+            self.getPage('/api/', headers=self.authorization)
+            # Then request are never blocked
+            self.assertStatus(200)
+        # Given multiple request with invalid password
+        for i in range(1, 20):
+            authorization = [
+                ('Authorization', 'Basic %s' % b64encode(b'admin:invalid' + str(i).encode('ascii')).decode('ascii'))
+            ]
+            self.getPage('/api/', headers=authorization)
+            self.assertStatus(401)
+        # When requesting 20th
+        self.getPage('/api/', headers=authorization)
+        # Then HTTP Error 429 is return
+        self.assertStatus(429)
+        # When requesting 21th with valid password
+        self.getPage('/api/', headers=self.authorization)
+        # Then HTTP Error 429 is still return
+        self.assertStatus(429)

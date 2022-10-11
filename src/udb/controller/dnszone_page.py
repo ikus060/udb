@@ -19,7 +19,7 @@ import cherrypy
 from sqlalchemy.orm import undefer
 from wtforms.fields import StringField
 from wtforms.fields.simple import TextAreaField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, Length
 
 from udb.core.model import DnsZone, Subnet, User
 from udb.tools.i18n import gettext as _
@@ -32,14 +32,21 @@ class DnsZoneForm(CherryForm):
 
     object_cls = DnsZone
 
-    name = StringField(_('Name'), validators=[DataRequired()], render_kw={"placeholder": _("Enter a FQDN")})
+    name = StringField(
+        _('Name'),
+        validators=[
+            DataRequired(),
+            Length(max=256),
+        ],
+        render_kw={"placeholder": _("Enter a FQDN")},
+    )
 
     subnets = SelectMultipleObjectField(_('Allowed subnets'), object_cls=Subnet, widget=SelectMultiCheckbox())
 
     notes = TextAreaField(
         _('Notes'),
         default='',
-        validators=[],
+        validators=[Length(max=256)],
         render_kw={"placeholder": _("Enter details information about this DNS Zone")},
     )
 

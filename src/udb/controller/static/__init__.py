@@ -23,6 +23,7 @@ import pkg_resources
 @cherrypy.tools.auth_form(on=False)
 @cherrypy.tools.currentuser(on=False)
 @cherrypy.tools.i18n(on=False)
+@cherrypy.tools.secure_headers(on=False)
 class Static:
     @cherrypy.expose()
     def login_bg_jpg(self):

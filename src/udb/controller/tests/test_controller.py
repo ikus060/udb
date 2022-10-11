@@ -50,13 +50,17 @@ class TestApp(WebCase):
         self.assertEqual(url_for(msg), 'http://%s:%s/dnszone/%s' % (self.HOST, self.PORT, obj.id))
 
     def test_with_proxy(self):
-        self.getPage('/dashboard/', headers=[('X-Forwarded-Host', 'http://www.example.test')])
+        self.getPage('/dashboard/', headers=[('Host', 'www.example.test')])
         self.assertInBody('http://www.example.test/static/main.css')
         self.assertInBody('http://www.example.test/static/main.js')
         self.assertInBody('http://www.example.test/static/favicon.svg')
 
     def test_with_https_proxy(self):
-        self.getPage('/dashboard/', headers=[('X-Forwarded-Host', 'https://www.example.test')])
+        self.getPage('/dashboard/', headers=[('Host', 'www.example.test'), ('X-Forwarded-Proto', 'https')])
         self.assertInBody('https://www.example.test/static/main.css')
         self.assertInBody('https://www.example.test/static/main.js')
         self.assertInBody('https://www.example.test/static/favicon.svg')
+
+    def test_with_forwarded_host_ignored(self):
+        self.getPage('/dashboard/', headers=[('X-Forwarded-Host', 'https://www.example.test')])
+        self.assertNotInBody('https://www.example.test/')

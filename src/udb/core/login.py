@@ -21,7 +21,6 @@ import cherrypy
 from cherrypy.process.plugins import SimplePlugin
 
 from udb.core.model import User
-from udb.core.passwd import check_password
 from udb.tools.auth_form import SESSION_KEY
 
 logger = logging.getLogger(__name__)
@@ -52,7 +51,7 @@ class LoginPlugin(SimplePlugin):
         Only verify the user's credentials using the database store.
         """
         user = User.query.filter_by(username=username).first()
-        if user and check_password(password, user.password):
+        if user and user.check_password(password):
             return username, {}
         return False
 

@@ -21,9 +21,10 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
+from zxcvbn import zxcvbn
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
-from udb.core.passwd import hash_password
+from udb.core.passwd import check_password, hash_password
 from udb.tools.i18n import gettext_lazy as _
 
 from ._json import JsonMixin
@@ -111,6 +112,28 @@ class User(JsonMixin, StatusMixing, Base):
     @hybrid_property
     def summary(self):
         return self.fullname or self.username
+
+    def check_password(self, password):
+        return check_password(password, self.password)
+
+    def set_password(self, new_password):
+        if not new_password:
+            raise ValueError('new_password', _("New password cannot be empty."))
+
+        # Verify password score using zxcvbn
+        cfg = cherrypy.tree.apps[''].root.cfg
+        stats = zxcvbn(new_password)
+        if stats.get('score') < cfg.password_score:
+            msg = _('Password too weak.')
+            warning = stats.get('feedback', {}).get('warning')
+            suggestions = stats.get('feedback', {}).get('suggestions')
+            if warning:
+                msg += ' ' + warning
+            if suggestions:
+                msg += ' ' + ' '.join(suggestions)
+            raise ValueError('new_password', msg)
+
+        self.password = hash_password(new_password)
 
     def __str__(self):
         return self.fullname or self.username

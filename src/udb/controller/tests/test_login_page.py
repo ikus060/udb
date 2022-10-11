@@ -16,10 +16,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
 import unittest
 import unittest.mock
 
 import cherrypy
+from parameterized import parameterized_class
 
 from udb.controller.tests import WebCase
 from udb.core.model import User
@@ -62,11 +64,15 @@ class TestLogin(WebCase):
         password = "admin"
         User.create(username=username, password=password)
         self.session.commit()
+        # When redirected to login from another page
+        self.getPage("/dnszone/")
+        self.assertStatus(303)
+        self.assertHeaderItemValue("Location", self.baseurl + "/login/")
         # When trying to login
         self.getPage(
             "/login/",
             method="POST",
-            body={"username": username, "password": password, "redirect": "/dnszone/"},
+            body={"username": username, "password": password},
         )
         # Then user is redirect to the proper URL.
         self.assertStatus('303 See Other')
@@ -172,16 +178,48 @@ class TestLogin(WebCase):
         self.assertStatus('303 See Other')
         self.assertHeaderItemValue('Location', self.baseurl + '/login/')
 
-    def test_redirect_to_login_with_url(self):
-        # When trying to access a proptected page.
-        self.getPage("/dnszone/")
-        # Then user is redirected to login page.
+    def test_logout(self):
+        # Given an unauthenticated user.
+        # When trying to access the logout page.
+        self.getPage("/logout")
+        # Then user is redirect to login page
         self.assertStatus('303 See Other')
-        self.assertHeaderItemValue('Location', self.baseurl + '/login/?redirect=%2Fdnszone%2F')
+        self.assertHeaderItemValue('Location', self.baseurl + '/')
 
-    def test_redirect_to_login_with_url_and_qs(self):
-        # When trying to access a proptected page.
-        self.getPage("/dnszone/?key=value")
-        # Then user is redirected to login page.
+    def test_login_logout(self):
+        # Given a authenticated user
+        self._login()
+        self.getPage("/dashboard/")
+        self.assertStatus('200 OK')
+        # When trying to access the logout page.
+        self.getPage("/logout")
+        # Then user is redirect to login page
         self.assertStatus('303 See Other')
-        self.assertHeaderItemValue('Location', self.baseurl + '/login/?redirect=%2Fdnszone%2F%3Fkey%3Dvalue')
+        self.assertHeaderItemValue('Location', self.baseurl + '/')
+
+
+@parameterized_class(
+    [
+        {"default_config": {'rate-limit': 20}},
+        {"default_config": {'rate-limit': 20, 'rate-limit-dir': '/tmp'}},
+    ]
+)
+class TestLoginRateLimit(WebCase):
+    login = False
+
+    def setUp(self):
+        if os.path.isfile('/tmp/ratelimit-127.0.0.1'):
+            os.unlink('/tmp/ratelimit-127.0.0.1')
+        if os.path.isfile('/tmp/ratelimit-127.0.0.1..login'):
+            os.unlink('/tmp/ratelimit-127.0.0.1..login')
+        return super().setUp()
+
+    def test_login_rate_limit(self):
+        # Given an anonymous user
+        # When submiting invalid credentials
+        for i in range(1, 20):
+            self.getPage("/login/", method="POST", body={"username": 'username', "password": 'invalid'})
+            self.assertStatus(200)
+        # Then IP address get blocked
+        self.getPage("/login/", method="POST", body={"username": 'username', "password": 'invalid'})
+        self.assertStatus(429)

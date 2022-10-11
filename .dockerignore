@@ -1,0 +1,15 @@
+*.egg-info
+.coverage
+coverage.xml
+xunit.xml
+pytestdebug.log
+.eggs
+*.pyc
+.tox
+/dist
+www.sqlite
+data.db
+/.pybuild
+/build
+.sass-cache
+.vscode

@@ -18,7 +18,7 @@
 import cherrypy
 from wtforms.fields import StringField
 from wtforms.fields.simple import TextAreaField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, Length
 
 from udb.core.model import User, Vrf
 from udb.tools.i18n import gettext as _
@@ -30,12 +30,14 @@ from .form import CherryForm, SelectObjectField
 class VrfForm(CherryForm):
     object_cls = Vrf
 
-    name = StringField(_('Name'), validators=[DataRequired()], render_kw={"placeholder": _("Enter a VRF name")})
+    name = StringField(
+        _('Name'), validators=[DataRequired(), Length(max=256)], render_kw={"placeholder": _("Enter a VRF name")}
+    )
 
     notes = TextAreaField(
         _('Notes'),
         default='',
-        validators=[],
+        validators=[Length(max=256)],
         render_kw={"placeholder": _("Enter details information about this VRF")},
     )
 

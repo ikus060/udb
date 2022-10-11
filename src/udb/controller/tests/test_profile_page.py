@@ -22,7 +22,6 @@ import cherrypy
 from udb.controller import url_for
 from udb.controller.tests import WebCase
 from udb.core.model import User
-from udb.core.passwd import check_password
 
 
 class ProfileTest(WebCase):
@@ -47,8 +46,10 @@ class ProfileTest(WebCase):
         self.getPage(
             url_for('profile', ''), method='POST', body={'fullname': 'New Name', 'email': 'newmail@ikus-soft.com'}
         )
-        self.assertStatus(200)
+        self.assertStatus(303)
+        self.assertHeaderItemValue("Location", self.baseurl + "/profile/")
         # Then the user is updated
+        self.getPage(url_for('profile', ''))
         self.assertInBody('User profile updated successfully.')
         # Then the information is updated in database
         obj = User.query.filter_by(username='admin').first()
@@ -59,10 +60,12 @@ class ProfileTest(WebCase):
         # Given a user
         # When trying to update the username
         self.getPage(url_for('profile', ''), method='POST', body={'username': 'newusername'})
-        self.assertStatus(200)
+        self.assertStatus(303)
+        self.assertHeaderItemValue("Location", self.baseurl + "/profile/")
         # Then the username is not updated
         obj = User.query.filter_by(username='newusername').first()
         self.assertIsNone(obj)
+        self.getPage(url_for('profile', ''))
         self.assertInBody('User profile updated successfully.')
 
     def test_update_with_invalid_email(self):
@@ -80,12 +83,18 @@ class ProfileTest(WebCase):
         self.getPage(
             url_for('profile', ''),
             method='POST',
-            body={'current_password': self.password, 'new_password': 'newvalue', 'password_confirmation': 'newvalue'},
+            body={
+                'current_password': self.password,
+                'new_password': 'xQPyU9yNqb3e',
+                'password_confirmation': 'xQPyU9yNqb3e',
+            },
         )
-        self.assertStatus(200)
+        self.assertStatus(303)
+        self.assertHeaderItemValue("Location", self.baseurl + "/profile/")
         # Then changes are updated in database
         obj = User.query.filter_by(username=self.username).first()
-        self.assertTrue(check_password('newvalue', obj.password))
+        self.assertTrue(obj.check_password('xQPyU9yNqb3e'))
+        self.getPage(url_for('profile', ''))
         self.assertInBody('User profile updated successfully.')
 
     def test_change_password_with_confimation_missing(self):
@@ -142,6 +151,17 @@ class ProfileTest(WebCase):
         obj = User.query.filter_by(username=self.username).first()
         self.assertEqual(current_password, obj.password)
 
+    def test_change_password_too_weak(self):
+        # Given a user
+        # When updating the password
+        self.getPage(
+            url_for('profile', ''),
+            method='POST',
+            body={'current_password': self.password, 'new_password': 'test123', 'password_confirmation': 'test123'},
+        )
+        self.assertStatus(200)
+        self.assertInBody('Password too weak.')
+
 
 class ProfileTestWithExternalUser(WebCase):
     login = False
@@ -172,3 +192,35 @@ class ProfileTestWithExternalUser(WebCase):
         # Then password in database is still empty.
         obj = User.query.filter_by(username='user01').first()
         self.assertIsNone(obj.password)
+
+
+class ProfileRateLimit(WebCase):
+    default_config = {
+        'rate-limit': 20,
+    }
+
+    def test_change_password_rate_limit(self):
+        # Given a user
+        # When submiting invalid credentials
+        for i in range(1, 20):
+            self.getPage(
+                url_for('profile', ''),
+                method='POST',
+                body={
+                    'current_password': 'invalid',
+                    'new_password': 'xQPyU9yNqb3e',
+                    'password_confirmation': 'xQPyU9yNqb3e',
+                },
+            )
+            self.assertStatus(200)
+        # Then user get logged out
+        self.getPage(
+            url_for('profile', ''),
+            method='POST',
+            body={
+                'current_password': 'invalid',
+                'new_password': 'xQPyU9yNqb3e',
+                'password_confirmation': 'xQPyU9yNqb3e',
+            },
+        )
+        self.assertStatus(303)

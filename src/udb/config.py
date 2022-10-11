@@ -66,8 +66,17 @@ def parse_args(args=None, config_file_contents=None):
     parser.add(
         '--session-dir',
         '--sessiondir',
+        '--rate-limit-dir',
         metavar='FOLDER',
-        help='location where to store user session information. When undefined, the user sessions are kept in memory.',
+        help='location where to store user session information and rate-limit information. When undefined, the data are kept in memory.',
+    )
+
+    parser.add(
+        '--rate-limit',
+        metavar='LIMIT',
+        type=int,
+        default=20,
+        help='maximum number of requests per hours that can be made on sensitive endpoint. When this limit is reached, an HTTP 429 message is returned to the user or user get logged out. This security measure is used to limit brute force attacks on the login page and the RESTful API.',
     )
 
     # Database
@@ -319,6 +328,13 @@ def parse_args(args=None, config_file_contents=None):
         metavar='HTML',
         help='replace the welcome message displayed in the login page for default locale or for a specific locale',
         action=LocaleAction
+    )
+
+    parser.add(
+        '--password-score',
+        type=lambda x: max(1, min(int(x), 4)),
+        help="Minimum zxcvbn's score for password. Value from 1 to 4. Default value 2. Read more about it here: https://github.com/dropbox/zxcvbn",
+        default=2,
     )
 
     return parser.parse_args(args, config_file_contents=config_file_contents)

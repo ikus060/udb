@@ -23,12 +23,13 @@ import udb.core.login  # noqa
 import udb.core.notification  # noqa
 import udb.plugins.ldap  # noqa
 import udb.plugins.smtp  # noqa
-import udb.tools.auth_basic  # noqa: import cherrypy.tools.auth_basic
 import udb.tools.auth_form  # noqa: import cherrypy.tools.auth_form
 import udb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
 import udb.tools.db  # noqa: import cherrypy.tools.db
 import udb.tools.errors  # noqa
 import udb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
+import udb.tools.ratelimit
+import udb.tools.secure_headers  # noqa: import cherrypy.tools.secure_headers
 from udb.controller import lastupdated, template_processor, url_for
 from udb.controller.api import Api
 from udb.controller.common_page import CommonApi, CommonPage
@@ -39,7 +40,6 @@ from udb.controller.dnszone_page import DnsZonePage
 from udb.controller.ip_page import IpPage
 from udb.controller.load_page import LoadPage
 from udb.controller.login_page import LoginPage
-from udb.controller.logout_page import LogoutPage
 from udb.controller.notifications_page import NotificationsPage
 from udb.controller.profile_page import ProfilePage
 from udb.controller.search_page import SearchPage
@@ -49,6 +49,16 @@ from udb.controller.user_page import UserForm
 from udb.controller.vrf_page import VrfPage
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User, Vrf
 from udb.tools.i18n import gettext, ngettext
+
+# Define cherrypy development environment
+cherrypy.config.environments['development'] = {
+    'engine.autoreload.on': True,
+    'checker.on': False,
+    'tools.log_headers.on': True,
+    'request.show_tracebacks': True,
+    'request.show_mismatched_params': True,
+    'log.screen': False,
+}
 
 #
 # Create singleton Jinja2 environement.
@@ -74,6 +84,11 @@ def _error_page(**kwargs):
     mtype = cherrypy.serving.response.headers.get('Content-Type') or cherrypy.tools.accept.callable(
         ['text/html', 'text/plain', 'application/json']
     )
+
+    # Replace message by generic one for 404 to avoid vulnerability.
+    if kwargs.get('status', '') == '404 Not Found':
+        kwargs['message'] = 'Nothing matches the given URI'
+
     if mtype == 'text/plain':
         return kwargs.get('message')
     elif mtype == 'application/json':
@@ -96,11 +111,14 @@ def _error_page(**kwargs):
 
 
 @cherrypy.tools.db()
-@cherrypy.tools.proxy()
+@cherrypy.tools.proxy(local=None, remote='X-Real-IP')
 @cherrypy.tools.sessions()
 @cherrypy.tools.auth_form()
 @cherrypy.tools.currentuser(userobj=lambda username: User.query.filter_by(username=username).first())
 @cherrypy.tools.i18n(mo_dir=pkg_resources.resource_filename('udb', 'locales'), default='en_US', domain='messages')
+@cherrypy.tools.secure_headers(
+    csp="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/ https://cdn.datatables.net/; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/ https://cdn.datatables.net/; img-src 'self' data: https://cdn.jsdelivr.net/ https://cdn.datatables.net/;font-src https://cdn.jsdelivr.net/"
+)
 class Root(object):
     """
     Root entry point exposed using cherrypy.
@@ -108,15 +126,29 @@ class Root(object):
 
     def __init__(self, cfg):
         self.cfg = cfg
+        # Pick the right implementation for storage
+        rate_limit_storage_class = udb.tools.ratelimit.RamRateLimit
+        session_storage_class = cherrypy.lib.sessions.RamSession
+        if cfg.session_dir:
+            rate_limit_storage_class = udb.tools.ratelimit.FileRateLimit
+            session_storage_class = cherrypy.lib.sessions.FileSession
         cherrypy.config.update(
             {
+                # Define cherrypy config based on debug flag.
+                'environment': 'development' if cfg.debug else 'production',
+                # Define error page handler.
                 'error_page.default': _error_page,
                 # Configure database plugins
                 'tools.db.uri': cfg.database_uri,
                 'tools.db.debug': cfg.debug,
                 # Configure session storage
-                'tools.sessions.storage_type': 'file' if cfg.session_dir else 'ram',
+                'tools.sessions.storage_class': session_storage_class,
                 'tools.sessions.storage_path': cfg.session_dir,
+                # Configure rate limit
+                'tools.ratelimit.debug': cfg.debug,
+                'tools.ratelimit.limit': cfg.rate_limit,
+                'tools.ratelimit.storage_class': rate_limit_storage_class,
+                'tools.ratelimit.storage_path': cfg.session_dir,
                 # Configure jinja2 templating engine
                 'tools.jinja2.env': env,
                 'tools.jinja2.extra_processor': template_processor,
@@ -189,7 +221,6 @@ class Root(object):
         self.api = Api()
         self.dashboard = DashboardPage()
         self.login = LoginPage()
-        self.logout = LogoutPage()
         self.notifications = NotificationsPage()
         self.profile = ProfilePage()
         self.search = SearchPage()
