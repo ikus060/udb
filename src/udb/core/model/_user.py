@@ -18,6 +18,7 @@
 import cherrypy
 from sqlalchemy import Column, String, event, inspect
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import deferred
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
@@ -43,7 +44,7 @@ class User(JsonMixin, StatusMixing, Base):
     id = Column(Integer, primary_key=True)
     # Unique
     username = Column(String)
-    password = Column(String, nullable=True)
+    password = deferred(Column(String, nullable=True))
     fullname = Column(String, nullable=False, default='')
     email = Column(String, nullable=True, unique=True)
     role = Column(Integer, nullable=True, default=ROLE_GUEST)

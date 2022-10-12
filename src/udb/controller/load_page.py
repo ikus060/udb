@@ -75,8 +75,11 @@ class LoadPage:
                     for row in reader:
                         vrf = self.get_or_create(Vrf, row.get('VRF'))
                         zone = self.get_or_create(DnsZone, row.get('TLD'))
+                        ranges = [row.get('IPv6')]
+                        if row.get('IPv4'):
+                            ranges.extend(row.get('IPv4').split(' '))
                         Subnet(
-                            ip_cidr=row.get('IPv6'),
+                            ranges=ranges,
                             name=row.get('Name'),
                             vrf=vrf,
                             l3vni=self.get_int(row.get('L3VNI')),

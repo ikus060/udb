@@ -20,7 +20,7 @@ from ._dnszone import DnsZone  # noqa
 from ._follower import Follower  # noqa
 from ._ip import Ip  # noqa
 from ._message import Message  # noqa
-from ._subnet import Subnet  # noqa
+from ._subnet import Subnet, SubnetRange  # noqa
 from ._user import User  # noqa
 from ._vrf import Vrf  # noqa
 

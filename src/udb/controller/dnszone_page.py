@@ -50,7 +50,7 @@ class DnsZoneForm(CherryForm):
         render_kw={"placeholder": _("Enter details information about this DNS Zone")},
     )
 
-    owner = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)
+    owner_id = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)
 
 
 class DnsZonePage(CommonPage):

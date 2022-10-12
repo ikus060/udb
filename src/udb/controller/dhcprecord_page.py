@@ -53,7 +53,7 @@ class DhcpRecordForm(CherryForm):
         render_kw={"placeholder": _("Enter details information about this DHCP Static Record")},
     )
 
-    owner = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)
+    owner_id = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)
 
 
 class DhcpRecordPage(CommonPage):

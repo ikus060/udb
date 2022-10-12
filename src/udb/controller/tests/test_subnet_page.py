@@ -15,9 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DnsZone, Subnet
+from udb.core.model import DnsZone, Subnet, Vrf
 
 from .test_network_page import CommonTest
 
@@ -28,24 +29,29 @@ class SubnetTest(WebCase, CommonTest):
 
     obj_cls = Subnet
 
-    new_data = {'ip_cidr': '192.168.0.0/24'}
+    new_data = {'ranges': ['192.168.0.0/24']}
 
-    edit_data = {'ip_cidr': '192.168.100.0/24', 'notes': 'test'}
+    edit_data = {'ranges': ['192.168.100.0/24'], 'notes': 'test'}
+
+    def setUp(self):
+        super().setUp()
+        self.vrf = Vrf(name='default').add()
+        self.new_data['vrf_id'] = self.vrf.id
 
     def test_edit_invalid(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         # When trying to update it's name
-        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'ip_cidr': 'invalid cidr'})
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'ranges': ['invalid cidr']})
         self.session.commit()
         # Then edit page is displayed with an error message
         self.assertStatus(200)
-        self.assertInBody('does not appear to be a valid IPv4 or IPv6 network')
+        self.assertInBody('does not appear to be a valid IPv6 or IPv4 network')
 
     def test_edit_with_dnszone(self):
         # Given a database with a record
         zone = DnsZone(name='examples.com').add()
-        obj = self.obj_cls(ip_cidr='192.168.0.1/24', dnszones=[zone]).add()
+        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[zone], vrf=self.vrf).add()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         # Then the zone is selected
@@ -58,7 +64,7 @@ class SubnetTest(WebCase, CommonTest):
     def test_edit_add_dnszone(self):
         # Given a database with a record
         zone = DnsZone(name='examples.com').add()
-        obj = self.obj_cls(ip_cidr='192.168.0.1/24', dnszones=[]).add()
+        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[], vrf=self.vrf).add()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'dnszones': zone.id})
         self.assertStatus(303)

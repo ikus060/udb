@@ -2,9 +2,10 @@
 {# Subnet are sorted a in specific wayt to mimic the IP CIDR ordering. #}
 {# data-depth is used by datatables to create a "tree" representation of the data. #}
 {% set columns = [
-{'data':'ip_cidr', 'title': form.ip_cidr.label.text, 'orderable':True, 'render':'subnet', 'type':'number'},
+{'data':'primary_range', 'title': _('Primary IP Range'), 'orderable':True, 'render':'primary_range', 'type':'number'},
+{'data':'ranges', 'title': _('Secondary IP Range(s)'), 'orderable':True, 'render':'secondary_range', 'type':'number'},
 {'data':'name', 'title':form.name.label.text, 'orderable':True},
-{'data':'vrf_name', 'title':form.vrf.label.text, 'orderable':True},
+{'data':'vrf_name', 'title':form.vrf_id.label.text, 'orderable':True},
 {'data':'l3vni', 'title':form.l3vni.label.text, 'orderable':True},
 {'data':'l2vni', 'title':form.l2vni.label.text, 'orderable':True},
 {'data':'vlan','title': form.vlan.label.text, 'orderable':True},

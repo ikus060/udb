@@ -20,7 +20,7 @@ from base64 import b64encode
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User, Vrf
 
 
 class CommonTest:
@@ -103,9 +103,9 @@ class CommonTest:
     def test_edit_assign_owner(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
-        # When trying to update the owner
+        # When trying to update the owner-
         payload = dict(self.new_data)
-        payload['owner'] = User.query.first().id
+        payload['owner_id'] = User.query.first().id
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=payload)
         self.session.commit()
         # Then user is redirected
@@ -127,7 +127,7 @@ class CommonTest:
         obj.add()
         # When trying unassign
         payload = dict(self.new_data)
-        payload['owner'] = 'None'
+        payload['owner_id'] = 'None'
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=payload)
         self.session.commit()
         # Then user is redirected to list page
@@ -360,7 +360,8 @@ class DnsZoneTest(WebCase, CommonTest):
 
     def test_edit_with_subnet(self):
         # Given a database with a record
-        subnet = Subnet(**{'ip_cidr': '192.168.0.1/24'}).add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(**{'ranges': ['192.168.0.1/24'], 'vrf': vrf}).add()
         obj = self.obj_cls(**{'name': 'examples.com', 'subnets': [subnet]}).add()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
@@ -373,7 +374,8 @@ class DnsZoneTest(WebCase, CommonTest):
 
     def test_edit_add_subnet(self):
         # Given a database with a record
-        subnet = Subnet(**{'ip_cidr': '192.168.0.1/24'}).add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(**{'ranges': ['192.168.0.1/24'], 'vrf': vrf}).add()
         obj = self.obj_cls(**{'name': 'examples.com', 'subnets': []}).add()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'subnets': subnet.id})

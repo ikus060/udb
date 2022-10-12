@@ -41,7 +41,7 @@ class VrfForm(CherryForm):
         render_kw={"placeholder": _("Enter details information about this VRF")},
     )
 
-    owner = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)
+    owner_id = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)
 
 
 class VrfPage(CommonPage):

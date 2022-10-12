@@ -24,13 +24,15 @@ class TestSearchPage(WebCase):
     def add_records(self):
         self.user = User(username='test')
         self.vrf = Vrf(name='(default)')
-        self.subnet = Subnet(ip_cidr='147.87.250.0/24', name='DMZ', vrf=self.vrf, notes='public', owner=self.user).add()
-        self.subnet.add_message(Message(body='Message on subnet', author=self.user))
-        Subnet(ip_cidr='147.87.0.0/16', name='its-main-4', vrf=self.vrf, notes='main', owner=self.user).add()
-        Subnet(
-            ip_cidr='2002::1234:abcd:ffff:c0a8:101/64', name='its-main-6', vrf=self.vrf, notes='main', owner=self.user
+        self.subnet = Subnet(
+            ranges=['147.87.250.0/24'], name='DMZ', vrf=self.vrf, notes='public', owner=self.user
         ).add()
-        Subnet(ip_cidr='147.87.208.0/24', name='ARZ', vrf=self.vrf, notes='BE.net', owner=self.user).add()
+        self.subnet.add_message(Message(body='Message on subnet', author=self.user))
+        Subnet(ranges=['147.87.0.0/16'], name='its-main-4', vrf=self.vrf, notes='main', owner=self.user).add()
+        Subnet(
+            ranges=['2002::1234:abcd:ffff:c0a8:101/64'], name='its-main-6', vrf=self.vrf, notes='main', owner=self.user
+        ).add()
+        Subnet(ranges=['147.87.208.0/24'], name='ARZ', vrf=self.vrf, notes='BE.net', owner=self.user).add()
         self.zone = DnsZone(name='bfh.ch', notes='DMZ Zone', subnets=[self.subnet], owner=self.user).add()
         self.zone.add_message(Message(body='Here is a message', author=self.user))
         DnsZone(name='bfh.science', notes='This is a note', owner=self.user).add()
@@ -59,4 +61,4 @@ class TestSearchPage(WebCase):
         self.getPage('/search/query.json?q=public')
         # Then results are displayed
         self.assertStatus(200)
-        self.assertInBody('147.87.250.0/24 (DMZ)')
+        self.assertInBody('DMZ')

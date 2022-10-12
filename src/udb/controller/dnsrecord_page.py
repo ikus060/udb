@@ -73,7 +73,7 @@ class DnsRecordForm(CherryForm):
         render_kw={"placeholder": _("Enter details information about this subnet")},
     )
 
-    owner = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)
+    owner_id = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)
 
 
 class DnsRecordPage(CommonPage):

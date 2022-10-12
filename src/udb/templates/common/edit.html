@@ -22,7 +22,7 @@
         {% endif %}
       </div>
       {% include "flash.html" %}
-      <form method="POST" class="mb-4">
+      <form method="POST" class="row mb-3">
         {% block edit_form %}{{ form()}}{% endblock %}
         <div class="text-center text-lg-start mt-4 pt-2">
           {% block edit_form_submit %}

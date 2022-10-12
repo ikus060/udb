@@ -16,42 +16,95 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
-from wtforms.fields import IntegerField, StringField
+from wtforms.fields import Field, IntegerField, StringField
 from wtforms.fields.simple import TextAreaField
-from wtforms.validators import DataRequired, Length, Optional
+from wtforms.validators import DataRequired, Length, Optional, StopValidation, ValidationError
+from wtforms.widgets import TextInput
 
 from udb.core.model import DnsZone, Subnet, User, Vrf
 from udb.tools.i18n import gettext as _
 
 from . import url_for
 from .common_page import CommonPage
-from .form import CherryForm, SelectMultiCheckbox, SelectMultipleObjectField, SelectObjectField
+from .form import CherryForm, SelectMultiCheckbox, SelectMultipleObjectField, SelectObjectField, StringFieldSetWidget
+
+unset_value = "UNSET_DATA"
+
+
+class StringFieldSet(Field):
+
+    widget = StringFieldSetWidget()
+
+    inner_widget = TextInput()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, default=[], **kwargs)
+
+    def process_formdata(self, valuelist):
+        if valuelist:
+            self.data = [v for v in set(valuelist) if v.strip()]
+
+    def _run_validation_chain(self, form, validators):
+        """
+        Run a validation chain, stopping if any validator raises StopValidation.
+
+        :param form: The Form instance this field belongs to.
+        :param validators: a sequence or iterable of validator callables.
+        :return: True if validation was stopped, False otherwise.
+        """
+        f = StringField()
+        for value in self.data:
+            f.data = value
+            for validator in validators:
+                try:
+                    validator(form, f)
+                except StopValidation as e:
+                    if e.args and e.args[0]:
+                        self.errors.append(e.args[0])
+                    return True
+                except ValidationError as e:
+                    self.errors.append(e.args[0])
+        return False
+
+    def populate_obj(self, obj, name):
+        proxy = getattr(obj, name)
+        if hasattr(proxy, 'append'):
+            for value in self.data:
+                if value not in proxy:
+                    proxy.append(value)
+            for value in list(proxy):
+                if value not in self.data:
+                    proxy.remove(value)
+        else:
+            setattr(obj, name, self.data)
 
 
 class SubnetForm(CherryForm):
 
     object_cls = Subnet
-
-    ip_cidr = StringField(
-        _('Subnet'),
-        validators=[DataRequired(), Length(max=256)],
-        render_kw={"placeholder": _("Enter a subnet IP/CIDR")},
-    )
     name = StringField(_('Name'), validators=[Length(max=256)], render_kw={"placeholder": _("Enter a description")})
-    vrf = SelectObjectField(
-        _('VRF'), object_cls=Vrf, validators=[Optional()], render_kw={"placeholder": _("Enter a VRF number (optional)")}
-    )
-    l3vni = IntegerField(_('L3VNI'), validators=[Optional()])
-    l2vni = IntegerField(_('L2VNI'), validators=[Optional()])
-    vlan = IntegerField(_('VLAN'), validators=[Optional()])
-    dnszones = SelectMultipleObjectField(_('Allowed DNS zone(s)'), object_cls=DnsZone, widget=SelectMultiCheckbox())
     notes = TextAreaField(
         _('Notes'),
         default='',
         validators=[Length(max=256)],
         render_kw={"placeholder": _("Enter details information about this subnet")},
     )
-    owner = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)
+    ranges = StringFieldSet(
+        label=_('IP Ranges'),
+        validators=[Length(max=256)],
+        render_kw={"placeholder": _("Enter IPv4 or IPv6 address")},
+    )
+    vrf_id = SelectObjectField(
+        _('VRF'),
+        object_cls=Vrf,
+        validators=[DataRequired()],
+        render_kw={"placeholder": _("Enter a VRF number (optional)")},
+    )
+    l3vni = IntegerField(_('L3VNI'), validators=[Optional()], render_kw={'width': '1/3'})
+    l2vni = IntegerField(_('L2VNI'), validators=[Optional()], render_kw={'width': '1/3'})
+    vlan = IntegerField(_('VLAN'), validators=[Optional()], render_kw={'width': '1/3'})
+    dnszones = SelectMultipleObjectField(_('Allowed DNS zone(s)'), object_cls=DnsZone, widget=SelectMultiCheckbox())
+    owner_id = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)
 
 
 class SubnetPage(CommonPage):

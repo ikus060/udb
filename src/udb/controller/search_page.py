@@ -65,6 +65,7 @@ class SearchPage:
                 {
                     'url': url_for(obj, 'edit'),
                     'summary': obj.summary,
+                    'owner_id': obj.owner_id,
                     'owner': obj.owner.to_json() if obj.owner else None,
                     'notes': obj.notes,
                 }

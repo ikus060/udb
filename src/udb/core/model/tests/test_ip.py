@@ -17,13 +17,14 @@
 
 
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, Vrf
 
 
 class IpTest(WebCase):
     def test_ip(self):
         # Given valid DnsZone with subnet
-        subnet = Subnet(ip_cidr='192.0.2.0/24').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add()
         # Given a list of DhcpRecord and DnsRecord
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
@@ -50,7 +51,8 @@ class IpTest(WebCase):
 
     def test_ip_with_dns_deleted_status(self):
         # Given valid DnsZone with subnet
-        subnet = Subnet(ip_cidr='192.0.2.0/24').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add()
         # Given a deleted DnsRecord
         DnsRecord(name='foo.example.com', type='A', value='192.0.2.20', status='deleted').add()
@@ -61,7 +63,8 @@ class IpTest(WebCase):
 
     def test_ip_get_dns_records(self):
         # Given valid DnsZone with subnet
-        subnet = Subnet(ip_cidr='192.0.2.0/24').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add()
         # Given a list of DnsRecords and DhcpRecord
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
@@ -76,7 +79,8 @@ class IpTest(WebCase):
 
     def test_ip_get_dhcp_records(self):
         # Given valid DnsZone with subnet
-        subnet = Subnet(ip_cidr='192.0.2.0/24').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add()
         # Given a list of DnsRecords and DhcpRecord
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
@@ -90,7 +94,8 @@ class IpTest(WebCase):
 
     def test_ipv6_related_records(self):
         # Given a DnsZone with valid subnet
-        subnet = Subnet(ip_cidr='2001:db8:85a3::/64').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['2001:db8:85a3::/64'], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add()
         # Given a list of DnsRecords and DhcpRecord with ipv6
         DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf').add()
@@ -104,7 +109,8 @@ class IpTest(WebCase):
 
     def test_dns_aaaa_ipv6(self):
         # Given a DnsZone with valid subnet
-        subnet = Subnet(ip_cidr='2001:db8:85a3::/64').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['2001:db8:85a3::/64'], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add()
         # Given a DnsRecords with ipv6
         DnsRecord(name='bar.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add()
@@ -125,7 +131,8 @@ class IpTest(WebCase):
 
     def test_related_dns_record_with_ptr_ipv4(self):
         # Given a valid PTR record in DNS Zone
-        subnet = Subnet(ip_cidr='192.168.2.0/24').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['192.168.2.0/24'], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add()
         DnsRecord(name='254.2.168.192.in-addr.arpa', type='PTR', value='bar.example.com').add()
         # When querying list of IP
@@ -136,7 +143,8 @@ class IpTest(WebCase):
 
     def test_related_dns_record_with_ptr_ipv6(self):
         # Given a valid PTR record in DNS Zone
-        subnet = Subnet(ip_cidr='4321:0:1:2:3:4:567:0/112').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['4321:0:1:2:3:4:567:0/112'], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add()
         DnsRecord(
             name='b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
@@ -151,7 +159,8 @@ class IpTest(WebCase):
 
     def test_related_dhcp_record_ipv6(self):
         # Given a DNS Record within a valid DNS Zone
-        subnet = Subnet(ip_cidr='2001:db8:85a3::8a2e:370:7330/124').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['2001:db8:85a3::8a2e:370:7330/124'], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add()
         dns = DnsRecord(
             name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
@@ -178,7 +187,8 @@ class IpTest(WebCase):
             mac='00:00:5e:00:53:bf',
         ).add()
         # Given a deleted DNS Record
-        subnet = Subnet(ip_cidr='2001:db8:85a3::8a2e:370:7334/126').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['2001:db8:85a3::8a2e:370:7334/126'], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add()
         DnsRecord(
             name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
@@ -194,7 +204,8 @@ class IpTest(WebCase):
 
     def test_related_dhcp_record_with_deleted(self):
         # Given a DNS Record in DNS Zone
-        subnet = Subnet(ip_cidr='2001:db8:85a3::8a2e:370:7334/126').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['2001:db8:85a3::8a2e:370:7334/126'], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add()
         DnsRecord(
             name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
@@ -215,7 +226,8 @@ class IpTest(WebCase):
 
     def test_related_subnets(self):
         # Given a DNS Record in DNS Zone
-        subnet = Subnet(ip_cidr='2001:db8:85a3::8a2e:370:7334/126').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['2001:db8:85a3::8a2e:370:7334/126'], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add()
         DnsRecord(
             name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',

@@ -50,7 +50,7 @@ class CommonMixin(JsonMixin, StatusMixing, MessageMixin, FollowerMixin, Searchab
 
     @declared_attr
     def owner(cls):
-        return relationship(User, lazy=False)
+        return relationship(User, lazy=True, active_history=True)
 
     @classmethod
     def _search_string(cls):

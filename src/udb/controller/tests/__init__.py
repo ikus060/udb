@@ -99,7 +99,25 @@ class WebCase(BaseClass):
             headers = []
         # When body is a dict, send the data as form data.
         if isinstance(body, dict) and method in ['POST', 'PUT']:
-            data = [(str(k).encode(encoding='latin1'), str(v).encode(encoding='utf-8')) for k, v in body.items()]
+            data = []
+            for k, v in body.items():
+                if isinstance(v, list):
+                    data.extend(
+                        [
+                            (
+                                str(k).encode(encoding='latin1'),
+                                str(item).encode(encoding='utf-8'),
+                            )
+                            for item in v
+                        ]
+                    )
+                else:
+                    data.append(
+                        (
+                            str(k).encode(encoding='latin1'),
+                            str(v).encode(encoding='utf-8'),
+                        )
+                    )
             body = urlencode(data)
         # Send back cookies if any
         if hasattr(self, 'cookies') and self.cookies:

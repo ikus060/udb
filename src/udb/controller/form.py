@@ -43,6 +43,9 @@ class _ProxyFormdata:
         # Return default empty list.
         return []
 
+    def __iter__(self):
+        return iter(cherrypy.request.params)
+
 
 _AUTO = _ProxyFormdata()
 
@@ -54,6 +57,19 @@ class CherryForm(Form):
     If ``formdata`` is not specified, this will use cherrypy.request.params
     Explicitly pass ``formdata=None`` to prevent this.
     """
+
+    class Meta:
+        def render_field(self, field, render_kw):
+            render_kw = {k: v for k, v in render_kw.items()}
+
+            other_kw = getattr(field, "render_kw", None)
+            if other_kw is not None:
+                other_kw = {k: v for k, v in other_kw.items()}
+                render_kw = dict(other_kw, **render_kw)
+
+            env = cherrypy.request.config.get('tools.jinja2.env')
+            tmpl = env.get_template('components/field.html')
+            return Markup(tmpl.render(field=field, render_kw=render_kw))
 
     def __init__(self, **kwargs):
         super().__init__(formdata=_AUTO if self.is_submitted() else None, **kwargs)
@@ -169,7 +185,7 @@ class SelectObjectField(SelectField):
 
     def __init__(self, label=None, validators=None, object_cls=None, **kwargs):
         assert object_cls
-        super().__init__(label, validators, coerce=self.db_obj, choices=None, **kwargs)
+        super().__init__(label, validators, coerce=self.obj_id, choices=None, **kwargs)
         self.object_cls = object_cls
 
     @property
@@ -187,7 +203,7 @@ class SelectObjectField(SelectField):
     def choices(self, new_choices):
         pass
 
-    def db_obj(self, value):
+    def obj_id(self, value):
         if value is None or value == 'None':
             return None
         elif isinstance(value, self.object_cls):
@@ -196,9 +212,16 @@ class SelectObjectField(SelectField):
 
     def populate_obj(self, obj, name):
         """
-        Assign object value.
+        Let populate the object in a special way to help sqlalchemy
+        history to show object change instead of object_id change.
         """
-        value = None
-        if self.data:
+        # If the attribute could be assigned as an object, let update the object.
+        if name.endswith('_id') and hasattr(obj, name[:-3]):
             value = self.object_cls.query.filter_by(id=self.data).first()
-        setattr(obj, name, value)
+            setattr(obj, name[:-3], value)
+        else:
+            super().populate_obj(obj, name)
+
+
+class StringFieldSetWidget(JinjaWidget):
+    filename = 'widgets/StringFieldSetWidget.html'

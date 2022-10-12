@@ -31,7 +31,7 @@ from udb.tools.i18n import gettext_lazy as _
 
 from ._common import CommonMixin
 from ._dnszone import DnsZone
-from ._subnet import Subnet
+from ._subnet import Subnet, SubnetRange
 
 Base = cherrypy.tools.db.get_base()
 
@@ -183,7 +183,7 @@ class DnsRecord(CommonMixin, Base):
 
             # IP should be within the corresponding DNS Zone
             if not self.related_subnets:
-                suggest_subnet = ', '.join([', '.join(map(lambda x: x.ip_cidr, zone.subnets)) for zone in dnszones])
+                suggest_subnet = ', '.join([r for zone in dnszones for subnet in zone.subnets for r in subnet.ranges])
                 raise ValueError('name', _('IP address must be defined within the DNS Zone: %s') % suggest_subnet)
 
         else:
@@ -197,7 +197,9 @@ class DnsRecord(CommonMixin, Base):
             if self.type in ['A', 'AAAA']:
                 self.value = str(ipaddress.ip_address(self.value))
                 if not self.related_subnets:
-                    suggest_subnet = ', '.join([', '.join(map(lambda x: x.ip_cidr, zone.subnets)) for zone in dnszones])
+                    suggest_subnet = ', '.join(
+                        [r for zone in dnszones for subnet in zone.subnets for r in subnet.ranges]
+                    )
                     raise ValueError('value', _('IP address must be defined within the DNS Zone: %s') % suggest_subnet)
 
     @property
@@ -223,9 +225,10 @@ class DnsRecord(CommonMixin, Base):
         if self.type in ['A', 'AAAA']:
             return (
                 Subnet.query.join(Subnet.dnszones)
+                .join(Subnet.subnet_ranges)
                 .filter(
                     literal(self.name).endswith(DnsZone.name),
-                    Subnet.ip_cidr.supernet_of(self.value),
+                    SubnetRange.range.supernet_of(self.value),
                     DnsZone.status != DnsZone.STATUS_DELETED,
                     Subnet.status != Subnet.STATUS_DELETED,
                 )
@@ -234,9 +237,10 @@ class DnsRecord(CommonMixin, Base):
         elif self.type == 'PTR':
             return (
                 Subnet.query.join(Subnet.dnszones)
+                .join(Subnet.subnet_ranges)
                 .filter(
                     literal(self.value).endswith(DnsZone.name),
-                    Subnet.ip_cidr.supernet_of(self.reverse_ip),
+                    SubnetRange.range.supernet_of(self.reverse_ip),
                     DnsZone.status != DnsZone.STATUS_DELETED,
                     Subnet.status != Subnet.STATUS_DELETED,
                 )
