@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
-from sqlalchemy.orm import undefer
+from sqlalchemy.orm import defer, joinedload, undefer
 from wtforms.fields import StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length
@@ -25,7 +25,7 @@ from udb.core.model import DnsZone, Subnet, User
 from udb.tools.i18n import gettext as _
 
 from .common_page import CommonPage
-from .form import CherryForm, SelectMultiCheckbox, SelectMultipleObjectField, SelectObjectField
+from .form import CherryForm, DualListWidget, SelectMultipleObjectField, SelectObjectField
 
 
 class DnsZoneForm(CherryForm):
@@ -41,7 +41,18 @@ class DnsZoneForm(CherryForm):
         render_kw={"placeholder": _("Enter a FQDN")},
     )
 
-    subnets = SelectMultipleObjectField(_('Allowed subnets'), object_cls=Subnet, widget=SelectMultiCheckbox())
+    subnets = SelectMultipleObjectField(
+        _('Allowed subnets'),
+        object_cls=Subnet,
+        # Only select required field for performance reasons.
+        object_query=lambda query: query.options(
+            defer('*'),
+            undefer('id'),
+            undefer('name'),
+            joinedload(Subnet.subnet_ranges).options(undefer('*')),
+        ),
+        widget=DualListWidget(),
+    )
 
     notes = TextAreaField(
         _('Notes'),
@@ -50,7 +61,17 @@ class DnsZoneForm(CherryForm):
         render_kw={"placeholder": _("Enter details information about this DNS Zone")},
     )
 
-    owner_id = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)
+    owner_id = SelectObjectField(
+        _('Owner'),
+        object_cls=User,
+        object_query=lambda query: query.options(
+            defer('*'),
+            undefer('id'),
+            undefer('fullname'),
+            undefer('username'),
+        ),
+        default=lambda: cherrypy.serving.request.currentuser.id,
+    )
 
 
 class DnsZonePage(CommonPage):

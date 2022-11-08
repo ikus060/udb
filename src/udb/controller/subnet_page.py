@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
+from sqlalchemy.orm import defer, undefer
 from wtforms.fields import Field, IntegerField, StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length, Optional, StopValidation, ValidationError
@@ -97,14 +98,38 @@ class SubnetForm(CherryForm):
     vrf_id = SelectObjectField(
         _('VRF'),
         object_cls=Vrf,
+        object_query=lambda query: query.options(
+            defer('*'),
+            undefer('id'),
+            undefer('name'),
+        ),
         validators=[DataRequired()],
         render_kw={"placeholder": _("Enter a VRF number (optional)")},
     )
     l3vni = IntegerField(_('L3VNI'), validators=[Optional()], render_kw={'width': '1/3'})
     l2vni = IntegerField(_('L2VNI'), validators=[Optional()], render_kw={'width': '1/3'})
     vlan = IntegerField(_('VLAN'), validators=[Optional()], render_kw={'width': '1/3'})
-    dnszones = SelectMultipleObjectField(_('Allowed DNS zone(s)'), object_cls=DnsZone, widget=SelectMultiCheckbox())
-    owner_id = SelectObjectField(_('Owner'), object_cls=User, default=lambda: cherrypy.serving.request.currentuser.id)
+    dnszones = SelectMultipleObjectField(
+        _('Allowed DNS zone(s)'),
+        object_cls=DnsZone,
+        object_query=lambda query: query.options(
+            defer('*'),
+            undefer('id'),
+            undefer('name'),
+        ),
+        widget=SelectMultiCheckbox(),
+    )
+    owner_id = SelectObjectField(
+        _('Owner'),
+        object_cls=User,
+        object_query=lambda query: query.options(
+            defer('*'),
+            undefer('id'),
+            undefer('fullname'),
+            undefer('username'),
+        ),
+        default=lambda: cherrypy.serving.request.currentuser.id,
+    )
 
 
 class SubnetPage(CommonPage):

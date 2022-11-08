@@ -20,7 +20,7 @@ from base64 import b64encode
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User, Vrf
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, User
 
 
 class CommonTest:
@@ -336,57 +336,6 @@ class CommonTest:
         self.assertStatus(200)
         for k, v in self.edit_data.items():
             self.assertEqual(data[k], v)
-
-
-class DnsZoneTest(WebCase, CommonTest):
-
-    base_url = 'dnszone'
-
-    new_data = {'name': 'examples.com'}
-
-    edit_data = {'name': 'this.is.a.new.value.com'}
-
-    obj_cls = DnsZone
-
-    def test_edit_invalid(self):
-        # Given a database with a record
-        obj = self.obj_cls(**self.new_data).add()
-        # When trying to update it's name
-        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'name': 'invalid new name'})
-        self.session.commit()
-        # Then edit page is displayed with an error message
-        self.assertStatus(200)
-        self.assertInBody('expected a valid FQDN')
-
-    def test_edit_with_subnet(self):
-        # Given a database with a record
-        vrf = Vrf(name='default')
-        subnet = Subnet(**{'ranges': ['192.168.0.1/24'], 'vrf': vrf}).add()
-        obj = self.obj_cls(**{'name': 'examples.com', 'subnets': [subnet]}).add()
-        # When editing the record
-        self.getPage(url_for(self.base_url, obj.id, 'edit'))
-        # Then subnets are select
-        self.assertStatus(200)
-        self.assertInBody(
-            '<input class="form-check-input"  type="checkbox" name="subnets" value="1" id="subnets-%s" checked>'
-            % subnet.id
-        )
-
-    def test_edit_add_subnet(self):
-        # Given a database with a record
-        vrf = Vrf(name='default')
-        subnet = Subnet(**{'ranges': ['192.168.0.1/24'], 'vrf': vrf}).add()
-        obj = self.obj_cls(**{'name': 'examples.com', 'subnets': []}).add()
-        # When editing the record
-        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'subnets': subnet.id})
-        self.assertStatus(303)
-        # Then subnets are select
-        self.getPage(url_for(self.base_url, obj.id, 'edit'))
-        self.assertStatus(200)
-        self.assertInBody(
-            '<input class="form-check-input"  type="checkbox" name="subnets" value="1" id="subnets-%s" checked>'
-            % subnet.id
-        )
 
 
 class DnsRecordTest(WebCase, CommonTest):
