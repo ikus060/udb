@@ -6,6 +6,7 @@ stages:
   - package
   - test-package
   - upload
+  - deploy
 
 .tox: &tox
   before_script:
@@ -57,7 +58,7 @@ sonar:
   variables:
     SONAR_PROJECT_BASE_DIR: "${CI_PROJECT_DIR}"
 
-package:deb:
+bdist:deb:
   stage: package
   needs: []
   image: buildpack-deps:$DIST
@@ -89,10 +90,11 @@ package:docker:
   services:
     - name: docker:20-dind
 
-test-package:deb:
+test-bdist:deb:
   stage: test-package
   image: buildpack-deps:$DIST
-  needs: ["package:deb"]
+  needs:
+  - bdist:deb
   parallel:
     matrix:
       - DIST: [bookworm]
@@ -106,7 +108,7 @@ test-package:deb:
 upload:deb:
   image: buildpack-deps:bookworm
   needs:
-    - package:deb
+    - bdist:deb
   only:
     variables:
       - $NEXUS_USR
@@ -127,3 +129,22 @@ upload:deb:
     sleep 2
     curl --fail ${APT_URL}/dists/$DIST/main/binary-all/Packages | grep "$(basename $FILE)"
   stage: upload
+
+deploy:dev:
+  allow_failure: True
+  environment:
+    name: dev
+    url: https://udb-demo.ikus-soft.com/
+  needs: 
+  - bdist:deb
+  - upload:deb
+  image: registry.gitlab.com/finestructure/pipeline-trigger
+  script:
+    - apk update && apk add git
+    - export DEB_VERSION=$(ls -1 dist/bookworm/udb_*_all.deb | cut -d '_' -f 2)
+    - echo DEB_VERSION=$DEB_VERSION
+    # Trigger ansible-config pipeline
+    - trigger -a "$ANSIBLE_PIPELINE_GITLAB_API_TOKEN" -t master -e "UDB_VERSION=$DEB_VERSION" -p 36bae86778d901fc6b2d6453a41844 18716492
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none
