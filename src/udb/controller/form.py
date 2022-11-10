@@ -43,6 +43,9 @@ class _ProxyFormdata:
         # Return default empty list.
         return []
 
+    def __iter__(self):
+        return iter(cherrypy.request.params)
+
 
 _AUTO = _ProxyFormdata()
 
@@ -54,6 +57,19 @@ class CherryForm(Form):
     If ``formdata`` is not specified, this will use cherrypy.request.params
     Explicitly pass ``formdata=None`` to prevent this.
     """
+
+    class Meta:
+        def render_field(self, field, render_kw):
+            render_kw = {k: v for k, v in render_kw.items()}
+
+            other_kw = getattr(field, "render_kw", None)
+            if other_kw is not None:
+                other_kw = {k: v for k, v in other_kw.items()}
+                render_kw = dict(other_kw, **render_kw)
+
+            env = cherrypy.request.config.get('tools.jinja2.env')
+            tmpl = env.get_template('components/field.html')
+            return Markup(tmpl.render(field=field, render_kw=render_kw))
 
     def __init__(self, **kwargs):
         super().__init__(formdata=_AUTO if self.is_submitted() else None, **kwargs)
@@ -112,6 +128,10 @@ class JinjaWidget:
         return Markup(tmpl.render(field=field, **kwargs))
 
 
+class DualListWidget(JinjaWidget):
+    filename = 'widgets/DualListWidget.html'
+
+
 # Widget that could be used with SelectMultipleObjectField.
 class SelectMultiCheckbox(JinjaWidget):
     filename = 'widgets/SelectMultiCheckbox.html'
@@ -131,17 +151,19 @@ class SelectMultipleObjectField(SelectMultipleField):
     Field to select one or more sqlalchemy object.
     """
 
-    def __init__(self, label=None, validators=None, object_cls=None, **kwargs):
+    def __init__(self, label=None, validators=None, object_cls=None, object_query=None, **kwargs):
         assert object_cls
+        assert object_query is None or hasattr(object_query, '__call__')
         super().__init__(label, validators, coerce=self.db_obj, choices=None, **kwargs)
         self.object_cls = object_cls
+        self.object_query = object_query
 
     @property
     def choices(self):
         """
         Replace default implementation by returning the list of objects.
         """
-        return [(obj.id, str(obj)) for obj in self.object_cls.query.all()]
+        return [(obj.id, str(obj)) for obj in self._query().all()]
 
     @choices.setter
     def choices(self, new_choices):
@@ -150,7 +172,7 @@ class SelectMultipleObjectField(SelectMultipleField):
     def db_obj(self, value):
         if value is None or value == 'None':
             return []
-        elif isinstance(value, self.object_cls):
+        elif hasattr(value, 'id'):
             return value.id
         return int(value)
 
@@ -158,8 +180,14 @@ class SelectMultipleObjectField(SelectMultipleField):
         """
         Assign object value.
         """
-        values = self.object_cls.query.filter(self.object_cls.id.in_(self.data)).all()
+        values = self._query().filter(self.object_cls.id.in_(self.data)).all()
         setattr(obj, name, values)
+
+    def _query(self):
+        q = self.object_cls.query
+        if self.object_query:
+            q = self.object_query(q)
+        return q
 
 
 class SelectObjectField(SelectField):
@@ -167,10 +195,12 @@ class SelectObjectField(SelectField):
     Field to select a single sqlalchemy object. e.g.: select a User
     """
 
-    def __init__(self, label=None, validators=None, object_cls=None, **kwargs):
+    def __init__(self, label=None, validators=None, object_cls=None, object_query=None, **kwargs):
         assert object_cls
-        super().__init__(label, validators, coerce=self.db_obj, choices=None, **kwargs)
+        assert object_query is None or hasattr(object_query, '__call__')
+        super().__init__(label, validators, coerce=self.obj_id, choices=None, **kwargs)
         self.object_cls = object_cls
+        self.object_query = object_query
 
     @property
     def choices(self):
@@ -178,7 +208,7 @@ class SelectObjectField(SelectField):
         Replace default implementation by returning the list of objects.
         """
         # TODO Avoid showing deleted records.
-        entries = [(obj.id, str(obj)) for obj in self.object_cls.query.all()]
+        entries = [(obj.id, str(obj)) for obj in self._query().all()]
         if 'required' not in self.flags:
             entries.insert(0, (None, _("-")))
         return entries
@@ -187,7 +217,7 @@ class SelectObjectField(SelectField):
     def choices(self, new_choices):
         pass
 
-    def db_obj(self, value):
+    def obj_id(self, value):
         if value is None or value == 'None':
             return None
         elif isinstance(value, self.object_cls):
@@ -196,9 +226,22 @@ class SelectObjectField(SelectField):
 
     def populate_obj(self, obj, name):
         """
-        Assign object value.
+        Let populate the object in a special way to help sqlalchemy
+        history to show object change instead of object_id change.
         """
-        value = None
-        if self.data:
-            value = self.object_cls.query.filter_by(id=self.data).first()
-        setattr(obj, name, value)
+        # If the attribute could be assigned as an object, let update the object.
+        if name.endswith('_id') and hasattr(obj, name[:-3]):
+            value = self._query().filter_by(id=self.data).first()
+            setattr(obj, name[:-3], value)
+        else:
+            super().populate_obj(obj, name)
+
+    def _query(self):
+        q = self.object_cls.query
+        if self.object_query:
+            q = self.object_query(q)
+        return q
+
+
+class StringFieldSetWidget(JinjaWidget):
+    filename = 'widgets/StringFieldSetWidget.html'

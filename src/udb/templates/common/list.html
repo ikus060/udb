@@ -24,7 +24,7 @@
   {% set table_default_buttons = [] %}
   {% for field in form %}
     {% if field.widget['input_type'] != 'hidden' %}
-      {% set ns.default_columns = ns.default_columns + [{'name': field.name, 'data': field.name, 'title': field.label.text, 'orderable':True, 'render': 'user' if field.name=='owner' else 'summary' if loop.first else 'text'}] %}
+      {% set ns.default_columns = ns.default_columns + [{'name': field.name, 'data': field.name, 'title': field.label.text, 'orderable':True, 'render': 'owner' if field.name=='owner_id' else 'summary' if loop.first else 'text'}] %}
     {% endif %}
   {% endfor %}
   {% set table_columns = columns|d(ns.default_columns) %}
@@ -34,8 +34,8 @@
     {% set table_default_buttons = table_default_buttons + [{'text': _('Hide Deleted'), 'extend': 'filter', 'column': 'status:name', 'search': 'enabled'}] %}
   {% endif %}
   {# Default filters #}
-  {% if 'owner' in (table_columns|map(attribute='name')|list) %}
-    {% set table_default_buttons = table_default_buttons + [{'text': _('Owned by me'), 'extend': 'filter', 'column': 'owner:name', 'search': currentuser.username}] %}
+  {% if 'owner_id' in (table_columns|map(attribute='name')|list) %}
+    {% set table_default_buttons = table_default_buttons + [{'text': _('Owned by me'), 'extend': 'filter', 'column': 'owner_id:name', 'search': currentuser.username}] %}
   {% endif %}
   {% set table_default_buttons = table_default_buttons + [{'text': _('Clear'), 'extend': 'clear'}] %}
   {# Show default table #}

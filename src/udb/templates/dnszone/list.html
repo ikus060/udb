@@ -1,6 +1,6 @@
 {% extends 'common/list.html' %}
 {% set columns = [
 {'data':'name', 'title':form.name.label.text, 'orderable':True, 'render':'summary'},
-{'data':'subnets_count', 'title':form.subnets.label.text, 'orderable':True},
+{'data':'subnets_count', 'title':_('Subnet count'), 'orderable':True},
 {'data':'notes', 'title':form.notes.label.text, 'orderable':True},
-{'name':'owner', 'data':'owner', 'title':form.owner.label.text, 'orderable':True, 'render':'user'}] %}
+{'name':'owner_id', 'data':'owner_id', 'title':form.owner_id.label.text, 'orderable':True, 'render':'owner'}] %}

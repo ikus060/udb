@@ -18,9 +18,10 @@
 import ipaddress
 
 import cherrypy
-from sqlalchemy import Column, ForeignKey, Index, func
+from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint, Index, event
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import defer, joinedload, lazyload, raiseload, relationship, undefer, validates
+from sqlalchemy.orm import defer, joinedload, raiseload, relationship, undefer, validates
 from sqlalchemy.types import Integer, String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
@@ -33,61 +34,91 @@ from ._vrf import Vrf
 Base = cherrypy.tools.db.get_base()
 
 
+class SubnetRange(Base):
+    __tablename__ = 'subnetrange'
+    id = Column(Integer, primary_key=True)
+    subnet_id = Column(Integer, nullable=False)
+    vrf_id = Column(Integer, nullable=False)
+    range = Column(CidrType)
+    __table_args__ = (
+        ForeignKeyConstraint(["subnet_id", "vrf_id"], ["subnet.id", "subnet.vrf_id"], onupdate="CASCADE"),
+    )
+
+    def __init__(self, range=None):
+        """
+        Special constructor for Association List
+        """
+        self.range = range
+
+    @validates('range')
+    def validate_range(self, key, value):
+        if not value:
+            return None
+        try:
+            return str(ipaddress.ip_network(value.strip(), strict=False))
+        except (ValueError, AttributeError):
+            # Repport error on 'ranges' instead of 'range'
+            raise ValueError('ranges', "`%s` " % value + _('does not appear to be a valid IPv6 or IPv4 network'))
+
+    @property
+    def version(self):
+        return ipaddress.ip_network(self.range).version
+
+    def subnet_of(self, other):
+        return ipaddress.ip_network(self.range).subnet_of(ipaddress.ip_network(other.range))
+
+    def __str__(self) -> str:
+        return self.range
+
+
+# Create a unique index for username
+Index('subnetrange_index', SubnetRange.vrf_id, SubnetRange.range, unique=True)
+
+# Index for cidr sorting
+Index('subnetrange_order', SubnetRange.vrf_id, SubnetRange.range.family().desc(), SubnetRange.range.inet())
+
+
 class Subnet(CommonMixin, Base):
 
     name = Column(String, nullable=False, default='')
-    ip_cidr = Column(CidrType, nullable=False)
-    vrf_id = Column(Integer, ForeignKey("vrf.id"))
+    vrf_id = Column(Integer, ForeignKey("vrf.id"), nullable=False)
     vrf = relationship(Vrf)
     l3vni = Column(Integer, nullable=True)
     l2vni = Column(Integer, nullable=True)
     vlan = Column(Integer, nullable=True)
-    # Transiant fields for ordering
+    subnet_ranges = relationship(
+        "SubnetRange",
+        lazy=False,
+        order_by=(SubnetRange.vrf_id, SubnetRange.range.family().desc(), SubnetRange.range.inet()),
+        cascade="all, delete-orphan",
+    )
+    ranges = association_proxy("subnet_ranges", "range")
+
+    # Transient fields for ordering
     depth = None
     order = None
 
     @classmethod
     def _search_string(cls):
-        return cls.name + " " + cls.notes + " " + cls.ip_cidr.text()
-
-    @validates('ip_cidr')
-    def validate_ip_cidr(self, key, value):
-        try:
-            return str(ipaddress.ip_network(value.strip(), strict=False))
-        except ValueError:
-            raise ValueError('ip_cidr', _('does not appear to be a valid IPv4 or IPv6 network'))
-
-    @hybrid_property
-    def related_supernets(self):
-        return Subnet.query.filter(
-            Subnet.status != Subnet.STATUS_DELETED,
-            Subnet.vrf_id == self.vrf_id,
-            Subnet.ip_cidr.supernet_of(self.ip_cidr),
-        ).all()
-
-    @hybrid_property
-    def related_subnets(self):
-        return Subnet.query.filter(
-            Subnet.status != Subnet.STATUS_DELETED, Subnet.vrf_id == self.vrf_id, Subnet.ip_cidr.subnet_of(self.ip_cidr)
-        ).all()
+        return cls.name + " " + cls.notes
 
     def __str__(self):
-        return "%s (%s)" % (self.ip_cidr, self.name)
+        return "%s (%s)" % (', '.join(self.ranges), self.name)
 
     @hybrid_property
     def summary(self):
-        return self.ip_cidr + " (" + self.name + ")"
+        return self.name
 
     @property
-    def ip_network(self):
-        return ipaddress.ip_network(self.ip_cidr)
+    def primary_range(self):
+        return self.ranges and self.ranges[0]
 
     @classmethod
     def query_with_depth(cls):
         from ._dnszone import DnsZone
 
         query = Subnet.query.options(
-            lazyload(Subnet.owner),
+            joinedload(Subnet.subnet_ranges),
             joinedload(Subnet.dnszones).options(
                 defer('*'),
                 undefer(DnsZone.id),
@@ -100,7 +131,7 @@ class Subnet(CommonMixin, Base):
                 undefer(Vrf.name),
                 raiseload(Vrf.owner),
             ),
-        ).order_by(func.coalesce(Subnet.vrf_id, -1), Subnet.ip_cidr.inet())
+        )
         subnets = query.all()
 
         # Update depth
@@ -109,8 +140,9 @@ class Subnet(CommonMixin, Base):
         for subnet in subnets:
             while prev_subnet and (
                 subnet.vrf_id != prev_subnet[-1].vrf_id
-                or subnet.ip_network.version != prev_subnet[-1].ip_network.version
-                or not subnet.ip_network.subnet_of(prev_subnet[-1].ip_network)
+                or not subnet.subnet_ranges
+                or subnet.subnet_ranges[0].version != prev_subnet[-1].subnet_ranges[0].version
+                or not subnet.subnet_ranges[0].subnet_of(prev_subnet[-1].subnet_ranges[0])
             ):
                 prev_subnet.pop()
             order = order + 1
@@ -126,11 +158,20 @@ class Subnet(CommonMixin, Base):
             data['order'] = self.order
         if self.depth is not None:
             data['depth'] = self.depth
+        data['ranges'] = list(self.ranges)
+        # Explicitly add primary_range
+        data['primary_range'] = self.ranges[0] if self.ranges else None
         return data
 
 
-# Make sure a subnet is unique within a vrf
-Index('subnet_ip_cidr_vrf_unique_index', func.coalesce(Subnet.vrf_id, -1), Subnet.ip_cidr, unique=True)
+@event.listens_for(Subnet, 'before_insert')
+@event.listens_for(Subnet, 'before_update')
+def receive_before_insert_or_update(mapper, connection, subnet):
 
-# Index for cidr sorting
-Index('subnet_ip_cidr_order', Subnet.vrf_id, Subnet.ip_cidr.inet())
+    if not subnet.ranges:
+        # you should probably use your own exception class here
+        raise ValueError('ranges', _('at least one IPv6 or IPv4 network is required'))
+
+
+# Create a unique index subnet & vrf
+Index('subnet_vrf_index', Subnet.id, Subnet.vrf_id, unique=True)

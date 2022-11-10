@@ -18,7 +18,7 @@ import cherrypy
 from sqlalchemy import and_, literal, select, union
 from sqlalchemy.orm import foreign, relationship, remote
 
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Message, Subnet, User
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Message, Subnet, User, Vrf
 
 Base = cherrypy.tools.db.get_base()
 
@@ -35,7 +35,7 @@ search_query = union(
             model.modified_at,
             model._search_vector,
         )
-        for model in [DhcpRecord, DnsRecord, DnsZone, Subnet]
+        for model in [DhcpRecord, DnsRecord, DnsZone, Subnet, Vrf]
     ]
 ).subquery()
 

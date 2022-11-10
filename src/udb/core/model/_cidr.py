@@ -26,8 +26,9 @@ from sqlalchemy.sql.functions import GenericFunction
 def _sqlite_inet_broadcast(value):
     """
     Convert ip_network into comparable bytes.
-
     """
+    if value is None:
+        return None
     n = ipaddress.ip_network(value)
     return b'%s%s%s' % (
         n.version.to_bytes(2, byteorder='big'),
@@ -40,12 +41,24 @@ def _sqlite_inet(value):
     """
     Convert ip_network into comparable bytes.
     """
+    if value is None:
+        return None
     n = ipaddress.ip_network(value)
     return b'%s%s%s' % (
         n.version.to_bytes(2, byteorder='big'),
         n.network_address.packed,
         n.prefixlen.to_bytes(2, byteorder='big'),
     )
+
+
+def _sqlite_family(value):
+    """
+    Return the inet family.
+    """
+    if value is None:
+        return None
+    n = ipaddress.ip_network(value)
+    return n.version
 
 
 @event.listens_for(Engine, "connect")
@@ -57,6 +70,7 @@ def _register_sqlite_cidr_functions(dbapi_con, unused):
         dbapi_con.create_function("inet_broadcast", 1, _sqlite_inet_broadcast, deterministic=True)
         dbapi_con.create_function("text", 1, str, deterministic=True)
         dbapi_con.create_function("inet", 1, _sqlite_inet, deterministic=True)
+        dbapi_con.create_function("family", 1, _sqlite_family, deterministic=True)
 
 
 class subnet_of(GenericFunction):
@@ -70,7 +84,9 @@ def _render_subnet_of_sqlite(element, compiler, **kw):
     On SQLite, make use of inet() and broadcast()
     """
     left, right = element.clauses
-    return "inet(%s) >= inet(%s) AND inet_broadcast(%s) < inet_broadcast(%s)" % (
+    return "%s IS NOT NULL AND %s IS NOT NULL AND inet(%s) >= inet(%s) AND inet_broadcast(%s) < inet_broadcast(%s)" % (
+        compiler.process(left, **kw),
+        compiler.process(right, **kw),
         compiler.process(left, **kw),
         compiler.process(right, **kw),
         compiler.process(left, **kw),
@@ -121,3 +137,6 @@ class CidrType(TypeDecorator):
 
         def inet(self):
             return func.inet(self)
+
+        def family(self):
+            return func.family(self)

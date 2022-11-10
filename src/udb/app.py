@@ -198,10 +198,10 @@ class Root(object):
             vrf = Vrf(name='default').add()
 
             # Subnet
-            subnet = Subnet(ip_cidr='147.87.250.0/24', name='DMZ', vrf=vrf, notes='public').add()
-            Subnet(ip_cidr='147.87.0.0/16', name='its-main-4', vrf=vrf, notes='main').add()
-            Subnet(ip_cidr='2002::1234:abcd:ffff:c0a8:101/64', name='its-main-6', vrf=vrf, notes='main').add()
-            Subnet(ip_cidr='147.87.208.0/24', name='ARZ', vrf=vrf, notes='BE.net').add()
+            subnet = Subnet(ranges=['147.87.250.0/24'], name='DMZ', vrf=vrf, notes='public').add()
+            Subnet(ranges=['147.87.0.0/16'], name='its-main-4', vrf=vrf, notes='main').add()
+            Subnet(ranges=['2002::1234:abcd:ffff:c0a8:101/64'], name='its-main-6', vrf=vrf, notes='main').add()
+            Subnet(ranges=['147.87.208.0/24'], name='ARZ', vrf=vrf, notes='BE.net').add()
 
             DnsZone(name='bfh.ch', notes='This is a note', subnets=[subnet]).add()
             DnsZone(name='bfh.science', notes='This is a note').add()

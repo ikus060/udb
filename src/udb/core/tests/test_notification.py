@@ -19,7 +19,7 @@ from unittest import mock
 import cherrypy
 
 from udb.controller.tests import WebCase
-from udb.core.model import DnsZone, Message, Subnet, User
+from udb.core.model import DnsZone, Message, Subnet, User, Vrf
 
 
 class NotificationPluginTest(WebCase):
@@ -70,7 +70,8 @@ class NotificationPluginTest(WebCase):
         follower = User.create(
             username='afollower', password='password', email='follower@test.com', role=User.ROLE_USER
         ).add()
-        subnet = Subnet(ip_cidr='192.168.0.0/24', name='home').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['192.168.0.0/24'], name='home', vrf=vrf).add()
         subnet.add_follower(follower)
         record = DnsZone(name='my.zone.com').add()
         record.add_follower(follower)
@@ -80,7 +81,7 @@ class NotificationPluginTest(WebCase):
         # Then a single notification is sent to the followers
         self.listener.queue_mail.assert_called_once_with(
             bcc=['follower@test.com'],
-            subject='DNS Zone my.zone.com, IP Subnet 192.168.0.0/24 (home) modified by nobody',
+            subject='DNS Zone my.zone.com, Subnet home modified by nobody',
             message=mock.ANY,
         )
 

@@ -36,21 +36,12 @@ Base = cherrypy.tools.db.get_base()
 Session = cherrypy.tools.db.get_session()
 
 
-def _get_model_changes(model, ignore=['messages', 'depth']):
+def _get_model_changes(model, ignore=['messages']):
     """
     Return a dictionary containing changes made to the model since it was
     fetched from the database.
 
     The dictionary is of the form {'property_name': [old_value, new_value]}
-
-    Example:
-        user = get_user_by_id(420)
-        >>> '<User id=402 email="business_email@gmail.com">'
-        get_model_changes(user)
-        >>> {}
-        user.email = 'new_email@who-dis.biz'
-        get_model_changes(user)
-        >>> {'email': ['business_email@gmail.com', 'new_email@who-dis.biz']}
     """
     state = inspect(model)
     changes = {}

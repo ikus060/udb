@@ -1,0 +1,16 @@
+{% set bootstrap_class_table = {
+'CheckboxInput': 'form-check-input',
+'EmailInput': 'form-control',
+'NumberInput': 'form-control',
+'PasswordInput': 'form-control',
+'Select': 'form-select',
+'SubmitInput': 'btn btn-secondary',
+'TextArea': 'form-control',
+'TextInput': 'form-control'}%}
+{% set field_class = bootstrap_class_table.get(field.widget.__class__.__name__) %}
+{% if field_class or render_kw.get('class') %}
+    {% set field_class = (field_class or '') + ' ' + render_kw.pop('class', '') %}
+    {{ field.widget(field, class=field_class, **render_kw) }}
+{% else %}
+    {{ field.widget(field, **render_kw) }}
+{% endif %}

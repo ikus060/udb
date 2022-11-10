@@ -21,7 +21,7 @@ from unittest import mock
 from sqlalchemy.exc import IntegrityError
 
 from udb.controller.tests import WebCase
-from udb.core.model import DnsZone, Message, Subnet, User
+from udb.core.model import DnsZone, Message, Subnet, User, Vrf
 
 
 class DnsZoneTest(WebCase):
@@ -144,7 +144,8 @@ class DnsZoneTest(WebCase):
         zone = DnsZone(name='bfh.ch').add()
         self.session.commit()
         # When trying to add an allowed subnet to the dns zone
-        subnet = Subnet(name='test', ip_cidr='192.168.1.0/24').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(name='test', ranges=['192.168.1.0/24'], vrf=vrf).add()
         zone.subnets.append(subnet)
         zone.add()
         # Then a subnet is added
@@ -164,7 +165,8 @@ class DnsZoneTest(WebCase):
 
     def test_subnets_deleted(self):
         # Given a database with a deleted subnet
-        subnet = Subnet(name='test', ip_cidr='192.168.1.0/24', status=Subnet.STATUS_DELETED).add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(name='test', ranges=['192.168.1.0/24'], status=Subnet.STATUS_DELETED, vrf=vrf).add()
         zone = DnsZone(name='bfh.ch', subnets=[subnet]).add()
         # When querying the list of subnets within a zone
         subnets = zone.subnets

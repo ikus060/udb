@@ -33,7 +33,11 @@ Base = cherrypy.tools.db.get_base()
 class Vrf(CommonMixin, Base):
     name = Column(String, unique=True, nullable=False)
 
-    @validates('ip_cidr')
+    @classmethod
+    def _search_string(cls):
+        return cls.name + " " + cls.notes
+
+    @validates('name')
     def _validate_name(self, key, value):
         value = value.strip()
         if not value:

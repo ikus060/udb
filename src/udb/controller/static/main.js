@@ -150,16 +150,26 @@ $.fn.dataTable.render.message_body = function () {
         }
     };
 }
-$.fn.dataTable.render.subnet = function () {
+$.fn.dataTable.render.primary_range = function () {
     return {
         display: function (data, type, row, meta) {
             return '<a href="' + encodeURI(row.url) + '" class="depth-' + safe(row.depth) + '">' +
                 '<i class="bi bi-diagram-3-fill me-1" aria-hidden="true"></i>' +
                 '<strong>' + safe(data) + '</strong>' +
-                '</a>';
+                '</a> ';
         },
         sort: function (data, type, row, meta) {
             return row.order;
+        },
+    };
+}
+$.fn.dataTable.render.secondary_range = function () {
+    return {
+        display: function (data, type, row, meta) {
+            return row.ranges.slice(1).join(', ');
+        },
+        filter: function (data, type, row, meta) {
+            return row.ranges.slice(1).join(' ');
         }
     };
 }
@@ -192,18 +202,18 @@ $.fn.dataTable.render.summary = function () {
         }
     };
 }
-$.fn.dataTable.render.user = function () {
+$.fn.dataTable.render.owner = function () {
     return {
         display: function (data, type, row, meta) {
             if (data) {
-                return safe(data.fullname || data.username)
+                return safe(row.owner.fullname || row.owner.username)
             } else {
                 return '-';
             }
         },
         filter: function (data, type, row, meta) {
             if (data) {
-                return data.username;
+                return row.owner.username;
             } else {
                 return null;
             }

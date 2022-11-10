@@ -26,7 +26,7 @@ import udb.tools.db  # noqa: import cherrypy.tools.db
 from ._dhcprecord import DhcpRecord
 from ._dnsrecord import DnsRecord
 from ._json import JsonMixin
-from ._subnet import Subnet
+from ._subnet import Subnet, SubnetRange
 
 Base = cherrypy.tools.db.get_base()
 
@@ -87,10 +87,10 @@ class Ip(JsonMixin, Base):
     @property
     def related_subnets(self):
         return (
-            Subnet.query.filter(
-                Subnet.ip_cidr.supernet_of(self.ip),
+            Subnet.query.join(Subnet.subnet_ranges)
+            .filter(
+                SubnetRange.range.supernet_of(self.ip),
                 Subnet.status != Subnet.STATUS_DELETED,
             )
-            .order_by(Subnet.ip_cidr)
             .all()
         )
