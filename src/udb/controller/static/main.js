@@ -97,6 +97,18 @@ $.fn.dataTable.render.action = function () {
         },
     };
 }
+$.fn.dataTable.render.choices = function (choices) {
+    return {
+        display: function (data, type, row, meta) {
+            for (const choice of choices) {
+                if (choice[0] == data) {
+                    return choice[1];
+                }
+            }
+            return data;
+        },
+    };
+}
 $.fn.dataTable.render.datetime = function () {
     return {
         display: function (data, type, row, meta) {
@@ -229,7 +241,11 @@ $(document).ready(function () {
         columns = JSON.parse(columns);
         $.each(columns, function (_index, item) {
             if (item['render']) {
-                item['render'] = DataTable.render[item['render']]();
+                if (item['render_arg']) {
+                    item['render'] = DataTable.render[item['render']](item['render_arg']);
+                } else {
+                    item['render'] = DataTable.render[item['render']]();
+                }
             }
         });
         let searchCols = columns.map(function (item, _index) {

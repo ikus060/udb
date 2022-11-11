@@ -41,7 +41,7 @@ class RelatedDhcpRecordForm(Form):
 
 class RelatedSubnetForm(Form):
 
-    ranges = StringField(_('Subnet'), render_kw={"readonly": True})
+    primary_range = StringField(_('Subnet'), render_kw={"readonly": True})
     name = StringField(_('Name'), render_kw={"readonly": True})
     vrf = IntegerField(_('VRF'), render_kw={"readonly": True})
     dnszones = SelectMultipleObjectField(_('DNS zones'), object_cls=DnsZone.query)
