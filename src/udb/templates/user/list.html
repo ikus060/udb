@@ -3,11 +3,4 @@
 {'data':'username', 'title':form.username.label.text, 'orderable':True, 'render':'link'},
 {'data':'fullname', 'title':form.fullname.label.text, 'orderable': True},
 {'data':'email', 'title':form.email.label.text, 'orderable':True},
-{'data':'role', 'title':form.role.label.text, 'orderable':True}] %}
-{# TODO Add Those badge into a render#}
-{% macro local() %}
-  <span class="badge rounded-pill bg-info">{% trans %}local{% endtrans %}</span>
-{% endmacro %}
-{% macro external() %}
-  <span class="badge rounded-pill bg-info">{% trans %}external{% endtrans %}</span>
-{% endmacro %}
+{'data':'role', 'title':form.role.label.text, 'orderable':True, 'render':'choices', 'render_arg':form.role.choices}] %}
