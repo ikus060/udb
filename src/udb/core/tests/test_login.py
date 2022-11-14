@@ -43,8 +43,7 @@ class TestLogin(WebCase):
         # Given valids credentials from database
         username = 'user01'
         password = 'password'
-        User.create(username=username, password=password, role=User.ROLE_USER)
-        self.session.commit()
+        User.create(username=username, password=password, role=User.ROLE_USER).commit()
         # When trying to login with those credentials
         login = cherrypy.engine.publish('login', username, password)
         # Then user is login
@@ -58,8 +57,7 @@ class TestLogin(WebCase):
         # Given a user created with "raw" password.
         username = 'user01'
         password = 'password'
-        User(username=username, password=password, role=User.ROLE_USER).add()
-        self.session.commit()
+        User(username=username, password=password, role=User.ROLE_USER).add().commit()
         # When trying to login with those credentials
         login = cherrypy.engine.publish('login', username, password)
         # Then user is not login
@@ -69,7 +67,7 @@ class TestLogin(WebCase):
         # Given valids credentials from mock
         username = 'user01'
         password = 'password'
-        User.create(username=username, role=User.ROLE_USER)
+        User.create(username=username, role=User.ROLE_USER).commit()
         self.listener.authenticate.return_value = ('user01', {'_email': 'john@test.com'})
         # When trying to login with those credentials
         login = cherrypy.engine.publish('login', username, password)
@@ -84,7 +82,7 @@ class TestLogin(WebCase):
         # Given valids credentials from mock
         username = 'user01'
         password = 'password'
-        User.create(username=username, role=User.ROLE_USER)
+        User.create(username=username, role=User.ROLE_USER).commit()
         self.listener.authenticate.return_value = ('user01', {'_fullname': 'John Kennedy'})
         # When trying to login with those credentials
         login = cherrypy.engine.publish('login', username, password)
@@ -97,8 +95,7 @@ class TestLogin(WebCase):
 
     def test_login_with_invalid_username(self):
         # Given a valid user in database
-        User.create(username='user01', password='password', role=User.ROLE_USER)
-        self.session.commit()
+        User.create(username='user01', password='password', role=User.ROLE_USER).commit()
         # When trying to login with those credentials
         login = cherrypy.engine.publish('login', 'invalid', 'password')
         # Then user is login
@@ -106,8 +103,7 @@ class TestLogin(WebCase):
 
     def test_login_with_invalid_password(self):
         # Given a valid user in database
-        User.create(username='user01', password='password', role=User.ROLE_USER)
-        self.session.commit()
+        User.create(username='user01', password='password', role=User.ROLE_USER).commit()
         # When trying to login with those credentials
         login = cherrypy.engine.publish('login', 'user01', 'invalid')
         # Then user is login

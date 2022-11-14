@@ -48,8 +48,7 @@ class TestLogin(WebCase):
         # Given a valid username and password
         username = "admin"
         password = "admin123"
-        User.create(username=username, password=password)
-        self.session.commit()
+        User.create(username=username, password=password).commit()
         # When login
         self.getPage("/login/", method="POST", body={"username": username, "password": password})
         # Then user is redirect to main page
@@ -62,8 +61,7 @@ class TestLogin(WebCase):
         # Given a login form submited with a redirect value.
         username = "admin"
         password = "admin"
-        User.create(username=username, password=password)
-        self.session.commit()
+        User.create(username=username, password=password).commit()
         # When redirected to login from another page
         self.getPage("/dnszone/")
         self.assertStatus(303)
@@ -82,8 +80,7 @@ class TestLogin(WebCase):
         # Given a login form submited with a redirect value.
         username = "admin"
         password = "admin"
-        User.create(username=username, password=password)
-        self.session.commit()
+        User.create(username=username, password=password).commit()
         # When trying to login
         self.getPage(
             "/login/",
@@ -114,8 +111,7 @@ class TestLogin(WebCase):
         # Given invalid credentials.
         username = "myusername"
         password = "mypassword"
-        User.create(username=username, password=password)
-        self.session.commit()
+        User.create(username=username, password=password).commit()
         # When trying to login
         self.getPage("/login/", method="POST", body={"username": username, "password": "invalid"})
         # Then login page is displayed with an error message.
@@ -140,8 +136,7 @@ class TestLogin(WebCase):
         # Given a user that is already login
         username = "admin"
         password = "admin"
-        User(username=username, password=hash_password(password)).add()
-        self.session.commit()
+        User(username=username, password=hash_password(password)).add().commit()
         self.getPage("/login/", method='POST', body={'username': username, 'password': password})
         self.assertStatus('303 See Other')
         self.assertHeaderItemValue("Location", self.baseurl + "/")
@@ -157,8 +152,7 @@ class TestLogin(WebCase):
         # Given an authentication user
         username = 'myuser'
         password = 'mypassword'
-        userobj = User(username=username, password=hash_password(password)).add()
-        self.session.commit()
+        userobj = User(username=username, password=hash_password(password)).add().commit()
         self.getPage("/login/", method='POST', body={'username': username, 'password': password})
         self.assertStatus('303 See Other')
         self.assertHeaderItemValue("Location", self.baseurl + "/")
@@ -166,7 +160,7 @@ class TestLogin(WebCase):
         self.assertStatus('200 OK')
         # When deleting this user from database
         userobj.delete()
-        self.session.commit()
+        userobj.commit()
         # Then user access is refused
         self.getPage("/")
         self.assertStatus('403 Forbidden')

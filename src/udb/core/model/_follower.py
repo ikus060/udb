@@ -44,17 +44,16 @@ Index('follower_index', Follower.model_name, Follower.model_id, Follower.user_id
 
 
 class FollowerMixin:
-    def add_follower(self, user, commit=True):
-        assert self.id
+    def add_follower(self, user):
+        assert self.id, 'object must be flush before adding a follower'
         assert user
         if not self.is_following(user):
             f = Follower(model_name=self.__tablename__, model_id=self.id, user=user)
-            f.add(commit=commit)
+            f.add()
 
     def remove_follower(self, user):
-        assert self.id
+        assert self.id, 'object must be commit before adding a follower'
         assert user
-        assert user.id
         f = Follower.query.where(
             Follower.model_name == self.__tablename__, Follower.model_id == self.id, Follower.user == user
         ).first()

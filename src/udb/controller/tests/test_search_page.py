@@ -35,6 +35,7 @@ class TestSearchPage(WebCase):
         Subnet(ranges=['147.87.208.0/24'], name='ARZ', vrf=self.vrf, notes='BE.net', owner=self.user).add()
         self.zone = DnsZone(name='bfh.ch', notes='DMZ Zone', subnets=[self.subnet], owner=self.user).add()
         self.zone.add_message(Message(body='Here is a message', author=self.user))
+        self.zone.flush()
         DnsZone(name='bfh.science', notes='This is a note', owner=self.user).add()
         DnsZone(name='bfh.info', notes='This is a note', owner=self.user).add()
         DhcpRecord(ip='147.87.250.1', mac='00:ba:d5:a2:34:56', notes='webserver bla bla bla', owner=self.user).add()
@@ -42,9 +43,9 @@ class TestSearchPage(WebCase):
         self.dnsrecord.add_message(Message(body='This is a message', author=self.user))
         DnsRecord(name='bar.bfh.ch', type='A', value='147.87.250.1', owner=self.user).add()
         DnsRecord(name='bar.bfh.ch', type='CNAME', value='www.bar.bfh.ch', owner=self.user).add()
-        DnsRecord(name='baz.bfh.ch', type='A', value='147.87.250.2', owner=self.user).add()
+        DnsRecord(name='baz.bfh.ch', type='A', value='147.87.250.2', owner=self.user).add().commit()
 
-    def test_serch(self):
+    def test_search(self):
         # Given a database with records
         self.add_records()
         # When making a query to index page

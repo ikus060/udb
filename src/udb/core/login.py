@@ -75,9 +75,11 @@ class LoginPlugin(SimplePlugin):
                 # At this point, we need to create a new user in database.
                 # In case default values are invalid, let evaluate them
                 # before creating the user in database.
-                userobj = User(
-                    username=real_username, fullname=fullname, email=email, role=self.add_user_default_role
-                ).add()
+                userobj = (
+                    User(username=real_username, fullname=fullname, email=email, role=self.add_user_default_role)
+                    .add()
+                    .commit()
+                )
             except Exception:
                 logger.warning('fail to create new user', exc_info=1)
         if userobj is None:
@@ -93,7 +95,7 @@ class LoginPlugin(SimplePlugin):
             userobj.email = email
             dirty = True
         if dirty:
-            userobj.add()
+            userobj.add().commit()
 
         # Save username in session if session is enabled.
         if cherrypy.request.config and cherrypy.request.config.get('tools.sessions.on', False):

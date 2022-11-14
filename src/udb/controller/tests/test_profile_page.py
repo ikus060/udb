@@ -30,8 +30,7 @@ class ProfileTest(WebCase):
         obj = User.query.filter_by(username=self.username).first()
         obj.fullname = 'Administrator'
         obj.email = 'admin@example.com'
-        self.session.add(obj)
-        self.session.commit()
+        obj.add().commit()
         # When querying the profile page
         self.getPage(url_for('profile', ''))
         # Then My profile information is displayed
@@ -177,7 +176,7 @@ class ProfileTestWithExternalUser(WebCase):
 
     def test_change_password_remote_user(self):
         # Given an external user authenticated
-        User(username='user01').add()
+        User(username='user01').add().commit()
         self.listener.authenticate.return_value = ('user01', {})
         self._login('user01', 'mypassword')
         # When updating the password

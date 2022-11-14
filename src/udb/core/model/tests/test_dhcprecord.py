@@ -25,6 +25,7 @@ class DhcpRecordTest(WebCase):
     def test_json(self):
         # Given a DnsZone
         obj = DhcpRecord(ip='2002::1234:abcd:ffff:c0a8:101', mac='00:00:5e:00:53:af').add()
+        obj.commit()
         # When serializing the object to json
         data = obj.to_json()
         # Then a json representation is return
@@ -35,7 +36,7 @@ class DhcpRecordTest(WebCase):
         # Given an empty database
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord
-        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add()
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
         # Then a new record is created
         self.assertEqual(1, DhcpRecord.query.count())
 
@@ -43,13 +44,13 @@ class DhcpRecordTest(WebCase):
         # Given an empty database
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord
-        DhcpRecord(ip='2002::1234:abcd:ffff:c0a8:101', mac='00:00:5e:00:53:af').add()
+        DhcpRecord(ip='2002::1234:abcd:ffff:c0a8:101', mac='00:00:5e:00:53:af').add().commit()
         # Then a new record is created
         self.assertEqual(1, DhcpRecord.query.count())
 
     def test_norm_ipv6(self):
         # Given a DHCP Record with IPv6
-        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:af').add()
+        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:af').add().commit()
         # When querying the object
         dhcp = DhcpRecord.query.first()
         # Then the IPv6 is reformated
@@ -61,7 +62,7 @@ class DhcpRecordTest(WebCase):
         # When adding a DnsRecord with invalid data
         # Then an exception is raised
         with self.assertRaises(ValueError) as cm:
-            DhcpRecord(ip='a.0.2.23', mac='00:00:5e:00:53:af').add()
+            DhcpRecord(ip='a.0.2.23', mac='00:00:5e:00:53:af').add().commit()
         self.assertEqual(cm.exception.args, ('ip', mock.ANY))
 
     def test_add_with_invalid_mac(self):
@@ -70,5 +71,5 @@ class DhcpRecordTest(WebCase):
         # When adding a DnsRecord with invalid data
         # Then an exception is raised
         with self.assertRaises(ValueError) as cm:
-            DhcpRecord(ip='192.0.2.23', mac='invalid').add()
+            DhcpRecord(ip='192.0.2.23', mac='invalid').add().commit()
         self.assertEqual(cm.exception.args, ('mac', mock.ANY))

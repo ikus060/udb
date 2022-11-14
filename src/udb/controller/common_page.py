@@ -154,6 +154,7 @@ class CommonPage(object):
             try:
                 form.populate_obj(obj)
                 obj.add()
+                obj.commit()
             except Exception as e:
                 handle_exception(e, form)
             else:
@@ -177,6 +178,7 @@ class CommonPage(object):
         try:
             obj.status = status
             obj.add()
+            obj.commit()
         except Exception as e:
             handle_exception(e)
         raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
@@ -194,6 +196,7 @@ class CommonPage(object):
             try:
                 form.populate_obj(obj)
                 obj.add()
+                obj.commit()
             except Exception as e:
                 handle_exception(e, form)
             else:
@@ -225,7 +228,7 @@ class CommonPage(object):
         userobj = User.query.filter_by(id=user_id).first()
         if userobj and not obj.is_following(userobj):
             obj.add_follower(userobj)
-            obj.add()
+            obj.commit()
         raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
     @cherrypy.expose
@@ -240,7 +243,7 @@ class CommonPage(object):
         userobj = User.query.filter_by(id=user_id).first()
         if userobj and obj.is_following(userobj):
             obj.remove_follower(userobj)
-            obj.add()
+            obj.commit()
         # Redirect to referer if defined
         raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
@@ -252,6 +255,7 @@ class CommonPage(object):
         if form.validate_on_submit():
             message = Message(body=form.body.data, author=cherrypy.request.currentuser)
             obj.add_message(message)
+            obj.commit()
         raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
 
@@ -337,5 +341,5 @@ class CommonApi(object):
         obj = self._get_or_404(id)
         obj.status = self.object_cls.STATUS_DELETED
         obj.add()
-        obj.session.commit()
+        obj.commit()
         return self._get_or_404(id).to_json()

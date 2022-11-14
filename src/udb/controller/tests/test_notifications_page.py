@@ -31,10 +31,11 @@ class NotificationsTest(WebCase):
     def test_get_page_with_following(self):
         # Given a user following multiple record
         user = User.query.first()
-        zone = DnsZone(name='boo.com').add()
+        zone = DnsZone(name='boo.com').add().commit()
         zone.add_follower(user)
-        dhcp = DhcpRecord(mac='00:00:5e:00:53:af', ip='10.255.67.12').add()
+        dhcp = DhcpRecord(mac='00:00:5e:00:53:af', ip='10.255.67.12').add().commit()
         dhcp.add_follower(user)
+        dhcp.commit()
         # When browser the notifications page
         self.getPage(url_for('notifications', 'data.json'))
         self.assertStatus(200)

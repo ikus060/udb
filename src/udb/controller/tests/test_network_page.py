@@ -37,7 +37,8 @@ class CommonTest:
 
     def test_get_list_page(self):
         # Given a database with a record
-        self.obj_cls(**self.new_data).add()
+        obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When making a query to list page
         self.getPage(url_for(self.base_url, ''))
         # Then an html page is returned with a table
@@ -47,6 +48,7 @@ class CommonTest:
     def test_get_edit_page(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When querying the edit page
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         # Then a web page is return
@@ -56,6 +58,7 @@ class CommonTest:
     def test_get_edit_with_referer(self):
         # Given a database with a record.
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When editing the record with a referer
         self.getPage(url_for(self.base_url, obj.id, 'edit'), headers=[('Referer', url_for('notifications'))])
         # Then referer is store in form
@@ -73,9 +76,10 @@ class CommonTest:
     def test_edit(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When trying to update it's name
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=self.edit_data)
-        self.session.commit()
+        obj.expire()
         # Then user is redirected
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
@@ -87,6 +91,7 @@ class CommonTest:
     def test_edit_with_referer(self):
         # Given a database with a record.
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When editing the record with a referer
         body = {'referer': url_for('notifications')}
         body.update(self.edit_data)
@@ -103,11 +108,12 @@ class CommonTest:
     def test_edit_assign_owner(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When trying to update the owner-
         payload = dict(self.new_data)
         payload['owner_id'] = User.query.first().id
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=payload)
-        self.session.commit()
+        obj.expire()
         # Then user is redirected
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
@@ -125,11 +131,12 @@ class CommonTest:
         obj = self.obj_cls(**self.new_data)
         obj.owner = User.query.first()
         obj.add()
+        obj.commit()
         # When trying unassign
         payload = dict(self.new_data)
         payload['owner_id'] = 'None'
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=payload)
-        self.session.commit()
+        obj.expire()
         # Then user is redirected to list page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
@@ -141,7 +148,6 @@ class CommonTest:
         # Given an empty database
         # When trying to create a new dns zone
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
-        self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(self.base_url) + '/')
@@ -157,6 +163,7 @@ class CommonTest:
     def test_post_message(self):
         # Given a a database with a record
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When trying to post a message
         self.getPage(url_for(obj, 'post'), method='POST', body={'body': 'this is my message'})
         # Then user is redirected to the edit page
@@ -174,9 +181,9 @@ class CommonTest:
     def test_follow(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When trying follow that record
         self.getPage(url_for(obj, 'follow'), method='POST', body={"user_id": 1})
-        self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
         obj = self.obj_cls.query.first()
@@ -188,6 +195,7 @@ class CommonTest:
     def test_follow_get(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When trying follow that record
         self.getPage(url_for(obj, 'follow'), method='GET')
         self.assertStatus(405)
@@ -195,10 +203,10 @@ class CommonTest:
     def test_unfollow(self):
         # Given a database with a record
         userobj = User.query.filter_by(id=1).first()
-        obj = self.obj_cls(**self.new_data)
-        obj.add()
+        obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         obj.add_follower(userobj)
-        self.session.commit()
+        obj.commit()
         # When trying unfollow that record
         self.getPage(url_for(self.base_url, obj.id, 'unfollow'), method='POST', body={"user_id": 1})
         # Then user is redirected to the edit page
@@ -210,17 +218,18 @@ class CommonTest:
     def test_unfollow_get(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When trying follow that record
         self.getPage(url_for(obj, 'unfollow'), method='GET')
         self.assertStatus(405)
 
     def test_status_disabled(self):
         # Given a database with a record
-        obj = self.obj_cls(**self.new_data)
-        obj.add()
+        obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When trying disabled
         self.getPage(url_for(self.base_url, obj.id, 'status'), method='POST', body={'status': 'disabled'})
-        self.session.commit()
+        obj.expire()
         # Then user is redirected to the edit page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
@@ -231,9 +240,10 @@ class CommonTest:
         # Given a database with a record
         obj = self.obj_cls(**self.new_data)
         obj.add()
+        obj.commit()
         # When trying delete
         self.getPage(url_for(self.base_url, obj.id, 'status'), method='POST', body={'status': 'deleted'})
-        self.session.commit()
+        obj.expire()
         # Then user is redirected to the edit page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
@@ -245,9 +255,10 @@ class CommonTest:
         obj = self.obj_cls(**self.new_data)
         obj.status = 'disabled'
         obj.add()
+        obj.commit()
         # When trying enabled
         self.getPage(url_for(self.base_url, obj.id, 'status'), method='POST', body={'status': 'enabled'})
-        self.session.commit()
+        obj.expire()
         # Then user is redirected to the edit page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
@@ -258,9 +269,9 @@ class CommonTest:
         # Given a database with a record
         obj = self.obj_cls(**self.new_data)
         obj.add()
+        obj.commit()
         # When trying enabled
         self.getPage(url_for(self.base_url, obj.id, 'status'), method='POST', body={'status': 'invalid'})
-        self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
@@ -285,6 +296,7 @@ class CommonTest:
     def test_api_list(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When querying the list of records
         data = self.getJson(url_for('api', self.base_url), headers=self.authorization)
         # Then our records is part of the list
@@ -297,6 +309,7 @@ class CommonTest:
     def test_api_get(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When querying the records from API
         data = self.getJson(url_for('api', self.base_url, obj.id), headers=self.authorization)
         # Then our records is return as json
@@ -323,6 +336,7 @@ class CommonTest:
     def test_api_put(self):
         # Given a existing record
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # Given a valid payload
         payload = json.dumps(self.edit_data)
         # When sending a PUT request to the API
@@ -350,14 +364,14 @@ class DnsRecordTest(WebCase, CommonTest):
 
     def setUp(self):
         super().setUp()
-        DnsZone(name='example.com').add()
+        DnsZone(name='example.com').add().commit()
 
     def test_edit_invalid(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When trying to update it's name
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'value': 'invalid_cname'})
-        self.session.commit()
         # Then edit page is displayed with an error message
         self.assertStatus(200)
         self.assertInBody('value must matches the DNS record type')
@@ -367,7 +381,6 @@ class DnsRecordTest(WebCase, CommonTest):
         data = {'name': 'foo.example.com', 'type': 'PTR', 'value': 'bar.example.com'}
         # When trying to create a new record
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
-        self.session.commit()
         # Then edit page is displayed with an error message
         self.assertStatus(200)
         self.assertInBody('PTR records must ends with `.in-addr.arpa` or `.ip6.arpa`')
@@ -387,10 +400,9 @@ class DhcpRecordTest(WebCase, CommonTest):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data)
         obj.add()
-        self.session.commit()
+        obj.commit()
         # When trying to create the same record.
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
-        self.session.commit()
         # Then error is repported to the user.
         self.assertStatus(200)
         self.assertInBody('A record already exists in database with the same value.')
@@ -400,15 +412,15 @@ class DhcpRecordTest(WebCase, CommonTest):
         user_obj = User.query.first()
         obj = self.obj_cls(**self.new_data)
         obj.add()
-        self.session.commit()
+        obj.commit()
         self.assertEqual(1, len(obj.messages))
+        obj.expire()
         # When editing notes and owner
         self.getPage(
             url_for(self.base_url, obj.id, 'edit'),
             method='POST',
             body={'notes': 'Change me to get notification !', 'owner': user_obj.id},
         )
-        self.session.commit()
         # Then a single message is added to the record
         self.assertEqual(2, len(obj.messages))
 
@@ -416,7 +428,8 @@ class DhcpRecordTest(WebCase, CommonTest):
 class IPTest(WebCase):
     def test_no_owner_filter(self):
         # Given a database with records
-        DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj.commit()
         # When browsing IP list view
         self.getPage('/ip/')
         # Then owner filter doesn't exists
@@ -425,7 +438,8 @@ class IPTest(WebCase):
 
     def test_no_deleted_filter(self):
         # Given a database with records
-        DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj.commit()
         # When browsing IP list view
         self.getPage('/ip/')
         # Then no deleted filter exists
@@ -434,7 +448,8 @@ class IPTest(WebCase):
 
     def test_no_create_new(self):
         # Given a database with records
-        DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj.commit()
         # When browsing IP list view
         self.getPage('/ip/')
         # Then no create new exists
@@ -442,7 +457,8 @@ class IPTest(WebCase):
 
     def test_edit_ip(self):
         # Given a database with records
-        DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj.commit()
         # When browsing IP view
         self.getPage('/ip/1.2.3.4/edit')
         # Then no create new exists
@@ -462,6 +478,7 @@ class RoleTest(WebCase):
     def setUp(self):
         super().setUp()
         user = User.create(username='guest', password='password', role=User.ROLE_GUEST).add()
+        user.commit()
         self.getPage(
             "/login/", method='POST', body={'username': user.username, 'password': 'password', 'redirect': '/'}
         )
@@ -470,7 +487,8 @@ class RoleTest(WebCase):
     def test_list_as_guest(self):
         # Given a 'guest' user authenticated
         # Given a DnsZone
-        DnsZone(name='examples.com').add()
+        obj = DnsZone(name='examples.com').add()
+        obj.commit()
         # When requesting list of records
         self.getPage(url_for(DnsZone, 'data.json'))
         # Then the list is available
@@ -481,6 +499,7 @@ class RoleTest(WebCase):
         # Given a 'guest' user authenticated
         # Given a DnsZone
         zone = DnsZone(name='examples.com').add()
+        zone.commit()
         # When trying to edit a record
         self.getPage(url_for(zone, 'edit'), method='POST', body={'name': 'newname.com'})
         # Then a 403 Forbidden is raised
@@ -490,6 +509,7 @@ class RoleTest(WebCase):
         # Given a 'guest' user authenticated
         # Given a DnsZone
         zone = DnsZone(name='examples.com').add()
+        zone.commit()
         # When trying to edit a record
         self.getPage(url_for(zone, 'status'), method='POST', body={'status': 'disabled'})
         # Then a 403 Forbidden is raised
@@ -518,6 +538,7 @@ class RoleTest(WebCase):
     def test_api_put_as_guest(self):
         # Given a existing record
         obj = DnsZone(name='examples.com').add()
+        obj.commit()
         # Given a valid payload
         payload = json.dumps({'name': 'newname.com'})
         # When sending a PUT request to the API

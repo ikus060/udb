@@ -36,18 +36,19 @@ class DnsZoneTest(WebCase, CommonTest):
     def test_edit_invalid(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
         # When trying to update it's name
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'name': 'invalid new name'})
-        self.session.commit()
         # Then edit page is displayed with an error message
         self.assertStatus(200)
         self.assertInBody('expected a valid FQDN')
 
     def test_edit_with_subnet(self):
         # Given a database with a record
-        vrf = Vrf(name='default')
+        vrf = Vrf(name='default').add()
         subnet = Subnet(**{'ranges': ['192.168.0.1/24'], 'vrf': vrf}).add()
         obj = self.obj_cls(**{'name': 'examples.com', 'subnets': [subnet]}).add()
+        obj.commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         # Then subnets are select
@@ -59,9 +60,10 @@ class DnsZoneTest(WebCase, CommonTest):
 
     def test_edit_add_subnet(self):
         # Given a database with a record
-        vrf = Vrf(name='default')
+        vrf = Vrf(name='default').add()
         subnet = Subnet(**{'ranges': ['192.168.0.1/24'], 'vrf': vrf}).add()
         obj = self.obj_cls(**{'name': 'examples.com', 'subnets': []}).add()
+        obj.commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'subnets': subnet.id})
         self.assertStatus(303)

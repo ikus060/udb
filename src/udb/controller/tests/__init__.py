@@ -136,8 +136,9 @@ class WebCase(BaseClass):
 
     def _login(self, username=username, password=password, redirect='/'):
         # Create new user
-        User.create_default_admin(username, password)
-        self.session.commit()
+        user = User.create_default_admin(username, password)
+        if user:
+            user.commit()
         # Authenticate
         self.getPage("/login/", method='POST', body={'username': username, 'password': password, 'redirect': redirect})
         self.assertStatus('303 See Other')
