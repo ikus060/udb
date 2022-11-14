@@ -36,7 +36,7 @@ class VrfTest(WebCase, CommonTest):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data)
         obj.add()
-        self.session.commit()
+        obj.commit()
         # When trying to create the same record.
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
         # Then error is repported to the user.

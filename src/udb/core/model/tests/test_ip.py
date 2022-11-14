@@ -25,13 +25,13 @@ class IpTest(WebCase):
         # Given valid DnsZone with subnet
         vrf = Vrf(name='default')
         subnet = Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add()
-        DnsZone(name='example.com', subnets=[subnet]).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # Given a list of DhcpRecord and DnsRecord
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
         DhcpRecord(ip='192.0.2.24', mac='00:00:5e:00:53:df').add()
         DhcpRecord(ip='192.0.2.25', mac='00:00:5e:00:53:cf').add()
         DnsRecord(name='foo.example.com', type='A', value='192.0.2.20').add()
-        DnsRecord(name='bar.example.com', type='A', value='192.0.2.23').add()
+        DnsRecord(name='bar.example.com', type='A', value='192.0.2.23').add().commit()
         # When querying list of IPs
         objs = Ip.query.order_by('ip').all()
         # Then is matches the DhcpRecord.
@@ -43,7 +43,7 @@ class IpTest(WebCase):
 
     def test_ip_with_dhcp_deleted_status(self):
         # Given a deleted DhcpRecord
-        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', status='deleted').add()
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', status='deleted').add().commit()
         # When querying list of IPs
         objs = Ip.query.order_by('ip').all()
         # Then the list is empty
@@ -53,9 +53,9 @@ class IpTest(WebCase):
         # Given valid DnsZone with subnet
         vrf = Vrf(name='default')
         subnet = Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add()
-        DnsZone(name='example.com', subnets=[subnet]).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
         # Given a deleted DnsRecord
-        DnsRecord(name='foo.example.com', type='A', value='192.0.2.20', status='deleted').add()
+        DnsRecord(name='foo.example.com', type='A', value='192.0.2.20', status='deleted').add().commit()
         # When querying list of IPs
         objs = Ip.query.order_by('ip').all()
         # Then the list is empty
@@ -65,11 +65,11 @@ class IpTest(WebCase):
         # Given valid DnsZone with subnet
         vrf = Vrf(name='default')
         subnet = Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add()
-        DnsZone(name='example.com', subnets=[subnet]).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # Given a list of DnsRecords and DhcpRecord
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
         DnsRecord(name='bar.example.com', type='A', value='192.0.2.23').add()
-        DnsRecord(name='bar.example.com', type='TXT', value='x47').add()
+        DnsRecord(name='bar.example.com', type='TXT', value='x47').add().commit()
         # When querying list of related DnsRecord on a Ip.
         objs = Ip.query.order_by('ip').first().related_dns_records
         # Then the list include all DnsRecord matching the fqdn
@@ -81,11 +81,11 @@ class IpTest(WebCase):
         # Given valid DnsZone with subnet
         vrf = Vrf(name='default')
         subnet = Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add()
-        DnsZone(name='example.com', subnets=[subnet]).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # Given a list of DnsRecords and DhcpRecord
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
         DnsRecord(name='bar.example.com', type='A', value='192.0.2.23').add()
-        DnsRecord(name='bar.example.com', type='TXT', value='x47').add()
+        DnsRecord(name='bar.example.com', type='TXT', value='x47').add().commit()
         # When querying list of related DhcpRecord on a Ip.
         objs = Ip.query.order_by('ip').first().related_dhcp_records
         # Then the list include all DhcpRecord matching the fqdn
@@ -96,10 +96,10 @@ class IpTest(WebCase):
         # Given a DnsZone with valid subnet
         vrf = Vrf(name='default')
         subnet = Subnet(ranges=['2001:db8:85a3::/64'], vrf=vrf).add()
-        DnsZone(name='example.com', subnets=[subnet]).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # Given a list of DnsRecords and DhcpRecord with ipv6
         DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf').add()
-        DnsRecord(name='bar.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add()
+        DnsRecord(name='bar.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add().commit()
         # When querying list of related DnsRecord on a Ip.
         self.assertEqual(1, Ip.query.count())
         obj = Ip.query.order_by('ip').first()
@@ -111,9 +111,9 @@ class IpTest(WebCase):
         # Given a DnsZone with valid subnet
         vrf = Vrf(name='default')
         subnet = Subnet(ranges=['2001:db8:85a3::/64'], vrf=vrf).add()
-        DnsZone(name='example.com', subnets=[subnet]).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # Given a DnsRecords with ipv6
-        DnsRecord(name='bar.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add()
+        DnsRecord(name='bar.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add().commit()
         # When querying list of related DnsRecord on a Ip.
         obj = Ip.query.order_by('ip').first()
         # Then the list include all DnsRecord matching the fqdn
@@ -122,7 +122,7 @@ class IpTest(WebCase):
 
     def test_dhcp_ipv6(self):
         # Given a DhcpRecord with ipv6
-        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf').add()
+        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf').add().commit()
         # When querying list of related DhcpRecord on a Ip.
         obj = Ip.query.order_by('ip').first()
         # Then the list include all DhcpRecord matching the fqdn
@@ -133,8 +133,8 @@ class IpTest(WebCase):
         # Given a valid PTR record in DNS Zone
         vrf = Vrf(name='default')
         subnet = Subnet(ranges=['192.168.2.0/24'], vrf=vrf).add()
-        DnsZone(name='example.com', subnets=[subnet]).add()
-        DnsRecord(name='254.2.168.192.in-addr.arpa', type='PTR', value='bar.example.com').add()
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
+        DnsRecord(name='254.2.168.192.in-addr.arpa', type='PTR', value='bar.example.com').add().commit()
         # When querying list of IP
         obj = Ip.query.order_by('ip').first()
         # Then is include the IP Address of the PTR record
@@ -145,12 +145,12 @@ class IpTest(WebCase):
         # Given a valid PTR record in DNS Zone
         vrf = Vrf(name='default')
         subnet = Subnet(ranges=['4321:0:1:2:3:4:567:0/112'], vrf=vrf).add()
-        DnsZone(name='example.com', subnets=[subnet]).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
         DnsRecord(
             name='b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
             type='PTR',
             value='bar.example.com',
-        ).add()
+        ).add().commit()
         # When querying list of IP
         obj = Ip.query.order_by('ip').first()
         # Then is include the IP Address of the PTR record
@@ -161,17 +161,25 @@ class IpTest(WebCase):
         # Given a DNS Record within a valid DNS Zone
         vrf = Vrf(name='default')
         subnet = Subnet(ranges=['2001:db8:85a3::8a2e:370:7330/124'], vrf=vrf).add()
-        DnsZone(name='example.com', subnets=[subnet]).add()
-        dns = DnsRecord(
-            name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
-            type='PTR',
-            value='bar.example.com',
-        ).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
+        dns = (
+            DnsRecord(
+                name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
+                type='PTR',
+                value='bar.example.com',
+            )
+            .add()
+            .commit()
+        )
         # Given a deleted DHCP Record
-        dhcp = DhcpRecord(
-            ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
-            mac='00:00:5e:00:53:bf',
-        ).add()
+        dhcp = (
+            DhcpRecord(
+                ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
+                mac='00:00:5e:00:53:bf',
+            )
+            .add()
+            .commit()
+        )
         # When querying list of IP
         self.assertEqual(1, Ip.query.count())
         obj = Ip.query.order_by('ip').first()
@@ -185,17 +193,17 @@ class IpTest(WebCase):
         DhcpRecord(
             ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
             mac='00:00:5e:00:53:bf',
-        ).add()
+        ).add().commit()
         # Given a deleted DNS Record
         vrf = Vrf(name='default')
         subnet = Subnet(ranges=['2001:db8:85a3::8a2e:370:7334/126'], vrf=vrf).add()
-        DnsZone(name='example.com', subnets=[subnet]).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
         DnsRecord(
             name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
             type='PTR',
             value='bar.example.com',
             status=DnsRecord.STATUS_DELETED,
-        ).add()
+        ).add().commit()
         # When querying list of IP
         obj = Ip.query.order_by('ip').first()
         # Then is include the IP Address of the PTR record
@@ -206,18 +214,18 @@ class IpTest(WebCase):
         # Given a DNS Record in DNS Zone
         vrf = Vrf(name='default')
         subnet = Subnet(ranges=['2001:db8:85a3::8a2e:370:7334/126'], vrf=vrf).add()
-        DnsZone(name='example.com', subnets=[subnet]).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
         DnsRecord(
             name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
             type='PTR',
             value='bar.example.com',
-        ).add()
+        ).add().commit()
         # Given a deleted DHCP Record
         DhcpRecord(
             ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
             mac='00:00:5e:00:53:bf',
             status=DhcpRecord.STATUS_DELETED,
-        ).add()
+        ).add().commit()
         # When querying list of IP
         obj = Ip.query.order_by('ip').first()
         # Then is include the IP Address of the PTR record
@@ -228,17 +236,17 @@ class IpTest(WebCase):
         # Given a DNS Record in DNS Zone
         vrf = Vrf(name='default')
         subnet = Subnet(ranges=['2001:db8:85a3::8a2e:370:7334/126'], vrf=vrf).add()
-        DnsZone(name='example.com', subnets=[subnet]).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
         DnsRecord(
             name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
             type='PTR',
             value='bar.example.com',
-        ).add()
+        ).add().commit()
         # Given a deleted DHCP Record
         DhcpRecord(
             ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
             mac='00:00:5e:00:53:bf',
-        ).add()
+        ).add().commit()
         # When querying the related subnets
         obj = Ip.query.order_by('ip').first()
         self.assertEqual([subnet], obj.related_subnets)

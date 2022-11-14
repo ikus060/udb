@@ -40,11 +40,13 @@ class NotificationPluginTest(WebCase):
         follower = User.create(
             username='afollower', password='password', email='follower@test.com', role=User.ROLE_USER
         ).add()
-        record = DnsZone(name='my.zone.com').add()
+        record = DnsZone(name='my.zone.com').add().flush()
         record.add_follower(follower)
+        record.commit()
         # When a comment is made on that record
         record.add_message(Message(body='This is my comment', author=author))
         record.add()
+        record.commit()
         # Then notifications are sent to the followers
         self.listener.queue_mail.assert_called_once_with(
             bcc=['follower@test.com'], subject='Comment on DNS Zone my.zone.com by admin', message=mock.ANY
@@ -55,11 +57,13 @@ class NotificationPluginTest(WebCase):
         follower = User.create(
             username='afollower', password='password', email='follower@test.com', role=User.ROLE_USER
         ).add()
-        record = DnsZone(name='my.zone.com').add()
+        record = DnsZone(name='my.zone.com').add().flush()
         record.add_follower(follower)
+        record.commit()
         # When a change is made on that record
         record.notes = 'This is a modification to the notes field.'
         record.add()
+        record.commit()
         # Then notifications are sent to the followers
         self.listener.queue_mail.assert_called_once_with(
             bcc=['follower@test.com'], subject='DNS Zone my.zone.com modified by nobody', message=mock.ANY
@@ -71,13 +75,15 @@ class NotificationPluginTest(WebCase):
             username='afollower', password='password', email='follower@test.com', role=User.ROLE_USER
         ).add()
         vrf = Vrf(name='default')
-        subnet = Subnet(ranges=['192.168.0.0/24'], name='home', vrf=vrf).add()
+        subnet = Subnet(ranges=['192.168.0.0/24'], name='home', vrf=vrf).add().flush()
         subnet.add_follower(follower)
-        record = DnsZone(name='my.zone.com').add()
+        record = DnsZone(name='my.zone.com').add().flush()
         record.add_follower(follower)
+        record.commit()
         # When a change is made on that record
         record.subnets = [subnet]
         record.add()
+        record.commit()
         # Then a single notification is sent to the followers
         self.listener.queue_mail.assert_called_once_with(
             bcc=['follower@test.com'],
@@ -89,7 +95,7 @@ class NotificationPluginTest(WebCase):
         # Given a catchall notification email in configuration
         cherrypy.config.update({'notification.catch_all_email': 'my@email.com'})
         # When creating a new record
-        DnsZone(name='my.zone.com').add()
+        DnsZone(name='my.zone.com').add().commit()
         # Then a notification is sent to catchall email
         self.listener.queue_mail.assert_called_once_with(
             bcc=['my@email.com'],
@@ -102,13 +108,15 @@ class NotificationPluginTest(WebCase):
         follower = User.create(
             username='afollower', password='password', email='follower@test.com', role=User.ROLE_USER
         ).add()
-        record = DnsZone(name='my.zone.com').add()
+        record = DnsZone(name='my.zone.com').add().flush()
         record.add_follower(follower)
+        record.commit()
         # Given a catchall notification email in configuration
         cherrypy.config.update({'notification.catch_all_email': 'my@email.com'})
         # When a changes is made
         record.notes = 'This is a modification to the notes field.'
         record.add()
+        record.commit()
         # Then a notification is sent to catchall email
         self.listener.queue_mail.assert_called_once_with(
             bcc=['follower@test.com', 'my@email.com'],

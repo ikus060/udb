@@ -28,6 +28,7 @@ class DnsZoneTest(WebCase):
     def test_json(self):
         # Given a DnsZone
         obj = DnsZone(name='bfh.ch').add()
+        obj.commit()
         # When serializing the object to json
         data = obj.to_json()
         # Then a json representation is return
@@ -38,6 +39,7 @@ class DnsZoneTest(WebCase):
         self.assertEqual(0, DnsZone.query.count())
         # When adding a new Dns Zone
         zone = DnsZone(name='bfh.ch').add()
+        zone.commit()
         # then a new DnsZone entry exists in database
         self.assertEqual(1, DnsZone.query.count())
         # Then a messages was added to the zone
@@ -48,10 +50,11 @@ class DnsZoneTest(WebCase):
         # Given a database with a DnsZone
         self.assertEqual(0, DnsZone.query.count())
         obj = DnsZone(name='bfh.ch').add()
+        obj.commit()
         self.assertEqual(1, DnsZone.query.count())
-        self.session.commit()
         # When trying to delete a given dns zone
         obj.delete()
+        obj.commit()
         # Then the entry is removed from database
         self.assertEqual(0, DnsZone.query.count())
         # Then related messages are deleted from database
@@ -60,11 +63,13 @@ class DnsZoneTest(WebCase):
     def test_soft_delete(self):
         # Given a datavase with a DnsZone
         obj = DnsZone(name='bfh.ch').add()
+        obj.commit()
         self.assertEqual(1, DnsZone.query.count())
         self.assertEqual(1, Message.query.count())
         # When updating it's status to deleted
         obj.status = DnsZone.STATUS_DELETED
         obj.add()
+        obj.commit()
         # When the object still exists in database
         self.assertEqual(1, DnsZone.query.count())
         self.assertEqual(DnsZone.STATUS_DELETED, DnsZone.query.first().status)
@@ -74,10 +79,12 @@ class DnsZoneTest(WebCase):
     def test_enabled(self):
         # Given a datavase with a DnsZone
         obj = DnsZone(name='bfh.ch').add()
+        obj.commit()
         self.assertEqual(1, DnsZone.query.count())
         # When updating it's status to deleted
         obj.status = DnsZone.STATUS_ENABLED
         obj.add()
+        obj.commit()
         # Then the object still exists in database
         self.assertEqual(1, DnsZone.query.count())
         self.assertEqual(DnsZone.STATUS_ENABLED, DnsZone.query.first().status)
@@ -85,10 +92,12 @@ class DnsZoneTest(WebCase):
     def test_disabled(self):
         # Given a datavase with a DnsZone
         obj = DnsZone(name='bfh.ch').add()
+        obj.commit()
         self.assertEqual(1, DnsZone.query.count())
         # When updating it's status to deleted
         obj.status = DnsZone.STATUS_DISABLED
         obj.add()
+        obj.commit()
         # When the object still exists in database
         self.assertEqual(1, DnsZone.query.count())
         self.assertEqual(DnsZone.STATUS_DISABLED, DnsZone.query.first().status)
@@ -99,41 +108,37 @@ class DnsZoneTest(WebCase):
         # When trying to create a new DnsZone with an invalid fqdn
         # Then an excpetion is raised
         with self.assertRaises(ValueError) as cm:
-            DnsZone(name='invalid/name').add()
+            DnsZone(name='invalid/name').add().commit()
         self.assertEqual(cm.exception.args, ('name', mock.ANY))
 
     def test_duplicate_name(self):
         # Given a database with an existing record
-        DnsZone(name='bfh.ch').add()
+        DnsZone(name='bfh.ch').add().commit()
         self.assertEqual(1, DnsZone.query.count())
-        self.session.commit()
         # When trying to add a dns zone with an existing name
         # Then an exception is raised
         with self.assertRaises(IntegrityError):
-            DnsZone(name='bfh.ch').add()
-            self.session.commit()
+            DnsZone(name='bfh.ch').add().commit()
 
     def test_duplicate_name_case_insensitive(self):
         # Given a database with an existing record
-        DnsZone(name='bfh.ch').add()
+        DnsZone(name='bfh.ch').add().commit()
         self.assertEqual(1, DnsZone.query.count())
-        self.session.commit()
         # When trying to add a dns zone with an existing name
         # Then an exception is raised
         with self.assertRaises(IntegrityError):
-            DnsZone(name='BFH.ch').add()
-            self.session.commit()
+            DnsZone(name='BFH.ch').add().commit()
 
     def test_update_owner(self):
         # Given a database with an existing record
         d = DnsZone(name='bfh.ch').add()
+        d.commit()
         self.assertEqual(1, DnsZone.query.count())
-        self.session.commit()
         # When trying to update the owner
         new_user = User(username='test').add()
         d.owner = new_user
         d.add()
-        self.session.commit()
+        d.commit()
         # Then a new message with changes is append to the object.
         messages = d.messages
         self.assertEqual(2, len(messages))
@@ -142,12 +147,13 @@ class DnsZoneTest(WebCase):
     def test_add_subnet(self):
         # Given a database with an existing record
         zone = DnsZone(name='bfh.ch').add()
-        self.session.commit()
+        zone.commit()
         # When trying to add an allowed subnet to the dns zone
         vrf = Vrf(name='default')
-        subnet = Subnet(name='test', ranges=['192.168.1.0/24'], vrf=vrf).add()
+        subnet = Subnet(name='test', ranges=['192.168.1.0/24'], vrf=vrf).add().commit()
         zone.subnets.append(subnet)
         zone.add()
+        zone.commit()
         # Then a subnet is added
         zone = DnsZone.query.first()
         subnet = Subnet.query.first()
@@ -165,9 +171,9 @@ class DnsZoneTest(WebCase):
 
     def test_subnets_deleted(self):
         # Given a database with a deleted subnet
-        vrf = Vrf(name='default')
+        vrf = Vrf(name='default').add()
         subnet = Subnet(name='test', ranges=['192.168.1.0/24'], status=Subnet.STATUS_DELETED, vrf=vrf).add()
-        zone = DnsZone(name='bfh.ch', subnets=[subnet]).add()
+        zone = DnsZone(name='bfh.ch', subnets=[subnet]).add().commit()
         # When querying the list of subnets within a zone
         subnets = zone.subnets
         # Then the list doesn't include the deleted subnet
@@ -175,18 +181,17 @@ class DnsZoneTest(WebCase):
 
     def test_get_messages(self):
         # Given a database with an existing record
-        d = DnsZone(name='bfh.ch').add()
+        d = DnsZone(name='bfh.ch').add().commit()
         self.assertEqual(1, DnsZone.query.count())
-        self.session.commit()
         # When updating the owner
         new_user = User(username='test').add()
         d.owner = new_user
         d.add()
-        self.session.commit()
+        d.commit()
         # When adding a comments
         now = datetime.datetime.now(datetime.timezone.utc)
         d.add_message(Message(body='this is a comments'))
-        self.session.commit()
+        d.commit()
         # Then a message with type 'new' exists
         messages = d.changes
         self.assertEqual(2, len(messages))
@@ -206,7 +211,7 @@ class DnsZoneTest(WebCase):
         # Given a database with records
         main = DnsZone(name='example.com', notes='This is the main zone').add()
         science = DnsZone(name='science.example.com', notes='testing').add()
-        DnsZone(name='dmz.example.com', notes='Use for DMZ').add()
+        DnsZone(name='dmz.example.com', notes='Use for DMZ').add().commit()
         # When searching for a term in notes
         records = DnsZone.query.filter(DnsZone._search_vector.websearch('main')).all()
         # Then a single record is returned

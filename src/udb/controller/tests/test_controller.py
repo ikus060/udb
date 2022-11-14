@@ -29,6 +29,7 @@ class TestApp(WebCase):
     def test_url_for_with_object(self):
         # Given a database with a record
         obj = DnsZone(name='bfh.ch').add()
+        obj.commit()
         # When creating URL for that object
         # Then URL is create with object name and object id
         self.assertEqual(url_for(obj), 'http://%s:%s/dnszone/%s' % (self.HOST, self.PORT, obj.id))
@@ -36,6 +37,7 @@ class TestApp(WebCase):
     def test_url_for_with_message(self):
         # Given a database with a record
         obj = DnsZone(name='bfh.ch').add()
+        obj.commit()
         # When creating URL using the message
         msg = Message.query.first()
         # Then URL is create with object name and object id
@@ -44,6 +46,7 @@ class TestApp(WebCase):
     def test_url_for_with_search(self):
         # Given a database with a record
         obj = DnsZone(name='bfh.ch').add()
+        obj.commit()
         # When creating URL using the search object
         msg = Search.query.first()
         # Then URL is create with object name and object id

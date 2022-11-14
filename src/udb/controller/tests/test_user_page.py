@@ -28,7 +28,7 @@ class UserTest(WebCase):
 
     def test_get_list_page(self):
         # Given a database with a record
-        User(**self.new_data).add()
+        User(**self.new_data).add().commit()
         # When making a query to list page
         self.getPage(url_for('user', ''))
         # Then an html page is returned with a table
@@ -38,6 +38,7 @@ class UserTest(WebCase):
     def test_get_edit_page(self):
         # Given a database with a record
         obj = User(**self.new_data).add()
+        obj.commit()
         # When querying the edit page
         self.getPage(url_for(obj, 'edit'))
         # Then a web page is return
@@ -55,9 +56,10 @@ class UserTest(WebCase):
     def test_edit(self):
         # Given a database with a record
         obj = User(**self.new_data).add()
+        obj.commit()
         # When trying to update it's name
         self.getPage(url_for(obj, 'edit'), method='POST', body=self.edit_data)
-        self.session.commit()
+        obj.expire()
         # Then user is redirected to list page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
@@ -69,9 +71,9 @@ class UserTest(WebCase):
     def test_edit_with_password(self):
         # Given a database with a record
         obj = User(**self.new_data).add()
+        obj.commit()
         # When trying to update the password with strong value.
         self.getPage(url_for(obj, 'edit'), method='POST', body={'password': 'xQPyU9yNqb3e'})
-        self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
@@ -82,9 +84,9 @@ class UserTest(WebCase):
     def test_edit_with_password_too_weak(self):
         # Given a database with a record
         obj = User(**self.new_data).add()
+        obj.commit()
         # When trying to update password with a simple value.
         self.getPage(url_for(obj, 'edit'), method='POST', body={'password': 'newpassword'})
-        self.session.commit()
         # Then an error message is displayed
         self.assertStatus(200)
         self.assertInBody('Password too weak.')
@@ -92,9 +94,9 @@ class UserTest(WebCase):
     def test_edit_with_clear_password(self):
         # Given a database with a record
         obj = User(**self.new_data).add()
+        obj.commit()
         # When trying to update it's name
         self.getPage(url_for(obj, 'edit'), method='POST', body={'clear_password': 1})
-        self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
@@ -106,7 +108,6 @@ class UserTest(WebCase):
         # Given an empty database
         # When trying to create a new dns zone
         self.getPage(url_for('user', 'new'), method='POST', body=self.new_data)
-        self.session.commit()
         # Then user is redirected to list page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for('user') + '/')
@@ -119,26 +120,28 @@ class UserTest(WebCase):
         # Given a database with a record
         obj = User(**self.new_data)
         obj.add()
+        obj.commit()
         # When trying disabled
         self.getPage(url_for('user', obj.id, 'status'), method='POST', body={'status': 'disabled'})
-        self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
-        # Then object status is disabled is removed to the record
+        # Then object status is disabled
+        obj.expire()
         self.assertEqual('disabled', User.query.filter_by(username=self.new_data['username']).first().status)
 
     def test_status_delete(self):
         # Given a database with a record
         obj = User(**self.new_data)
         obj.add()
+        obj.commit()
         # When trying delete
         self.getPage(url_for('user', obj.id, 'status'), method='POST', body={'status': 'deleted'})
-        self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then object status is delete is removed to the record
+        obj.expire()
         self.assertEqual('deleted', User.query.filter_by(username=self.new_data['username']).first().status)
 
     def test_status_enabled(self):
@@ -146,22 +149,23 @@ class UserTest(WebCase):
         obj = User(**self.new_data)
         obj.status = 'disabled'
         obj.add()
+        obj.commit()
         # When trying enabled
         self.getPage(url_for('user', obj.id, 'status'), method='POST', body={'status': 'enabled'})
-        self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then object status is enabled is removed to the record
+        obj.expire()
         self.assertEqual('enabled', User.query.filter_by(username=self.new_data['username']).first().status)
 
     def test_status_invalid(self):
         # Given a database with a record
         obj = User(**self.new_data)
         obj.add()
+        obj.commit()
         # When trying enabled
         self.getPage(url_for('user', obj.id, 'status'), method='POST', body={'status': 'invalid'})
-        self.session.commit()
         # Then user is redirected to the edit page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))

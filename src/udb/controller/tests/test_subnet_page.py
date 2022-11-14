@@ -35,15 +35,14 @@ class SubnetTest(WebCase, CommonTest):
 
     def setUp(self):
         super().setUp()
-        self.vrf = Vrf(name='default').add()
+        self.vrf = Vrf(name='default').add().commit()
         self.new_data['vrf_id'] = self.vrf.id
 
     def test_edit_invalid(self):
         # Given a database with a record
-        obj = self.obj_cls(**self.new_data).add()
+        obj = self.obj_cls(**self.new_data).add().commit()
         # When trying to update it's name
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'ranges': ['invalid cidr']})
-        self.session.commit()
         # Then edit page is displayed with an error message
         self.assertStatus(200)
         self.assertInBody('does not appear to be a valid IPv6 or IPv4 network')
@@ -51,7 +50,7 @@ class SubnetTest(WebCase, CommonTest):
     def test_edit_with_dnszone(self):
         # Given a database with a record
         zone = DnsZone(name='examples.com').add()
-        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[zone], vrf=self.vrf).add()
+        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[zone], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         # Then the zone is selected
@@ -63,8 +62,8 @@ class SubnetTest(WebCase, CommonTest):
 
     def test_edit_add_dnszone(self):
         # Given a database with a record
-        zone = DnsZone(name='examples.com').add()
-        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[], vrf=self.vrf).add()
+        zone = DnsZone(name='examples.com').add().flush()
+        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'dnszones': zone.id})
         self.assertStatus(303)
@@ -80,7 +79,7 @@ class SubnetTest(WebCase, CommonTest):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data)
         obj.add()
-        self.session.commit()
+        obj.commit()
         # When trying to create the same record.
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
         # Then error is repported to the user.

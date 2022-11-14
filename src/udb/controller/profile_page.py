@@ -22,7 +22,6 @@ from wtforms.validators import DataRequired, Email, EqualTo, InputRequired, Leng
 
 from udb.controller import flash
 from udb.controller.form import CherryForm
-from udb.core.model import User
 from udb.tools.i18n import gettext as _
 
 
@@ -122,9 +121,10 @@ class ProfilePage:
             try:
                 form.populate_obj(userobj)
                 userobj.add()
+                userobj.commit()
             except ValueError as e:
                 # raised by SQLAlchemy validators
-                User.session.rollback()
+                userobj.rollback()
                 if len(e.args) == 2 and getattr(form, e.args[0], None):
                     getattr(form, e.args[0]).errors.append(e.args[1])
                 else:
