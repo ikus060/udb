@@ -50,6 +50,7 @@ class FollowerMixin:
         if not self.is_following(user):
             f = Follower(model_name=self.__tablename__, model_id=self.id, user=user)
             f.add()
+            return f
 
     def remove_follower(self, user):
         assert self.id, 'object must be commit before adding a follower'

@@ -16,12 +16,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import threading
 
 import cherrypy
 from cherrypy.process.plugins import SimplePlugin
+from sqlalchemy import and_, or_
 from sqlalchemy.event import listen, remove
 
-from udb.core.model import Message
+from udb.core.model import Follower, Message, User
 from udb.tools.i18n import gettext_lazy as _
 
 Session = cherrypy.tools.db.get_session()
@@ -32,39 +34,114 @@ class NotifiationPlugin(SimplePlugin):
     header_name = ''
     catch_all_email = None
 
+    _lock = threading.RLock()
+
     def start(self):
         self.bus.log('Start Notification plugins')
+        self._new_messages = {}
         # Register a listener with sqlalquemy
         listen(Session, "after_flush", self._after_flush)
+        listen(Session, "after_commit", self._after_commit)
 
     def stop(self):
         self.bus.log('Stop Notification plugins')
         remove(Session, "after_flush", self._after_flush)
+        remove(Session, "after_commit", self._after_commit)
+        self._new_messages = {}
 
     def _after_flush(self, session, flush_context):
         """
-        Send email notification on object changes.
+        Keep track if this session has any new messages.
         """
-        messages = sorted(
-            [msg for msg in session.new if isinstance(msg, Message)],
-            key=lambda msg: (msg.model_object.__class__.__name__, msg.model_object.id),
-        )
-        if not messages:
+        # Get list of new messages
+        new_messages = [msg for msg in session.new if isinstance(msg, Message)]
+        if not new_messages:
             return
-        # Collect list of model
-        obj_list = [msg.model_object for msg in messages]
-        if not obj_list:
+        # Keep track if this session had new messages.
+        self._new_messages[session] = bool(new_messages) or self._new_messages.get(session, False)
+
+    def _after_commit(self, session):
+        """
+        On commit, let check if new message was created and send
+        the corresponding notification.
+        """
+        # Check if this session contain new messages
+        if session not in self._new_messages:
             return
-        # Send email to each follower except the author
-        bcc = list(
-            {user.email for obj in obj_list for user in obj.followers if messages[0].author_id != user.id if user.email}
+        elif not self._new_messages[session]:
+            del self._new_messages[session]
+            return
+
+        # On every commit, let trigger a background task to collect
+        # Messages to be notified.
+        del self._new_messages[session]
+        self.bus.publish('schedule_task', self._notification_task)
+
+    def _notification_task(self):
+        """
+        Task to notify users following modification on records.
+        """
+        # Let use python lock to minimize the lock on database
+        with self._lock:
+            all_messages = (
+                Message.query.filter(Message.sent.is_not(True)).order_by(Message.model_name, Message.model_id).all()
+            )
+            if not all_messages:
+                return
+
+            # For each message determine the recipients
+            final_recipients = {}
+            for message in all_messages:
+                recipients = self._get_recipients(message)
+                for recipient in recipients:
+                    final_recipients.setdefault(recipient, []).append(message)
+
+            # For each recipients send the messages
+            for recipient, messages in final_recipients.items():
+                self._send_notification(messages, recipient)
+
+            # Update the "sent" flag
+            for message in all_messages:
+                message.sent = True
+                message.add()
+            Message.session.commit()
+
+    def _get_recipients(self, message):
+
+        # Get list of all the followers. Query database for matching model_name and model_id.
+        criteria = [
+            and_(Follower.model_name == model_name, Follower.model_id == id)
+            for model_name, id in message.model_object.objects_to_notify()
+        ]
+        # Follower with model_id == 0 must receive all changes for the given model.
+        criteria.extend(
+            [
+                and_(
+                    Follower.model_id == 0,
+                    Follower.model_name.in_(
+                        list(set([model_name for model_name, id in message.model_object.objects_to_notify()]))
+                    ),
+                )
+            ]
         )
+        criteria = or_(*criteria)
+        bcc = (
+            User.session.query(User.email)
+            .distinct()
+            .join(Follower)
+            .filter(criteria)
+            .filter(User.email.is_not(None), User.email != '', User.status == User.STATUS_ENABLED)
+            .all()
+        )
+        bcc = [t[0] for t in bcc]
+
         # Send email to catch-all notification email.
         if self.catch_all_email:
             bcc += [self.catch_all_email]
-        if not bcc:
-            return
+        return bcc
 
+    def _send_notification(self, messages, recipient):
+        assert recipient
         # Get jinja2 template to generate email body
         template = self.env.get_template('mail/notification.j2')
         values = {
@@ -78,8 +155,7 @@ class NotifiationPlugin(SimplePlugin):
             subject = m.group(1).replace('\n', '')
         else:
             subject = _('Notification')
-        if bcc:
-            self.bus.publish('queue_mail', bcc=bcc, subject=subject, message=message_body)
+        self.bus.publish('send_mail', to=recipient, subject=subject, message=message_body)
 
 
 cherrypy.notification = NotifiationPlugin(cherrypy.engine)

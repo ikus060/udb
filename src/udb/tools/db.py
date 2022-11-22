@@ -137,7 +137,9 @@ class SQLA(cherrypy.Tool):
         if base.metadata.bind is None:
             dburi = cherrypy.config.get('tools.db.uri')
             debug = cherrypy.config.get('tools.db.debug')
-            base.metadata.bind = create_engine(dburi)
+            base.metadata.bind = create_engine(
+                dburi,
+            )
             if debug:
                 logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
         base.metadata.create_all()

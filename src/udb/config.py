@@ -94,12 +94,6 @@ def parse_args(args=None, config_file_contents=None):
         default='sqlite:///data.db',
     )
 
-    parser.add(
-        '--database-create-demo-data',
-        action='store_true',
-        help="""When this option is enabled, the application will create demonstration data.""",
-    )
-
     # Admin user
     parser.add_argument(
         '--admin-user',

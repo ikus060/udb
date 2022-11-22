@@ -18,23 +18,104 @@
 
 import cherrypy
 from sqlalchemy import and_
+from wtforms.fields import BooleanField
 
-from udb.controller import url_for
+from udb.controller import flash, handle_exception, url_for
+from udb.core import model
 from udb.core.model import Follower, Search
+from udb.tools.i18n import gettext as _
+
+from .form import CherryForm
+
+
+class NotificationFormBase(CherryForm):
+    """
+    Form to modify subscribe to "all".
+    """
+
+    def __init__(self, obj, **kwargs):
+        # Pass initial data to the form using the follower(s)
+        model_names = self._get_current_value(obj)
+        data = {model_name: True for model_name in model_names}
+        super().__init__(data=data, **kwargs)
+
+    def _get_current_value(self, obj):
+        # Get list of follow "all" (where model_id == 0)
+        rows = (
+            Follower.session.query(Follower.model_name).filter(Follower.user_id == obj.id, Follower.model_id == 0).all()
+        )
+        return [r[0] for r in rows]
+
+    def populate_obj(self, obj):
+        # Query current state
+        model_names = self._get_current_value(obj)
+        # Add or remove Followers
+        for field in self:
+            model_name = field.name
+            if field.data:
+                # Add new follower where requested
+                if model_name not in model_names:
+                    Follower(user_id=obj.id, model_id=0, model_name=model_name).add()
+            else:
+                # Remove follower where not requested
+                if model_name in model_names:
+                    Follower.query.filter(
+                        Follower.user_id == obj.id, Follower.model_id == 0, Follower.model_name == model_name
+                    ).delete()
+
+
+def create_notification_form(obj):
+    """
+    Form builder to dynamically create form with model_name fields.
+    """
+    assert obj, 'user object is required'
+
+    class Form(NotificationFormBase):
+        pass
+
+    # Dynamically, create a list of model that could be followed.
+    model_names = [
+        getattr(model, name).__tablename__
+        for name in dir(model)
+        if getattr(model, name, None)
+        if hasattr(getattr(model, name, None), 'followers')
+    ]
+    for model_name in model_names:
+        setattr(Form, model_name, BooleanField(label=model_name))
+
+    return Form(obj)
 
 
 class NotificationsPage:
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['notifications.html'])
     def index(self, **kwargs):
-        return {}
+        obj = cherrypy.request.currentuser
+        form = create_notification_form(obj=obj)
+        if form.validate_on_submit():
+            try:
+                form.populate_obj(obj=obj)
+                obj.add()
+                obj.commit()
+            except Exception as e:
+                handle_exception(e, form)
+            else:
+                flash(_('Notification settings updated successfully.'))
+                raise cherrypy.HTTPRedirect(url_for('notifications', ''))
+        return {
+            'form': form,
+        }
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()
     def data_json(self, **kwargs):
+        # List object followed by current user
         userobj = cherrypy.request.currentuser
         query = Search.query.join(
-            Follower, and_(Search.model_name == Follower.model_name, Search.model_id == Follower.model_id)
+            Follower,
+            and_(
+                Search.model_name == Follower.model_name, Search.model_id == Follower.model_id, Follower.model_id != 0
+            ),
         ).filter(Follower.user_id == userobj.id)
         return {
             'data': [

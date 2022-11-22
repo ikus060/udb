@@ -4,13 +4,31 @@
 {% import "macro.html" as macro %}
 {% block body %}
   {# Title #}
-  <h2>{% trans %}Edit notification preferences{% endtrans %}</h2>
+  <h2>{% trans %}Edit notification settings{% endtrans %}</h2>
   {% include "flash.html" %}
   <hr />
-  {# General form #}
   <div class="row">
     <div class="col-md">
-      <h4>{% trans %}Notifications{% endtrans %}</h4>
+      <h4>{% trans %}Notification{% endtrans %}</h4>
+      <p>{% trans %}In this view, you can subscribe or unsubscribe to events of certain record type.{% endtrans %}</p>
+    </div>
+    <div class="col-md-9">
+      <p class="fw-bold mb-3">{% trans %}Subscribe to all changes made on record type : {% endtrans %}</p>
+      <form method="POST" class="mb-3">
+        {% for field in form %}
+          <div class="form-check">
+            {{ field(id=False) }}
+            {{ field.label(class="form-check-label", text=macro.display_name(field.label.text)) }}
+          </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary mt-3">{% trans %}Save notification settings{% endtrans %}</button>
+      </form>
+    </div>
+  </div>
+  <hr />
+  <div class="row">
+    <div class="col-md">
+      <h4>{% trans %}Record Subscriptions{% endtrans %}</h4>
       <p>
         {% trans %}In this view, you can unsubscribe from certain records to stop receiving notifications about them.{% endtrans %}
       </p>

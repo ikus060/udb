@@ -18,7 +18,7 @@
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsZone, User
+from udb.core.model import DhcpRecord, DnsZone, Follower, User
 
 
 class NotificationsTest(WebCase):
@@ -42,3 +42,15 @@ class NotificationsTest(WebCase):
         # Then list display subscribed items
         self.assertInBody('boo.com')
         self.assertInBody('00:00:5e:00:53:af')
+
+    def test_subscribe_all(self):
+        # Given a user
+        user = User.query.first()
+        self.assertTrue(user)
+        # When trying to subscribe to all dnszone
+        self.getPage(url_for('notifications', ''), method='POST', body={'dnszone': 1})
+        # Then user is redirect to notification page.
+        self.assertStatus(303)
+        self.assertHeaderItemValue("Location", self.baseurl + "/notifications/")
+        # Then a Follower entry is created with model_id == 0
+        Follower.query.all()

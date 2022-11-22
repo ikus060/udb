@@ -327,6 +327,17 @@ class DnsRecord(CommonMixin, Base):
             else_=None,
         )
 
+    def objects_to_notify(self):
+        """
+        When getting updated, make sure to notify the DNS Zone too.
+        """
+        objects = super().objects_to_notify()
+        try:
+            objects.extend([(dnszone.__tablename__, dnszone.id) for dnszone in self.related_dnszones])
+        except Exception:
+            pass
+        return objects
+
 
 @event.listens_for(DnsRecord, "before_update")
 def before_update(mapper, connection, instance):

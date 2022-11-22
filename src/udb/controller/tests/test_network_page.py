@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
 import json
 from base64 import b64encode
 
@@ -174,6 +175,8 @@ class CommonTest:
         message = obj.messages[-1]
         self.assertEqual('this is my message', message.body)
         self.assertEqual('comment', message.type)
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        self.assertAlmostEqual(message.date, now, delta=datetime.timedelta(minutes=1))
         # Then this message is displayed on edit page
         self.getPage(url_for(obj, 'edit'))
         self.assertInBody('this is my message')

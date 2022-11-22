@@ -190,31 +190,7 @@ class Root(object):
         # Create database if required
         cherrypy.tools.db.create_all()
         # Create default admin if missing
-        created = User.create_default_admin(cfg.admin_user, cfg.admin_password)
-        if created and cfg.database_create_demo_data:
-            User.create(username='guest', fullname='Default Guest', password='guest', role=User.ROLE_GUEST)
-            User.create(username='user', fullname='Default User', password='user', role=User.ROLE_USER)
-
-            vrf = Vrf(name='default').add()
-
-            # Subnet
-            subnet = Subnet(ranges=['147.87.250.0/24'], name='DMZ', vrf=vrf, notes='public').add()
-            Subnet(ranges=['147.87.0.0/16'], name='its-main-4', vrf=vrf, notes='main').add()
-            Subnet(ranges=['2002::1234:abcd:ffff:c0a8:101/64'], name='its-main-6', vrf=vrf, notes='main').add()
-            Subnet(ranges=['147.87.208.0/24'], name='ARZ', vrf=vrf, notes='BE.net').add()
-
-            DnsZone(name='bfh.ch', notes='This is a note', subnets=[subnet]).add()
-            DnsZone(name='bfh.science', notes='This is a note').add()
-            DnsZone(name='bfh.info', notes='This is a note').add()
-
-            # DHCP
-            DhcpRecord(ip='147.87.250.1', mac='00:ba:d5:a2:34:56', notes='webserver bla bla bla').add()
-
-            # DNS
-            DnsRecord(name='bar.bfh.ch', type='A', value='147.87.250.1').add()
-            DnsRecord(name='bar.bfh.ch', type='CNAME', value='www.bar.bfh.ch').add()
-            DnsRecord(name='baz.bfh.ch', type='A', value='147.87.250.2').add()
-            DnsRecord(name='foo.bfh.ch', type='A', value='147.87.250.3').add()
+        User.create_default_admin(cfg.admin_user, cfg.admin_password)
 
         # Commit changes to database.
         cherrypy.tools.db.get_session().commit()

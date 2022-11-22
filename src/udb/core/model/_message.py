@@ -19,7 +19,7 @@ import itertools
 import json
 
 import cherrypy
-from sqlalchemy import Column, String, and_, event, inspect
+from sqlalchemy import Boolean, Column, String, and_, event, inspect
 from sqlalchemy.orm import backref, declared_attr, foreign, relationship, remote
 from sqlalchemy.sql.functions import func
 from sqlalchemy.sql.schema import ForeignKey
@@ -101,7 +101,8 @@ class Message(JsonMixin, SearchableMixing, Base):
     type = Column(String, nullable=False, default=TYPE_COMMENT)
     # When body start with a "{" the content is a json changes.
     body = Column(String, nullable=False)
-    date = Column(Timestamp, default=func.now())
+    date = Column(Timestamp(timezone=True), default=func.now())
+    sent = Column(Boolean, default=False)
 
     @property
     def changes(self):
@@ -202,3 +203,11 @@ class MessageMixin:
             viewonly=True,
             lazy=True,
         )
+
+    def objects_to_notify(self):
+        """
+        Return a list of tutple with model_name and id to get notifyed whenever this object.
+
+        Object could return it self or it's parent.
+        """
+        return [(self.__tablename__, self.id)]
