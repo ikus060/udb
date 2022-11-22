@@ -18,6 +18,7 @@
 import json
 import os
 import tempfile
+import time
 import unittest
 from urllib.parse import urlencode
 
@@ -55,6 +56,11 @@ class WebCase(BaseClass):
     def teardown_class(cls):
         super().teardown_class()
 
+    def wait_for_tasks(self):
+        time.sleep(1)
+        while len(cherrypy.scheduler.list_tasks()) or cherrypy.scheduler.is_job_running():
+            time.sleep(1)
+
     @classmethod
     def setup_server(cls):
         # Get defaultconfig from test class
@@ -76,6 +82,8 @@ class WebCase(BaseClass):
             self._login()
 
     def tearDown(self):
+        # Need to wait for task before deleting to avoid dead lock in postgresql.
+        self.wait_for_tasks()
         cherrypy.tools.db.drop_all()
         super().tearDown()
 

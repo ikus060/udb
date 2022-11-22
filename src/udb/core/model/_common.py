@@ -58,8 +58,8 @@ class CommonMixin(JsonMixin, StatusMixing, MessageMixin, FollowerMixin, Searchab
 
     id = Column(Integer, primary_key=True)
     notes = Column(String, nullable=False, default='')
-    created_at = Column(Timestamp, nullable=False, server_default=func.now())
-    modified_at = Column(Timestamp, nullable=False, server_default=func.now(), onupdate=func.now())
+    created_at = Column(Timestamp(timezone=True), nullable=False, server_default=func.now())
+    modified_at = Column(Timestamp(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
     @hybrid_property
     def summary(self):

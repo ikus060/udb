@@ -20,13 +20,28 @@ Created on Mar. 23, 2021
 
 @author: Patrik Dufresne <patrik@ikus-soft.com>
 '''
+import logging
 from datetime import datetime
 
 import cherrypy
+from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED, EVENT_JOB_SUBMITTED
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 from cherrypy.process.plugins import SimplePlugin
+
+logger = logging.getLogger(__name__)
+
+
+def catch_exception(func):
+    def wrapper(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        finally:
+            cherrypy.tools.db.on_end_resource()
+
+    wrapper._func = func
+    return wrapper
 
 
 class Scheduler(SimplePlugin):
@@ -38,6 +53,16 @@ class Scheduler(SimplePlugin):
         super().__init__(bus)
         self._scheduler = self._create_scheduler()
         self._scheduler.start(paused=True)
+        self._scheduler.add_listener(self._job_submitted, EVENT_JOB_SUBMITTED)
+        self._scheduler.add_listener(self._job_finish, (EVENT_JOB_EXECUTED | EVENT_JOB_ERROR))
+        self._running = []
+
+    def _job_submitted(self, event):
+        self._running.append(event.job_id)
+
+    def _job_finish(self, event):
+        if event.job_id in self._running:
+            self._running.remove(event.job_id)
 
     def _create_scheduler(self):
         return BackgroundScheduler(
@@ -83,6 +108,9 @@ class Scheduler(SimplePlugin):
         """
         return self._scheduler.get_jobs(jobstore='default')
 
+    def is_job_running(self):
+        return self._running
+
     def schedule_job(self, execution_time, job, *args, **kwargs):
         """
         Add the given scheduled job to the scheduler.
@@ -90,7 +118,8 @@ class Scheduler(SimplePlugin):
         assert hasattr(job, '__call__'), 'job must be callable'
         hour, minute = execution_time.split(':', 2)
         self._scheduler.add_job(
-            func=job,
+            func=catch_exception(job),
+            name=job.__name__,
             args=args,
             kwargs=kwargs,
             trigger='cron',
@@ -105,14 +134,20 @@ class Scheduler(SimplePlugin):
         Add the given task to be execute immediately in background.
         """
         assert hasattr(task, '__call__'), 'task must be callable'
-        self._scheduler.add_job(func=task, args=args, kwargs=kwargs, next_run_time=datetime.now())
+        self._scheduler.add_job(
+            func=catch_exception(task),
+            name=task.__name__,
+            args=args,
+            kwargs=kwargs,
+            next_run_time=datetime.now(),
+        )
 
     def unschedule_job(self, job):
         """
         Remove the given job from scheduler.
         """
         # Search for a matching job
-        job_id = next((j.id for j in self._scheduler.get_jobs(jobstore='scheduled') if j.func == job), None)
+        job_id = next((j.id for j in self._scheduler.get_jobs(jobstore='scheduled') if j.func._func == job), None)
         if job_id:
             self._scheduler.remove_job(job_id=job_id, jobstore='scheduled')
 

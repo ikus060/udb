@@ -5,15 +5,25 @@
   <small>{% trans %}By {% endtrans %} {{ message.author_name }} •
     <time datetime="{{ message.date }}">{{ message.date | lastupdated }}</time></small>
   {% if message.type == 'new' %}
+    {# New record created #}
     {% trans %}Record created{% endtrans %}
     <ul class="mb-0">
       {% for key, values in message.changes.items() -%}
         <li>
-          <strong>{{ key }}</strong>: {{ show_value(values[1])}}
+          <strong>{{ key }}</strong>:
+          {% if values[1] is not string and values[1] is sequence %}
+            {% for added in values[1] %}
+              <br />
+              {{ show_value(added)}}
+            {% endfor %}
+          {% else %}
+            {{ show_value(values[1])}}
+          {% endif %}
         </li>
       {%- endfor %}
     </ul>
   {% elif message.type == 'dirty' %}
+    {# Existing record Updated #}
     <ul class="mb-0">
       {% for key, values in message.changes.items() %}
         <li>
