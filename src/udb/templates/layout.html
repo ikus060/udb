@@ -40,7 +40,9 @@
           href="{{ url_for('static', 'favicon.svg')}}">
   </head>
   <body>
-    {% include "navbar.html" %}
+    {% block navbar %}
+      {% include "navbar.html" %}
+    {% endblock %}
     <main>
       <div class="container-fluid">
         {% block body %}{% endblock %}
