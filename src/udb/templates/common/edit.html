@@ -1,11 +1,12 @@
 {% extends 'layout.html' %}
 {% import "macro.html" as macro %}
 {% import "common/status.html" as _status with context %}
+{% block title %}{{ macro.display_name(model_name)}} {{(form|first).data }}{% endblock %}
 {% block body %}
   <div id="app" class="row">
     <div class="offset-xl-2 col-xl-8 col-md-10">
       <div class="d-flex mb-4">
-        <!-- Go Back -->
+        {# Go Back #}
         <a class="btn btn-primary btn-circle me-2 align-self-center"
            onclick="history.back()"
            data-bs-toggle="tooltip"
@@ -14,28 +15,88 @@
           <i class="bi bi-chevron-left" aria-hidden="true"></i>
           <span class="visually-hidden">{% trans %}Go Back{% endtrans %}</span>
         </a>
-        <!-- Title -->
-        <h2 class="flex-fill mb-0">Edit {{ macro.display_name(model_name)}} {{(form|first).data }}</h2>
+        {# Title #}
+        <h2 class="flex-fill mb-0">
+          {{ _('Edit') if is_editable else _('View') }} {{ macro.display_name(model_name)}} {{(form|first).data }}
+        </h2>
+        {# /Title #}
         {% if has_status %}
-          <!-- Status -->
-          <div class="align-self-center">{{ _status.dropdown(obj) }}</div>
+          {# Status Badge #}
+          <div class="h5">{{ _status.badge(obj, force=True)}}</div>
+          {# /Status Badge #}
         {% endif %}
       </div>
+      {# Flash messages #}
       {% include "flash.html" %}
-      <form method="POST" class="row mb-3">
-        {% block edit_form %}{{ form()}}{% endblock %}
-        <div class="text-center text-lg-start mt-4 pt-2">
-          {% block edit_form_submit %}
-            {% set save_disabled = not currentuser.allow_edit_record() %}
-            <button type="submit" class="btn btn-primary" style="padding-left: 2.5rem; padding-right: 2.5rem;" {% if
-              save_disabled %}disabled{% endif %}>
-              {% trans %}Save changes{% endtrans %}
-            </button>
-            <a class="btn btn-secondary" href="{{ url_for(model)}}">{% trans %}Cancel{% endtrans %}</a>
-          {% endblock %}
+      <form method="POST">
+        <div class="card mb-3 {% if has_status and obj.status != 'enabled' %}bg-light{% endif %}">
+          <div class="card-body">
+            {# Edit Form #}
+            <div class="row">
+              {% block edit_form %}{{ form()}}{% endblock %}
+            </div>
+            {# /Edit Form #}
+          </div>
+          <div class="card-footer">
+            {# Submit Area #}
+            {% if is_editable and has_messages %}
+              <div class="mb-3 form-floating">
+                <textarea name="body"
+                          class="form-control"
+                          placeholder="Leave a comment here"
+                          id="floatingTextarea2"
+                          style="height: 80px"></textarea>
+                <label for="floatingTextarea2">{% trans %}Leave a comment{% endtrans %}</label>
+              </div>
+            {% endif %}
+            <div class="text-center text-lg-start">
+              {% block edit_form_submit %}
+                {% if is_editable and has_status %}
+                  {# Submit button with state #}
+                  <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">{% trans %}Save changes{% endtrans %}</button>
+                    <button type="button"
+                            class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                      <span class="visually-hidden">{% trans %}Toggle Dropdown{% endtrans %}</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                      <li>
+                        <button type="submit"
+                                class="dropdown-item text-danger"
+                                name="status"
+                                value="deleted">
+                          {% trans %}Save changes and Delete{% endtrans %}
+                        </button>
+                      </li>
+                      <li>
+                        <button type="submit"
+                                class="dropdown-item text-warning"
+                                name="status"
+                                value="disabled">
+                          {% trans %}Save changes and Disable{% endtrans %}
+                        </button>
+                      </li>
+                      <li>
+                        <button type="submit" class="dropdown-item" name="status" value="enabled">
+                          {% trans %}Save changes and Enable{% endtrans %}
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                {% elif is_editable %}
+                  {# Submit button #}
+                  <button type="submit" class="btn btn-primary">{% trans %}Save changes{% endtrans %}</button>
+                {% endif %}
+                <a class="btn btn-secondary" href="{{ url_for(model)}}">{% trans %}Cancel{% endtrans %}</a>
+              {% endblock %}
+            </div>
+            {# /Submit Area #}
+          </div>
         </div>
       </form>
-      <!-- Message thread -->
+      {# Message thread #}
       {% include "common/messages.html" %}
     </div>
     <div class="col-xl-2 col-md-2">{% include "common/followers.html" %}</div>

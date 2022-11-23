@@ -4,7 +4,9 @@
 {% macro show_message(message) %}
   <small>{% trans %}By {% endtrans %} {{ message.author_name }} •
     <time datetime="{{ message.date }}">{{ message.date | lastupdated }}</time></small>
-  {% if message.type == 'new' %}
+  {# Message Comment #}
+  {% if message.body %}<p>{{ message.body }}</p>{% endif %}
+  {% if message.type == 'new' and message.changes %}
     {# New record created #}
     {% trans %}Record created{% endtrans %}
     <ul class="mb-0">
@@ -22,7 +24,7 @@
         </li>
       {%- endfor %}
     </ul>
-  {% elif message.type == 'dirty' %}
+  {% elif message.type == 'dirty' and message.changes %}
     {# Existing record Updated #}
     <ul class="mb-0">
       {% for key, values in message.changes.items() %}
@@ -43,8 +45,6 @@
         </li>
       {% endfor %}
     </ul>
-  {% else %}
-    <p>{{ message.body }}</p>
   {% endif %}
 {% endmacro %}
 {% macro list_messages(messages) -%}
@@ -56,68 +56,23 @@
 {%- endmacro %}
 {% if has_messages %}
   <div class="card">
-    <div class="card-header">
-      <ul class="nav nav-tabs card-header-tabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <a class="nav-link active"
-             id="comments-tab"
-             data-bs-toggle="tab"
-             data-bs-target="#comments"
-             href="#comments"
-             type="button"
-             role="tab"
-             aria-controls="home"
-             aria-selected="true">{% trans %}Comments{% endtrans %}</a>
-        </li>
-        <li class="nav-item" role="presentation">
-          <a class="nav-link"
-             id="history-tab"
-             data-bs-toggle="tab"
-             data-bs-target="#history"
-             href="#history"
-             type="button"
-             role="tab"
-             aria-controls="history"
-             aria-selected="true">{% trans %}History{% endtrans %}</a>
-        </li>
-      </ul>
-    </div>
-    <div class="tab-content" id="nav-tabContent">
-      <div class="tab-pane fade show active"
-           id="comments"
-           role="tabpanel"
-           aria-labelledby="comments-tab">
-        <!--Form -->
-        <div class="card-body">
-          <div class="comment-form">
-            <form method="post" action="{{ url_for(obj, 'post')}}">
-              <div class="mb-3 form-floating">
-                <textarea name="body"
-                          class="form-control"
-                          placeholder="Leave a comment here"
-                          id="floatingTextarea2"
-                          style="height: 80px"></textarea>
-                <label for="floatingTextarea2">{% trans %}Leave a comments{% endtrans %}</label>
-              </div>
-              <button type="submit" class="btn btn-secondary">{% trans %}Add comment{% endtrans %}</button>
-            </form>
+    <h6 class="card-header">{% trans %}History{% endtrans %}</h6>
+    {#Form #}
+    <div class="card-body">
+      <div class="comment-form">
+        <form method="post" action="{{ url_for(obj, 'post')}}">
+          <div class="mb-3 form-floating">
+            <textarea name="body"
+                      class="form-control"
+                      placeholder="Leave a comment here"
+                      id="floatingTextarea2"
+                      style="height: 80px"></textarea>
+            <label for="floatingTextarea2">{% trans %}Leave a message{% endtrans %}</label>
           </div>
-        </div>
-        {{ list_messages(obj.comments) }}
-      </div>
-      <div class="tab-pane fade"
-           id="history"
-           role="tabpanel"
-           aria-labelledby="history-tab">
-        {{ list_messages(obj.changes) }}
+          <button type="submit" class="btn btn-secondary">{% trans %}Send message{% endtrans %}</button>
+        </form>
       </div>
     </div>
+    {{ list_messages(obj.messages) }}
   </div>
-  <script>
-var hash = window.location.hash;
-if(hash && (hash == '#comments' || hash == '#history')){
-    var triggerEl = document.querySelector('ul.nav a[href="' + hash + '"]');
-    bootstrap.Tab.getOrCreateInstance(triggerEl).show();
-}
-  </script>
 {% endif %}

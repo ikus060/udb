@@ -49,7 +49,6 @@ class Search(Base):
         primaryjoin=lambda: and_(
             Search.model_name == remote(foreign(Message.model_name)),
             Search.model_id == remote(foreign(Message.model_id)),
-            Message.type == Message.TYPE_COMMENT,
         ),
         viewonly=True,
     )

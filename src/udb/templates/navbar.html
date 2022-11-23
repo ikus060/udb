@@ -1,10 +1,10 @@
 {% import 'macro.html' as macro %}
-<!--Main Navigation-->
+{#Main Navigation#}
 <header>
-  <!-- Sidebar -->
+  {# Sidebar #}
   <nav class="sidebar navbar navbar-expand-lg navbar-dark bg-dark fixed-top p-3 flex-column align-items-start ">
     <div>
-      <!-- Toggle -->
+      {# Toggle #}
       <button class="navbar-toggler me-3"
               type="button"
               data-bs-toggle="collapse"
@@ -14,7 +14,7 @@
               aria-label="Toggle navigation">
         <i class="bi bi-list" aria-hidden="true"></i>
       </button>
-      <!-- Brand -->
+      {# Brand #}
       <a class="navbar-brand" href="{{ url_for('') }}">
         <img src="{{ url_for('static', 'favicon.svg')}}"
              class="d-inline-block align-text-top"
@@ -25,7 +25,7 @@
     </div>
     <div id="sidebarMenu"
          class="collapse navbar-collapse flex-column align-items-start w-100 mt-3">
-      <!-- Search form -->
+      {# Search form #}
       {% if not hide_search %}
         <form class="d-flex" method="GET" action="{{ url_for('search')}}">
           <div class="input-group mb-1">
@@ -41,7 +41,7 @@
           </div>
         </form>
       {% endif %}
-      <!-- Menu items -->
+      {# Menu items #}
       <div class="navbar-text mt-2 text-white">
         <strong>{% trans %}Network{% endtrans %}</strong>
       </div>
@@ -112,7 +112,7 @@
         {% trans %}Powered by{% endtrans %} <a href="{{ footer_url }}">{{ footer_name }}</a> © 2022
       </footer>
     </div>
-    <!-- sidebarMenu -->
+    {# sidebarMenu #}
   </nav>
 </header>
-<!--Main Navigation-->
+{#Main Navigation#}

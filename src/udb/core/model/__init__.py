@@ -56,14 +56,21 @@ def db_after_create(target, connection, **kw):
 
     def add_column(column):
         if exists(column):
-            return
+            return False
         table_name = column.table.fullname
         column_name = column.name
         column_type = column.type.compile(connection.engine.dialect)
         connection.engine.execute('ALTER TABLE %s ADD COLUMN %s %s' % (table_name, column_name, column_type))
+        return True
 
     if getattr(connection, '_transaction', None):
         connection._transaction.commit()
 
     # Add Message.sent
     add_column(Message.__table__.c.sent)
+
+    # Add Message.changes - if created, move data from body to changes.
+    if add_column(Message.__table__.c.changes):
+        Message.query.filter(Message.body.startswith('{')).update(
+            {Message.body: '', Message._changes: Message.body}, synchronize_session=False
+        )

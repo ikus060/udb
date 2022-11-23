@@ -4,7 +4,7 @@
   <div class="row">
     <div class="offset-xl-2 col-xl-8">
       <div class="d-flex mb-4">
-        <!-- Go Back -->
+        {# Go Back #}
         <a class="btn btn-primary btn-circle me-2 align-self-center"
            href="{{ url_for(model)}}"
            data-bs-toggle="tooltip"
@@ -13,7 +13,7 @@
           <i class="bi bi-chevron-left" aria-hidden="true"></i>
           <span class="visually-hidden">{% trans %}Go Back{% endtrans %}</span>
         </a>
-        <!-- Title -->
+        {# Title #}
         <h2 class="flex-fill mb-0">Create a new {{ macro.display_name(model_name)}}</h2>
       </div>
       {% include "flash.html" %}
