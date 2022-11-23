@@ -21,24 +21,24 @@
 {% block body %}
   <h1>{% trans %}Dashboard{% endtrans %}</h1>
   <div class="row">
-    <!-- DNS Zones -->
+    {# DNS Zones #}
     {{ dashboard_card('dnszone', dnszone_count, 'primary') }}
-    <!-- Subnet -->
+    {# Subnet #}
     {{ dashboard_card('subnet', subnet_count, 'success') }}
-    <!-- DNS Record -->
+    {# DNS Record #}
     {{ dashboard_card('dnsrecord', dnsrecord_count, 'info') }}
-    <!-- DHCP Record -->
+    {# DHCP Record #}
     {{ dashboard_card('dhcprecord', dhcprecord_count, 'warning') }}
   </div>
   <div class="row">
-    <!-- Activity list -->
+    {# Activity list #}
     <div class="col-xl-8 col-lg-7">
       <div class="card shadow mb-4">
-        <!-- Card Header - Dropdown -->
+        {# Card Header - Dropdown #}
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
           <h6 class="m-0 font-weight-bold text-primary">{% trans %}Last activities{% endtrans %}</h6>
         </div>
-        <!-- Card Body -->
+        {# Card Body #}
         <div class="card-body" style="height: 420px; overflow-y: auto;">
           {% set columns = [
           {'data': 'summary', 'title':_('Record'), 'orderable': True, 'render':'summary'},
@@ -48,17 +48,17 @@
         </div>
       </div>
     </div>
-    <!-- Active user -->
+    {# Active user #}
     <div class="col-xl-4 col-lg-5">
       <div class="card shadow mb-4">
-        <!-- Card Header - Dropdown -->
+        {# Card Header - Dropdown #}
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
           <h6 class="m-0 font-weight-bold text-primary">
             {% trans %}Most active user{% endtrans %}
             <small>{% trans %}(last 7 days){% endtrans %}</small>
           </h6>
         </div>
-        <!-- Card Body -->
+        {# Card Body #}
         <div class="card-body" style="height: 420px; overflow-y: auto;">
           {% set max_count = user_activities|map(attribute='count')|sum|int %}
           {% for user, count in user_activities %}

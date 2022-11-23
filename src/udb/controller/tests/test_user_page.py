@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from parameterized import parameterized
+
 from udb.controller import url_for
 from udb.controller.tests import WebCase
 from udb.core.model import User
@@ -116,48 +118,21 @@ class UserTest(WebCase):
         for k, v in self.new_data.items():
             self.assertEqual(v, getattr(obj, k))
 
-    def test_status_disabled(self):
+    @parameterized.expand([('enabled', 'disabled'), ('enabled', 'deleted'), ('disabled', 'enabled')])
+    def test_edit_status_disabled(self, initial_status, new_status):
         # Given a database with a record
         obj = User(**self.new_data)
+        obj.status = initial_status
         obj.add()
         obj.commit()
         # When trying disabled
-        self.getPage(url_for('user', obj.id, 'status'), method='POST', body={'status': 'disabled'})
+        self.getPage(url_for('user', obj.id, 'edit'), method='POST', body={'status': new_status})
         # Then user is redirected to the edit page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then object status is disabled
         obj.expire()
-        self.assertEqual('disabled', User.query.filter_by(username=self.new_data['username']).first().status)
-
-    def test_status_delete(self):
-        # Given a database with a record
-        obj = User(**self.new_data)
-        obj.add()
-        obj.commit()
-        # When trying delete
-        self.getPage(url_for('user', obj.id, 'status'), method='POST', body={'status': 'deleted'})
-        # Then user is redirected to the edit page
-        self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
-        # Then object status is delete is removed to the record
-        obj.expire()
-        self.assertEqual('deleted', User.query.filter_by(username=self.new_data['username']).first().status)
-
-    def test_status_enabled(self):
-        # Given a database with a record
-        obj = User(**self.new_data)
-        obj.status = 'disabled'
-        obj.add()
-        obj.commit()
-        # When trying enabled
-        self.getPage(url_for('user', obj.id, 'status'), method='POST', body={'status': 'enabled'})
-        # Then user is redirected to the edit page
-        self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
-        # Then object status is enabled is removed to the record
-        obj.expire()
-        self.assertEqual('enabled', User.query.filter_by(username=self.new_data['username']).first().status)
+        self.assertEqual(new_status, User.query.filter_by(username=self.new_data['username']).first().status)
 
     def test_status_invalid(self):
         # Given a database with a record
@@ -165,11 +140,9 @@ class UserTest(WebCase):
         obj.add()
         obj.commit()
         # When trying enabled
-        self.getPage(url_for('user', obj.id, 'status'), method='POST', body={'status': 'invalid'})
-        # Then user is redirected to the edit page
-        self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
-        self.getPage(url_for('user', obj.id, 'edit'))
+        self.getPage(url_for('user', obj.id, 'edit'), method='POST', body={'status': 'invalid'})
+        # Then user error is returned
+        self.assertStatus(200)
         self.assertInBody('Invalid value: invalid')
         # Then object status is enabled is removed to the record
         self.assertEqual('enabled', User.query.filter_by(username=self.new_data['username']).first().status)
@@ -179,12 +152,10 @@ class UserTest(WebCase):
         obj = User.query.first()
         self.assertEqual('admin', obj.username)
         # When trying to update our own status
-        self.getPage(url_for('user', obj.id, 'status'), method='POST', body={'status': 'disabled'})
-        # Then user is redirected to edit page showing an error message
-        self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
-        self.getPage(url_for('user', obj.id, 'edit'))
-        self.assertInBody('The user cannot update his own status.')
+        self.getPage(url_for('user', obj.id, 'edit'), method='POST', body={'status': 'disabled'})
+        # Then edit page showing an error message
+        self.assertStatus(200)
+        self.assertInBody('A user cannot update his own status.')
 
     def test_edit_own_role(self):
         # Given a database with admin user
@@ -195,4 +166,4 @@ class UserTest(WebCase):
         self.getPage(url_for(obj, 'edit'), method='POST', body={'role': 10})
         # Then user is redirected to edit page showing an error message
         self.assertStatus(200)
-        self.assertInBody('The user cannot update his own role.')
+        self.assertInBody('A user cannot update his own role.')

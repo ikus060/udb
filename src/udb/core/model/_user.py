@@ -158,7 +158,7 @@ def before_update(mapper, connection, instance):
         # Raise exception when current user try to updated it's own status
         state = inspect(instance)
         if state.attrs['status'].history.has_changes():
-            raise ValueError('status', _('The user cannot update his own status.'))
+            raise ValueError('status', _('A user cannot update his own status.'))
         # Raise exception when current user try to updated it's own role
         if state.attrs['role'].history.has_changes():
-            raise ValueError('role', _('The user cannot update his own role.'))
+            raise ValueError('role', _('A user cannot update his own role.'))

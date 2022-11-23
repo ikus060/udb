@@ -72,18 +72,29 @@ def create_messages(session, flush_context, instances):
     currentuser = getattr(cherrypy.serving.request, 'currentuser', None)
     if currentuser:
         author_id = currentuser.id
-    # Create message if object is created.
+    # Create message if object is created or modified
     for obj in itertools.chain(session.new, session.dirty):
         if hasattr(obj, 'add_message'):
+            # compute the list of changes base on sqlalchemy history
             change_type, changes = _get_model_changes(obj)
             if not changes:
                 continue
+
+            # Store changes as Json string
             try:
-                body = json.dumps(changes, default=str)
+                changes = json.dumps(changes, default=str)
             except Exception:
-                body = str(changes)
-            message = Message(author_id=author_id, body=body, type=change_type)
-            obj.add_message(message)
+                changes = str(changes)
+
+            # Append the changes to a new message or a message in the current session flush.
+            message = next((msg for msg in session.new if isinstance(msg, Message) and msg.model_object == obj), False)
+            if not message:
+                message = Message(author_id=author_id, _changes=changes, type=change_type)
+                obj.add_message(message)
+            else:
+                message._changes = changes
+                message.type = change_type
+                message.add()
 
 
 class Message(JsonMixin, SearchableMixing, Base):
@@ -99,20 +110,20 @@ class Message(JsonMixin, SearchableMixing, Base):
     author = relationship("User", lazy=False)
     subject = Column(String, nullable=False, default='')
     type = Column(String, nullable=False, default=TYPE_COMMENT)
-    # When body start with a "{" the content is a json changes.
-    body = Column(String, nullable=False)
+    body = Column(String, nullable=False, default='')
+    _changes = Column('changes', String, nullable=True)
     date = Column(Timestamp(timezone=True), default=func.now())
     sent = Column(Boolean, default=False)
 
     @property
     def changes(self):
         """
-        Return Json changes stored in body.
+        Return Json changes stored in message.
         """
-        if not self.body or self.body[0] != '{':
+        if not self._changes or self._changes[0] != '{':
             return None
         try:
-            return json.loads(self.body)
+            return json.loads(self._changes)
         except Exception:
             return None
 

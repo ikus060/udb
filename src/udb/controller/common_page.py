@@ -167,25 +167,9 @@ class CommonPage(object):
         }
 
     @cherrypy.expose
-    def status(self, key, status=None, **kwargs):
-        """
-        Soft-delete the record.
-        """
-        if cherrypy.request.method not in ['POST', 'PUT']:
-            raise cherrypy.HTTPError(405)
-        self._verify_role(self.edit_role)
-        obj = self._get_or_404(key)
-        try:
-            obj.status = status
-            obj.add()
-            obj.commit()
-        except Exception as e:
-            handle_exception(e)
-        raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
-
-    @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/edit.html', 'common/edit.html'])
     def edit(self, key, **kwargs):
+        currentuser = cherrypy.serving.request.currentuser
         self._verify_role(self.list_role)
         # Return Not found if object doesn't exists
         obj = self._get_or_404(key)
@@ -195,6 +179,15 @@ class CommonPage(object):
             self._verify_role(self.edit_role)
             try:
                 form.populate_obj(obj)
+                # Add Message to explain changes.
+                body = kwargs.get('body', False)
+                if self.has_messages and body:
+                    message = Message(body=body, author=currentuser)
+                    obj.add_message(message)
+                # Update status
+                status = kwargs.get('status', False)
+                if self.has_status and status:
+                    obj.status = status
                 obj.add()
                 obj.commit()
             except Exception as e:
@@ -209,6 +202,7 @@ class CommonPage(object):
             'has_owner': self.has_owner,
             'has_followers': self.has_followers,
             'has_messages': self.has_messages,
+            'is_editable': currentuser.has_role(self.edit_role),
             'model': self.model,
             'model_name': self.model.__name__.lower(),
             'form': form,

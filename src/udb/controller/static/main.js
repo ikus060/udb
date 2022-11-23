@@ -97,6 +97,15 @@ $.fn.dataTable.render.action = function () {
         },
     };
 }
+
+$.fn.dataTable.render.array = function () {
+    return {
+        display: function (data, type, row, meta) {
+            return data.join(', ');
+        },
+    };
+}
+
 $.fn.dataTable.render.choices = function (choices) {
     return {
         display: function (data, type, row, meta) {

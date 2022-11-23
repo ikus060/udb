@@ -1,59 +1,76 @@
 {% import 'macro.html' as macro %}
-<!--Main Navigation-->
+{#Main Navigation#}
 <header>
-  {% if username %}
-    <!-- Sidebar -->
-    <nav class="sidebar navbar navbar-expand-lg navbar-dark bg-dark fixed-top p-3 flex-column align-items-start ">
-      <div>
-        <!-- Toggle -->
-        <button class="navbar-toggler me-3"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#sidebarMenu"
-                aria-controls="sidebarMenu"
-                aria-expanded="false"
-                aria-label="Toggle navigation">
-          <i class="bi bi-list" aria-hidden="true"></i>
-        </button>
-        <!-- Brand -->
-        <a class="navbar-brand" href="{{ url_for('') }}">
-          <img src="{{ url_for('static', 'favicon.svg')}}"
-               class="d-inline-block align-text-top"
-               height="24"
-               alt="logo"/>
-          {{ header_name }}
-        </a>
+  {# Sidebar #}
+  <nav class="sidebar navbar navbar-expand-lg navbar-dark bg-dark fixed-top p-3 flex-column align-items-start ">
+    <div>
+      {# Toggle #}
+      <button class="navbar-toggler me-3"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#sidebarMenu"
+              aria-controls="sidebarMenu"
+              aria-expanded="false"
+              aria-label="Toggle navigation">
+        <i class="bi bi-list" aria-hidden="true"></i>
+      </button>
+      {# Brand #}
+      <a class="navbar-brand" href="{{ url_for('') }}">
+        <img src="{{ url_for('static', 'favicon.svg')}}"
+             class="d-inline-block align-text-top"
+             height="24"
+             alt="logo"/>
+        {{ header_name }}
+      </a>
+    </div>
+    <div id="sidebarMenu"
+         class="collapse navbar-collapse flex-column align-items-start w-100 mt-3">
+      {# Search form #}
+      {% if not hide_search %}
+        <form class="d-flex" method="GET" action="{{ url_for('search')}}">
+          <div class="input-group mb-1">
+            <input type="text"
+                   class="form-control"
+                   placeholder="{% trans %}Search all{% endtrans %}"
+                   aria-label="{% trans %}Search all{% endtrans %}"
+                   name="q"
+                   aria-describedby="button-search">
+            <button class="btn btn-outline-secondary" id="button-search" type="submit">
+              <i class="fbi bi-search" aria-hidden="true"></i>
+            </button>
+          </div>
+        </form>
+      {% endif %}
+      {# Menu items #}
+      <div class="navbar-text mt-2 text-white">
+        <strong>{% trans %}Network{% endtrans %}</strong>
       </div>
-      <div id="sidebarMenu"
-           class="collapse navbar-collapse flex-column align-items-start w-100 mt-3">
-        <!-- Search form -->
-        {% if not hide_search %}
-          <form class="d-flex" method="GET" action="{{ url_for('search')}}">
-            <div class="input-group mb-1">
-              <input type="text"
-                     class="form-control"
-                     placeholder="{% trans %}Search all{% endtrans %}"
-                     aria-label="{% trans %}Search all{% endtrans %}"
-                     name="q"
-                     aria-describedby="button-search">
-              <button class="btn btn-outline-secondary" id="button-search" type="submit">
-                <i class="fbi bi-search" aria-hidden="true"></i>
-              </button>
-            </div>
-          </form>
-        {% endif %}
-        <!-- Menu items -->
+      <ul class="nav nav-pills flex-column w-100">
+        {% set items = [
+        ('dnszone', _('DNS Zone')),
+        ('vrf', _('VRF')),
+        ('subnet', _('Subnet')),
+        ('dnsrecord', _('DNS Record')),
+        ('dhcprecord', _('DHCP Record')),
+        ('ip', _('Ip')),
+        ]%}
+        {% for model, name in items %}
+          <li class="nav-item">
+            {% set active = current_url.startswith(url_for(model)) %}
+            <a href="{{ url_for(model) }}"
+               class="nav-link text-white {% if active %}active{% endif %}">
+              {{ macro.icon(model, 'me-3') }}<span>{{ name }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+      {% if currentuser.is_admin() %}
         <div class="navbar-text mt-2 text-white">
-          <strong>{% trans %}Network{% endtrans %}</strong>
+          <strong>{% trans %}Administration{% endtrans %}</strong>
         </div>
         <ul class="nav nav-pills flex-column w-100">
           {% set items = [
-          ('dnszone', _('DNS Zone')),
-          ('vrf', _('VRF')),
-          ('subnet', _('Subnet')),
-          ('dnsrecord', _('DNS Record')),
-          ('dhcprecord', _('DHCP Record')),
-          ('ip', _('Ip')),
+          ('user', _('Users')),
           ]%}
           {% for model, name in items %}
             <li class="nav-item">
@@ -65,58 +82,37 @@
             </li>
           {% endfor %}
         </ul>
-        {% if currentuser.is_admin() %}
-          <div class="navbar-text mt-2 text-white">
-            <strong>{% trans %}Administration{% endtrans %}</strong>
-          </div>
-          <ul class="nav nav-pills flex-column w-100">
-            {% set items = [
-            ('user', _('Users')),
-            ]%}
-            {% for model, name in items %}
-              <li class="nav-item">
-                {% set active = current_url.startswith(url_for(model)) %}
-                <a href="{{ url_for(model) }}"
-                   class="nav-link text-white {% if active %}active{% endif %}">
-                  {{ macro.icon(model, 'me-3') }}<span>{{ name }}</span>
-                </a>
-              </li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-        <hr class="mb-auto" />
-        <div class="dropdown dropup">
-          <a href="#"
-             class="d-flex align-items-center text-decoration-none dropdown-toggle text-white"
-             id="dropdownUser1"
-             data-bs-toggle="dropdown"
-             aria-expanded="false">
-            <i class="bi bi-person-fill me-3" aria-hidden="true"></i> <strong>{{ username }}</strong>
-          </a>
-          <ul class="dropdown-menu text-small shadow"
-              aria-labelledby="dropdownUser1">
-            <li>
-              <a class="dropdown-item" href="{{ url_for('profile') }}">{% trans %}Edit user profile{% endtrans %}</a>
-            </li>
-            <li>
-              <a class="dropdown-item" href="{{ url_for('notifications') }}">
-                {% trans %}Edit notification settings{% endtrans %}
-              </a>
-            </li>
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-            <li>
-              <a class="dropdown-item" href="{{ url_for('logout') }}">Sign out</a>
-            </li>
-          </ul>
-        </div>
-        <footer class="pt-3 mt-4 text-muted border-top text-center small">
-          {% trans %}Powered by{% endtrans %} <a href="{{ footer_url }}">{{ footer_name }}</a> © 2022
-        </footer>
+      {% endif %}
+      <hr class="mb-auto" />
+      <div class="dropdown dropup">
+        <a href="#"
+           class="d-flex align-items-center text-decoration-none dropdown-toggle text-white"
+           id="dropdownUser1"
+           data-bs-toggle="dropdown"
+           aria-expanded="false">
+          <i class="bi bi-person-fill me-3" aria-hidden="true"></i> <strong>{{ username }}</strong>
+        </a>
+        <ul class="dropdown-menu text-small shadow"
+            aria-labelledby="dropdownUser1">
+          <li>
+            <a class="dropdown-item" href="{{ url_for('profile') }}">{% trans %}Edit user profile{% endtrans %}</a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="{{ url_for('notifications') }}">{% trans %}Edit notification settings{% endtrans %}</a>
+          </li>
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+          <li>
+            <a class="dropdown-item" href="{{ url_for('logout') }}">Sign out</a>
+          </li>
+        </ul>
       </div>
-      <!-- sidebarMenu -->
-    </nav>
-  {% endif %}
+      <footer class="pt-3 mt-4 text-muted border-top text-center small">
+        {% trans %}Powered by{% endtrans %} <a href="{{ footer_url }}">{{ footer_name }}</a> © 2022
+      </footer>
+    </div>
+    {# sidebarMenu #}
+  </nav>
 </header>
-<!--Main Navigation-->
+{#Main Navigation#}

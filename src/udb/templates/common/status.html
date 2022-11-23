@@ -24,9 +24,10 @@
     </form>
   </div>
 {% endmacro %}
-{% macro badge(obj) %}
-  {% if obj.status != 'enabled' %}
-    <span class="badge rounded-pill bg-{{ status_bs_cls.get(obj.status, 'secondary')}}">{{ status_label.get(obj.status,
-    obj.status) }}</span>
+{% macro badge(obj, force=False) %}
+  {% if obj.status != 'enabled' or force %}
+    <span class="badge rounded-pill bg-{{ status_bs_cls.get(obj.status, 'secondary')}}">
+      {{ status_label.get(obj.status, obj.status) }}
+    </span>
   {% endif %}
 {% endmacro %}

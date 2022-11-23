@@ -19,6 +19,8 @@ import datetime
 import json
 from base64 import b64encode
 
+from parameterized import parameterized
+
 from udb.controller import url_for
 from udb.controller.tests import WebCase
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, User
@@ -105,6 +107,25 @@ class CommonTest:
         # Then user is redirected to referer
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
+
+    def test_edit_with_comment(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
+        # When trying to update it's name
+        body = dict(self.edit_data)
+        body['body'] = 'This is my comment'
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=body)
+        obj.expire()
+        # Then user is redirected
+        self.assertStatus(303)
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
+        # Then database is updated
+        new_obj = self.obj_cls.query.first()
+        for k, v in self.edit_data.items():
+            self.assertEqual(getattr(new_obj, k), v)
+        # Then a message is added with our comment and changes
+        self.assertTrue([msg.changes for msg in new_obj.messages if msg.body == 'This is my comment'])
 
     def test_edit_assign_owner(self):
         # Given a database with a record
@@ -226,59 +247,31 @@ class CommonTest:
         self.getPage(url_for(obj, 'unfollow'), method='GET')
         self.assertStatus(405)
 
-    def test_status_disabled(self):
+    @parameterized.expand([('enabled', 'disabled'), ('enabled', 'deleted'), ('disabled', 'enabled')])
+    def test_edit_status(self, initial_status, new_status):
         # Given a database with a record
-        obj = self.obj_cls(**self.new_data).add()
+        obj = self.obj_cls(**self.new_data)
+        obj.status = initial_status
+        obj.add()
         obj.commit()
         # When trying disabled
-        self.getPage(url_for(self.base_url, obj.id, 'status'), method='POST', body={'status': 'disabled'})
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'status': new_status})
         obj.expire()
         # Then user is redirected to the edit page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then object status is disabled is removed to the record
-        self.assertEqual('disabled', self.obj_cls.query.first().status)
+        self.assertEqual(new_status, self.obj_cls.query.first().status)
 
-    def test_status_delete(self):
-        # Given a database with a record
-        obj = self.obj_cls(**self.new_data)
-        obj.add()
-        obj.commit()
-        # When trying delete
-        self.getPage(url_for(self.base_url, obj.id, 'status'), method='POST', body={'status': 'deleted'})
-        obj.expire()
-        # Then user is redirected to the edit page
-        self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
-        # Then object status is delete is removed to the record
-        self.assertEqual('deleted', self.obj_cls.query.first().status)
-
-    def test_status_enabled(self):
-        # Given a database with a record
-        obj = self.obj_cls(**self.new_data)
-        obj.status = 'disabled'
-        obj.add()
-        obj.commit()
-        # When trying enabled
-        self.getPage(url_for(self.base_url, obj.id, 'status'), method='POST', body={'status': 'enabled'})
-        obj.expire()
-        # Then user is redirected to the edit page
-        self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
-        # Then object status is enabled is removed to the record
-        self.assertEqual('enabled', self.obj_cls.query.first().status)
-
-    def test_status_invalid(self):
+    def test_edit_status_invalid(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data)
         obj.add()
         obj.commit()
         # When trying enabled
-        self.getPage(url_for(self.base_url, obj.id, 'status'), method='POST', body={'status': 'invalid'})
-        # Then user is redirected to the edit page
-        self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
-        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'status': 'invalid'})
+        # Then user an error is displayed
+        self.assertStatus(200)
         self.assertInBody('Invalid value: invalid')
         # Then object status is enabled is removed to the record
         self.assertEqual('enabled', self.obj_cls.query.first().status)
@@ -505,16 +498,6 @@ class RoleTest(WebCase):
         zone.commit()
         # When trying to edit a record
         self.getPage(url_for(zone, 'edit'), method='POST', body={'name': 'newname.com'})
-        # Then a 403 Forbidden is raised
-        self.assertStatus(403)
-
-    def test_status_as_guest(self):
-        # Given a 'guest' user authenticated
-        # Given a DnsZone
-        zone = DnsZone(name='examples.com').add()
-        zone.commit()
-        # When trying to edit a record
-        self.getPage(url_for(zone, 'status'), method='POST', body={'status': 'disabled'})
         # Then a 403 Forbidden is raised
         self.assertStatus(403)
 
