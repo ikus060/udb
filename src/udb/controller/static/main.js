@@ -19,9 +19,9 @@
 /**
  * Convert a value to a date.
  */
-var DATE_PATTERN = /^(\d\d\d\d)(\-)?(\d\d)(\-)?(\d\d)$/i;
+const DATE_PATTERN = /^(\d\d\d\d)(\-)?(\d\d)(\-)?(\d\d)$/i;
 function toDate(n) {
-    var matches, year, month, day;
+    let matches, year, month, day;
     if (typeof n === "number") {
         n = new Date(n * 1000); // epoch
     } else if ((matches = n.match(DATE_PATTERN))) {
@@ -45,8 +45,8 @@ $(document).ready(function () {
      * Class `js-time` could be used to display the time portion. e.g.: 1:04 pm
      */
     $('time[datetime]').each(function () {
-        var t = $(this);
-        var d = toDate(t.attr('datetime'));
+        const t = $(this);
+        const d = toDate(t.attr('datetime'));
         if (t.hasClass("js-date")) {
             t.attr('title', d.toLocaleDateString());
             t.text(d.toLocaleDateString());
@@ -60,6 +60,15 @@ $(document).ready(function () {
             t.attr('title', d.toLocaleString());
         }
     })
+    /**
+     * Prompt user before form submit
+     */
+    $('form[data-confirm]').submit(function (event) {
+        const t = $(this);
+        if (!confirm(t.attr('data-confirm'))) {
+            event.preventDefault();
+        }
+    });
 });
 
 /** Filter button for DataTables */
@@ -74,6 +83,8 @@ $.fn.dataTable.ext.buttons.filter = {
         dt.draw(true);
     }
 };
+
+/** Button to clear filter and reset the state of the table. */
 $.fn.dataTable.ext.buttons.clear = {
     text: 'Clear',
     action: function (e, dt, node, config) {
@@ -267,7 +278,8 @@ $(document).ready(function () {
             columns: columns,
             searchCols: searchCols,
             dom: "<'d-sm-flex align-items-center'<'mb-1 flex-grow-1'i><'mb-1'f><B>>" +
-                "<'row'<'col-sm-12'rt>>",
+                "<'row'<'col-sm-12'rt>>" +
+                "<'row'<'col-sm-12 col-md-7'p>>",
             drawCallback: function (_settings) {
                 // Remove sorting class
                 this.removeClass(function (_index, className) {

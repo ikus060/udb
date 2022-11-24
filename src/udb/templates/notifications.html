@@ -9,11 +9,10 @@
   <hr />
   <div class="row">
     <div class="col-md">
-      <h4>{% trans %}Notification{% endtrans %}</h4>
-      <p>{% trans %}In this view, you can subscribe or unsubscribe to events of certain record type.{% endtrans %}</p>
+      <h4>{% trans %}Follow changes made on record type{% endtrans %}</h4>
+      <p>{% trans %}You can select the record type(s) for which you want to receive all notifications.{% endtrans %}</p>
     </div>
     <div class="col-md-9">
-      <p class="fw-bold mb-3">{% trans %}Subscribe to all changes made on record type : {% endtrans %}</p>
       <form method="POST" class="mb-3">
         {% for field in form %}
           <div class="form-check">
@@ -28,13 +27,24 @@
   <hr />
   <div class="row">
     <div class="col-md">
-      <h4>{% trans %}Record Subscriptions{% endtrans %}</h4>
-      <p>
-        {% trans %}In this view, you can unsubscribe from certain records to stop receiving notifications about them.{% endtrans %}
-      </p>
+      <h4>{% trans %}Follow changes made on specific record{% endtrans %}</h4>
+      <p>{% trans %}Provide a complete list of record that you are following.{% endtrans %}</p>
+      <form action="unfollow"
+            method="post"
+            data-confirm="{% trans %}Are you sure you want to stop following all records ?{% endtrans %}">
+        <input class="btn btn-secondary"
+               type="submit"
+               name="unfollow"
+               value="{% trans %}Unfollow all{% endtrans %}">
+      </form>
     </div>
     <div class="col-md-9">
-      {{ _table.table('data.json', empty_message=_('You are not following any record.'), columns = [{'data': 'summary', 'title':_('Following'), 'orderable': True, 'render':'summary'}] ) }}
+      {{ _table.table('data.json',
+      empty_message=_('You are not following any record.'),
+      paging=True,
+      pageLength=5,
+      columns = [{'data': 'summary', 'title':_('Following'), 'orderable': True, 'render':'summary'}],
+      buttons=[{'text': _('Clear'), 'extend': 'clear'}]) }}
     </div>
   </div>
 {% endblock %}
