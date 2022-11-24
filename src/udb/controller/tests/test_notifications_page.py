@@ -54,3 +54,19 @@ class NotificationsTest(WebCase):
         self.assertHeaderItemValue("Location", self.baseurl + "/notifications/")
         # Then a Follower entry is created with model_id == 0
         Follower.query.all()
+
+    def test_unfollow_all(self):
+        # Given a user following multiple record
+        user = User.query.first()
+        zone = DnsZone(name='boo.com').add().commit()
+        zone.add_follower(user)
+        dhcp = DhcpRecord(mac='00:00:5e:00:53:af', ip='10.255.67.12').add().commit()
+        dhcp.add_follower(user)
+        dhcp.commit()
+        # When trying to unfollow
+        self.getPage(url_for('notifications', 'unfollow'), method='POST')
+        self.assertStatus(303)
+        self.assertHeaderItemValue("Location", self.baseurl + "/notifications/")
+        # Then list of record is empty
+        self.assertNotInBody('boo.com')
+        self.assertNotInBody('00:00:5e:00:53:af')

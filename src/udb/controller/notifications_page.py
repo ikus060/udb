@@ -107,6 +107,20 @@ class NotificationsPage:
         }
 
     @cherrypy.expose()
+    def unfollow(self, **kwargs):
+        """
+        Called to unfollow all record.
+        """
+        # Validate Method
+        if cherrypy.request.method not in ['POST', 'PUT']:
+            raise cherrypy.HTTPError(405)
+        # Remove all follow for current user
+        userobj = cherrypy.request.currentuser
+        Follower.query.filter(Follower.user_id == userobj.id, Follower.model_id != 0).delete()
+        Follower.session.commit()
+        raise cherrypy.HTTPRedirect(url_for('notifications', ''))
+
+    @cherrypy.expose()
     @cherrypy.tools.json_out()
     def data_json(self, **kwargs):
         # List object followed by current user
