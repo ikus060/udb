@@ -20,7 +20,7 @@ import re
 
 import cherrypy
 import validators
-from sqlalchemy import CheckConstraint, Column, and_, case, event, func, literal
+from sqlalchemy import CheckConstraint, Column, and_, case, event, func, literal, or_
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import validates
@@ -177,33 +177,32 @@ class DnsRecord(CommonMixin, Base):
                 )
 
             # Every record type must be defined within a DNS Zone
-            dnszones = self.related_dnszones
+            dnszones = self._get_related_dnszones()
             if not dnszones:
                 raise ValueError('value', _('FQDN must be defined within a valid DNS Zone.'))
 
             # IP should be within the corresponding DNS Zone
-            if not self.related_subnets:
+            if not self._get_related_subnets():
                 suggest_subnet = ', '.join([r for zone in dnszones for subnet in zone.subnets for r in subnet.ranges])
                 raise ValueError('name', _('IP address must be defined within the DNS Zone: %s') % suggest_subnet)
 
         else:
 
             # Every record type must be defined within a DNS Zone
-            dnszones = self.related_dnszones
+            dnszones = self._get_related_dnszones()
             if not dnszones:
                 raise ValueError('name', _('FQDN must be defined within a valid DNS Zone.'))
 
             # IP should be within the corresponding DNS Zone
             if self.type in ['A', 'AAAA']:
                 self.value = str(ipaddress.ip_address(self.value))
-                if not self.related_subnets:
+                if not self._get_related_subnets():
                     suggest_subnet = ', '.join(
                         [r for zone in dnszones for subnet in zone.subnets for r in subnet.ranges]
                     )
                     raise ValueError('value', _('IP address must be defined within the DNS Zone: %s') % suggest_subnet)
 
-    @property
-    def related_dnszones(self):
+    def _get_related_dnszones(self):
         """
         Return list of DnsZone matching our name.
         """
@@ -217,8 +216,7 @@ class DnsRecord(CommonMixin, Base):
             DnsZone.status != DnsZone.STATUS_DELETED,
         ).all()
 
-    @property
-    def related_subnets(self):
+    def _get_related_subnets(self):
         """
         Return list of subnet matching our dnszone (name) and ip address (value).
         """
@@ -247,6 +245,22 @@ class DnsRecord(CommonMixin, Base):
                 .all()
             )
         return []
+
+    def _get_related_dns_record(self):
+        """
+        Return a list of DNS Record with the same `name`.
+        """
+        if self.type == 'PTR':
+            hostname = literal(self.value)
+        else:
+            hostname = literal(self.name)
+        return DnsRecord.query.filter(
+            or_(
+                and_(DnsRecord.type != 'PTR', DnsRecord.name == hostname),
+                and_(DnsRecord.type == 'PTR', DnsRecord.value == hostname),
+            ),
+            DnsRecord.status != DnsRecord.STATUS_DELETED,
+        ).all()
 
     @validates('name')
     def validate_name(self, key, value):
@@ -329,11 +343,18 @@ class DnsRecord(CommonMixin, Base):
 
     def objects_to_notify(self):
         """
-        When getting updated, make sure to notify the DNS Zone too.
+        When getting updated, make sure to notify the DNS Zone and other DNS Record.
         """
-        objects = super().objects_to_notify()
+        # Reference to our self
+        objects = [(self.__tablename__, self.id)]
+        # Reference to parent DNZ Zone
         try:
-            objects.extend([(dnszone.__tablename__, dnszone.id) for dnszone in self.related_dnszones])
+            objects.extend([(dnszone.__tablename__, dnszone.id) for dnszone in self._get_related_dnszones()])
+        except Exception:
+            pass
+        # Reference to other DNS Record
+        try:
+            objects.extend([(dnsrecord.__tablename__, dnsrecord.id) for dnsrecord in self._get_related_dns_record()])
         except Exception:
             pass
         return objects
