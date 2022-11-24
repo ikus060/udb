@@ -11,7 +11,7 @@
         {%- else -%}
         {%- for msg in messages %}{{ macro.display_name(msg.model_name) }} {{ msg.model_object.summary }}{{ ", " if not
         loop.last else " " }}{% endfor -%}
-        modified by {{messages[0].author_name}}
+        {{ _('modified') if messages[0].type == 'dirty' else _('created') }} by {{messages[0].author_name}}
         {%- endif -%}
     </title>
 </head>

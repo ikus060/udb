@@ -143,7 +143,7 @@ class NotificationPluginTest(WebCase):
         # Then a notification is sent to catchall email
         self.listener.send_mail.assert_called_once_with(
             to='my@email.com',
-            subject='DNS Zone my.zone.com modified by nobody',
+            subject='DNS Zone my.zone.com created by nobody',
             message=mock.ANY,
         )
 
@@ -180,9 +180,7 @@ class NotificationPluginTest(WebCase):
 
     def test_with_dns_record_notify_dns_zone_followers(self):
         # Given a DNS Zone follower
-        follower = User.create(
-            username='afollower', password='password', email='follower@test.com', role=User.ROLE_USER
-        ).add()
+        follower = User.create(username='follower', email='follower@test.com').add()
         vrf = Vrf(name='default')
         subnet = Subnet(ranges=['147.87.250.0/24'], name='its-main-4', vrf=vrf)
         record = DnsZone(name='my.zone.com', subnets=[subnet]).add().flush()
@@ -192,7 +190,7 @@ class NotificationPluginTest(WebCase):
         self.wait_for_tasks()
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='DNS Zone my.zone.com modified by nobody',
+            subject='DNS Zone my.zone.com created by nobody',
             message=mock.ANY,
         )
         self.listener.send_mail.reset_mock()
@@ -205,7 +203,38 @@ class NotificationPluginTest(WebCase):
         # Then the follower get notify
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='DNS Record my.zone.com = 147.87.250.1(A) modified by nobody',
+            subject='DNS Record my.zone.com = 147.87.250.1(A) created by nobody',
+            message=mock.ANY,
+        )
+
+    def test_with_dns_record_notify_dns_record_followers(self):
+        # Given a DNS Record follower
+        follower = User.create(username='follower', email='follower@test.com').add()
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['147.87.250.0/24'], name='its-main-4', vrf=vrf)
+        zone = DnsZone(name='my.zone.com', subnets=[subnet]).add().flush()
+        zone.commit()
+        record = DnsRecord(name='my.zone.com', type='A', value='147.87.250.1').add().flush()
+        record.add_follower(follower)
+        record.commit()
+        # Then wait for task to get processed
+        self.wait_for_tasks()
+        self.listener.send_mail.assert_called_once_with(
+            to='follower@test.com',
+            subject='DNS Record my.zone.com = 147.87.250.1(A) created by nobody',
+            message=mock.ANY,
+        )
+        self.listener.send_mail.reset_mock()
+        # When a DNS Record within that zone get created
+        obj = DnsRecord(name='1.250.87.147.in-addr.arpa', type='PTR', value='my.zone.com')
+        obj.add()
+        obj.commit()
+        # Then wait for task to get processed
+        self.wait_for_tasks()
+        # Then the follower get notify
+        self.listener.send_mail.assert_called_once_with(
+            to='follower@test.com',
+            subject='DNS Record 1.250.87.147.in-addr.arpa = my.zone.com(PTR) created by nobody',
             message=mock.ANY,
         )
 
@@ -247,6 +276,6 @@ class NotificationPluginTest(WebCase):
         # Then the follower get notified.
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='VRF default modified by nobody',
+            subject='VRF default created by nobody',
             message=mock.ANY,
         )
