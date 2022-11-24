@@ -179,6 +179,7 @@ class MessageMixin:
             primaryjoin=lambda: and_(
                 cls.__tablename__ == remote(foreign(Message.model_name)), cls.id == remote(foreign(Message.model_id))
             ),
+            order_by=Message.date,
             lazy=True,
             cascade="all, delete",
             overlaps="messages,dnsrecord_object,dnszone_object,subnet_object,dhcprecord_object",
@@ -198,6 +199,7 @@ class MessageMixin:
                 cls.id == remote(foreign(Message.model_id)),
                 Message.type == Message.TYPE_COMMENT,
             ),
+            order_by=Message.date,
             viewonly=True,
             lazy=True,
         )
@@ -211,6 +213,7 @@ class MessageMixin:
                 cls.id == remote(foreign(Message.model_id)),
                 Message.type.in_([Message.TYPE_NEW, Message.TYPE_DIRTY]),
             ),
+            order_by=Message.date,
             viewonly=True,
             lazy=True,
         )
