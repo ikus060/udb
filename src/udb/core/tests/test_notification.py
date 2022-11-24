@@ -143,7 +143,7 @@ class NotificationPluginTest(WebCase):
         # Then a notification is sent to catchall email
         self.listener.send_mail.assert_called_once_with(
             to='my@email.com',
-            subject='DNS Zone my.zone.com modified by nobody',
+            subject='DNS Zone my.zone.com created by nobody',
             message=mock.ANY,
         )
 
@@ -190,7 +190,7 @@ class NotificationPluginTest(WebCase):
         self.wait_for_tasks()
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='DNS Zone my.zone.com modified by nobody',
+            subject='DNS Zone my.zone.com created by nobody',
             message=mock.ANY,
         )
         self.listener.send_mail.reset_mock()
@@ -203,7 +203,7 @@ class NotificationPluginTest(WebCase):
         # Then the follower get notify
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='DNS Record my.zone.com = 147.87.250.1(A) modified by nobody',
+            subject='DNS Record my.zone.com = 147.87.250.1(A) created by nobody',
             message=mock.ANY,
         )
 
@@ -221,7 +221,7 @@ class NotificationPluginTest(WebCase):
         self.wait_for_tasks()
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='DNS Record my.zone.com = 147.87.250.1(A) modified by nobody',
+            subject='DNS Record my.zone.com = 147.87.250.1(A) created by nobody',
             message=mock.ANY,
         )
         self.listener.send_mail.reset_mock()
@@ -234,7 +234,7 @@ class NotificationPluginTest(WebCase):
         # Then the follower get notify
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='DNS Record 1.250.87.147.in-addr.arpa = my.zone.com(PTR) modified by nobody',
+            subject='DNS Record 1.250.87.147.in-addr.arpa = my.zone.com(PTR) created by nobody',
             message=mock.ANY,
         )
 
@@ -276,6 +276,6 @@ class NotificationPluginTest(WebCase):
         # Then the follower get notified.
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='VRF default modified by nobody',
+            subject='VRF default created by nobody',
             message=mock.ANY,
         )
