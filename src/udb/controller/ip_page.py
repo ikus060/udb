@@ -64,7 +64,7 @@ class IpForm(CherryForm):
 
     related_dhcp_records = FieldList(
         FormField(RelatedDhcpRecordForm),
-        label=_('Related DHCP Records'),
+        label=_('Related DHCP Reservations'),
         widget=TableWidget(),
     )
 
