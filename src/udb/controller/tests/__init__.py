@@ -57,9 +57,9 @@ class WebCase(BaseClass):
         super().teardown_class()
 
     def wait_for_tasks(self):
-        time.sleep(1)
+        time.sleep(0.25)
         while len(cherrypy.scheduler.list_tasks()) or cherrypy.scheduler.is_job_running():
-            time.sleep(1)
+            time.sleep(0.5)
 
     @classmethod
     def setup_server(cls):

@@ -57,22 +57,6 @@
 {% if has_messages %}
   <div class="card">
     <h6 class="card-header">{% trans %}History{% endtrans %}</h6>
-    {#Form #}
-    <div class="card-body">
-      <div class="comment-form">
-        <form method="post" action="{{ url_for(obj, 'post')}}">
-          <div class="mb-3 form-floating">
-            <textarea name="body"
-                      class="form-control"
-                      placeholder="Leave a comment here"
-                      id="floatingTextarea2"
-                      style="height: 80px"></textarea>
-            <label for="floatingTextarea2">{% trans %}Leave a message{% endtrans %}</label>
-          </div>
-          <button type="submit" class="btn btn-secondary">{% trans %}Send message{% endtrans %}</button>
-        </form>
-      </div>
-    </div>
     {{ list_messages(obj.messages) }}
   </div>
 {% endif %}
