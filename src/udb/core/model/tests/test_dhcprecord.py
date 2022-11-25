@@ -49,7 +49,7 @@ class DhcpRecordTest(WebCase):
         self.assertEqual(1, DhcpRecord.query.count())
 
     def test_norm_ipv6(self):
-        # Given a DHCP Record with IPv6
+        # Given a DHCP Reservation with IPv6
         DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:af').add().commit()
         # When querying the object
         dhcp = DhcpRecord.query.first()

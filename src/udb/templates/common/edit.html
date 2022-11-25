@@ -20,17 +20,19 @@
           {{ _('Edit') if is_editable else _('View') }} {{ macro.display_name(model_name)}} {{(form|first).data }}
         </h2>
         {# /Title #}
-        {% if has_status %}
-          {# Status Badge #}
-          <div class="h5">{{ _status.badge(obj, force=True)}}</div>
-          {# /Status Badge #}
-        {% endif %}
       </div>
       {# Flash messages #}
       {% include "flash.html" %}
       <form method="POST">
-        <div class="card mb-3 {% if has_status and obj.status != 'enabled' %}bg-light{% endif %}">
+        <div class="card mb-3 {{ _status.bg_color(obj) }}">
           <div class="card-body">
+            {% if has_status %}
+              {# Status Badge #}
+              <div style="position: absolute; right: 1rem">
+                <div class="h5">{{ _status.badge(obj, force=True) }}</div>
+              </div>
+              {# /Status Badge #}
+            {% endif %}
             {# Edit Form #}
             <div class="row">
               {% block edit_form %}{{ form()}}{% endblock %}
@@ -43,10 +45,10 @@
               <div class="mb-3 form-floating">
                 <textarea name="body"
                           class="form-control"
-                          placeholder="Leave a comment here"
+                          placeholder="Describe the reason for the changes or leave a message"
                           id="floatingTextarea2"
                           style="height: 80px"></textarea>
-                <label for="floatingTextarea2">{% trans %}Leave a comment{% endtrans %}</label>
+                <label for="floatingTextarea2">{% trans %}Describe the reason for the changes or leave a message{% endtrans %}</label>
               </div>
             {% endif %}
             <div class="text-center text-lg-start">

@@ -47,12 +47,12 @@
       </div>
       <ul class="nav nav-pills flex-column w-100">
         {% set items = [
-        ('dnszone', _('DNS Zone')),
         ('vrf', _('VRF')),
         ('subnet', _('Subnet')),
-        ('dnsrecord', _('DNS Record')),
-        ('dhcprecord', _('DHCP Record')),
         ('ip', _('Ip')),
+        ('dnszone', _('DNS Zone')),
+        ('dnsrecord', _('DNS Record')),
+        ('dhcprecord', _('DHCP Reservation')),
         ]%}
         {% for model, name in items %}
           <li class="nav-item">

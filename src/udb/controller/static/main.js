@@ -223,7 +223,7 @@ $.fn.dataTable.render.summary = function () {
                 '<strong>' + safe(data) + '</strong>' +
                 '</a>';
             if (row.status == 'disabled') {
-                html += ' <span class="badge bg-secondary">' + meta.settings.oLanguage['disabled'] + '</span>';
+                html += ' <span class="badge bg-warning">' + meta.settings.oLanguage['disabled'] + '</span>';
             } else if (row.status == 'deleted') {
                 html += ' <span class="badge bg-danger">' + meta.settings.oLanguage['deleted'] + '</span>';
             }

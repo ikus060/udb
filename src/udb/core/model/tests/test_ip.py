@@ -171,7 +171,7 @@ class IpTest(WebCase):
             .add()
             .commit()
         )
-        # Given a deleted DHCP Record
+        # Given a deleted DHCP Reservation
         dhcp = (
             DhcpRecord(
                 ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
@@ -189,7 +189,7 @@ class IpTest(WebCase):
         self.assertEqual([dns], obj.related_dns_records)
 
     def test_related_dns_record_with_deleted(self):
-        # Given a DHCP Record
+        # Given a DHCP Reservation
         DhcpRecord(
             ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
             mac='00:00:5e:00:53:bf',
@@ -220,7 +220,7 @@ class IpTest(WebCase):
             type='PTR',
             value='bar.example.com',
         ).add().commit()
-        # Given a deleted DHCP Record
+        # Given a deleted DHCP Reservation
         DhcpRecord(
             ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
             mac='00:00:5e:00:53:bf',
@@ -242,7 +242,7 @@ class IpTest(WebCase):
             type='PTR',
             value='bar.example.com',
         ).add().commit()
-        # Given a deleted DHCP Record
+        # Given a deleted DHCP Reservation
         DhcpRecord(
             ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
             mac='00:00:5e:00:53:bf',

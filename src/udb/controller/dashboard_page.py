@@ -20,7 +20,7 @@ import cherrypy
 from sqlalchemy import desc, func
 
 from udb.controller import url_for
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Message, Subnet, User
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Message, Subnet, User, Vrf
 
 Base = cherrypy.tools.db.get_base()
 
@@ -42,12 +42,16 @@ class DashboardPage:
         )
 
         # Count records
-        dnszone_count = DnsZone.query.filter(DnsZone.status == DnsZone.STATUS_ENABLED).count()
+        vrf_count = Vrf.query.filter(Vrf.status == Vrf.STATUS_ENABLED).count()
         subnet_count = Subnet.query.filter(Subnet.status == Subnet.STATUS_ENABLED).count()
+        dnszone_count = DnsZone.query.filter(DnsZone.status == DnsZone.STATUS_ENABLED).count()
         dnsrecord_count = DnsRecord.query.filter(DnsRecord.status == DnsRecord.STATUS_ENABLED).count()
         dhcprecord_count = DhcpRecord.query.filter(DhcpRecord.status == DhcpRecord.STATUS_ENABLED).count()
+        ip_count = Ip.query.count()
         return {
+            'vrf_count': vrf_count,
             'dnszone_count': dnszone_count,
+            'ip_count': ip_count,
             'subnet_count': subnet_count,
             'dnsrecord_count': dnsrecord_count,
             'dhcprecord_count': dhcprecord_count,

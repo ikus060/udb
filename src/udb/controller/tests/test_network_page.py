@@ -187,7 +187,7 @@ class CommonTest:
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
         # When trying to post a message
-        self.getPage(url_for(obj, 'post'), method='POST', body={'body': 'this is my message'})
+        self.getPage(url_for(obj, 'edit'), method='POST', body={'body': 'this is my message'})
         # Then user is redirected to the edit page
         self.assertStatus(303)
         obj = self.obj_cls.query.first()

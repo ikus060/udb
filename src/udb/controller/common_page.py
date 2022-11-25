@@ -241,17 +241,6 @@ class CommonPage(object):
         # Redirect to referer if defined
         raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
-    @cherrypy.expose
-    def post(self, key, **kwargs):
-        self._verify_role(self.list_role)
-        obj = self._get_or_404(key)
-        form = MessageForm()
-        if form.validate_on_submit():
-            message = Message(body=form.body.data, author=cherrypy.request.currentuser)
-            obj.add_message(message)
-            obj.commit()
-        raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
-
 
 @cherrypy.tools.errors(
     error_table={

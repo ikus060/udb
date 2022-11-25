@@ -9,7 +9,10 @@
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
-            <div class="text-xs font-weight-bold text-{{ color }} text-uppercase mb-1">{{ macro.display_name(model_name)}}</div>
+            <a href="{{ url_for(model_name, '')}}"
+               class="stretched-link text-uppercase mb-1 text-{{ color }} fw-bold">
+              {{ macro.display_name(model_name)}}
+            </a>
             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ count }}</div>
           </div>
           <div class="col-auto">{{ macro.icon(model_name, 'h1 text-secondary')}}</div>
@@ -21,14 +24,18 @@
 {% block body %}
   <h1>{% trans %}Dashboard{% endtrans %}</h1>
   <div class="row">
-    {# DNS Zones #}
-    {{ dashboard_card('dnszone', dnszone_count, 'primary') }}
+    {# VRF #}
+    {{ dashboard_card('vrf', vrf_count, 'primary') }}
     {# Subnet #}
-    {{ dashboard_card('subnet', subnet_count, 'success') }}
+    {{ dashboard_card('subnet', subnet_count, 'info') }}
+    {# IP #}
+    {{ dashboard_card('ip', ip_count, 'success') }}
+    {# DNS Zones #}
+    {{ dashboard_card('dnszone', dnszone_count, 'warning') }}
     {# DNS Record #}
     {{ dashboard_card('dnsrecord', dnsrecord_count, 'info') }}
-    {# DHCP Record #}
-    {{ dashboard_card('dhcprecord', dhcprecord_count, 'warning') }}
+    {# DHCP Reservation #}
+    {{ dashboard_card('dhcprecord', dhcprecord_count, 'success') }}
   </div>
   <div class="row">
     {# Activity list #}
@@ -36,7 +43,7 @@
       <div class="card shadow mb-4">
         {# Card Header - Dropdown #}
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-          <h6 class="m-0 font-weight-bold text-primary">{% trans %}Last activities{% endtrans %}</h6>
+          <h6 class="m-0 font-weight-bold">{% trans %}Last activities{% endtrans %}</h6>
         </div>
         {# Card Body #}
         <div class="card-body" style="height: 420px; overflow-y: auto;">
@@ -44,7 +51,7 @@
           {'data': 'summary', 'title':_('Record'), 'orderable': True, 'render':'summary'},
           {'data': 'date', 'title':_('When'), 'orderable': True, 'render':'datetime'},
           {'data': 'body', 'title':_('Changes'), 'orderable':False, 'render':'message_body'}] %}
-          {{ _table.table('activities.json', columns=columns, searching=False, empty_message=_('No activities')) }}
+          {{ _table.table('activities.json', columns=columns, searching=False, empty_message=_('No modification'), info_message=_('Showing last _TOTAL_ modifications')) }}
         </div>
       </div>
     </div>
@@ -53,7 +60,7 @@
       <div class="card shadow mb-4">
         {# Card Header - Dropdown #}
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-          <h6 class="m-0 font-weight-bold text-primary">
+          <h6 class="m-0 font-weight-bold">
             {% trans %}Most active user{% endtrans %}
             <small>{% trans %}(last 7 days){% endtrans %}</small>
           </h6>
