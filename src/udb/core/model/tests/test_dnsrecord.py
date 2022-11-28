@@ -325,3 +325,34 @@ class DnsRecordTest(WebCase):
         with self.assertRaises(ValueError) as cm:
             DnsRecord(name='foo.example.com', type='NS', value='192.0.2.23').add().commit()
         self.assertEqual(cm.exception.args, ('value', mock.ANY))
+
+    def test_get_reverse_dns_record_with_ipv4(self):
+        # Given a A DNS Record
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['192.0.2.0/24'], vrf=vrf)
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
+        a_record = DnsRecord(name='foo.example.com', value='192.0.2.1', type='A').add()
+        # Given a PTR DNS Record
+        prt_record = DnsRecord(name='1.2.0.192.in-addr.arpa', value='foo.example.com', type='PTR').add().commit()
+        # When getting reverse record
+        # Then the PTR Record is return
+        self.assertEqual(a_record, prt_record.get_reverse_dns_record())
+        self.assertEqual(prt_record, a_record.get_reverse_dns_record())
+
+    def test_get_reverse_dns_record_with_ipv6(self):
+        # Given a A DNS Record
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['2a07:6b43:26:11::/64'], vrf=vrf)
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
+        a_record = DnsRecord(name='foo.example.com', value='2a07:6b43:26:11::1', type='AAAA').add()
+        # Given a PTR DNS Record
+        prt_record = DnsRecord(
+            name='1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.1.0.0.6.2.0.0.3.4.b.6.7.0.a.2.ip6.arpa',
+            value='foo.example.com',
+            type='PTR',
+        )
+        prt_record.add().commit()
+        # When getting reverse record
+        # Then the PTR Record is return
+        self.assertEqual(a_record, prt_record.get_reverse_dns_record())
+        self.assertEqual(prt_record, a_record.get_reverse_dns_record())

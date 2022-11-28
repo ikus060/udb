@@ -23,7 +23,7 @@ from parameterized import parameterized
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, User
+from udb.core.model import DhcpRecord, DnsZone, User
 
 
 class CommonTest:
@@ -58,16 +58,6 @@ class CommonTest:
         self.assertStatus(200)
         self.assertInBody('Save changes')
 
-    def test_get_edit_with_referer(self):
-        # Given a database with a record.
-        obj = self.obj_cls(**self.new_data).add()
-        obj.commit()
-        # When editing the record with a referer
-        self.getPage(url_for(self.base_url, obj.id, 'edit'), headers=[('Referer', url_for('notifications'))])
-        # Then referer is store in form
-        self.assertStatus(200)
-        self.assertInBody('<input id="referer" name="referer" type="hidden" value="%s">' % url_for('notifications'))
-
     def test_get_new_page(self):
         # Given an empty database
         # When querying the new page
@@ -90,23 +80,6 @@ class CommonTest:
         new_obj = self.obj_cls.query.first()
         for k, v in self.edit_data.items():
             self.assertEqual(getattr(new_obj, k), v)
-
-    def test_edit_with_referer(self):
-        # Given a database with a record.
-        obj = self.obj_cls(**self.new_data).add()
-        obj.commit()
-        # When editing the record with a referer
-        body = {'referer': url_for('notifications')}
-        body.update(self.edit_data)
-        self.getPage(
-            url_for(self.base_url, obj.id, 'edit'),
-            headers=[('Referer', url_for(self.base_url, obj.id, 'edit'))],
-            method='POST',
-            body=body,
-        )
-        # Then user is redirected to referer
-        self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
 
     def test_edit_with_comment(self):
         # Given a database with a record
@@ -277,6 +250,10 @@ class CommonTest:
         self.assertEqual('enabled', self.obj_cls.query.first().status)
 
     def test_get_data_json(self):
+        # Given a database with record
+        obj = self.obj_cls(**self.new_data)
+        obj.add()
+        obj.commit()
         # When requesting data.json
         self.getPage(url_for(self.base_url, 'data.json'))
         # Then json data is returned
@@ -346,40 +323,6 @@ class CommonTest:
         self.assertStatus(200)
         for k, v in self.edit_data.items():
             self.assertEqual(data[k], v)
-
-
-class DnsRecordTest(WebCase, CommonTest):
-
-    base_url = 'dnsrecord'
-
-    obj_cls = DnsRecord
-
-    new_data = {'name': 'foo.example.com', 'type': 'CNAME', 'value': 'bar.example.com'}
-
-    edit_data = {'name': 'foo.example.com', 'type': 'CNAME', 'value': 'bar.example.com', 'notes': 'new comment'}
-
-    def setUp(self):
-        super().setUp()
-        DnsZone(name='example.com').add().commit()
-
-    def test_edit_invalid(self):
-        # Given a database with a record
-        obj = self.obj_cls(**self.new_data).add()
-        obj.commit()
-        # When trying to update it's name
-        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'value': 'invalid_cname'})
-        # Then edit page is displayed with an error message
-        self.assertStatus(200)
-        self.assertInBody('value must matches the DNS record type')
-
-    def test_new_ptr_invalid(self):
-        # Given an invalid PTR record.
-        data = {'name': 'foo.example.com', 'type': 'PTR', 'value': 'bar.example.com'}
-        # When trying to create a new record
-        self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
-        # Then edit page is displayed with an error message
-        self.assertStatus(200)
-        self.assertInBody('PTR records must ends with `.in-addr.arpa` or `.ip6.arpa`')
 
 
 class DhcpRecordTest(WebCase, CommonTest):

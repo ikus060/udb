@@ -1,0 +1,19 @@
+{% extends 'common/edit.html' %}
+{% block extra_actions %}
+    <h4 class="d-none d-xl-block">
+        {% trans %}Actions{% endtrans %}
+    </h4>
+    <div class="col mb-2">
+        {# Reverse Record #}
+        {% set reverse_record = obj.get_reverse_dns_record() %}
+        {% if reverse_record %}
+            <a href="{{ url_for(reverse_record, 'edit')}}" class="btn btn-outline-primary text-nowrap w-100">Edit Reverse Record</a>
+        {% else %}
+            <form action="reverse_record" method="post">
+                <input class="btn btn-outline-primary text-nowrap w-100"
+                       type="submit"
+                       value="{% trans %}Create Reverse Record{% endtrans %}">
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}
