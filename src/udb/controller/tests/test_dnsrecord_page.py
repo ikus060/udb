@@ -49,7 +49,7 @@ class DnsRecordTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'value': 'invalid_cname'})
         # Then edit page is displayed with an error message
         self.assertStatus(200)
-        self.assertInBody('value must matches the DNS record type')
+        self.assertInBody('value must be a valid domain name')
 
     def test_new_ptr_invalid(self):
         # Given an invalid PTR record.

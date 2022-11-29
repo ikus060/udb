@@ -14,7 +14,7 @@
       {% for row in field %}
         <tr>
           {% for subfield in row %}
-            <td scope="row">
+            <td>
               {% if loop.first %}
                 <a href="{{ url_for(row.object_data, 'edit')}}">{{ subfield.data }}</a>
               {% elif subfield.data %}

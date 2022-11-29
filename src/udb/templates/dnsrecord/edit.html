@@ -1,19 +1,26 @@
 {% extends 'common/edit.html' %}
 {% block extra_actions %}
-    <h4 class="d-none d-xl-block">
-        {% trans %}Actions{% endtrans %}
-    </h4>
-    <div class="col mb-2">
-        {# Reverse Record #}
-        {% set reverse_record = obj.get_reverse_dns_record() %}
-        {% if reverse_record %}
-            <a href="{{ url_for(reverse_record, 'edit')}}" class="btn btn-outline-primary text-nowrap w-100">Edit Reverse Record</a>
-        {% else %}
-            <form action="reverse_record" method="post">
-                <input class="btn btn-outline-primary text-nowrap w-100"
-                       type="submit"
-                       value="{% trans %}Create Reverse Record{% endtrans %}">
-            </form>
-        {% endif %}
-    </div>
+    {# Reverse Record #}
+    {% if obj.type in ['A', 'AAAA', 'PTR'] %}
+        <div class="col mb-2">
+            {% set reverse_record = obj.get_reverse_dns_record() %}
+            {% if reverse_record %}
+                <a href="{{ url_for(reverse_record, 'edit')}}"
+                   class="btn btn-outline-primary text-nowrap w-100">{% trans %}Edit Reverse Record{% endtrans %}</a>
+            {% else %}
+                <form action="reverse_record" method="post">
+                    <input class="btn btn-outline-primary text-nowrap w-100"
+                           type="submit"
+                           value="{% trans %}Create Reverse Record{% endtrans %}">
+                </form>
+            {% endif %}
+        </div>
+    {% endif %}
+    {# Related IP #}
+    {% if obj._ip %}
+        <div class="col mb-2">
+            <a href="{{ url_for(obj._ip, 'edit')}}"
+               class="btn btn-outline-primary text-nowrap w-100">{% trans %}Show related IP{% endtrans %}</a>
+        </div>
+    {% endif %}
 {% endblock %}

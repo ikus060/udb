@@ -57,8 +57,9 @@ class WebCase(BaseClass):
         super().teardown_class()
 
     def wait_for_tasks(self):
+        count = 0
         time.sleep(0.25)
-        while len(cherrypy.scheduler.list_tasks()) or cherrypy.scheduler.is_job_running():
+        while count < 20 and len(cherrypy.scheduler.list_tasks()) or cherrypy.scheduler.is_job_running():
             time.sleep(0.5)
 
     @classmethod

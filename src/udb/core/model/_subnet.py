@@ -29,6 +29,11 @@ from udb.tools.i18n import gettext_lazy as _
 
 from ._cidr import CidrType
 from ._common import CommonMixin
+from ._follower import FollowerMixin
+from ._json import JsonMixin
+from ._message import MessageMixin
+from ._search_vector import SearchableMixing
+from ._status import StatusMixing
 from ._vrf import Vrf
 
 Base = cherrypy.tools.db.get_base()
@@ -75,10 +80,10 @@ class SubnetRange(Base):
 Index('subnetrange_index', SubnetRange.vrf_id, SubnetRange.range, unique=True)
 
 # Index for cidr sorting
-Index('subnetrange_order', SubnetRange.vrf_id, SubnetRange.range.family().desc(), SubnetRange.range.inet())
+Index('subnetrange_order', SubnetRange.vrf_id, SubnetRange.range.family().desc(), SubnetRange.range.sortable())
 
 
-class Subnet(CommonMixin, Base):
+class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
 
     name = Column(String, nullable=False, default='')
     vrf_id = Column(Integer, ForeignKey("vrf.id"), nullable=False)
@@ -89,7 +94,7 @@ class Subnet(CommonMixin, Base):
     subnet_ranges = relationship(
         "SubnetRange",
         lazy=False,
-        order_by=(SubnetRange.vrf_id, SubnetRange.range.family().desc(), SubnetRange.range.inet()),
+        order_by=(SubnetRange.vrf_id, SubnetRange.range.family().desc(), SubnetRange.range.sortable()),
         cascade="all, delete-orphan",
     )
     ranges = association_proxy("subnet_ranges", "range")

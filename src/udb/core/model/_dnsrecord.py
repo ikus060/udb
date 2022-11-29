@@ -20,17 +20,24 @@ import re
 
 import cherrypy
 import validators
-from sqlalchemy import CheckConstraint, Column, and_, case, event, func, literal, or_
+from sqlalchemy import CheckConstraint, Column, Computed, ForeignKey, and_, case, event, func, literal
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import validates
+from sqlalchemy.orm import relationship, validates
 from sqlalchemy.types import Integer, String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
 
+from ._cidr import InetType
 from ._common import CommonMixin
 from ._dnszone import DnsZone
+from ._follower import FollowerMixin
+from ._ip import HasIpMixin, Ip
+from ._json import JsonMixin
+from ._message import MessageMixin
+from ._search_vector import SearchableMixing
+from ._status import StatusMixing
 from ._subnet import Subnet, SubnetRange
 
 Base = cherrypy.tools.db.get_base()
@@ -71,148 +78,126 @@ def _register_sqlite_functions(dbapi_con, unused):
         dbapi_con.create_function("regexp_replace", 3, _sqlite_regexp_replace, deterministic=True)
 
 
-def _validate_ipv4(value):
-    try:
-        ipaddress.IPv4Address(value)
-        return True
-    except ValueError:
+def _reverse_ipv4(value):
+    """
+    Validate a reverse ipv6 value used for PTR records.
+    e.g.: 16.155.10.in-addr.arpa. for 10.155.16.0/22
+    """
+    if not value.endswith('.in-addr.arpa'):
+        return None
+    groups = value[0:-13].split('.')
+    if len(groups) > 4:
+        return None
+    if any(not x.isdigit() for x in groups):
+        return None
+    if not all(0 <= int(part) < 256 for part in groups):
+        return None
+    return '.'.join([str(int(part)) for part in groups[::-1]])
+
+
+def _reverse_ipv6(value):
+    """
+    Validate a reverse ipv6 value used for PTR records.
+    e.g.: 8.b.d.0.1.0.0.2.ip6.arpa for 2001:db8::/29
+    """
+    if not value.endswith('.ip6.arpa'):
+        return None
+    groups = value[0:-9].split('.')
+    if len(groups) > 32:
         return False
-
-
-def _validate_ipv6(value):
-    try:
-        ipaddress.IPv6Address(value)
-        return True
-    except ValueError:
+    valid_hex = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']
+    if not all(x in valid_hex for x in groups):
         return False
+    groups = groups[::-1]
+    full_address = ':'.join([''.join(groups[i : i + 4]) for i in range(0, 32, 4)])
+    return str(ipaddress.ip_address(full_address))
 
 
-def _ipv6_part(col, start):
-    return func.ltrim(func.replace(func.reverse(func.substring(col, start, 8)), '.', ''), '0')
+class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, HasIpMixin, Base):
+    _ip_column_name = 'ip_value'
 
-
-class DnsRecord(CommonMixin, Base):
-    TYPES = {
-        'CNAME': validators.domain,
-        'A': _validate_ipv4,
-        'AAAA': _validate_ipv6,
-        'TXT': lambda value: value and isinstance(value, str),
-        'SRV': lambda value: value and isinstance(value, str),
-        'PTR': validators.domain,
-        # Usable in IP address & FQDN views
-        'CDNSKEY': lambda value: value and isinstance(value, str),
-        'CDS': lambda value: value and isinstance(value, str),
-        'DNSKEY': lambda value: value and isinstance(value, str),
-        'DS': lambda value: value and isinstance(value, str),
-        # Usable in DNS zones
-        'CAA': lambda value: value and isinstance(value, str),
-        'SSHFP': lambda value: value and isinstance(value, str),
-        'TLSA': lambda value: value and isinstance(value, str),
-        'MX': lambda value: value and isinstance(value, str),
-        'NS': validators.domain,
-    }
+    TYPES = [
+        'CNAME',
+        'A',
+        'AAAA',
+        'TXT',
+        'SRV',
+        'PTR',
+        'CDNSKEY',
+        'CDS',
+        'DNSKEY',
+        'DS',
+        'CAA',
+        'SSHFP',
+        'TLSA',
+        'MX',
+        'NS',
+    ]
     name = Column(String, unique=False, nullable=False)
     type = Column(String, nullable=False)
     ttl = Column(Integer, nullable=False, default=3600)
     value = Column(String, nullable=False)
 
+    # Relation to Ip record uses GENERATE ALWAYS
+    @classmethod
+    def __declare_last__(cls):
+        cls.generated_ip = Column(InetType, ForeignKey(Ip.ip), Computed(cls.ip_value))
+        cls._ip = relationship(Ip, primaryjoin=cls.generated_ip == Ip.ip, backref='related_dns_records', lazy=True)
+
     @classmethod
     def _search_string(cls):
         return cls.name + " " + cls.type + " " + cls.value
-
-    @classmethod
-    def _reverse_ipv4(cls, value):
-        """
-        Validate a reverse ipv6 value used for PTR records.
-        e.g.: 16.155.10.in-addr.arpa. for 10.155.16.0/22
-        """
-        if not value.endswith('.in-addr.arpa'):
-            return None
-        groups = value[0:-13].split('.')
-        if len(groups) > 4:
-            return None
-        if any(not x.isdigit() for x in groups):
-            return None
-        if not all(0 <= int(part) < 256 for part in groups):
-            return None
-        return '.'.join([str(int(part)) for part in groups[::-1]])
-
-    @classmethod
-    def _reverse_ipv6(cls, value):
-        """
-        Validate a reverse ipv6 value used for PTR records.
-        e.g.: 8.b.d.0.1.0.0.2.ip6.arpa for 2001:db8::/29
-        """
-        if not value.endswith('.ip6.arpa'):
-            return None
-        groups = value[0:-9].split('.')
-        if len(groups) > 32:
-            return False
-        valid_hex = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']
-        if not all(x in valid_hex for x in groups):
-            return False
-        groups = groups[::-1]
-        full_address = ':'.join([''.join(groups[i : i + 4]) for i in range(0, 32, 4)])
-        return str(ipaddress.ip_address(full_address))
 
     def _validate(self):
         """
         Run other validation on all fields.
         """
+        is_ptr = self.type == 'PTR'
+
         # Validate value according to record type
-        validator = DnsRecord.TYPES.get(self.type)
-        if not validator:
+        if self.type not in DnsRecord.TYPES:
             raise ValueError('type', _('invalid record type'))
-        if not validator(self.value):
-            raise ValueError('value', _('value must matches the DNS record type'))
 
-        if self.type == 'PTR':
-            # Validate name according to record type
-            if not self.reverse_ip:
-                raise ValueError(
-                    'name',
-                    _(
-                        'PTR records must ends with `.in-addr.arpa` or `.ip6.arpa` and define a valid IPv4 or IPv6 address'
-                    ),
-                )
+        # Verify domain name
+        if self.type in ['CNAME', 'PTR', 'NS'] and not validators.domain(self.value):
+            raise ValueError('value', _('value must be a valid domain name'))
 
-            # Every record type must be defined within a DNS Zone
-            dnszones = self._get_related_dnszones()
-            if not dnszones:
-                raise ValueError('value', _('FQDN must be defined within a valid DNS Zone.'))
+        # Verify IP Address
+        elif self.type in ['A', 'AAAA']:
+            if not self.ip_value:
+                raise ValueError('value', _('value must be a valid IP address'))
+            self.value = self.ip_value
+        elif not self.value:
+            raise ValueError('value', _('value must not be empty'))
 
+        # Every record type must be defined within a DNS Zone
+        dnszones = self._get_related_dnszones()
+        if not dnszones:
+            raise ValueError('value' if is_ptr else 'name', _('FQDN must be defined within a valid DNS Zone.'))
+
+        # Validate name according to record type
+        if is_ptr and not self.ip_value:
+            raise ValueError(
+                'name',
+                _('PTR records must ends with `.in-addr.arpa` or `.ip6.arpa` and define a valid IPv4 or IPv6 address'),
+            )
+        if self.type in ['A', 'AAAA', 'PTR']:
             # IP should be within the corresponding DNS Zone
             if not self._get_related_subnets():
-                suggest_subnet = ', '.join([r for zone in dnszones for subnet in zone.subnets for r in subnet.ranges])
-                raise ValueError('name', _('IP address must be defined within the DNS Zone: %s') % suggest_subnet)
-
-        else:
-
-            # Every record type must be defined within a DNS Zone
-            dnszones = self._get_related_dnszones()
-            if not dnszones:
-                raise ValueError('name', _('FQDN must be defined within a valid DNS Zone.'))
-
-            # IP should be within the corresponding DNS Zone
-            if self.type in ['A', 'AAAA']:
-                self.value = str(ipaddress.ip_address(self.value))
-                if not self._get_related_subnets():
-                    suggest_subnet = ', '.join(
-                        [r for zone in dnszones for subnet in zone.subnets for r in subnet.ranges]
-                    )
-                    raise ValueError('value', _('IP address must be defined within the DNS Zone: %s') % suggest_subnet)
+                suggest_subnet = ', '.join(
+                    [range for zone in dnszones for subnet in zone.subnets for range in subnet.ranges]
+                )
+                raise ValueError(
+                    'name' if is_ptr else 'value',
+                    _('IP address must be defined within the DNS Zone: %s') % suggest_subnet,
+                )
 
     def _get_related_dnszones(self):
         """
         Return list of DnsZone matching our name.
         """
-        if self.type == 'PTR':
-            return DnsZone.query.filter(
-                literal(self.value).endswith(DnsZone.name),
-                DnsZone.status != DnsZone.STATUS_DELETED,
-            ).all()
         return DnsZone.query.filter(
-            literal(self.name).endswith(DnsZone.name),
+            literal(self.hostname_value).endswith(DnsZone.name),
             DnsZone.status != DnsZone.STATUS_DELETED,
         ).all()
 
@@ -220,25 +205,13 @@ class DnsRecord(CommonMixin, Base):
         """
         Return list of subnet matching our dnszone (name) and ip address (value).
         """
-        if self.type in ['A', 'AAAA']:
+        if self.type in ['A', 'AAAA', 'PTR']:
             return (
                 Subnet.query.join(Subnet.dnszones)
                 .join(Subnet.subnet_ranges)
                 .filter(
-                    literal(self.name).endswith(DnsZone.name),
-                    SubnetRange.range.supernet_of(self.value),
-                    DnsZone.status != DnsZone.STATUS_DELETED,
-                    Subnet.status != Subnet.STATUS_DELETED,
-                )
-                .all()
-            )
-        elif self.type == 'PTR':
-            return (
-                Subnet.query.join(Subnet.dnszones)
-                .join(Subnet.subnet_ranges)
-                .filter(
-                    literal(self.value).endswith(DnsZone.name),
-                    SubnetRange.range.supernet_of(self.reverse_ip),
+                    literal(self.hostname_value).endswith(DnsZone.name),
+                    SubnetRange.range.supernet_of(str(self.ip_value)),
                     DnsZone.status != DnsZone.STATUS_DELETED,
                     Subnet.status != Subnet.STATUS_DELETED,
                 )
@@ -250,15 +223,8 @@ class DnsRecord(CommonMixin, Base):
         """
         Return a list of DNS Record with the same `name`.
         """
-        if self.type == 'PTR':
-            hostname = literal(self.value)
-        else:
-            hostname = literal(self.name)
         return DnsRecord.query.filter(
-            or_(
-                and_(DnsRecord.type != 'PTR', DnsRecord.name == hostname),
-                and_(DnsRecord.type == 'PTR', DnsRecord.value == hostname),
-            ),
+            DnsRecord.hostname_value == literal(self.hostname_value),
             DnsRecord.status != DnsRecord.STATUS_DELETED,
         ).all()
 
@@ -272,7 +238,7 @@ class DnsRecord(CommonMixin, Base):
             return DnsRecord.query.filter(
                 DnsRecord.type.in_(['A', 'AAAA']),
                 DnsRecord.name == self.value,
-                DnsRecord.value == self.reverse_ip,
+                DnsRecord.value == str(self.ip_value),
                 DnsRecord.status != DnsRecord.STATUS_DELETED,
             ).first()
         elif self.type in ['A', 'AAAA']:
@@ -293,7 +259,7 @@ class DnsRecord(CommonMixin, Base):
         """
         if self.type == 'PTR':
             newtype = 'AAAA' if self.value.endswith('.ip6.arpa') else 'A'
-            return DnsRecord(name=self.value, type=newtype, value=self.reverse_ip, ttl=self.ttl)
+            return DnsRecord(name=self.value, type=newtype, value=self.ip_value, ttl=self.ttl)
         elif self.type in ['A', 'AAAA']:
             value = ipaddress.ip_address(self.value).reverse_pointer
             return DnsRecord(name=value, type='PTR', value=self.name, ttl=self.ttl)
@@ -311,6 +277,13 @@ class DnsRecord(CommonMixin, Base):
             raise ValueError('type', _('expected a valid DNS record type'))
         return value
 
+    @validates('generated_ip')
+    def discard_generated_ip(self, key, value):
+        """
+        Discard any value that get assigned to generated column.
+        """
+        return self.generated_ip
+
     def __str__(self):
         return "%s = %s (%s)" % (self.name, self.value, self.type)
 
@@ -319,61 +292,107 @@ class DnsRecord(CommonMixin, Base):
         return self.name + " = " + self.value + "(" + self.type + ")"
 
     @hybrid_property
-    def reverse_ip(self):
+    def hostname_value(self):
         """
-        Return the IP address of a PTR record.
+        Return the hostname of a DNS Record. For PTR record, this correspond to the value.
         """
-        if self.type != 'PTR':
-            return None
-        return DnsRecord._reverse_ipv4(self.name) or DnsRecord._reverse_ipv6(self.name)
+        if self.type == 'PTR':
+            return self.value
+        return self.name
 
-    @reverse_ip.expression
-    def reverse_ip(self):
+    @hostname_value.expression
+    def hostname_value(cls):
+        """
+        Return the hostname of a DNS Record. For PTR record, this correspond to the value.
+        """
+        return case(
+            (
+                cls.type == 'PTR',
+                cls.value,
+            ),
+            else_=cls.name,
+        )
+
+    @hybrid_property
+    def ip_value(self):
+        """
+        Return the IP Address of a A, AAAA or PTR record.
+        """
+        if self.type == 'PTR':
+            value = _reverse_ipv4(self.name) or _reverse_ipv6(self.name)
+            if value:
+                return ipaddress.ip_address(value).compressed
+        elif self.type == 'A':
+            try:
+                return ipaddress.IPv4Address(self.value).compressed
+            except ValueError:
+                pass
+        elif self.type == 'AAAA':
+            try:
+                return ipaddress.IPv6Address(self.value).compressed
+            except ValueError:
+                pass
+        return None
+
+    @ip_value.expression
+    def ip_value(cls):
+        """
+        Return the IP Address of a A, AAAA or PTR record.
+        """
         # Create a field to convert
         # 255.2.168.192.in-addr.arpa to 192.168.2.255
         _reverse_ipv4 = (
-            func.split_part(self.name, '.', 4)
+            func.split_part(cls.name, '.', 4)
             + '.'
-            + func.split_part(self.name, '.', 3)
+            + func.split_part(cls.name, '.', 3)
             + '.'
-            + func.split_part(self.name, '.', 2)
+            + func.split_part(cls.name, '.', 2)
             + '.'
-            + func.split_part(self.name, '.', 1)
+            + func.split_part(cls.name, '.', 1)
         )
+
+        def _ipv6_part(col, start):
+            return func.replace(func.reverse(func.substring(col, start, 8)), '.', '')
 
         # Create a field to convert
         # `b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa` to
-        # `4321:0:1:2:3:4:567:89ab`
-        _reverse_ipv6 = func.regexp_replace(
-            _ipv6_part(self.name, 56)
+        # `4321:0000:0001:0002:0003:0004:0567:89ab`
+        _reverse_ipv6 = (
+            _ipv6_part(cls.name, 56)
             + ':'
-            + _ipv6_part(self.name, 48)
+            + _ipv6_part(cls.name, 48)
             + ':'
-            + _ipv6_part(self.name, 40)
+            + _ipv6_part(cls.name, 40)
             + ':'
-            + _ipv6_part(self.name, 32)
+            + _ipv6_part(cls.name, 32)
             + ':'
-            + _ipv6_part(self.name, 24)
+            + _ipv6_part(cls.name, 24)
             + ':'
-            + _ipv6_part(self.name, 16)
+            + _ipv6_part(cls.name, 16)
             + ':'
-            + _ipv6_part(self.name, 8)
+            + _ipv6_part(cls.name, 8)
             + ':'
-            + _ipv6_part(self.name, 0),
-            "::+",
-            "::",
+            + _ipv6_part(cls.name, 0)
         )
         return case(
             (
-                and_(self.type == 'PTR', self.name.like('%.%.%.%.in-addr.arpa')),
-                _reverse_ipv4,
+                cls.type == 'A',
+                func.inet(cls.value),
+            ),
+            (
+                cls.type == 'AAAA',
+                func.inet(cls.value),
+            ),
+            (
+                and_(cls.type == 'PTR', cls.name.like('%.%.%.%.in-addr.arpa')),
+                func.inet(_reverse_ipv4),
             ),
             (
                 and_(
-                    self.type == 'PTR',
-                    self.name.like('%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.ip6.arpa'),
+                    cls.type == 'PTR',
+                    cls.name.like('%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.%.ip6.arpa'),
                 ),
-                _reverse_ipv6,
+                func.inet(_reverse_ipv6),
             ),
             else_=None,
         )
@@ -407,4 +426,4 @@ def before_insert(mapper, connection, instance):
     instance._validate()
 
 
-CheckConstraint(DnsRecord.type.in_(DnsRecord.TYPES.keys()), name="dnsrecord_types")
+CheckConstraint(DnsRecord.type.in_(DnsRecord.TYPES), name="dnsrecord_types")

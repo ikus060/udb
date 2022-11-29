@@ -1,7 +1,6 @@
-{% if has_followers %}
-  <h4 class="d-none d-xl-block">{% trans %}Followers{% endtrans %}</h4>
-  {# Followers List #}
-  <div class="dropdown mb-2 w-100">
+{# Followers List #}
+<div class="col mb-2">
+  <div class="dropdown w-100">
     {% set is_following = obj.is_following(currentuser) %}
     <form method="post"
           action="{{ url_for(obj, 'unfollow' if is_following else 'follow')}}">
@@ -42,5 +41,5 @@
       </ul>
     </form>
   </div>
-  {# /Followers List #}
-{% endif %}
+</div>
+{# /Followers List #}

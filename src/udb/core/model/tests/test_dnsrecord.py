@@ -17,7 +17,7 @@
 
 from unittest import mock
 
-from sqlalchemy import select
+from parameterized import parameterized
 
 from udb.controller.tests import WebCase
 from udb.core.model import DnsRecord, DnsZone, Subnet, Vrf
@@ -38,47 +38,62 @@ class DnsRecordTest(WebCase):
         self.assertEqual(data['ttl'], 3600)
         self.assertEqual(data['value'], '192.0.2.23')
 
-    def test_reverse_ipv4(self):
-        # Given a reverse pointer
-        reverse_pointer = '1.0.0.127.in-addr.arpa'
-        # When calling reverse ipv4
-        value = DnsRecord._reverse_ipv4(reverse_pointer)
-        # Then an ip address is returned
-        self.assertEqual('127.0.0.1', value)
-
-    def test_reverse_ipv6(self):
-        # Given a reverse pointer
-        reverse_pointer = '1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa'
-        # When calling reverse ipv4
-        value = DnsRecord._reverse_ipv6(reverse_pointer)
-        # Then an ip address is returned
-        self.assertEqual('2001:db8::1', value)
-
-    def test_reverse_ip_with_ipv4(self):
-        # Given a DnsRecord
+    @parameterized.expand(
+        [
+            (
+                {'name': 'foo.example.com', 'type': 'A', 'value': '192.168.1.101'},
+                '192.168.1.101',
+                'foo.example.com',
+            ),
+            (
+                {'name': 'foo.example.com', 'type': 'AAAA', 'value': '2001:db8::1'},
+                '2001:db8::1',
+                'foo.example.com',
+            ),
+            (
+                {'name': '98.1.168.192.in-addr.arpa', 'type': 'PTR', 'value': 'bar.example.com'},
+                '192.168.1.98',
+                'bar.example.com',
+            ),
+            (
+                {
+                    'name': '1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa',
+                    'type': 'PTR',
+                    'value': 'bar.example.com',
+                },
+                '2001:db8::1',
+                'bar.example.com',
+            ),
+            (
+                {
+                    'name': 'b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
+                    'type': 'PTR',
+                    'value': 'bar.example.com',
+                },
+                '4321:0:1:2:3:4:567:89ab',
+                'bar.example.com',
+            ),
+            (
+                {'name': 'foo.example.com', 'type': 'CNAME', 'value': 'bar.example.com'},
+                None,
+                'foo.example.com',
+            ),
+        ]
+    )
+    def test_ip_and_hostname_value(self, data, expected_ip_value, expected_hostname_value):
+        # Given a Vrf, Subnet and DnsZone
         vrf = Vrf(name='default')
-        subnet = Subnet(ranges=['192.0.2.0/24'], vrf=vrf)
+        subnet = Subnet(ranges=['192.168.1.0/24', '2001:db8::/64', '4321:0:1:2:3:4:567:0/112'], vrf=vrf)
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
-        DnsRecord(name='1.2.0.192.in-addr.arpa', value='foo.example.com', type='PTR').add().commit()
-        # When using reverse_ip to make a query
-        record = DnsRecord.query.filter(DnsRecord.reverse_ip == '192.0.2.1').first()
-        # Then a value is returned
-        self.assertIsNotNone(record)
-
-    def test_reverse_ip_with_ipv6(self):
-        # Given a DnsRecord
-        vrf = Vrf(name='default')
-        subnet = Subnet(ranges=['2a07:6b43:26:11::/64'], vrf=vrf)
-        DnsZone(name='example.com', subnets=[subnet]).add().flush()
-        DnsRecord(
-            name='1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.1.0.0.6.2.0.0.3.4.b.6.7.0.a.2.ip6.arpa',
-            value='foo.example.com',
-            type='PTR',
-        ).add().commit()
-        # When using reverse_ip to make a query
-        values = DnsRecord.session.execute(select(DnsRecord.reverse_ip)).all()
-        # Then a value is returned
-        self.assertEqual([('2a07:6b43:26:11::1',)], values)
+        # When creating a DnsRecord
+        record = DnsRecord(**data).add().commit()
+        # Then validate ip_value
+        self.assertEqual(expected_ip_value, record.ip_value)
+        self.assertEqual(expected_hostname_value, record.hostname_value)
+        # When using ip to make a query a record is returned
+        DnsRecord.query.filter(DnsRecord.generated_ip == expected_ip_value).one()
+        # When using hostname_value to make a query a record is returned
+        DnsRecord.query.filter(DnsRecord.hostname_value == expected_hostname_value).one()
 
     def test_add_without_type(self):
         with self.assertRaises(ValueError):
@@ -142,7 +157,7 @@ class DnsRecordTest(WebCase):
         DnsRecord(name='foo.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add().commit()
         # When querying the record
         dns = DnsRecord.query.first()
-        # Then the IP Address is properly formated
+        # Then the IP Address is compressed
         self.assertEqual('2001:db8:85a3::8a2e:370:7334', dns.value)
 
     def test_add_aaaa_record_with_invalid_value(self):
@@ -237,7 +252,7 @@ class DnsRecordTest(WebCase):
         self.assertEqual(1, DnsRecord.query.count())
         # Then revice_ip is valid
         record = DnsRecord.query.first()
-        self.assertEqual('192.0.2.254', record.reverse_ip)
+        self.assertEqual('192.0.2.254', record.ip_value)
 
     def test_add_ipv4_ptr_record_without_valid_dnszone(self):
         # Given a valid DNS Zone
@@ -302,7 +317,9 @@ class DnsRecordTest(WebCase):
 
     def test_add_ptr_record_with_invalid_name(self):
         # Given an empty database
-        self.assertEqual(0, DnsRecord.query.count())
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['4321:0:1:2:3:4:567:0/112'], vrf=vrf)
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
         # When adding a DnsRecord with an invalid value
         # Then an exception is raised
         with self.assertRaises(ValueError) as cm:

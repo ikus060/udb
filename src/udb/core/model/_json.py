@@ -21,6 +21,8 @@ class JsonMixin:
         def _value(value):
             if hasattr(value, 'isoformat'):  # datetime
                 return value.isoformat()
+            if isinstance(value, list):  # List
+                return [_value(i) for i in value]
             return value
 
         return {c.name: _value(getattr(self, c.name)) for c in self.__table__.columns if not c.name.startswith('_')}

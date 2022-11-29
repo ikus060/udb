@@ -16,81 +16,103 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import ipaddress
+import itertools
 
 import cherrypy
-from sqlalchemy import or_, select, union
+from sqlalchemy import Column, Index, event
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import validates
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
+from udb.tools.i18n import gettext_lazy as _
 
-from ._dhcprecord import DhcpRecord
-from ._dnsrecord import DnsRecord
+from ._cidr import InetType
+from ._common import CommonMixin
+from ._follower import FollowerMixin
 from ._json import JsonMixin
+from ._message import MessageMixin
 from ._subnet import Subnet, SubnetRange
 
 Base = cherrypy.tools.db.get_base()
 
-# TODO Need to create index to make this query performant.
-
-# Create a non-traditional mapping with multiple table.
-# Read more about it here: https://docs.sqlalchemy.org/en/14/orm/nonstandard_mappings.html
-# Create a query to list all existing IP address in various record type.
-ip_entry = union(
-    select(DhcpRecord.ip.label('ip')).filter(
-        DhcpRecord.status != DhcpRecord.STATUS_DELETED,
-    ),
-    select(DnsRecord.value.label('ip')).filter(
-        DnsRecord.type.in_(['A', 'AAAA']), DnsRecord.status != DnsRecord.STATUS_DELETED
-    ),
-    select(DnsRecord.reverse_ip.label('ip')).filter(
-        DnsRecord.type == 'PTR',
-        DnsRecord.status != DnsRecord.STATUS_DELETED,
-    ),
-).subquery()
+Session = cherrypy.tools.db.get_session()
 
 
-class Ip(JsonMixin, Base):
-    """
-    This ORM is a view on all IP address declared in various record type.
-    """
-
-    __table__ = ip_entry
-    __mapper_args__ = {'primary_key': [ip_entry.c.ip]}
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, Base):
+    __tablename__ = 'ip'
+    ip = Column(InetType, nullable=False)
 
     @hybrid_property
     def summary(self):
         return self.ip
 
-    @property
-    def related_dns_records(self):
-        """
-        Return list of related DNS record. That include all DNS record with FQDN matching our current IP address and reverse pointer (PTR).
-        """
-        return DnsRecord.query.filter(
-            DnsRecord.status != DnsRecord.STATUS_DELETED,
-            or_(
-                DnsRecord.name.in_(select(DnsRecord.name).filter(DnsRecord.value == self.ip)),
-                DnsRecord.name == ipaddress.ip_address(self.ip).reverse_pointer,
-            ),
-        ).all()
-
-    @property
-    def related_dhcp_records(self):
-        return DhcpRecord.query.filter(
-            DhcpRecord.status != DhcpRecord.STATUS_DELETED,
-            DhcpRecord.ip == self.ip,
-        ).all()
+    @validates('ip')
+    def validate_ip(self, key, value):
+        try:
+            ipaddress.ip_address(value)
+        except ValueError:
+            raise ValueError('ip', _('expected a valid ipv4 or ipv6'))
+        return value
 
     @property
     def related_subnets(self):
         return (
             Subnet.query.join(Subnet.subnet_ranges)
             .filter(
-                SubnetRange.range.supernet_of(self.ip),
+                SubnetRange.range.supernet_of(str(self.ip)),
                 Subnet.status != Subnet.STATUS_DELETED,
             )
             .all()
         )
+
+
+# Make the IP unique
+Index('ip_unique_index', Ip.ip, unique=True)
+
+
+class HasIpMixin(object):
+    """
+    Subclasses must implement `_ip` to be a relationship and `ip` as a property returning the ip address as a string.
+    """
+
+    _ip_column_name = 'ip'
+
+
+@event.listens_for(Session, "before_flush", insert=True)
+def _update_ip(session, flush_context, instances):
+    """
+    Create missing IP Record when creating or updating record.
+    """
+    for instance in itertools.chain(session.new, session.dirty):
+        if isinstance(instance, HasIpMixin):
+            # Get IP Value
+            try:
+                value = getattr(instance, instance._ip_column_name)
+                value = ipaddress.ip_address(value).exploded
+            except ValueError:
+                value = None
+            # Make sure to get/create unique IP record.
+            # Do not assign the object as it might impact the update statement for generated column.
+            if value is not None:
+                instance._ip = _unique_ip(session, value)
+
+
+def _unique_ip(session, key):
+    """
+    Using a session cache, make sure to return unique IP object.
+    """
+    assert key
+    cache = getattr(session, '_unique_ip_cache', None)
+    if cache is None:
+        session._unique_ip_cache = cache = {}
+
+    if key in cache:
+        return cache[key]
+    else:
+        with session.no_autoflush:
+            obj = session.query(Ip).filter_by(ip=key).first()
+            if not obj:
+                obj = Ip(ip=key)
+                session.add(obj)
+        cache[key] = obj
+        return obj
