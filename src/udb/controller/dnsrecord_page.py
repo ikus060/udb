@@ -17,10 +17,11 @@
 
 import cherrypy
 from sqlalchemy.orm import defer, undefer
-from wtforms.fields import IntegerField, SelectField, StringField
+from wtforms.fields import BooleanField, IntegerField, SelectField, StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length
 
+from udb.controller import flash, handle_exception, url_for
 from udb.core.model import DnsRecord, User
 from udb.tools.i18n import gettext as _
 
@@ -28,7 +29,7 @@ from .common_page import CommonPage
 from .form import CherryForm, SelectObjectField
 
 
-class DnsRecordForm(CherryForm):
+class EditDnsRecordForm(CherryForm):
 
     object_cls = DnsRecord
 
@@ -48,6 +49,7 @@ class DnsRecordForm(CherryForm):
             Length(max=256),
         ],
         choices=list(zip(DnsRecord.TYPES, DnsRecord.TYPES)),
+        default='A',
     )
 
     ttl = IntegerField(
@@ -87,6 +89,67 @@ class DnsRecordForm(CherryForm):
     )
 
 
+class NewDnsRecordForm(EditDnsRecordForm):
+
+    create_reverse_record = BooleanField(
+        _('Create Reverse DNS Record'),
+        render_kw={
+            "data-showif-field": "type",
+            "data-showif-operator": "in",
+            "data-showif-value": '["A", "AAAA", "PTR"]',
+        },
+    )
+
+    def populate_obj(self, obj):
+        """
+        Special function to create reverse record if needed.
+        """
+        # Create DNS Record
+        super().populate_obj(obj)
+        # Then check if reverse should be created
+        if self.create_reverse_record.data:
+            record = obj.create_reverse_dns_record()
+            if record:
+                record.add()
+
+
+def form_constructor(obj=None, **kwargs):
+    """
+    Special constructor for edit and new
+    """
+    if obj:
+        return EditDnsRecordForm(obj=obj)
+    else:
+        return NewDnsRecordForm(obj=obj)
+
+
 class DnsRecordPage(CommonPage):
     def __init__(self):
-        super().__init__(DnsRecord, DnsRecordForm)
+        super().__init__(DnsRecord, form_constructor)
+
+    @cherrypy.expose()
+    def reverse_record(self, key, **kwargs):
+        """
+        Redirect user to reverse record or pre-fill a new form to create the record.
+        """
+        self._verify_role(self.list_role)
+        # Return Not found if object doesn't exists
+        obj = self._get_or_404(key)
+        # If the reverse record doesn't exists, create it.
+        reverse_record = obj.get_reverse_dns_record()
+        if not reverse_record:
+            self._verify_role(self.edit_role)
+            try:
+                reverse_record = obj.create_reverse_dns_record()
+                if reverse_record:
+                    reverse_record.add().commit()
+                    flash(_("Reverse DNS Record created."))
+                else:
+                    flash(_("Cannnot create Reverse DNS Record."))
+            except Exception as e:
+                handle_exception(e)
+        # Then redirect user
+        if reverse_record:
+            raise cherrypy.HTTPRedirect(url_for(reverse_record, 'edit'))
+        else:
+            raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))

@@ -68,7 +68,6 @@ class CommonPage(object):
         assert object_form
         self.model = model
         self.object_form = object_form
-        self.object_form.referer = RefererField()
         self.list_role = list_role
         self.edit_role = edit_role
         # Support a primary key based on sqlalquemy
@@ -158,7 +157,7 @@ class CommonPage(object):
             except Exception as e:
                 handle_exception(e, form)
             else:
-                raise cherrypy.HTTPRedirect(form.referer.data or url_for(self.model))
+                raise cherrypy.HTTPRedirect(url_for(self.model))
         # return data form template
         return {
             'model': self.model,
@@ -238,7 +237,6 @@ class CommonPage(object):
         if userobj and obj.is_following(userobj):
             obj.remove_follower(userobj)
             obj.commit()
-        # Redirect to referer if defined
         raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
 

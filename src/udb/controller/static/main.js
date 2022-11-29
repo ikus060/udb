@@ -35,15 +35,15 @@ function toDate(n) {
     return n;
 }
 
-
+/**
+ * Handle local datetime using <time datetime="value"></time>. 
+ * Uses the value of `datetime` to converted it into local timezone. 
+ * Class `js-date` could be used to only display the date portion. e.g.: 2021-05-28
+ * Class `js-datetime` could be used to display the date and time portion e.g.: 2021-05-28 1:04pm
+ * Class `js-time` could be used to display the time portion. e.g.: 1:04 pm
+ */
 $(document).ready(function () {
-    /**
-     * Handle local datetime using <time datetime="value"></time>. 
-     * Uses the value of `datetime` to converted it into local timezone. 
-     * Class `js-date` could be used to only display the date portion. e.g.: 2021-05-28
-     * Class `js-datetime` could be used to display the date and time portion e.g.: 2021-05-28 1:04pm
-     * Class `js-time` could be used to display the time portion. e.g.: 1:04 pm
-     */
+
     $('time[datetime]').each(function () {
         const t = $(this);
         const d = toDate(t.attr('datetime'));
@@ -60,13 +60,57 @@ $(document).ready(function () {
             t.attr('title', d.toLocaleString());
         }
     })
-    /**
-     * Prompt user before form submit
-     */
+});
+/**
+ * Prompt user before form submit
+ */
+$(document).ready(function () {
     $('form[data-confirm]').submit(function (event) {
         const t = $(this);
         if (!confirm(t.attr('data-confirm'))) {
             event.preventDefault();
+        }
+    });
+});
+/**
+ * Control showif
+ */
+$(document).ready(function () {
+    $('[data-showif-field]').each(function () {
+        function escape(v) {
+            return v.replace(/(:|\.|\[|\]|,|=)/g, "\\$1");
+        }
+        const elem = $(this);
+        const field = $(this).data('showif-field');
+        const operator = $(this).data('showif-operator');
+        const value = $(this).data('showif-value');
+        // Lookup field
+        if (!field) {
+            return;
+        }
+        const fieldElem = $("[name='" + escape(field) + "']");
+        if (fieldElem.length > 0) {
+            function updateShowIf() {
+                const curValue = fieldElem.val();
+                let visible = false;
+                if (operator == 'eq') {
+                    visible = curValue == value;
+                } else if (operator == 'ne') {
+                    visible = curValue != value;
+                } else if (operator == 'in' && Array.isArray(value)) {
+                    visible = $.inArray(curValue, value) >= 0;
+                }
+                const collapsible = bootstrap.Collapse.getOrCreateInstance(elem.parent());
+                if (visible) {
+                    collapsible.show();
+                } else {
+                    collapsible.hide();
+                }
+            }
+            fieldElem.change(function () {
+                updateShowIf();
+            })
+            updateShowIf();
         }
     });
 });

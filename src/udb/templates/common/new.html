@@ -3,7 +3,7 @@
 {% block body %}
   <div class="row">
     <div class="offset-xl-2 col-xl-8">
-      <div class="d-flex mb-4">
+      <div class="d-flex mb-2">
         {# Go Back #}
         <a class="btn btn-primary btn-circle me-2 align-self-center"
            href="{{ url_for(model)}}"
@@ -18,16 +18,18 @@
       </div>
       {% include "flash.html" %}
       <form method="POST">
-        {{ form()}}
-        <div class="text-center text-lg-start mt-4 pt-2">
-          <button type="submit"
-                  class="btn btn-primary"
-                  style="padding-left: 2.5rem;
-                         padding-right: 2.5rem;">
-            {% trans %}Create{% endtrans %}
-            {{ macro.display_name(model_name)}}
-          </button>
-          <a class="btn btn-secondary" href="{{ url_for(model)}}">{% trans %}Cancel{% endtrans %}</a>
+        <div class="card">
+          <div class="card-body">{{ form()}}</div>
+          <div class="card-footer">
+            <button type="submit"
+                    class="btn btn-primary"
+                    style="padding-left: 2.5rem;
+                           padding-right: 2.5rem;">
+              {% trans %}Create{% endtrans %}
+              {{ macro.display_name(model_name)}}
+            </button>
+            <a class="btn btn-secondary" href="{{ url_for(model)}}">{% trans %}Cancel{% endtrans %}</a>
+          </div>
         </div>
       </form>
     </div>

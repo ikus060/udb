@@ -13,7 +13,7 @@
       <p>{% trans %}You can select the record type(s) for which you want to receive all notifications.{% endtrans %}</p>
     </div>
     <div class="col-md-9">
-      <form method="POST" class="mb-3">
+      <form method="POST" class="mb-2">
         {% for field in form %}
           <div class="form-check">
             {{ field(id=False) }}

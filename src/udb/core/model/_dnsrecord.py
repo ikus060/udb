@@ -262,6 +262,43 @@ class DnsRecord(CommonMixin, Base):
             DnsRecord.status != DnsRecord.STATUS_DELETED,
         ).all()
 
+    def get_reverse_dns_record(self):
+        """
+        For A or AAAA, return a PTR record
+        For PTR record, return A or AAAA.
+        Otherwise, return None
+        """
+        if self.type == 'PTR':
+            return DnsRecord.query.filter(
+                DnsRecord.type.in_(['A', 'AAAA']),
+                DnsRecord.name == self.value,
+                DnsRecord.value == self.reverse_ip,
+                DnsRecord.status != DnsRecord.STATUS_DELETED,
+            ).first()
+        elif self.type in ['A', 'AAAA']:
+            value = ipaddress.ip_address(self.value).reverse_pointer
+            return DnsRecord.query.filter(
+                DnsRecord.type == 'PTR',
+                DnsRecord.name == value,
+                DnsRecord.value == self.name,
+                DnsRecord.status != DnsRecord.STATUS_DELETED,
+            ).first()
+        return None
+
+    def create_reverse_dns_record(self):
+        """
+        For A or AAAA, return a new PTR record
+        For PTR record, return new A or AAAA record.
+        Otherwise, return None
+        """
+        if self.type == 'PTR':
+            newtype = 'AAAA' if self.value.endswith('.ip6.arpa') else 'A'
+            return DnsRecord(name=self.value, type=newtype, value=self.reverse_ip, ttl=self.ttl)
+        elif self.type in ['A', 'AAAA']:
+            value = ipaddress.ip_address(self.value).reverse_pointer
+            return DnsRecord(name=value, type='PTR', value=self.name, ttl=self.ttl)
+        return None
+
     @validates('name')
     def validate_name(self, key, value):
         if not validators.domain(value):
