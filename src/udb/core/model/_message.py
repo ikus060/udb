@@ -47,7 +47,10 @@ def _get_model_changes(model, ignore=['messages']):
     changes = {}
     for attr in state.attrs:
         hist = attr.load_history()
-        if not hist.has_changes() or attr.key in ignore:
+        if not hist.has_changes():
+            continue
+        # Ignore `messages` field and other private field
+        if attr.key == 'messages' or attr.key.startswith('_'):
             continue
         if isinstance(attr.value, (list, tuple)) or len(hist.deleted) > 1 or len(hist.added) > 1:
             # If array, store array
@@ -182,11 +185,11 @@ class MessageMixin:
             order_by=Message.date,
             lazy=True,
             cascade="all, delete",
-            overlaps="messages,dnsrecord_object,dnszone_object,subnet_object,dhcprecord_object",
+            overlaps="messages,dnsrecord_object,dnszone_object,subnet_object,dhcprecord_object,ip_object",
             backref=backref(
                 '%s_object' % cls.__tablename__,
                 lazy=True,
-                overlaps="messages,dnsrecord_object,dnszone_object,subnet_object,dhcprecord_object",
+                overlaps="messages,dnsrecord_object,dnszone_object,subnet_object,dhcprecord_object,ip_object",
             ),
         )
 

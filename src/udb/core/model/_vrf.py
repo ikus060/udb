@@ -26,11 +26,16 @@ import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
 
 from ._common import CommonMixin
+from ._follower import FollowerMixin
+from ._json import JsonMixin
+from ._message import MessageMixin
+from ._search_vector import SearchableMixing
+from ._status import StatusMixing
 
 Base = cherrypy.tools.db.get_base()
 
 
-class Vrf(CommonMixin, Base):
+class Vrf(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
     name = Column(String, unique=True, nullable=False)
 
     @classmethod

@@ -21,6 +21,37 @@ from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, Vrf
 
 
 class IpTest(WebCase):
+    def test_duplicate_with_dhcp_records(self):
+        # Given a empty database
+        # When creating multiple DHCP Record with the same IP
+        dhcp_record1 = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
+        dhcp_record2 = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bc').add().commit()
+        # Then a single IP Record is created
+        self.assertEqual(1, Ip.query.count())
+        ip_record = Ip.query.first()
+        self.assertIn(dhcp_record1, ip_record.related_dhcp_records)
+        self.assertIn(dhcp_record2, ip_record.related_dhcp_records)
+        # And history is tracking changes
+        self.assertTrue(ip_record.messages)
+        self.assertIn('related_dhcp_records', ip_record.messages[0].changes)
+
+    def test_duplicate_with_dns_records(self):
+        # Given a Vrf, Subnet and DnsZone
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
+        # When creating multiple Dns Record with the same IP
+        dns_record1 = DnsRecord(name='foo.example.com', type='A', value='192.0.2.20').add()
+        dns_record2 = DnsRecord(name='bar.example.com', type='A', value='192.0.2.20').add().commit()
+        # Then a single IP Record is created
+        self.assertEqual(1, Ip.query.count())
+        ip_record = Ip.query.first()
+        self.assertIn(dns_record1, ip_record.related_dns_records)
+        self.assertIn(dns_record2, ip_record.related_dns_records)
+        # And history is tracking changes
+        self.assertTrue(ip_record.messages)
+        self.assertIn('related_dns_records', ip_record.messages[0].changes)
+
     def test_ip(self):
         # Given valid DnsZone with subnet
         vrf = Vrf(name='default')
@@ -46,8 +77,8 @@ class IpTest(WebCase):
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', status='deleted').add().commit()
         # When querying list of IPs
         objs = Ip.query.order_by('ip').all()
-        # Then the list is empty
-        self.assertEqual(len(objs), 0)
+        # Then an Ip record got created
+        self.assertEqual(len(objs), 1)
 
     def test_ip_with_dns_deleted_status(self):
         # Given valid DnsZone with subnet
@@ -59,7 +90,7 @@ class IpTest(WebCase):
         # When querying list of IPs
         objs = Ip.query.order_by('ip').all()
         # Then the list is empty
-        self.assertEqual(len(objs), 0)
+        self.assertEqual(len(objs), 1)
 
     def test_ip_get_dns_records(self):
         # Given valid DnsZone with subnet
@@ -72,10 +103,9 @@ class IpTest(WebCase):
         DnsRecord(name='bar.example.com', type='TXT', value='x47').add().commit()
         # When querying list of related DnsRecord on a Ip.
         objs = Ip.query.order_by('ip').first().related_dns_records
-        # Then the list include all DnsRecord matching the fqdn
-        self.assertEqual(len(objs), 2)
+        # Then the list include a single DnsRecord
+        self.assertEqual(len(objs), 1)
         self.assertEqual(objs[0].name, 'bar.example.com')
-        self.assertEqual(objs[1].name, 'bar.example.com')
 
     def test_ip_get_dhcp_records(self):
         # Given valid DnsZone with subnet
@@ -98,7 +128,7 @@ class IpTest(WebCase):
         subnet = Subnet(ranges=['2001:db8:85a3::/64'], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # Given a list of DnsRecords and DhcpRecord with ipv6
-        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf').add()
+        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf').add().commit()
         DnsRecord(name='bar.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add().commit()
         # When querying list of related DnsRecord on a Ip.
         self.assertEqual(1, Ip.query.count())
@@ -154,7 +184,7 @@ class IpTest(WebCase):
         # When querying list of IP
         obj = Ip.query.order_by('ip').first()
         # Then is include the IP Address of the PTR record
-        self.assertEqual('4321::1:2:3:4:567:89ab', obj.ip)
+        self.assertEqual('4321:0:1:2:3:4:567:89ab', obj.ip)
         self.assertEqual(len(obj.related_dns_records), 1)
 
     def test_related_dhcp_record_ipv6(self):
@@ -206,9 +236,9 @@ class IpTest(WebCase):
         ).add().commit()
         # When querying list of IP
         obj = Ip.query.order_by('ip').first()
-        # Then is include the IP Address of the PTR record
+        # Then value is include the IP Address of the PTR record
         self.assertEqual('2001:db8:85a3::8a2e:370:7334', obj.ip)
-        self.assertEqual(len(obj.related_dns_records), 0)
+        self.assertEqual(len(obj.related_dns_records), 1)
 
     def test_related_dhcp_record_with_deleted(self):
         # Given a DNS Record in DNS Zone
@@ -228,9 +258,9 @@ class IpTest(WebCase):
         ).add().commit()
         # When querying list of IP
         obj = Ip.query.order_by('ip').first()
-        # Then is include the IP Address of the PTR record
+        # Then value is include the IP Address of the PTR record
         self.assertEqual('2001:db8:85a3::8a2e:370:7334', obj.ip)
-        self.assertEqual(len(obj.related_dhcp_records), 0)
+        self.assertEqual(len(obj.related_dhcp_records), 1)
 
     def test_related_subnets(self):
         # Given a DNS Record in DNS Zone
@@ -250,3 +280,32 @@ class IpTest(WebCase):
         # When querying the related subnets
         obj = Ip.query.order_by('ip').first()
         self.assertEqual([subnet], obj.related_subnets)
+
+    def test_update_dhcp_record_ip(self):
+        # Given a DhcpRecord
+        record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add().commit()
+        # When updating the IP value
+        record.ip = '192.0.2.24'
+        record.commit()
+        # Then a new IP Record get created
+        Ip.query.filter(Ip.ip == '192.0.2.23').one()
+        Ip.query.filter(Ip.ip == '192.0.2.24').one()
+
+    def test_update_dns_record_ip(self):
+        # Given a DnsRecord
+        # Given a DNS Record in DNS Zone
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().flush()
+        record = DnsRecord(
+            name='bar.example.com',
+            type='A',
+            value='192.0.2.23',
+        )
+        record.add().commit()
+        # When updating the IP value
+        record.value = '192.0.2.24'
+        record.commit()
+        # Then a new IP Record get created
+        Ip.query.filter(Ip.ip == '192.0.2.23').one()
+        Ip.query.filter(Ip.ip == '192.0.2.24').one()

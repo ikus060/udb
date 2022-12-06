@@ -23,7 +23,7 @@ from parameterized import parameterized
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsZone, User
+from udb.core.model import DhcpRecord, DnsZone, Ip, User
 
 
 class CommonTest:
@@ -399,7 +399,8 @@ class IPTest(WebCase):
         obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
         obj.commit()
         # When browsing IP view
-        self.getPage('/ip/1.2.3.4/edit')
+        ip = Ip.query.first()
+        self.getPage('/ip/%s/edit' % ip.id)
         # Then no create new exists
         self.assertStatus(200)
         self.assertInBody('02:42:d7:e4:aa:59')

@@ -108,8 +108,14 @@
     </div>
     <div class="col flex-grow-1 order-0 order-xl-2">
       <div class="row align-items-baseline">
-        {% block extra_actions %}{% endblock %}
-        {% include "common/followers.html" %}
+        {% if self.extra_actions()|trim %}
+          <h4 class="d-none d-xl-block">{% trans %}Actions{% endtrans %}</h4>
+          {% block extra_actions %}{% endblock %}
+        {% endif %}
+        {% if has_followers %}
+          <h4 class="d-none d-xl-block">{% trans %}Followers{% endtrans %}</h4>
+          {% include "common/followers.html" %}
+        {% endif %}
       </div>
     </div>
   </div>

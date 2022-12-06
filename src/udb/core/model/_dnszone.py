@@ -26,6 +26,11 @@ import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
 
 from ._common import CommonMixin
+from ._follower import FollowerMixin
+from ._json import JsonMixin
+from ._message import MessageMixin
+from ._search_vector import SearchableMixing
+from ._status import StatusMixing
 from ._subnet import Subnet
 
 Base = cherrypy.tools.db.get_base()
@@ -38,7 +43,7 @@ dnszone_subnet = Table(
 )
 
 
-class DnsZone(CommonMixin, Base):
+class DnsZone(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
     name = Column(String, unique=True, nullable=False)
     subnets = relationship(
         "Subnet",

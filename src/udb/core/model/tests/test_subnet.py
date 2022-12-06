@@ -59,7 +59,8 @@ class SubnetTest(WebCase):
         Subnet(vrf=vrf, ranges=['192.168.1.0/24']).add().commit()
         # Then a new record is created
         subnet = Subnet.query.first()
-        self.assertEqual(['192.168.1.0/24'], subnet.ranges)
+        self.assertEqual(1, len(subnet.ranges))
+        self.assertEqual('192.168.1.0/24', subnet.ranges[0])
 
     def test_add_ipv6(self):
         # Given an empty database
@@ -69,7 +70,8 @@ class SubnetTest(WebCase):
         Subnet(vrf=vrf, ranges=['2002::1234:abcd:ffff:c0a8:101/64']).add().commit()
         # Then a new record is created
         subnet = Subnet.query.first()
-        self.assertEqual(['2002:0:0:1234::/64'], subnet.ranges)
+        self.assertEqual(1, len(subnet.ranges))
+        self.assertEqual('2002:0:0:1234::/64', subnet.ranges[0])
 
     def test_add_ranges(self):
         # Given an empty database
@@ -81,8 +83,9 @@ class SubnetTest(WebCase):
         subnet.add()
         subnet.commit()
         # Then a new record is created
+        subnet = Subnet.query.first()
         self.assertEqual(2, SubnetRange.query.count())
-        self.assertEqual(['192.168.1.0/24', '192.168.12.0/24'], Subnet.query.first().ranges)
+        self.assertEqual(['192.168.1.0/24', '192.168.12.0/24'], subnet.ranges)
 
     def test_update_vrf(self):
         # Given a subnet record
@@ -95,7 +98,8 @@ class SubnetTest(WebCase):
         subnet.add()
         subnet.commit()
         # Then SubnetRange get updated too
-        self.assertEqual(['192.168.1.0/24'], Subnet.query.first().ranges)
+        subnet = Subnet.query.first()
+        self.assertEqual(['192.168.1.0/24'], subnet.ranges)
 
     def test_remove_ranges(self):
         # Given an empty database
@@ -108,7 +112,8 @@ class SubnetTest(WebCase):
         subnet.commit()
         # Then a new record is created
         self.assertEqual(1, SubnetRange.query.count())
-        self.assertEqual(['192.168.1.0/24'], Subnet.query.first().ranges)
+        subnet = Subnet.query.first()
+        self.assertEqual(['192.168.1.0/24'], subnet.ranges)
 
     @parameterized.expand(['a.168.1.0/24', '2002:k:0:1234::/64'])
     def test_invalid_ip(self, value):

@@ -16,54 +16,34 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from sqlalchemy import Column, String
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_mixin, declared_attr, relationship
 from sqlalchemy.sql.functions import func
 from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.sql.sqltypes import Integer
 
-from ._follower import FollowerMixin
-from ._json import JsonMixin
-from ._message import MessageMixin
-from ._search_vector import SearchableMixing
-from ._status import StatusMixing
 from ._timestamp import Timestamp
 from ._user import User
 
 
 @declarative_mixin
-class CommonMixin(JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing):
+class CommonMixin(object):
     """
     Mixin for common item properties.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     @declared_attr
     def __tablename__(cls):
         return cls.__name__.lower()
-
-    @declared_attr
-    def owner_id(cls):
-        return Column(Integer, ForeignKey('user.id'))
-
-    @declared_attr
-    def owner(cls):
-        return relationship(User, lazy=True, active_history=True)
-
-    @classmethod
-    def _search_string(cls):
-        return cls.notes
 
     id = Column(Integer, primary_key=True)
     notes = Column(String, nullable=False, default='')
     created_at = Column(Timestamp(timezone=True), nullable=False, server_default=func.now())
     modified_at = Column(Timestamp(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
-    @hybrid_property
-    def summary(self):
-        """
-        Used to display a short hand description of this record.
-        """
-        return self.notes
+    @declared_attr
+    def owner_id(clS):
+        return Column(Integer, ForeignKey('user.id'))
+
+    @declared_attr
+    def owner(cls):
+        return relationship(User, lazy=True, active_history=True)

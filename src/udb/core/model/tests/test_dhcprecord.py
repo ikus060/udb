@@ -18,7 +18,7 @@
 from unittest import mock
 
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord
+from udb.core.model import DhcpRecord, Ip
 
 
 class DhcpRecordTest(WebCase):
@@ -39,6 +39,9 @@ class DhcpRecordTest(WebCase):
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
         # Then a new record is created
         self.assertEqual(1, DhcpRecord.query.count())
+        # Then an Ip record get created
+        obj = Ip.query.first()
+        self.assertEqual('192.0.2.23', obj.ip)
 
     def test_add_with_ipv6(self):
         # Given an empty database
@@ -47,6 +50,9 @@ class DhcpRecordTest(WebCase):
         DhcpRecord(ip='2002::1234:abcd:ffff:c0a8:101', mac='00:00:5e:00:53:af').add().commit()
         # Then a new record is created
         self.assertEqual(1, DhcpRecord.query.count())
+        # Then an Ip record get created
+        obj = Ip.query.first()
+        self.assertEqual('2002::1234:abcd:ffff:c0a8:101', obj.ip)
 
     def test_norm_ipv6(self):
         # Given a DHCP Reservation with IPv6

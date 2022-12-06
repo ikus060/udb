@@ -19,26 +19,36 @@ import ipaddress
 
 import cherrypy
 import validators
-from sqlalchemy import Column
+from sqlalchemy import Column, ForeignKey
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import validates
+from sqlalchemy.orm import relationship, validates
 from sqlalchemy.types import String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
 
+from ._cidr import InetType
 from ._common import CommonMixin
+from ._follower import FollowerMixin
+from ._ip import HasIpMixin, Ip
+from ._json import JsonMixin
+from ._message import MessageMixin
+from ._search_vector import SearchableMixing
+from ._status import StatusMixing
 
 Base = cherrypy.tools.db.get_base()
 
+Session = cherrypy.tools.db.get_session()
 
-class DhcpRecord(CommonMixin, Base):
-    ip = Column(String, nullable=False, unique=True)
+
+class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, HasIpMixin, Base):
+    ip = Column(InetType, ForeignKey("ip.ip"), nullable=False)
     mac = Column(String, nullable=False, unique=True)
+    _ip = relationship(Ip, backref='related_dhcp_records', lazy=True)
 
     @classmethod
     def _search_string(cls):
-        return cls.ip + " " + cls.mac + " " + cls.notes
+        return " " + cls.mac + " " + cls.notes
 
     @validates('ip')
     def validate_ip(self, key, value):
@@ -59,3 +69,7 @@ class DhcpRecord(CommonMixin, Base):
     @hybrid_property
     def summary(self):
         return self.ip + " (" + self.mac + ")"
+
+    @summary.expression
+    def summary(self):
+        return self.ip.host() + " (" + self.mac + ")"
