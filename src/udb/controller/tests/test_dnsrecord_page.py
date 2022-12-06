@@ -75,9 +75,12 @@ class DnsRecordTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
         # Then user is redirected
         self.assertStatus(303)
-        # Then two records get created
+        # Then two records get created with the same owner
         if expect_success:
-            self.assertEqual(2, DnsRecord.query.count())
+            records = DnsRecord.query.all()
+            self.assertEqual(2, len(records))
+            for record in records:
+                self.assertIsNotNone(record.owner)
         else:
             self.assertEqual(1, DnsRecord.query.count())
 
@@ -93,6 +96,7 @@ class DnsRecordTest(WebCase, CommonTest):
         # Given a database with a record
         obj = self.obj_cls(**data).add()
         obj.commit()
+        self.assertIsNone(obj.get_reverse_dns_record())
         # When requesting reverse record to be created
         self.getPage(url_for(obj, 'reverse_record'), method='POST')
         # Then user is redirect to reverse record
@@ -102,5 +106,18 @@ class DnsRecordTest(WebCase, CommonTest):
         self.getPage(location)
         if expect_success:
             self.assertInBody('Reverse DNS Record created.')
+            self.assertIsNotNone(obj.get_reverse_dns_record())
+            self.assertIsNotNone(obj.get_reverse_dns_record().owner)
         else:
             self.assertInBody('Cannnot create Reverse DNS Record.')
+            self.assertIsNone(obj.get_reverse_dns_record())
+
+    def test_new_create_reverse_record_with_invalid(self):
+        # Given an empty database
+        data = {'name': 'foo.invalid.com', 'type': 'A', 'value': '192.168.1.101', 'create_reverse_record': 'y'}
+        # When creating a new DNS Record with invalid data
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
+        # Then error message is displayed to the user attach to the right field !
+        self.assertInBody('FQDN must be defined within a valid DNS Zone.')
+        # Then no records get created
+        self.assertEqual(0, DnsRecord.query.count())

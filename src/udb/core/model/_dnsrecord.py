@@ -251,7 +251,7 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
             ).first()
         return None
 
-    def create_reverse_dns_record(self):
+    def create_reverse_dns_record(self, **kwargs):
         """
         For A or AAAA, return a new PTR record
         For PTR record, return new A or AAAA record.
@@ -259,10 +259,10 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
         """
         if self.type == 'PTR':
             newtype = 'AAAA' if self.value.endswith('.ip6.arpa') else 'A'
-            return DnsRecord(name=self.value, type=newtype, value=self.ip_value, ttl=self.ttl)
+            return DnsRecord(name=self.value, type=newtype, value=self.ip_value, ttl=self.ttl, **kwargs)
         elif self.type in ['A', 'AAAA']:
             value = ipaddress.ip_address(self.value).reverse_pointer
-            return DnsRecord(name=value, type='PTR', value=self.name, ttl=self.ttl)
+            return DnsRecord(name=value, type='PTR', value=self.name, ttl=self.ttl, **kwargs)
         return None
 
     @validates('name')
