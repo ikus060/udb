@@ -96,7 +96,16 @@ class NewDnsRecordForm(EditDnsRecordForm):
         render_kw={
             "data-showif-field": "type",
             "data-showif-operator": "in",
-            "data-showif-value": '["A", "AAAA", "PTR"]',
+            "data-showif-value": '["A", "AAAA"]',
+        },
+    )
+
+    create_forward_record = BooleanField(
+        _('Create Forward DNS Record'),
+        render_kw={
+            "data-showif-field": "type",
+            "data-showif-operator": "eq",
+            "data-showif-value": 'PTR',
         },
     )
 
@@ -107,7 +116,7 @@ class NewDnsRecordForm(EditDnsRecordForm):
         # Create DNS Record
         super().populate_obj(obj)
         # Then check if reverse should be created
-        if self.create_reverse_record.data:
+        if self.create_reverse_record.data or self.create_forward_record.data:
             record = obj.create_reverse_dns_record()
             if record:
                 record.add()

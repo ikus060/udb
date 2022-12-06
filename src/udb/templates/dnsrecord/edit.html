@@ -6,12 +6,14 @@
             {% set reverse_record = obj.get_reverse_dns_record() %}
             {% if reverse_record %}
                 <a href="{{ url_for(reverse_record, 'edit')}}"
-                   class="btn btn-outline-primary text-nowrap w-100">{% trans %}Edit Reverse Record{% endtrans %}</a>
+                   class="btn btn-outline-primary text-nowrap w-100">
+                    {{ _('Show Reverse Record') if obj.type in ['A', 'AAAA'] else _('Show Forward Record')}}
+                </a>
             {% else %}
                 <form action="reverse_record" method="post">
                     <input class="btn btn-outline-primary text-nowrap w-100"
                            type="submit"
-                           value="{% trans %}Create Reverse Record{% endtrans %}">
+                           value="{{ _('Create Reverse Record') if obj.type in ['A', 'AAAA'] else _('Create Forward Record')}}">
                 </form>
             {% endif %}
         </div>
@@ -20,7 +22,7 @@
     {% if obj._ip %}
         <div class="col mb-2">
             <a href="{{ url_for(obj._ip, 'edit')}}"
-               class="btn btn-outline-primary text-nowrap w-100">{% trans %}Show related IP{% endtrans %}</a>
+               class="btn btn-outline-primary text-nowrap w-100">{% trans %}Show Related IP{% endtrans %}</a>
         </div>
     {% endif %}
 {% endblock %}

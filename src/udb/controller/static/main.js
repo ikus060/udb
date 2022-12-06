@@ -100,7 +100,14 @@ $(document).ready(function () {
                 } else if (operator == 'in' && Array.isArray(value)) {
                     visible = $.inArray(curValue, value) >= 0;
                 }
-                const collapsible = bootstrap.Collapse.getOrCreateInstance(elem.parent());
+                // To handle the initial state, manually add the collapse class before creating the collapsable class.
+                const parent = elem.parent();
+                if (!parent.hasClass('collapse')) {
+                    parent.addClass('collapse');
+                    parent.addClass('show');
+                }
+                // Update widget visibility accordingly.
+                let collapsible = bootstrap.Collapse.getOrCreateInstance(elem.parent());
                 if (visible) {
                     collapsible.show();
                 } else {
