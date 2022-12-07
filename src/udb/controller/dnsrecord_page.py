@@ -115,9 +115,12 @@ class NewDnsRecordForm(EditDnsRecordForm):
         """
         # Create DNS Record
         super().populate_obj(obj)
+
         # Then check if reverse should be created
         if self.create_reverse_record.data or self.create_forward_record.data:
-            record = obj.create_reverse_dns_record()
+            # Add record to trigger validation before creating the reverse record.
+            obj.add()
+            record = obj.create_reverse_dns_record(owner=obj.owner)
             if record:
                 record.add()
 
@@ -149,7 +152,7 @@ class DnsRecordPage(CommonPage):
         if not reverse_record:
             self._verify_role(self.edit_role)
             try:
-                reverse_record = obj.create_reverse_dns_record()
+                reverse_record = obj.create_reverse_dns_record(owner=cherrypy.serving.request.currentuser)
                 if reverse_record:
                     reverse_record.add().commit()
                     flash(_("Reverse DNS Record created."))
