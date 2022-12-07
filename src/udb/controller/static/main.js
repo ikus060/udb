@@ -104,10 +104,12 @@ $(document).ready(function () {
                 const parent = elem.parent();
                 if (!parent.hasClass('collapse')) {
                     parent.addClass('collapse');
-                    parent.addClass('show');
+                    if (visible) {
+                        parent.addClass('show');
+                    }
                 }
                 // Update widget visibility accordingly.
-                let collapsible = bootstrap.Collapse.getOrCreateInstance(elem.parent());
+                let collapsible = bootstrap.Collapse.getOrCreateInstance(elem.parent(), { toggle: false });
                 if (visible) {
                     collapsible.show();
                 } else {
