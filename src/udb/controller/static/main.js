@@ -42,7 +42,7 @@ function toDate(n) {
  * Class `js-datetime` could be used to display the date and time portion e.g.: 2021-05-28 1:04pm
  * Class `js-time` could be used to display the time portion. e.g.: 1:04 pm
  */
-$(document).ready(function () {
+ jQuery(function () {
 
     $('time[datetime]').each(function () {
         const t = $(this);
@@ -60,11 +60,12 @@ $(document).ready(function () {
             t.attr('title', d.toLocaleString());
         }
     })
+
 });
 /**
  * Prompt user before form submit
  */
-$(document).ready(function () {
+ jQuery(function () {
     $('form[data-confirm]').submit(function (event) {
         const t = $(this);
         if (!confirm(t.attr('data-confirm'))) {
@@ -75,7 +76,7 @@ $(document).ready(function () {
 /**
  * Control showif
  */
-$(document).ready(function () {
+jQuery(function () {
     $('[data-showif-field]').each(function () {
         function escape(v) {
             return v.replace(/(:|\.|\[|\]|,|=)/g, "\\$1");
@@ -203,6 +204,13 @@ $.fn.dataTable.render.message_body = function () {
     return {
         display: function (data, type, row, meta) {
             let html = '';
+            if ('message_' + row.type in meta.settings.oLanguage) {
+                html += meta.settings.oLanguage['message_' + row.type];
+            } else {
+                html += row.type;
+            }
+            html += '<em>' + row.author_name + '</em> • ';
+            html += '<time datetime="' + row.date + '" title="' + toDate(row.date).toLocaleString() + '">' + row.date_lastupdated + '</time>';
             switch (row.type) {
                 case 'new':
                     html += '<ul class="mb-0">';
@@ -212,8 +220,7 @@ $.fn.dataTable.render.message_body = function () {
                     html += '</ul>';
                     return html;
                 case 'dirty':
-                    html +=
-                        '<ul class="mb-0">';
+                    html += '<ul class="mb-0">';
                     for (const [key, values] of Object.entries(row.changes)) {
                         html += '<li><b>' + safe(key) + '</b>: '
                         if (Array.isArray(values[0])) {
@@ -230,9 +237,13 @@ $.fn.dataTable.render.message_body = function () {
                     html += '</ul>';
                     return html;
                 default:
-                    return safe(row.body);
+                    html += '<br />' + safe(row.body);
+                    return html;
             }
-        }
+        },
+        sort: function (data, type, row, meta) {
+            return toDate(row.date).getTime();
+        },
     };
 }
 $.fn.dataTable.render.primary_range = function () {
@@ -306,19 +317,27 @@ $.fn.dataTable.render.owner = function () {
     };
 }
 
-$(document).ready(function () {
+jQuery(function () {
     $('table[data-ajax]').each(function (_idx) {
-        /* Load column manually, to process the render attribute as a function. */
+        /* Load column properties */
         let columns = $(this).attr('data-columns');
         $(this).removeAttr('data-columns');
         columns = JSON.parse(columns);
         $.each(columns, function (_index, item) {
+            /* process the render attribute as a function. */
             if (item['render']) {
                 if (item['render_arg']) {
-                    item['render'] = DataTable.render[item['render']](item['render_arg']);
+                    item['render'] = $.fn.dataTable.render[item['render']](item['render_arg']);
                 } else {
-                    item['render'] = DataTable.render[item['render']]();
+                    item['render'] = $.fn.dataTable.render[item['render']]();
                 }
+            }
+            /* 
+             * Patch column visibility for responsive<2.0.0 
+             * Ref:https://datatables.net/extensions/responsive/classes
+             */
+            if ('visible' in item && !item['visible']) {
+                item['className'] = 'never';
             }
         });
         let searchCols = columns.map(function (item, _index) {
@@ -330,9 +349,6 @@ $(document).ready(function () {
         let dt = $(this).DataTable({
             columns: columns,
             searchCols: searchCols,
-            dom: "<'d-sm-flex align-items-center'<'mb-1 flex-grow-1'i><'mb-1'f><B>>" +
-                "<'row'<'col-sm-12'rt>>" +
-                "<'row'<'col-sm-12 col-md-7'p>>",
             drawCallback: function (_settings) {
                 // Remove sorting class
                 this.removeClass(function (_index, className) {
@@ -341,7 +357,7 @@ $(document).ready(function () {
                     }).join(' ');
                 });
                 // Add sorting class when sorting without filter
-                if (this.api().order()[0][1] === 'asc' && this.api().order()[0][0] >= 0 && this.api().search() === '') {
+                if (this.api().order() && this.api().order()[0] && this.api().order()[0][1] === 'asc' && this.api().order()[0][0] >= 0 && this.api().search() === '') {
                     this.addClass('sorted-' + this.api().order()[0][0]);
                 }
             },
@@ -349,7 +365,6 @@ $(document).ready(function () {
                 $(this).removeClass("no-footer");
             },
             processing: true,
-            responsive: true,
             stateSave: true,
         });
         // Update each buttons status

@@ -49,8 +49,7 @@
         <div class="card-body" style="height: 420px; overflow-y: auto;">
           {% set columns = [
           {'data': 'summary', 'title':_('Record'), 'orderable': True, 'render':'summary'},
-          {'data': 'date', 'title':_('When'), 'orderable': True, 'render':'datetime'},
-          {'data': 'body', 'title':_('Changes'), 'orderable':False, 'render':'message_body'}] %}
+          {'data': 'body', 'title':_('Changes'), 'orderable': True, 'render':'message_body'}] %}
           {{ _table.table('activities.json', columns=columns, searching=False, empty_message=_('No modification'), info_message=_('Showing last _TOTAL_ modifications')) }}
         </div>
       </div>

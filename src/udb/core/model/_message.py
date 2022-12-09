@@ -111,7 +111,6 @@ class Message(JsonMixin, SearchableMixing, Base):
     model_id = Column(Integer, nullable=False)
     author_id = Column(Integer, ForeignKey('user.id'), nullable=True)
     author = relationship("User", lazy=False)
-    subject = Column(String, nullable=False, default='')
     type = Column(String, nullable=False, default=TYPE_COMMENT)
     body = Column(String, nullable=False, default='')
     _changes = Column('changes', String, nullable=True)
@@ -132,7 +131,7 @@ class Message(JsonMixin, SearchableMixing, Base):
 
     @classmethod
     def _search_string(cls):
-        return cls.body + " " + cls.subject
+        return cls.body + " " + cls._changes
 
     @property
     def model_object(self):

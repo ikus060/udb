@@ -43,7 +43,7 @@ main {
 }
 
 /*
- * Light background color
+ * Light background color to highlight record status in edit view.
  */
 .bg-light-danger {
     background-color: rgba(var(--bs-danger-rgb), 0.25) !important;
@@ -58,7 +58,8 @@ main {
     font-weight: 500;
 }
 
-.btn-hover {
+/* Show hide Action button */
+tr .btn-hover {
     opacity: 0;
 }
 
@@ -139,4 +140,24 @@ table.dataTable.sorted-0 .depth-8 {
 
 table.dataTable.sorted-0 .depth-9 {
     padding-left: 18em;
+}
+
+/* Fix header of history in edit view */
+#messages.card thead {
+    background-color: rgba(0, 0, 0, .03);
+}
+
+#messages.card thead th {
+    border-bottom: 1px solid rgba(0, 0, 0, .125)
+}
+
+/* Fix responsive buttons colors */
+table.dataTable.dtr-inline.collapsed>tbody>tr>td:first-child:before,
+table.dataTable.dtr-inline.collapsed>tbody>tr>th:first-child:before {
+    background-color: var(--bs-primary);
+}
+
+table.dataTable.dtr-inline.collapsed>tbody>tr.parent>td:first-child:before,
+table.dataTable.dtr-inline.collapsed>tbody>tr.parent>th:first-child:before {
+    background-color: var(--bs-secondary);
 }

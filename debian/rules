@@ -14,3 +14,7 @@ execute_after_dh_auto_install:
 	rm -rf debian/udb/usr/lib/python*/dist-packages/udb/core/tests
 	rm -rf debian/udb/usr/lib/python*/dist-packages/udb/tests
 	rm -f  debian/udb/usr/lib/python*/dist-packages/udb/test.py
+	rm -f  debian/udb/usr/lib/python*/dist-packages/udb/static/datatables/js/*
+	rm -f  debian/udb/usr/lib/python*/dist-packages/udb/static/datatables/css/*
+	rm -f  debian/udb/usr/lib/python*/dist-packages/udb/static/datatables/images/*
+	rm -f  debian/udb/usr/lib/python*/dist-packages/udb/static/jquery/*

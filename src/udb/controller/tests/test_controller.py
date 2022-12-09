@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from parameterized import parameterized
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
@@ -67,3 +68,21 @@ class TestApp(WebCase):
     def test_with_forwarded_host_ignored(self):
         self.getPage('/dashboard/', headers=[('X-Forwarded-Host', 'https://www.example.test')])
         self.assertNotInBody('https://www.example.test/')
+
+    @parameterized.expand(
+        [
+            '/static/jquery/jquery.min.js',
+            '/static/datatables/css/jquery.dataTables.min.css',
+            '/static/datatables/css/buttons.dataTables.min.css',
+            '/static/datatables/css/responsive.dataTables.min.css',
+            '/static/datatables/js/jquery.dataTables.min.js',
+            '/static/datatables/js/dataTables.buttons.min.js',
+            '/static/datatables/js/dataTables.responsive.min.js',
+            '/static/main.js',
+            '/static/main.css',
+            '/static/favicon.svg',
+        ]
+    )
+    def test_static(self, url):
+        self.getPage(url)
+        self.assertStatus(200)
