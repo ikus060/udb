@@ -10,7 +10,7 @@
   <i class="bi {{ icon_table.get(model_name, '')}} {{ extra_class or '' }}"
      aria-hidden="true"></i>
 {%- endmacro -%}
-{%- set display_name_table = {'dnszone': _('DNS Zone'), 'subnet':_('Subnet'), 'dnsrecord': _('DNS Record'), 'dhcprecord':_('DHCP Reservation'), 'ip':_('Ip'), 'user': _('User'), 'vrf': _('VRF') } -%}
+{%- set display_name_table = {'dnszone': _('DNS Zone'), 'subnet':_('Subnet'), 'dnsrecord': _('DNS Record'), 'dhcprecord':_('DHCP Reservation'), 'ip':_('IP'), 'user': _('User'), 'vrf': _('VRF') } -%}
 {%- macro display_name(value) -%}
   {%- if value.model_name is defined() -%}
     {%- set model_name = value.model_name -%}
