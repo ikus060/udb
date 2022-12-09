@@ -1,3 +1,5 @@
+{% import "components/table.html" as _table with context %}
+
 {% macro show_value(value) %}
   {%- if value is none -%}<i>{% trans %}Undefined{% endtrans %}</i>{%- else -%}{{ value }}{%- endif -%}
 {% endmacro %}
@@ -47,16 +49,17 @@
     </ul>
   {% endif %}
 {% endmacro %}
-{% macro list_messages(messages) -%}
-  <div class="list-group list-group-flush">
-    {% for message in messages|sort(attribute="date",reverse=True) %}
-      <div class="list-group-item list-group-item-action" aria-current="true">{{ show_message(message) }}</div>
-    {% endfor %}
-  </div>
-{%- endmacro %}
+
 {% if has_messages %}
-  <div class="card">
-    <h6 class="card-header">{% trans %}History{% endtrans %}</h6>
-    {{ list_messages(obj.messages) }}
+  <div id="messages" class="card">
+    {{ _table.table('messages',
+    columns=[{'data': 'body', 'title':_('History'), 'orderable':True, 'render':'message_body'}],
+    order=[[ 0, 'desc' ]],
+    searching=False,
+    empty_message=_('No history'),
+    show_action_column=False,
+    show_header=False,
+    paging=True,
+    pageLength=10) }}
   </div>
 {% endif %}

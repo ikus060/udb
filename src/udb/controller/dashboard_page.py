@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 import cherrypy
 from sqlalchemy import desc, func
 
-from udb.controller import url_for
+from udb.controller import lastupdated, url_for
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Message, Subnet, User, Vrf
 
 Base = cherrypy.tools.db.get_base()
@@ -75,6 +75,8 @@ class DashboardPage:
                     **{
                         'url': url_for(obj.model_object, 'edit'),
                         'summary': obj.summary,
+                        'author_name': obj.author_name,
+                        'date_lastupdated': lastupdated(obj.date),
                     }
                 )
                 for obj in obj_list

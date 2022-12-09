@@ -18,29 +18,36 @@ import cherrypy
 import pkg_resources
 
 
-@cherrypy.tools.db(on=False)
-@cherrypy.tools.sessions(on=False)
 @cherrypy.tools.auth_form(on=False)
 @cherrypy.tools.currentuser(on=False)
+@cherrypy.tools.db(on=False)
 @cherrypy.tools.i18n(on=False)
+@cherrypy.tools.ratelimit(on=False)
 @cherrypy.tools.secure_headers(on=False)
+@cherrypy.tools.sessions(on=False)
 class Static:
-    @cherrypy.expose()
+    @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'datatables'))
+    def datatables(*args, **kwargs):
+        raise cherrypy.HTTPError(400)
+
+    @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'jquery'))
+    def jquery(*args, **kwargs):
+        raise cherrypy.HTTPError(400)
+
+    @cherrypy.tools.staticfile(
+        filename=pkg_resources.resource_filename(__name__, 'taylor-vick-M5tzZtFCOfs-unsplash.jpg')
+    )
     def login_bg_jpg(self):
-        fn = pkg_resources.resource_filename('udb.controller.static', 'taylor-vick-M5tzZtFCOfs-unsplash.jpg')
-        return cherrypy.lib.static.serve_file(fn)
+        raise cherrypy.HTTPError(400)
 
-    @cherrypy.expose()
+    @cherrypy.tools.staticfile(filename=pkg_resources.resource_filename(__name__, 'main.css'))
     def main_css(self):
-        fn = pkg_resources.resource_filename('udb.controller.static', 'main.css')
-        return cherrypy.lib.static.serve_file(fn)
+        raise cherrypy.HTTPError(400)
 
-    @cherrypy.expose()
+    @cherrypy.tools.staticfile(filename=pkg_resources.resource_filename(__name__, 'main.js'))
     def main_js(self):
-        fn = pkg_resources.resource_filename('udb.controller.static', 'main.js')
-        return cherrypy.lib.static.serve_file(fn)
+        raise cherrypy.HTTPError(400)
 
-    @cherrypy.expose()
+    @cherrypy.tools.staticfile(filename=pkg_resources.resource_filename(__name__, 'udb_16.svg'))
     def favicon_svg(self):
-        fn = pkg_resources.resource_filename('udb.controller.static', 'udb_16.svg')
-        return cherrypy.lib.static.serve_file(fn)
+        raise cherrypy.HTTPError(400)

@@ -22,7 +22,7 @@ from sqlalchemy.inspection import inspect
 from wtforms.fields import HiddenField, TextAreaField
 from wtforms.validators import InputRequired, Length
 
-from udb.controller import flash, handle_exception, url_for
+from udb.controller import flash, handle_exception, lastupdated, url_for
 from udb.core.model import Message, User
 from udb.tools.i18n import gettext as _
 
@@ -141,6 +141,26 @@ class CommonPage(object):
         self._verify_role(self.list_role)
         obj_list = self._query()
         return {'data': [self._to_json(obj) for obj in obj_list]}
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def messages(self, key, **kwargs):
+        self._verify_role(self.list_role)
+        # Return Not found if object doesn't exists
+        obj = self._get_or_404(key)
+        # Query Object Messages
+        messages = (
+            Message.query.filter(Message.model_id == obj.id, Message.model_name == obj.__tablename__)
+            .join(User)
+            .order_by(Message.date.desc())
+            .all()
+        )
+        return {
+            'data': [
+                dict(msg.to_json(), **{'author_name': msg.author_name, 'date_lastupdated': lastupdated(msg.date)})
+                for msg in messages
+            ]
+        }
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/new.html', 'common/new.html'])

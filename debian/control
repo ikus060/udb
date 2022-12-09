@@ -33,6 +33,9 @@ Vcs-Browser: https://gitlab.com/ikus-soft/udb
 Package: udb
 Architecture: all
 Depends:
+ libjs-jquery,
+ libjs-jquery-datatables,
+ libjs-jquery-datatables-extensions,
  ${misc:Depends},
  ${python3:Depends},
  ${sphinxdoc:Depends},

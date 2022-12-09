@@ -116,9 +116,10 @@ class CommonTest:
         new_obj = self.obj_cls.query.first()
         self.assertEqual(new_obj.owner, User.query.first())
         # Then an audit message is displayed on edit page.
-        self.getPage(url_for(obj, 'edit'))
-        self.assertInBody('<i>Undefined</i> → %s' % new_obj.owner)
+        self.getPage(url_for(obj, 'messages'))
+        self.assertInBody('%s' % new_obj.owner)
         # Then appropriate owner is selected in edit page
+        self.getPage(url_for(obj, 'edit'))
         self.assertInBody('<option selected value="%s">%s</option>' % (new_obj.owner.id, new_obj.owner))
 
     def test_edit_unassign_owner(self):
@@ -172,7 +173,7 @@ class CommonTest:
         now = datetime.datetime.now(tz=datetime.timezone.utc)
         self.assertAlmostEqual(message.date, now, delta=datetime.timedelta(minutes=1))
         # Then this message is displayed on edit page
-        self.getPage(url_for(obj, 'edit'))
+        self.getPage(url_for(obj, 'messages'))
         self.assertInBody('this is my message')
 
     def test_follow(self):
