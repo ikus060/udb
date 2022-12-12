@@ -42,7 +42,7 @@ function toDate(n) {
  * Class `js-datetime` could be used to display the date and time portion e.g.: 2021-05-28 1:04pm
  * Class `js-time` could be used to display the time portion. e.g.: 1:04 pm
  */
- jQuery(function () {
+jQuery(function () {
 
     $('time[datetime]').each(function () {
         const t = $(this);
@@ -65,7 +65,7 @@ function toDate(n) {
 /**
  * Prompt user before form submit
  */
- jQuery(function () {
+jQuery(function () {
     $('form[data-confirm]').submit(function (event) {
         const t = $(this);
         if (!confirm(t.attr('data-confirm'))) {
@@ -211,6 +211,9 @@ $.fn.dataTable.render.message_body = function () {
             }
             html += '<em>' + row.author_name + '</em> • ';
             html += '<time datetime="' + row.date + '" title="' + toDate(row.date).toLocaleString() + '">' + row.date_lastupdated + '</time>';
+            if (row.body) {
+                html += '<br />' + safe(row.body);
+            }
             switch (row.type) {
                 case 'new':
                     html += '<ul class="mb-0">';
@@ -218,7 +221,7 @@ $.fn.dataTable.render.message_body = function () {
                         html += '<li><b>' + safe(key) + '</b>: ' + safe(values[1]) + ' </li>';
                     }
                     html += '</ul>';
-                    return html;
+                    break;
                 case 'dirty':
                     html += '<ul class="mb-0">';
                     for (const [key, values] of Object.entries(row.changes)) {
@@ -235,11 +238,9 @@ $.fn.dataTable.render.message_body = function () {
                         }
                     }
                     html += '</ul>';
-                    return html;
-                default:
-                    html += '<br />' + safe(row.body);
-                    return html;
+                    break;
             }
+            return html;
         },
         sort: function (data, type, row, meta) {
             return toDate(row.date).getTime();
