@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
-from sqlalchemy import Column, String, event, inspect
+from sqlalchemy import Column, String, case, event, inspect
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import deferred
 from sqlalchemy.sql.expression import func
@@ -113,6 +113,10 @@ class User(JsonMixin, StatusMixing, Base):
     @hybrid_property
     def summary(self):
         return self.fullname or self.username
+
+    @summary.expression
+    def summary(cls):
+        return case((cls.fullname != '', cls.fullname), else_=cls.username)
 
     def check_password(self, password):
         return check_password(password, self.password)

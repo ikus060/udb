@@ -20,6 +20,7 @@ from wtforms.validators import DataRequired, Email, Length, Optional
 from udb.core.model import User
 from udb.tools.i18n import gettext as _
 
+from .common_page import CommonPage
 from .form import CherryForm
 
 
@@ -63,3 +64,18 @@ class UserForm(CherryForm):
             obj.password = None
         elif self.password.data:
             obj.set_password(self.password.data)
+
+
+class UserPage(CommonPage):
+    def __init__(self) -> None:
+        super().__init__(User, UserForm, list_role=User.ROLE_ADMIN, edit_role=User.ROLE_ADMIN)
+
+    def _list_query(self):
+        return User.query.with_entities(
+            User.id,
+            User.status,
+            User.username,
+            User.fullname,
+            User.email,
+            User.role,
+        )

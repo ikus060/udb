@@ -20,6 +20,7 @@ Build-Depends:
  python3-requests,
  python3-setuptools,
  python3-setuptools-scm,
+ python3-ujson,
  python3-sqlalchemy,
  python3-validators,
  python3-wtforms,

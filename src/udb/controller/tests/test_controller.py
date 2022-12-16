@@ -23,6 +23,16 @@ from udb.core.model import DnsZone, Message, Search
 
 
 class TestApp(WebCase):
+    def test_url_for_with_relative(self):
+        self.assertEqual(
+            url_for(DnsZone, relative=True),
+            '%s:%s/dnszone/' % (self.HOST, self.PORT),
+        )
+        self.assertEqual(
+            url_for(DnsZone, 'new', relative='server'),
+            '/dnszone/new',
+        )
+
     def test_url_for_with_model(self):
         self.assertEqual(url_for(DnsZone), 'http://%s:%s/dnszone/' % (self.HOST, self.PORT))
         self.assertEqual(url_for(DnsZone, 'new'), 'http://%s:%s/dnszone/new' % (self.HOST, self.PORT))

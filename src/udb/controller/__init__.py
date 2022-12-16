@@ -50,9 +50,17 @@ def get_flashed_messages():
     return []
 
 
-def url_for(*args, **kwargs):
+def url_for(*args, relative=None, **kwargs):
     """
     Generate a URL for the given endpoint, path (*args) with parameters (**kwargs)
+
+    If `relative` is None or not provided, default to absolute
+    path. If False, the output will be an absolute URL (including
+    the scheme, host, vhost, and script_name). If True, the output
+    will instead be a URL that is relative to the
+    current request path, perhaps including '..' atoms. If relative is
+    the string 'server', the output will instead be a URL that is
+    relative to the server root; i.e., it will start with a slash.
     """
     path = ""
     for chunk in args:
@@ -86,7 +94,7 @@ def url_for(*args, **kwargs):
         qs = [(k, v) for k, v in sorted(params.items()) if v is not None]
     else:
         qs = [(k, v) for k, v in sorted(kwargs.items()) if v is not None]
-    return cherrypy.url(path=path, qs=qs)
+    return cherrypy.url(path=path, qs=qs, relative=relative)
 
 
 def lastupdated(value, now=None):

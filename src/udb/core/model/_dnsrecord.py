@@ -19,11 +19,10 @@ import ipaddress
 import re
 
 import cherrypy
-import validators
 from sqlalchemy import CheckConstraint, Column, Computed, ForeignKey, and_, case, event, func, literal
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy.orm import declared_attr, defer, relationship, undefer, validates
 from sqlalchemy.types import Integer, String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
@@ -33,7 +32,7 @@ from ._cidr import InetType
 from ._common import CommonMixin
 from ._dnszone import DnsZone
 from ._follower import FollowerMixin
-from ._ip import HasIpMixin, Ip
+from ._ip_mixin import HasIpMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
 from ._search_vector import SearchableMixing
@@ -113,6 +112,19 @@ def _reverse_ipv6(value):
     return str(ipaddress.ip_address(full_address))
 
 
+# letters, digits, hyphen (-), underscore (_)
+NAME_PATTERN = re.compile(
+    r'^(?:[a-zA-Z0-9_]'  # First character of the domain
+    r'(?:[a-zA-Z0-9-_]{0,61}[A-Za-z0-9_])?\.)'  # Sub domain + hostname
+    r'+[a-zA-Z0-9][a-zA-Z0-9-_]{0,61}'  # First 61 characters of the gTLD
+    r'[A-Za-z]$'  # Last character of the gTLD
+)
+
+
+def validate_domain(value):
+    return NAME_PATTERN.match(value)
+
+
 class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, HasIpMixin, Base):
     _ip_column_name = 'ip_value'
 
@@ -132,6 +144,8 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
         'TLSA',
         'MX',
         'NS',
+        'DHCID',
+        'SOA',
     ]
     name = Column(String, unique=False, nullable=False)
     type = Column(String, nullable=False)
@@ -139,10 +153,13 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
     value = Column(String, nullable=False)
 
     # Relation to Ip record uses GENERATE ALWAYS
-    @classmethod
-    def __declare_last__(cls):
-        cls.generated_ip = Column(InetType, ForeignKey(Ip.ip), Computed(cls.ip_value))
-        cls._ip = relationship(Ip, primaryjoin=cls.generated_ip == Ip.ip, backref='related_dns_records', lazy=True)
+    @declared_attr
+    def generated_ip(cls):
+        return Column(InetType, ForeignKey("ip.ip"), Computed(cls.ip_value, persisted=True))
+
+    @declared_attr
+    def _ip(cls):
+        return relationship("Ip", back_populates='related_dns_records', lazy=True)
 
     @classmethod
     def _search_string(cls):
@@ -159,7 +176,7 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
             raise ValueError('type', _('invalid record type'))
 
         # Verify domain name
-        if self.type in ['CNAME', 'PTR', 'NS'] and not validators.domain(self.value):
+        if self.type in ['CNAME', 'PTR', 'NS'] and not validate_domain(self.value):
             raise ValueError('value', _('value must be a valid domain name'))
 
         # Verify IP Address
@@ -171,8 +188,8 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
             raise ValueError('value', _('value must not be empty'))
 
         # Every record type must be defined within a DNS Zone
-        dnszones = self._get_related_dnszones()
-        if not dnszones:
+        dnszone = self._get_related_dnszone()
+        if not dnszone:
             raise ValueError('value' if is_ptr else 'name', _('FQDN must be defined within a valid DNS Zone.'))
 
         # Validate name according to record type
@@ -183,41 +200,35 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
             )
         if self.type in ['A', 'AAAA', 'PTR']:
             # IP should be within the corresponding DNS Zone
-            if not self._get_related_subnets():
-                suggest_subnet = ', '.join(
-                    [range for zone in dnszones for subnet in zone.subnets for range in subnet.ranges]
-                )
+            ip_address = ipaddress.ip_network(self.ip_value)
+            all_ranges = (
+                SubnetRange.query.join(Subnet)
+                .join(Subnet.dnszones)
+                .options(defer('*'), undefer(SubnetRange.id), undefer(SubnetRange.range))
+                .filter(DnsZone.id == dnszone.id, SubnetRange.version == ip_address.version)
+                .all()
+            )
+            combined_ranges = list(ipaddress.collapse_addresses([ipaddress.ip_network(r.range) for r in all_ranges]))
+            matching_range = any(r for r in combined_ranges if r.supernet_of(ip_address))
+            if not matching_range:
+                suggest_subnet = ', '.join(map(str, combined_ranges))
                 raise ValueError(
                     'name' if is_ptr else 'value',
                     _('IP address must be defined within the DNS Zone: %s') % suggest_subnet,
                 )
 
-    def _get_related_dnszones(self):
+    def _get_related_dnszone(self):
         """
-        Return list of DnsZone matching our name.
+        Return DnsZone matching our name.
         """
-        return DnsZone.query.filter(
-            literal(self.hostname_value).endswith(DnsZone.name),
-            DnsZone.status != DnsZone.STATUS_DELETED,
-        ).all()
-
-    def _get_related_subnets(self):
-        """
-        Return list of subnet matching our dnszone (name) and ip address (value).
-        """
-        if self.type in ['A', 'AAAA', 'PTR']:
-            return (
-                Subnet.query.join(Subnet.dnszones)
-                .join(Subnet.subnet_ranges)
-                .filter(
-                    literal(self.hostname_value).endswith(DnsZone.name),
-                    SubnetRange.range.supernet_of(str(self.ip_value)),
-                    DnsZone.status != DnsZone.STATUS_DELETED,
-                    Subnet.status != Subnet.STATUS_DELETED,
-                )
-                .all()
+        return (
+            DnsZone.query.filter(
+                literal(self.hostname_value).endswith(DnsZone.name),
+                DnsZone.status != DnsZone.STATUS_DELETED,
             )
-        return []
+            .order_by(func.length(DnsZone.name))
+            .first()
+        )
 
     def _get_related_dns_record(self):
         """
@@ -267,7 +278,13 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
 
     @validates('name')
     def validate_name(self, key, value):
-        if not validators.domain(value):
+        """
+        Handle special case with wildcard.
+        """
+        if value and value.startswith('*.'):
+            if not validate_domain(value[2:]):
+                raise ValueError('name', _('expected a valid FQDN'))
+        elif not validate_domain(value):
             raise ValueError('name', _('expected a valid FQDN'))
         return value.lower()
 
@@ -405,7 +422,9 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
         objects = [(self.__tablename__, self.id)]
         # Reference to parent DNZ Zone
         try:
-            objects.extend([(dnszone.__tablename__, dnszone.id) for dnszone in self._get_related_dnszones()])
+            dnszone = self._get_related_dnszone()
+            if dnszone:
+                objects.append((dnszone.__tablename__, dnszone.id))
         except Exception:
             pass
         # Reference to other DNS Record

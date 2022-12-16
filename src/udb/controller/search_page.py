@@ -15,13 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
-from sqlalchemy import or_
+from sqlalchemy import literal, select, union
 from wtforms.fields import StringField
 from wtforms.validators import InputRequired, Length
 
 from udb.controller import url_for
 from udb.controller.form import CherryForm
-from udb.core.model import Message, Search
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, Vrf
 
 Base = cherrypy.tools.db.get_base()
 
@@ -47,28 +47,41 @@ class SearchPage:
             'form': form,
         }
 
+    def _list_query(self, value):
+        session = cherrypy.tools.db.get_session()
+        return session.query(
+            union(
+                *[
+                    select(
+                        literal(model.__name__.lower()).label('model_name'),
+                        model.id.label('model_id'),
+                        model.summary,
+                        model.notes.label('notes'),
+                        model.modified_at.label('modified_at'),
+                        model._search_vector,
+                    ).filter(
+                        model._search_vector.websearch(value),
+                    )
+                    for model in [DhcpRecord, DnsRecord, DnsZone, Subnet, Vrf]
+                ]
+            ).subquery()
+        ).limit(100)
+
     @cherrypy.expose()
     @cherrypy.tools.json_out()
     def query_json(self, **kwargs):
         form = SearchForm()
         if not form.validate():
             return {'data': []}
-        query = Search.query.filter(
-            or_(
-                Search._search_vector.websearch(form.q.data),
-                Search.messages.any(Message._search_vector.websearch(form.q.data)),
-            )
-        )
-        query = query.order_by(Search.modified_at)
+        query = self._list_query(form.q.data)
         return {
             'data': [
                 {
-                    'url': url_for(obj, 'edit'),
+                    'url': url_for(obj, 'edit', relative='server'),
                     'summary': obj.summary,
-                    'owner_id': obj.owner_id,
-                    'owner': obj.owner.to_json() if obj.owner else None,
                     'notes': obj.notes,
+                    'model_name': obj.model_name,
                 }
-                for obj in query.all()
+                for obj in query
             ]
         }

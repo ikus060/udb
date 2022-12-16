@@ -19,16 +19,19 @@ import ipaddress
 import itertools
 
 import cherrypy
-from sqlalchemy import Column, Index, event
+from sqlalchemy import Column, event, func, select
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import validates
+from sqlalchemy.orm import column_property, declared_attr, relationship, validates
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
 
 from ._cidr import InetType
 from ._common import CommonMixin
+from ._dhcprecord import DhcpRecord
+from ._dnsrecord import DnsRecord
 from ._follower import FollowerMixin
+from ._ip_mixin import HasIpMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
 from ._subnet import Subnet, SubnetRange
@@ -40,7 +43,9 @@ Session = cherrypy.tools.db.get_session()
 
 class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, Base):
     __tablename__ = 'ip'
-    ip = Column(InetType, nullable=False)
+    ip = Column(InetType, nullable=False, unique=True)
+    related_dhcp_records = relationship(DhcpRecord, back_populates="_ip", lazy=True)
+    related_dns_records = relationship(DnsRecord, back_populates="_ip", lazy=True)
 
     @hybrid_property
     def summary(self):
@@ -59,23 +64,41 @@ class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, Base):
         return (
             Subnet.query.join(Subnet.subnet_ranges)
             .filter(
-                SubnetRange.range.supernet_of(str(self.ip)),
+                SubnetRange.version == func.family(self.ip),
+                SubnetRange.start_ip <= func.inet(self.ip),
+                SubnetRange.end_ip > func.inet(self.ip),
                 Subnet.status != Subnet.STATUS_DELETED,
             )
             .all()
         )
 
+    @declared_attr
+    def related_dhcp_records_count(cls):
+        return column_property(
+            select(func.count(DhcpRecord.id))
+            .where(
+                DhcpRecord.ip == cls.ip,
+                DhcpRecord.status != DhcpRecord.STATUS_DELETED,
+            )
+            .scalar_subquery(),
+            deferred=True,
+        )
 
-# Make the IP unique
-Index('ip_unique_index', Ip.ip, unique=True)
+    @declared_attr
+    def related_dns_records_count(cls):
+        return column_property(
+            select(func.count(DnsRecord.id))
+            .where(
+                DnsRecord.generated_ip == cls.ip,
+                DnsRecord.status != DnsRecord.STATUS_DELETED,
+            )
+            .scalar_subquery(),
+            deferred=True,
+        )
 
-
-class HasIpMixin(object):
-    """
-    Subclasses must implement `_ip` to be a relationship and `ip` as a property returning the ip address as a string.
-    """
-
-    _ip_column_name = 'ip'
+    @property
+    def referenced(self):
+        return self.related_dhcp_records_count > 0 or self.related_dns_records_count > 0
 
 
 @event.listens_for(Session, "before_flush", insert=True)
@@ -83,6 +106,7 @@ def _update_ip(session, flush_context, instances):
     """
     Create missing IP Record when creating or updating record.
     """
+    # First pass to make sure IP Record are unique
     for instance in itertools.chain(session.new, session.dirty):
         if isinstance(instance, HasIpMixin):
             # Get IP Value
@@ -94,6 +118,7 @@ def _update_ip(session, flush_context, instances):
             # Make sure to get/create unique IP record.
             # Do not assign the object as it might impact the update statement for generated column.
             if value is not None:
+                instance._ip  # Fetch the Ip for history
                 instance._ip = _unique_ip(session, value)
 
 

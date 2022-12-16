@@ -30,7 +30,7 @@ class TestApiPage(WebCase):
         self.getPage('/api/', headers=self.authorization)
         # Then status is returned
         self.assertStatus(200)
-        self.assertBody('{"status": "OK"}')
+        self.assertBody('{"status":"OK"}')
 
     def test_api_error(self):
         # Given the application is started
@@ -38,7 +38,7 @@ class TestApiPage(WebCase):
         self.getPage('/api/invalid', headers=self.authorization)
         # Then status is returned
         self.assertStatus(404)
-        self.assertInBody('{"message": "Nothing matches the given URI", "status": "404 Not Found"}')
+        self.assertInBody('{"message":"Nothing matches the given URI","status":"404 Not Found"}')
 
 
 class TestApiPageRateLimit(WebCase):

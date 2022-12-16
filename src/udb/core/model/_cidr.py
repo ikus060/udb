@@ -23,13 +23,37 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
 
+def _bytes_to_ip_network(value):
+    if value[1] == 6:
+        return ipaddress.ip_network(value[2:18]).supernet(new_prefix=int.from_bytes(value[18:], "big"))
+    return ipaddress.ip_network(value[2:6]).supernet(new_prefix=int.from_bytes(value[6:], "big"))
+
+
+def _ip_network_to_bytes(value):
+    if value is None:
+        return None
+    if hasattr(value, 'network_address'):
+        # IPNetwork
+        return b'%s%s%s' % (
+            value.version.to_bytes(2, byteorder='big'),
+            value.network_address.packed,
+            value.prefixlen.to_bytes(2, byteorder='big'),
+        )
+    # IPAddress
+    return b'%s%s%s' % (
+        value.version.to_bytes(2, byteorder='big'),
+        value.packed,
+        value.max_prefixlen.to_bytes(2, byteorder='big'),
+    )
+
+
 def _sqlite_inet(value):
     """
     Convert value into exploded ip_address.
     """
-    if value is None:
-        return None
-    return ipaddress.ip_address(value).exploded
+    if isinstance(value, bytes):
+        return value
+    return _ip_network_to_bytes(ipaddress.ip_network(value, strict=False))
 
 
 def _sqlite_host(value):
@@ -38,45 +62,48 @@ def _sqlite_host(value):
     """
     if value is None:
         return None
-    return ipaddress.ip_network(value, strict=False).network_address.compressed
+    if isinstance(value, bytes):
+        n = _bytes_to_ip_network(value)
+    else:
+        n = ipaddress.ip_network(value, strict=False)
+    return n.network_address.compressed
 
 
-def _sqlite_inet_broadcast(value):
+def _sqlite_text(value):
+    """
+    Return text value of inet or cidr.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bytes):
+        n = _bytes_to_ip_network(value)
+    else:
+        n = ipaddress.ip_network(value, strict=False)
+    return n.compressed
+
+
+def _sqlite_broadcast(value):
     """
     Convert ip_network into comparable bytes.
     """
     if value is None:
         return None
-    n = ipaddress.ip_network(value)
-    return b'%s%s%s' % (
-        n.version.to_bytes(2, byteorder='big'),
-        n.broadcast_address.packed,
-        n.prefixlen.to_bytes(2, byteorder='big'),
-    )
-
-
-def _sqlite_inet_sortable(value):
-    """
-    Convert ip_network into comparable bytes.
-    """
-    if value is None:
-        return None
-    n = ipaddress.ip_network(value)
-    return b'%s%s%s' % (
-        n.version.to_bytes(2, byteorder='big'),
-        n.network_address.packed,
-        n.prefixlen.to_bytes(2, byteorder='big'),
-    )
+    if isinstance(value, bytes):
+        n = _bytes_to_ip_network(value)
+    else:
+        n = ipaddress.ip_network(value)
+    return _ip_network_to_bytes(n.broadcast_address)
 
 
 def _sqlite_family(value):
     """
-    Return the inet family.
+    Receive inet, return integer
     """
     if value is None:
         return None
-    n = ipaddress.ip_network(value)
-    return n.version
+    if isinstance(value, bytes):
+        return value[1]
+    return ipaddress.ip_network(value, strict=False).version
 
 
 @event.listens_for(Engine, "connect")
@@ -85,11 +112,12 @@ def _register_sqlite_cidr_functions(dbapi_con, unused):
     On SQLite engine, register custom function to support CIDR operations.
     """
     if 'sqlite' in repr(dbapi_con):
-        dbapi_con.create_function("inet_broadcast", 1, _sqlite_inet_broadcast, deterministic=True)
-        dbapi_con.create_function("inet_sortable", 1, _sqlite_inet_sortable, deterministic=True)
+        dbapi_con.create_function("broadcast", 1, _sqlite_broadcast, deterministic=True)
         dbapi_con.create_function("host", 1, _sqlite_host, deterministic=True)
         dbapi_con.create_function("inet", 1, _sqlite_inet, deterministic=True)
+        dbapi_con.create_function("inet_sortable", 1, _sqlite_inet, deterministic=True)
         dbapi_con.create_function("family", 1, _sqlite_family, deterministic=True)
+        dbapi_con.create_function("text", 1, _sqlite_text, deterministic=True)
 
 
 class subnet_of(GenericFunction):
@@ -103,16 +131,13 @@ def _render_subnet_of_sqlite(element, compiler, **kw):
     On SQLite, make use of inet() and broadcast()
     """
     left, right = element.clauses
-    return (
-        "%s IS NOT NULL AND %s IS NOT NULL AND inet_sortable(%s) >= inet_sortable(%s) AND inet_broadcast(%s) < inet_broadcast(%s)"
-        % (
-            compiler.process(left, **kw),
-            compiler.process(right, **kw),
-            compiler.process(left, **kw),
-            compiler.process(right, **kw),
-            compiler.process(left, **kw),
-            compiler.process(right, **kw),
-        )
+    return "%s IS NOT NULL AND %s IS NOT NULL AND %s >= %s AND broadcast(%s) < broadcast(%s)" % (
+        compiler.process(left, **kw),
+        compiler.process(right, **kw),
+        compiler.process(left, **kw),
+        compiler.process(right, **kw),
+        compiler.process(left, **kw),
+        compiler.process(right, **kw),
     )
 
 
@@ -130,20 +155,6 @@ def _render_subnet_of_pg(element, compiler, **kw):
     )
 
 
-class subnet_of(GenericFunction):
-    name = "inet_sortable"
-    inherit_cache = True
-
-
-@compiles(subnet_of, "postgresql")
-def _render_inet_sortable(element, compiler, **kw):
-    """
-    On Postgresql, use INET or CIDR sortable.
-    """
-    left = element.clauses
-    return "%s" % (compiler.process(left, **kw),)
-
-
 class CidrType(TypeDecorator):
     """
     Type decorator to store CIDR 192.168.0.0/24 in Postgresql database.
@@ -159,12 +170,21 @@ class CidrType(TypeDecorator):
         return dialect.type_descriptor(String())
 
     def process_bind_param(self, value, dialect):
-        # Convert value to CIDR exploded
-        return ipaddress.ip_network(str(value)).exploded if value else None
+        if dialect.name == "postgresql":
+            return value
+        # SQlite convert to bytes
+        if value is None:
+            return None
+        n = ipaddress.ip_network(value)
+        return _ip_network_to_bytes(n)
 
     def process_result_value(self, value, dialect):
-        # Return CIDR compressed
-        return ipaddress.ip_network(value).compressed if value else None
+        if dialect.name == "postgresql":
+            return value
+        # SQlite convert from bytes
+        if value is None:
+            return None
+        return _bytes_to_ip_network(value).compressed
 
     class comparator_factory(String.Comparator):
         def subnet_of(self, other):
@@ -176,14 +196,17 @@ class CidrType(TypeDecorator):
         def host(self):
             return func.host(self)
 
+        def text(self):
+            return func.text(self)
+
         def inet(self):
             return func.inet(self)
 
         def family(self):
             return func.family(self)
 
-        def sortable(self):
-            return func.inet_sortable(self)
+        def broadcast(self):
+            return func.broadcast(self)
 
 
 class InetType(TypeDecorator):
@@ -201,12 +224,21 @@ class InetType(TypeDecorator):
         return dialect.type_descriptor(String())
 
     def process_bind_param(self, value, dialect):
-        # Convert value to CIDR exploded
-        return ipaddress.ip_address(str(value)).exploded if value else None
+        if dialect.name == "postgresql":
+            return value
+        # SQlite convert to bytes
+        if value is None:
+            return None
+        n = ipaddress.ip_address(value)
+        return _ip_network_to_bytes(n)
 
     def process_result_value(self, value, dialect):
-        # Return CIDR compressed
-        return ipaddress.ip_address(value).compressed if value else None
+        if dialect.name == "postgresql":
+            return value
+        # SQlite convert from bytes
+        if value is None:
+            return None
+        return _bytes_to_ip_network(value).network_address.compressed
 
     class comparator_factory(String.Comparator):
         def subnet_of(self, other):
@@ -218,8 +250,14 @@ class InetType(TypeDecorator):
         def host(self):
             return func.host(self)
 
+        def text(self):
+            return func.text(self)
+
         def inet(self):
             return func.inet(self)
 
         def family(self):
             return func.family(self)
+
+        def broadcast(self):
+            return func.broadcast(self)

@@ -70,3 +70,13 @@ class DhcpRecordForm(CherryForm):
 class DhcpRecordPage(CommonPage):
     def __init__(self) -> None:
         super().__init__(DhcpRecord, DhcpRecordForm)
+
+    def _list_query(self):
+        return DhcpRecord.query.outerjoin(DhcpRecord.owner).with_entities(
+            DhcpRecord.id,
+            DhcpRecord.status,
+            DhcpRecord.ip,
+            DhcpRecord.mac,
+            DhcpRecord.notes,
+            User.summary.label('owner'),
+        )

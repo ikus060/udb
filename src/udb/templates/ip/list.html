@@ -1,2 +1,6 @@
 {% extends 'common/list.html' %}
-{% set columns = [{'name': 'ip', 'data':'ip', 'title':_('IP Address'), 'orderable':True, 'render':'link'}] %}
+{% set columns = [
+{'name': 'ip', 'data':'ip', 'title':_('IP Address'), 'orderable':True, 'render':'summary', 'render_arg':'ip'},
+{'data':'count', 'title':_('Referenced'), 'orderable':True},
+{'data':'notes', 'title':form.notes.label.text, 'orderable':True},
+{'name':'owner', 'data':'owner', 'title':form.owner_id.label.text, 'orderable':True}] %}

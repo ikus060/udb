@@ -47,7 +47,6 @@ class SubnetTest(WebCase):
                 'l2vni': None,
                 'vlan': None,
                 'owner_id': None,
-                'primary_range': '192.168.1.0/24',
             },
         )
 
@@ -195,92 +194,6 @@ class SubnetTest(WebCase):
         self.assertEqual(subnet.messages[-1].changes, {'dnszones': [[], ['bfh.ch']]})
         self.assertEqual(2, len(zone.messages))
         self.assertEqual(zone.messages[-1].changes, {'subnets': [[], ['192.168.1.0/24 (foo)']]})
-
-    def test_depth(self):
-        # Given a database with an existing record
-        vrf = Vrf(name='default')
-        subnet1 = Subnet(ranges=['192.168.1.0/24'], name='foo', vrf=vrf).add()
-        subnet2 = Subnet(ranges=['192.168.1.128/30'], name='bar', vrf=vrf).add().commit()
-        self.assertEqual(1, len(subnet1.messages))
-        self.assertEqual(1, len(subnet2.messages))
-        # When querying depth
-        subnets = Subnet.query_with_depth()
-        # Then the depth matches the subnet indentation
-        self.assertEqual(0, subnets[0].depth)
-        self.assertEqual(1, subnets[1].depth)
-        # Then existing object are also updated
-        self.assertEqual(0, subnet1.depth)
-        self.assertEqual(1, subnet2.depth)
-        # Then not messages get created for depth changes
-        self.assertEqual(1, len(subnet1.messages))
-        self.assertEqual(1, len(subnet2.messages))
-
-    def test_depth_index_ipv4(self):
-        # Given a database with an existing record
-        vrf = Vrf(name='default')
-        subnet1 = Subnet(ranges=['192.168.0.0/16'], name='bar', vrf=vrf).add()
-        subnet2 = Subnet(ranges=['192.168.0.0/24'], name='bar', vrf=vrf).add()
-        subnet3 = Subnet(ranges=['192.168.0.0/26'], name='bar', vrf=vrf).add()
-        subnet4 = Subnet(ranges=['192.168.0.64/26'], name='bar', vrf=vrf).add()
-        subnet5 = Subnet(ranges=['192.168.14.0/24'], name='bar', vrf=vrf).add().commit()
-        # When listing subnet with depth
-        Subnet.query_with_depth()
-        self.session.flush()
-        # Then depth is updated
-        self.assertEqual(0, subnet1.depth)
-        self.assertEqual(1, subnet2.depth)
-        self.assertEqual(2, subnet3.depth)
-        self.assertEqual(2, subnet4.depth)
-        self.assertEqual(1, subnet5.depth)
-
-    def test_depth_index_deleted(self):
-        # Given a database with an existing record
-        vrf = Vrf(name='default')
-        subnet1 = Subnet(ranges=['192.168.0.0/16'], name='bar', vrf=vrf, status=Subnet.STATUS_DELETED).add()
-        subnet2 = Subnet(ranges=['192.168.0.0/24'], name='bar', vrf=vrf).add()
-        subnet3 = Subnet(ranges=['192.168.0.0/26'], name='bar', vrf=vrf).add()
-        subnet4 = Subnet(ranges=['192.168.0.64/26'], name='bar', vrf=vrf).add()
-        subnet5 = Subnet(ranges=['192.168.14.0/24'], name='bar', vrf=vrf).add().commit()
-        # When listing subnet with depth
-        Subnet.query_with_depth()
-        self.session.flush()
-        # Then depth is updated
-        self.assertEqual(0, subnet1.depth)
-        self.assertEqual(0, subnet2.depth)
-        self.assertEqual(1, subnet3.depth)
-        self.assertEqual(1, subnet4.depth)
-        self.assertEqual(0, subnet5.depth)
-
-    def test_depth_index_vrf(self):
-        # Given a database with an existing record
-        vrf = Vrf(name='default')
-        vrf1 = Vrf(name='test1').add()
-        vrf2 = Vrf(name='test2').add()
-        # Default VRF
-        subnet1 = Subnet(ranges=['192.168.1.0/24'], name='foo', vrf=vrf).add()
-        subnet2 = Subnet(ranges=['192.168.1.128/30'], name='bar', vrf=vrf).add()
-        subnet3 = Subnet(ranges=['10.255.0.0/16'], name='tor', vrf=vrf).add()
-        subnet4 = Subnet(ranges=['192.0.2.23'], name='fin', vrf=vrf).add()
-        # VRF2
-        subnet5 = Subnet(ranges=['2a07:6b40::/32'], name='infra', vrf=vrf2).add()
-        subnet6 = Subnet(ranges=['2a07:6b40:0::/48'], name='infra-any-cast', vrf=vrf2).add()
-        subnet7 = Subnet(ranges=['2a07:6b40:0:0::/64'], name='infra-any-cast', vrf=vrf2).add()
-        subnet8 = Subnet(ranges=['2a07:6b40:1::/48'], name='all-anycast-infra-test', vrf=vrf2).add()
-        # VRF1
-        subnet9 = Subnet(ranges=['192.168.1.128/30'], name='bar', vrf=vrf1).add().commit()
-        # When listing subnet with depth
-        Subnet.query_with_depth()
-        self.session.flush()
-        # Then depth is updated
-        self.assertEqual(0, subnet1.depth)
-        self.assertEqual(1, subnet2.depth)
-        self.assertEqual(0, subnet3.depth)
-        self.assertEqual(0, subnet4.depth)
-        self.assertEqual(0, subnet5.depth)
-        self.assertEqual(1, subnet6.depth)
-        self.assertEqual(2, subnet7.depth)
-        self.assertEqual(1, subnet8.depth)
-        self.assertEqual(0, subnet9.depth)
 
     def test_search(self):
         # Given a database with records

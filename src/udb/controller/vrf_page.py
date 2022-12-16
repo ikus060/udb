@@ -58,3 +58,12 @@ class VrfForm(CherryForm):
 class VrfPage(CommonPage):
     def __init__(self):
         super().__init__(Vrf, object_form=VrfForm)
+
+    def _list_query(self):
+        return Vrf.session.query(
+            Vrf.id,
+            Vrf.name,
+            Vrf.notes,
+            Vrf.status,
+            User.summary.label('owner'),
+        ).outerjoin(Vrf.owner)

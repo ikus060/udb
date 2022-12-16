@@ -30,4 +30,12 @@
       <div class="card-body bg-light p-2">{{ form.related_subnets(class='form-control') }}</div>
     </div>
   </div>
+  <div class="mb-2">
+    {{ form.notes.label(class='form-label') }}
+    {{ form.notes(class='form-control') }}
+  </div>
+  <div class="mb-2">
+    {{ form.owner_id.label(class='form-label') }}
+    {{ form.owner_id(class='form-control') }}
+  </div>
 {% endblock %}

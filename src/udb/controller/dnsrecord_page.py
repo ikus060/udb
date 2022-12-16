@@ -165,3 +165,19 @@ class DnsRecordPage(CommonPage):
             raise cherrypy.HTTPRedirect(url_for(reverse_record, 'edit'))
         else:
             raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
+
+    def _list_query(self):
+        """
+        Drop unused fields
+        """
+        # Make use of short label to minimize footprint
+        return DnsRecord.query.outerjoin(DnsRecord.owner).with_entities(
+            DnsRecord.id,
+            DnsRecord.status,
+            DnsRecord.name.label('n'),
+            DnsRecord.type.label('t'),
+            DnsRecord.ttl.label('l'),
+            DnsRecord.value.label('v'),
+            DnsRecord.notes.label('c'),
+            User.summary.label('owner'),
+        )

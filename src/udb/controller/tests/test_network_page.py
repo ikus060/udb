@@ -366,16 +366,6 @@ class DhcpRecordTest(WebCase, CommonTest):
 
 
 class IPTest(WebCase):
-    def test_no_owner_filter(self):
-        # Given a database with records
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
-        obj.commit()
-        # When browsing IP list view
-        self.getPage('/ip/')
-        # Then owner filter doesn't exists
-        self.assertNotInBody('Owned by anyone')
-        self.assertNotInBody('Owned by me')
-
     def test_no_deleted_filter(self):
         # Given a database with records
         obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
@@ -397,14 +387,34 @@ class IPTest(WebCase):
 
     def test_edit_ip(self):
         # Given a database with records
+        user = User.create(username='guest', password='password', role=User.ROLE_GUEST).add()
         obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
         obj.commit()
-        # When browsing IP view
-        ip = Ip.query.first()
-        self.getPage('/ip/%s/edit' % ip.id)
-        # Then no create new exists
+        ip = Ip.query.one()
+        # When editing notes of IP
+        self.getPage(
+            '/ip/%s/edit' % ip.id,
+            method='POST',
+            body={'notes': 'This is a note', 'body': 'comments', 'owner_id': user.id},
+        )
+        self.assertStatus(303)
+        # Then IP Record get updated
+        ip.expire()
+        self.assertEqual('This is a note', ip.notes)
+        self.assertEqual(user.id, ip.owner_id)
+        # A New message is added too.
+        self.assertEqual('comments', ip.messages[-1].body)
+        self.assertEqual({'owner': [None, 'guest'], 'notes': ['', 'This is a note']}, ip.messages[-1].changes)
+
+    def test_get_data_json(self):
+        # Given a database with records
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj.commit()
+        Ip.query.one()
+        # When requesting data.json
+        self.getPage(url_for('ip/data.json'))
+        # Then json data is returned
         self.assertStatus(200)
-        self.assertInBody('02:42:d7:e4:aa:59')
 
 
 class RoleTest(WebCase):

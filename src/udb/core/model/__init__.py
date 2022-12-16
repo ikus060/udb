@@ -17,6 +17,7 @@
 import cherrypy
 from sqlalchemy import event
 
+from . import _group_concat  # noqa
 from ._dhcprecord import DhcpRecord  # noqa
 from ._dnsrecord import DnsRecord  # noqa
 from ._dnszone import DnsZone  # noqa
@@ -42,17 +43,19 @@ def db_after_create(target, connection, **kw):
         table_name = column.table.fullname
         column_name = column.name
         if 'SQLite' in connection.engine.dialect.__class__.__name__:
-            sql = "SELECT COUNT(*) FROM pragma_table_info('%s') WHERE LOWER(name)=LOWER('%s')" % (
-                table_name,
-                column_name,
-            )
+            sql = "SELECT %s FROM %s" % (column_name, table_name)
+            try:
+                connection.engine.execute(sql).first()
+                return True
+            except Exception:
+                return False
         else:
             sql = "SELECT COUNT(*) FROM information_schema.columns WHERE table_name='%s' and column_name='%s'" % (
                 table_name,
                 column_name,
             )
-        data = connection.engine.execute(sql).first()
-        return data[0] >= 1
+            data = connection.engine.execute(sql).first()
+            return data[0] >= 1
 
     def add_column(column):
         if exists(column):

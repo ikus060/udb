@@ -157,13 +157,6 @@ class Message(JsonMixin, SearchableMixing, Base):
             return _('nobody')
         return str(self.author)
 
-    def to_json(self):
-        data = super().to_json()
-        changes = self.changes
-        if changes:
-            data['changes'] = changes
-        return data
-
 
 class MessageMixin:
     """

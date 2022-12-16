@@ -19,7 +19,7 @@ import cherrypy
 import validators
 from sqlalchemy import Column, ForeignKey, Index, Table, and_, func, select
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import column_property, relationship, validates
+from sqlalchemy.orm import column_property, declared_attr, relationship, validates
 from sqlalchemy.types import String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
@@ -52,17 +52,18 @@ class DnsZone(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin,
         backref="dnszones",
         active_history=True,
         sync_backref=True,
+        lazy=True,
     )
 
-    @classmethod
-    def __declare_last__(cls):
-        cls.subnets_count = column_property(
+    @declared_attr
+    def subnets_count(cls):
+        return column_property(
             select(func.count(Subnet.id))
             .where(
                 and_(
                     Subnet.id == dnszone_subnet.c.subnet_id,
                     Subnet.status != Subnet.STATUS_DELETED,
-                    dnszone_subnet.c.dnszone_id == DnsZone.id,
+                    dnszone_subnet.c.dnszone_id == cls.id,
                 )
             )
             .scalar_subquery(),
