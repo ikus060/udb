@@ -11,7 +11,7 @@ stages:
 .tox: &tox
   before_script:
     - pip install tox
-  image: python:3.9
+  image: python:3.11
   script:
     - tox -e ${TOXENV:-$CI_JOB_NAME}
   stage: test

@@ -20,3 +20,4 @@ include README.md
 include MANIFEST.in
 
 recursive-include src/udb/templates *
+recursive-include src/udb/controller/static *.svg *.jpg *.css *.js *.png
