@@ -31,7 +31,6 @@ from ._common import CommonMixin
 from ._dhcprecord import DhcpRecord
 from ._dnsrecord import DnsRecord
 from ._follower import FollowerMixin
-from ._ip_mixin import HasIpMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
 from ._subnet import Subnet, SubnetRange
@@ -108,7 +107,7 @@ def _update_ip(session, flush_context, instances):
     """
     # First pass to make sure IP Record are unique
     for instance in itertools.chain(session.new, session.dirty):
-        if isinstance(instance, HasIpMixin):
+        if hasattr(instance, '_ip_column_name'):
             # Get IP Value
             try:
                 value = getattr(instance, instance._ip_column_name)

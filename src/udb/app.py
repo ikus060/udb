@@ -41,6 +41,7 @@ from udb.controller.dnszone_page import DnsZonePage
 from udb.controller.ip_page import IpPage
 from udb.controller.load_page import LoadPage
 from udb.controller.login_page import LoginPage
+from udb.controller.mac_page import MacPage
 from udb.controller.notifications_page import NotificationsPage
 from udb.controller.profile_page import ProfilePage
 from udb.controller.search_page import SearchPage
@@ -219,6 +220,7 @@ class Root(object):
         self.dhcprecord = DhcpRecordPage()
         self.ip = IpPage()
         self.user = UserPage()
+        self.mac = MacPage()
         # Api
         self.api.dnszone = CommonApi(DnsZone)
         self.api.subnet = CommonApi(Subnet)

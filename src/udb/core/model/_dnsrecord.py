@@ -32,7 +32,6 @@ from ._cidr import InetType
 from ._common import CommonMixin
 from ._dnszone import DnsZone
 from ._follower import FollowerMixin
-from ._ip_mixin import HasIpMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
 from ._search_vector import SearchableMixing
@@ -125,7 +124,7 @@ def validate_domain(value):
     return NAME_PATTERN.match(value)
 
 
-class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, HasIpMixin, Base):
+class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
     _ip_column_name = 'ip_value'
 
     TYPES = [
@@ -446,3 +445,10 @@ def before_insert(mapper, connection, instance):
 
 
 CheckConstraint(DnsRecord.type.in_(DnsRecord.TYPES), name="dnsrecord_types")
+
+
+@event.listens_for(DnsRecord.ip_value, 'set')
+def dns_reload_ip(self, new_value, old_value, initiator):
+    # When the ip address get updated on a record, make sure to load the relatd Ip object to update the history.
+    if new_value != old_value:
+        self._ip

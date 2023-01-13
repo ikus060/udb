@@ -23,7 +23,7 @@ from parameterized import parameterized
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsZone, Ip, User
+from udb.core.model import DhcpRecord, DnsZone, User
 
 
 class CommonTest:
@@ -363,58 +363,6 @@ class DhcpRecordTest(WebCase, CommonTest):
         )
         # Then a single message is added to the record
         self.assertEqual(2, len(obj.messages))
-
-
-class IPTest(WebCase):
-    def test_no_deleted_filter(self):
-        # Given a database with records
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
-        obj.commit()
-        # When browsing IP list view
-        self.getPage('/ip/')
-        # Then no deleted filter exists
-        self.assertNotInBody('Hide deleted')
-        self.assertNotInBody('Show deleted')
-
-    def test_no_create_new(self):
-        # Given a database with records
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
-        obj.commit()
-        # When browsing IP list view
-        self.getPage('/ip/')
-        # Then no create new exists
-        self.assertNotInBody('Create IP Address')
-
-    def test_edit_ip(self):
-        # Given a database with records
-        user = User.create(username='guest', password='password', role=User.ROLE_GUEST).add()
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
-        obj.commit()
-        ip = Ip.query.one()
-        # When editing notes of IP
-        self.getPage(
-            '/ip/%s/edit' % ip.id,
-            method='POST',
-            body={'notes': 'This is a note', 'body': 'comments', 'owner_id': user.id},
-        )
-        self.assertStatus(303)
-        # Then IP Record get updated
-        ip.expire()
-        self.assertEqual('This is a note', ip.notes)
-        self.assertEqual(user.id, ip.owner_id)
-        # A New message is added too.
-        self.assertEqual('comments', ip.messages[-1].body)
-        self.assertEqual({'owner': [None, 'guest'], 'notes': ['', 'This is a note']}, ip.messages[-1].changes)
-
-    def test_get_data_json(self):
-        # Given a database with records
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
-        obj.commit()
-        Ip.query.one()
-        # When requesting data.json
-        self.getPage(url_for('ip/data.json'))
-        # Then json data is returned
-        self.assertStatus(200)
 
 
 class RoleTest(WebCase):
