@@ -14,7 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import cherrypy
 from sqlalchemy import func
 from sqlalchemy.orm import defer, joinedload, undefer
 from wtforms.fields import FieldList, FormField, IntegerField, StringField
@@ -22,7 +21,7 @@ from wtforms.fields.simple import TextAreaField
 from wtforms.form import Form
 from wtforms.validators import DataRequired, Length
 
-from udb.core.model import DnsZone, Ip, User
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, User
 from udb.tools.i18n import gettext as _
 
 from .common_page import CommonPage
@@ -83,7 +82,7 @@ class IpForm(CherryForm):
         _('Notes'),
         default='',
         validators=[Length(max=256)],
-        render_kw={"placeholder": _("Enter details information about this DNS Zone")},
+        render_kw={"placeholder": _("Enter details information about this IP Address")},
     )
 
     owner_id = SelectObjectField(
@@ -95,7 +94,6 @@ class IpForm(CherryForm):
             undefer('fullname'),
             undefer('username'),
         ),
-        default=lambda: cherrypy.serving.request.currentuser.id,
     )
 
     def populate_obj(self, obj):
@@ -132,7 +130,7 @@ class IpPage(CommonPage):
                 Ip.id,
                 Ip.ip,
                 Ip.notes,
-                func.count(Ip.id).label('count'),
+                (func.count(DhcpRecord.id) + func.count(DnsRecord.id)).label('count'),
                 func.min(User.summary).label('owner'),
             )
         )

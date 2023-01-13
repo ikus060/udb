@@ -29,13 +29,15 @@
     {# Subnet #}
     {{ dashboard_card('subnet', subnet_count, 'info') }}
     {# IP #}
-    {{ dashboard_card('ip', ip_count, 'success') }}
+    {{ dashboard_card('ip', ip_count, 'primary') }}
     {# DNS Zones #}
-    {{ dashboard_card('dnszone', dnszone_count, 'warning') }}
+    {{ dashboard_card('dnszone', dnszone_count, 'info') }}
     {# DNS Record #}
-    {{ dashboard_card('dnsrecord', dnsrecord_count, 'info') }}
+    {{ dashboard_card('dnsrecord', dnsrecord_count, 'primary') }}
     {# DHCP Reservation #}
-    {{ dashboard_card('dhcprecord', dhcprecord_count, 'success') }}
+    {{ dashboard_card('dhcprecord', dhcprecord_count, 'info') }}
+    {# DHCP Reservation #}
+    {{ dashboard_card('mac', mac_count, 'primary') }}
   </div>
   <div class="row">
     {# Activity list #}

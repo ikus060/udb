@@ -7,4 +7,11 @@
                class="btn btn-outline-primary text-nowrap w-100">{% trans %}Show Related IP{% endtrans %}</a>
         </div>
     {% endif %}
+    {# Related MAC #}
+    {% if obj._mac %}
+        <div class="col mb-2">
+            <a href="{{ url_for(obj._mac, 'edit')}}"
+               class="btn btn-outline-primary text-nowrap w-100">{% trans %}Show Related MAC{% endtrans %}</a>
+        </div>
+    {% endif %}
 {% endblock %}

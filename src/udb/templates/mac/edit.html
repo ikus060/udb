@@ -1,0 +1,23 @@
+{% extends 'common/edit.html' %}
+{% block edit_form %}
+  <div class="mb-2">
+    {{ form.related_dhcp_records.label(class='form-label') }}
+    <div class="card">
+      <div class="card-body bg-light p-2">
+        {{ form.related_dhcp_records(class='form-control') }}
+        <div class="text-end">
+          <a class="btn btn-sm btn-primary"
+             href="{{ url_for('dhcprecord', 'new') }}">{% trans %}Create new{% endtrans %}</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mb-2">
+    {{ form.notes.label(class='form-label') }}
+    {{ form.notes(class='form-control') }}
+  </div>
+  <div class="mb-2">
+    {{ form.owner_id.label(class='form-label') }}
+    {{ form.owner_id(class='form-control') }}
+  </div>
+{% endblock %}

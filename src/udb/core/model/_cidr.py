@@ -19,8 +19,6 @@ import ipaddress
 from sqlalchemy import String, TypeDecorator, event, func
 from sqlalchemy.dialects.postgresql import CIDR, INET
 from sqlalchemy.engine import Engine
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql.functions import GenericFunction
 
 
 def _bytes_to_ip_network(value):
@@ -120,41 +118,6 @@ def _register_sqlite_cidr_functions(dbapi_con, unused):
         dbapi_con.create_function("text", 1, _sqlite_text, deterministic=True)
 
 
-class subnet_of(GenericFunction):
-    name = "subnet_of"
-    inherit_cache = True
-
-
-@compiles(subnet_of, "sqlite")
-def _render_subnet_of_sqlite(element, compiler, **kw):
-    """
-    On SQLite, make use of inet() and broadcast()
-    """
-    left, right = element.clauses
-    return "%s IS NOT NULL AND %s IS NOT NULL AND %s >= %s AND broadcast(%s) < broadcast(%s)" % (
-        compiler.process(left, **kw),
-        compiler.process(right, **kw),
-        compiler.process(left, **kw),
-        compiler.process(right, **kw),
-        compiler.process(left, **kw),
-        compiler.process(right, **kw),
-    )
-
-
-@compiles(subnet_of, "postgresql")
-def _render_subnet_of_pg(element, compiler, **kw):
-    """
-    On Postgresql, register compiler to replace funcation calls by operator `<<`.
-    """
-    left, right = element.clauses
-
-    return "%s %s %s" % (
-        compiler.process(left, **kw),
-        "<<",
-        compiler.process(right, **kw),
-    )
-
-
 class CidrType(TypeDecorator):
     """
     Type decorator to store CIDR 192.168.0.0/24 in Postgresql database.
@@ -187,12 +150,6 @@ class CidrType(TypeDecorator):
         return _bytes_to_ip_network(value).compressed
 
     class comparator_factory(String.Comparator):
-        def subnet_of(self, other):
-            return func.subnet_of(self, other).as_comparison(1, 2)
-
-        def supernet_of(self, other):
-            return func.subnet_of(other, self).as_comparison(1, 2)
-
         def host(self):
             return func.host(self)
 
@@ -241,12 +198,6 @@ class InetType(TypeDecorator):
         return _bytes_to_ip_network(value).network_address.compressed
 
     class comparator_factory(String.Comparator):
-        def subnet_of(self, other):
-            return func.subnet_of(self, other).as_comparison(1, 2)
-
-        def supernet_of(self, other):
-            return func.subnet_of(other, self).as_comparison(1, 2)
-
         def host(self):
             return func.host(self)
 

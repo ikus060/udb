@@ -19,7 +19,7 @@ import ipaddress
 
 import cherrypy
 import validators
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import Column, ForeignKey, event
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.types import String
@@ -30,7 +30,6 @@ from udb.tools.i18n import gettext_lazy as _
 from ._cidr import InetType
 from ._common import CommonMixin
 from ._follower import FollowerMixin
-from ._ip_mixin import HasIpMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
 from ._search_vector import SearchableMixing
@@ -41,10 +40,14 @@ Base = cherrypy.tools.db.get_base()
 Session = cherrypy.tools.db.get_session()
 
 
-class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, HasIpMixin, Base):
+class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
+    _ip_column_name = 'ip'
+    _mac_column_name = 'mac'
+
     ip = Column(InetType, ForeignKey("ip.ip"), nullable=False)
-    mac = Column(String, nullable=False, unique=True)
     _ip = relationship("Ip", back_populates='related_dhcp_records', lazy=True)
+    mac = Column(String, ForeignKey("mac.mac"), nullable=False, unique=True)
+    _mac = relationship("Mac", backref='related_dhcp_records', lazy=True)
 
     @classmethod
     def _search_string(cls):
@@ -73,3 +76,17 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
     @summary.expression
     def summary(self):
         return self.ip.host() + " (" + self.mac + ")"
+
+
+@event.listens_for(DhcpRecord.ip, 'set')
+def dhcp_reload_ip(self, new_value, old_value, initiator):
+    # When the ip address get updated on a record, make sure to load the relatd Ip object to update the history.
+    if new_value != old_value:
+        self._ip
+
+
+@event.listens_for(DhcpRecord.mac, 'set')
+def dns_reload_mac(self, new_value, old_value, initiator):
+    # When the ip address get updated on a record, make sure to load the relatd Ip object to update the history.
+    if new_value != old_value:
+        self._mac

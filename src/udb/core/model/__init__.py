@@ -23,6 +23,7 @@ from ._dnsrecord import DnsRecord  # noqa
 from ._dnszone import DnsZone  # noqa
 from ._follower import Follower  # noqa
 from ._ip import Ip  # noqa
+from ._mac import Mac  # noqa
 from ._message import Message  # noqa
 from ._subnet import Subnet, SubnetRange  # noqa
 from ._user import User  # noqa
