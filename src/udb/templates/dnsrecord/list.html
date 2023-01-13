@@ -1,8 +1,8 @@
 {% extends 'common/list.html' %}
 {% set columns = [
-{'data':'name', 'title':form.name.label.text, 'orderable':True, 'render':'summary'},
-{'data':'type', 'title':form.type.label.text, 'orderable':True},
-{'data':'ttl', 'title':form.ttl.label.text, 'orderable':True},
-{'data':'value', 'title':form.value.label.text, 'orderable':True},
-{'data':'notes', 'title':form.notes.label.text, 'orderable':True},
-{'name':'owner_id', 'data':'owner_id', 'title':form.owner_id.label.text, 'orderable':True, 'render':'owner'}] %}
+{'data':'n', 'title':form.name.label.text, 'orderable':True, 'render':'summary', 'render_arg':'dnsrecord'},
+{'data':'t', 'title':form.type.label.text, 'orderable':True},
+{'data':'l', 'title':form.ttl.label.text, 'orderable':True},
+{'data':'v', 'title':form.value.label.text, 'orderable':True},
+{'data':'c', 'title':form.notes.label.text, 'orderable':True},
+{'name':'owner', 'data':'owner', 'title':form.owner_id.label.text, 'orderable':True}] %}

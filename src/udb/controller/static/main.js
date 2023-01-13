@@ -163,14 +163,6 @@ $.fn.dataTable.render.action = function () {
     };
 }
 
-$.fn.dataTable.render.array = function () {
-    return {
-        display: function (data, type, row, meta) {
-            return data.join(', ');
-        },
-    };
-}
-
 $.fn.dataTable.render.choices = function (choices) {
     return {
         display: function (data, type, row, meta) {
@@ -180,23 +172,6 @@ $.fn.dataTable.render.choices = function (choices) {
                 }
             }
             return data;
-        },
-    };
-}
-$.fn.dataTable.render.datetime = function () {
-    return {
-        display: function (data, type, row, meta) {
-            return toDate(data).toLocaleString();
-        },
-        sort: function (data, type, row, meta) {
-            return toDate(data).getTime();
-        }
-    };
-}
-$.fn.dataTable.render.link = function () {
-    return {
-        display: function (data, type, row, meta) {
-            return '<a href="' + encodeURI(row.url) + '">' + safe(data) + '</a>'
         },
     };
 }
@@ -260,17 +235,7 @@ $.fn.dataTable.render.primary_range = function () {
         },
     };
 }
-$.fn.dataTable.render.secondary_range = function () {
-    return {
-        display: function (data, type, row, meta) {
-            return row.ranges.slice(1).join(', ');
-        },
-        filter: function (data, type, row, meta) {
-            return row.ranges.slice(1).join(' ');
-        }
-    };
-}
-$.fn.dataTable.render.summary = function () {
+$.fn.dataTable.render.summary = function (model_name=null) {
     let icon_table = {
         'dnszone': 'bi-collection',
         'subnet': 'bi-diagram-3-fill',
@@ -283,8 +248,9 @@ $.fn.dataTable.render.summary = function () {
 
     return {
         display: function (data, type, row, meta) {
+            model_name = model_name || row.model_name;
             let html = '<a href="' + encodeURI(row.url) + '">' +
-                '<i class="bi ' + icon_table[row.model_name] + ' me-1" aria-hidden="true"></i>' +
+                '<i class="bi ' + icon_table[model_name] + ' me-1" aria-hidden="true"></i>' +
                 '<strong>' + safe(data) + '</strong>' +
                 '</a>';
             if (row.status == 'disabled') {
@@ -296,24 +262,6 @@ $.fn.dataTable.render.summary = function () {
         },
         sort: function (data, type, row, meta) {
             return data;
-        }
-    };
-}
-$.fn.dataTable.render.owner = function () {
-    return {
-        display: function (data, type, row, meta) {
-            if (data) {
-                return safe(row.owner.fullname || row.owner.username)
-            } else {
-                return '-';
-            }
-        },
-        filter: function (data, type, row, meta) {
-            if (data) {
-                return row.owner.username;
-            } else {
-                return null;
-            }
         }
     };
 }
@@ -367,6 +315,7 @@ jQuery(function () {
             },
             processing: true,
             stateSave: true,
+            deferRender: true,
         });
         // Update each buttons status
         dt.on('search.dt', function (e, settings) {

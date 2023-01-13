@@ -373,3 +373,18 @@ class DnsRecordTest(WebCase):
         # Then the PTR Record is return
         self.assertEqual(a_record, prt_record.get_reverse_dns_record())
         self.assertEqual(prt_record, a_record.get_reverse_dns_record())
+
+    @parameterized.expand(
+        [
+            ('_acme-challenge.example.com', 'example.com._acme.example.info', 'CNAME'),
+            ('jlco-tpm1.bfh.ch_.example.com', 'example.info', 'CNAME'),
+        ]
+    )
+    def test_add_cname_with_underscore(self, name, value, type):
+        # Given a database with a zone
+        DnsZone(name='example.com').add()
+        DnsZone(name='example.info').add().flush()
+        # When adding a CNAME with underscore
+        DnsRecord(name=name, value=value, type=type).add().flush()
+        # Then record get added
+        DnsRecord.query.one()

@@ -83,7 +83,7 @@ class CommonPage(object):
         """
         Get object with the given key or raise a 404 error.
         """
-        obj = self.model.query.filter_by(**{self.primary_key: key}).first()
+        obj = self._get_query(key).first()
         if not obj:
             raise cherrypy.HTTPError(404)
         return obj
@@ -96,11 +96,17 @@ class CommonPage(object):
         if user is None or not user.has_role(role):
             raise cherrypy.HTTPError(403, 'Insufficient privileges')
 
-    def _query(self):
+    def _list_query(self):
         """
         Build a query with supported feature of the current object class.
         """
-        return self.model.query
+        raise NotImplementedError('subclass must implement this function')
+
+    def _get_query(self, key):
+        """
+        Build a query with supported feature of the current object class.
+        """
+        return self.model.query.filter_by(**{self.primary_key: key})
 
     def _key(self, obj):
         """
@@ -108,15 +114,10 @@ class CommonPage(object):
         """
         return getattr(obj, self.primary_key)
 
-    def _to_json(self, obj):
-        data = obj.to_json()
-        data['url'] = url_for(obj, 'edit')
-        if self.has_owner:
-            if obj.owner:
-                data['owner'] = obj.owner.to_json()
-                data['owner']['url'] = url_for(obj.owner, 'edit')
-            else:
-                data['owner'] = None
+    def _to_dict(self, data):
+        if type(data) != dict:
+            data = dict(data)
+        data['url'] = url_for(self.model, data['id'], 'edit', relative='server')
         return data
 
     @cherrypy.expose
@@ -139,8 +140,9 @@ class CommonPage(object):
     @cherrypy.tools.json_out()
     def data_json(self, **kwargs):
         self._verify_role(self.list_role)
-        obj_list = self._query()
-        return {'data': [self._to_json(obj) for obj in obj_list]}
+        obj_list = self._list_query()
+        data = {'data': [self._to_dict(obj) for obj in obj_list]}
+        return data
 
     @cherrypy.expose
     @cherrypy.tools.json_out()

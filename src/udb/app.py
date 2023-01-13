@@ -18,6 +18,7 @@
 import cherrypy
 import jinja2
 import pkg_resources
+import ujson
 
 import udb.core.login  # noqa
 import udb.core.notification  # noqa
@@ -32,7 +33,7 @@ import udb.tools.ratelimit
 import udb.tools.secure_headers  # noqa: import cherrypy.tools.secure_headers
 from udb.controller import lastupdated, template_processor, url_for
 from udb.controller.api import Api
-from udb.controller.common_page import CommonApi, CommonPage
+from udb.controller.common_page import CommonApi
 from udb.controller.dashboard_page import DashboardPage
 from udb.controller.dhcprecord_page import DhcpRecordPage
 from udb.controller.dnsrecord_page import DnsRecordPage
@@ -45,7 +46,7 @@ from udb.controller.profile_page import ProfilePage
 from udb.controller.search_page import SearchPage
 from udb.controller.static import Static
 from udb.controller.subnet_page import SubnetPage
-from udb.controller.user_page import UserForm
+from udb.controller.user_page import UserPage
 from udb.controller.vrf_page import VrfPage
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User, Vrf
 from udb.tools.i18n import gettext, ngettext
@@ -92,9 +93,7 @@ def _error_page(**kwargs):
     if mtype == 'text/plain':
         return kwargs.get('message')
     elif mtype == 'application/json':
-        import json
-
-        return json.dumps({'message': kwargs.get('message', ''), 'status': kwargs.get('status', '')})
+        return ujson.dumps({'message': kwargs.get('message', ''), 'status': kwargs.get('status', '')})
     # Try to build a nice error page.
     try:
         env = cherrypy.request.config.get('tools.jinja2.env')
@@ -108,6 +107,14 @@ def _error_page(**kwargs):
     except Exception:
         # If failing, send the raw error message.
         return kwargs.get('message')
+
+
+def json_handler(*args, **kwargs):
+    """
+    Custom Json Handler to produce a more compact Json.
+    """
+    value = cherrypy.serving.request._json_inner_handler(*args, **kwargs)
+    return ujson.dumps(value).encode('utf-8')
 
 
 @cherrypy.tools.db()
@@ -152,6 +159,8 @@ class Root(object):
                 # Configure jinja2 templating engine
                 'tools.jinja2.env': env,
                 'tools.jinja2.extra_processor': template_processor,
+                # Configure json_handler
+                'tools.json_out.handler': json_handler,
                 # Configure LDAP plugin
                 'ldap.uri': cfg.ldap_uri,
                 'ldap.base_dn': cfg.ldap_base_dn,
@@ -209,7 +218,7 @@ class Root(object):
         self.dnsrecord = DnsRecordPage()
         self.dhcprecord = DhcpRecordPage()
         self.ip = IpPage()
-        self.user = CommonPage(User, UserForm, list_role=User.ROLE_ADMIN, edit_role=User.ROLE_ADMIN)
+        self.user = UserPage()
         # Api
         self.api.dnszone = CommonApi(DnsZone)
         self.api.subnet = CommonApi(Subnet)

@@ -15,21 +15,42 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import ipaddress
+
 import cherrypy
+from sqlalchemy import case, func
 from sqlalchemy.orm import defer, undefer
 from wtforms.fields import Field, IntegerField, StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length, Optional, StopValidation, ValidationError
 from wtforms.widgets import TextInput
 
-from udb.core.model import DnsZone, Subnet, User, Vrf
+from udb.core.model import DnsZone, Subnet, SubnetRange, User, Vrf
 from udb.tools.i18n import gettext as _
 
-from . import url_for
 from .common_page import CommonPage
 from .form import CherryForm, SelectMultiCheckbox, SelectMultipleObjectField, SelectObjectField, StringFieldSetWidget
 
 unset_value = "UNSET_DATA"
+
+
+def _subnet_of(range1, range2):
+    if not range1 or not range2:
+        return False
+    range1 = ipaddress.ip_network(range1)
+    range2 = ipaddress.ip_network(range2)
+    return range1.version == range2.version and range1.subnet_of(range2)
+
+
+def _sort_ranges(ranges):
+    """
+    Sort the ranges fields to place ipv6 first, then ipv4.
+    """
+    if not ranges:
+        return None
+    ranges = [ipaddress.ip_network(r) for r in ranges]
+    ranges = sorted(ranges, key=lambda r: (-r.version, r.network_address.packed))
+    return [r.compressed for r in ranges]
 
 
 class StringFieldSet(Field):
@@ -70,12 +91,12 @@ class StringFieldSet(Field):
     def populate_obj(self, obj, name):
         proxy = getattr(obj, name)
         if hasattr(proxy, 'append'):
-            for value in self.data:
-                if value not in proxy:
-                    proxy.append(value)
             for value in list(proxy):
                 if value not in self.data:
                     proxy.remove(value)
+            for value in self.data:
+                if value not in proxy:
+                    proxy.append(value)
         else:
             setattr(obj, name, self.data)
 
@@ -84,12 +105,6 @@ class SubnetForm(CherryForm):
 
     object_cls = Subnet
     name = StringField(_('Name'), validators=[Length(max=256)], render_kw={"placeholder": _("Enter a description")})
-    notes = TextAreaField(
-        _('Notes'),
-        default='',
-        validators=[Length(max=256)],
-        render_kw={"placeholder": _("Enter details information about this subnet")},
-    )
     ranges = StringFieldSet(
         label=_('IP Ranges'),
         validators=[Length(max=256)],
@@ -119,6 +134,12 @@ class SubnetForm(CherryForm):
         ),
         widget=SelectMultiCheckbox(),
     )
+    notes = TextAreaField(
+        _('Notes'),
+        default='',
+        validators=[Length(max=256)],
+        render_kw={"placeholder": _("Enter details information about this subnet")},
+    )
     owner_id = SelectObjectField(
         _('Owner'),
         object_cls=User,
@@ -136,16 +157,61 @@ class SubnetPage(CommonPage):
     def __init__(self):
         super().__init__(Subnet, object_form=SubnetForm)
 
-    def _query(self):
-        return Subnet.query_with_depth()
-
-    def _to_json(self, subnet):
-        data = subnet.to_json()
-        data.update(
-            {
-                'vrf_name': subnet.vrf.name,
-                'dnszones': [obj.name for obj in subnet.dnszones],
-                'url': url_for(subnet, 'edit'),
-            }
+    def _list_query(self):
+        query = (
+            Subnet.query.join(Subnet.subnet_ranges)
+            .outerjoin(Subnet.dnszones)
+            .join(Subnet.vrf)
+            .group_by(Subnet.id, SubnetRange.vrf_id, Vrf.name)
+            .with_entities(
+                Subnet.id,
+                Subnet.name,
+                Subnet.status,
+                SubnetRange.vrf_id,
+                Vrf.name.label('vrf_name'),
+                Subnet.l3vni,
+                Subnet.l2vni,
+                Subnet.vlan,
+                func.group_concat(SubnetRange.range.text().distinct()).label('ranges'),
+                func.group_concat(DnsZone.name.distinct()).label('dnszone_names'),
+            )
+            .order_by(
+                SubnetRange.vrf_id,
+                func.min(case((SubnetRange.version == 6, SubnetRange.range), else_=None)),
+                func.min(case((SubnetRange.version == 4, SubnetRange.range), else_=None)),
+            )
         )
-        return data
+        rows = query.all()
+
+        # Update depth & orer
+        order = 0
+        prev_row = []
+        for i in range(0, len(rows)):
+            row = rows[i]
+            # SQLite and Postgresql behave differently when ordering, so let re-order the subnet range in python.
+            ranges = _sort_ranges(row.ranges.split(','))
+            primary_range = ranges[0] if ranges else None
+            secondary_ranges = ', '.join(ranges[1:]) if ranges else None
+            # Replace single comma
+            dnszone_names = ', '.join(row.dnszone_names.split(',')) if row.dnszone_names else None
+            # Re-create a new row
+            order = order + 1
+            rows[i] = dict(
+                rows[i],
+                order=order,
+                primary_range=primary_range,
+                secondary_ranges=secondary_ranges,
+                dnszone_names=dnszone_names,
+            )
+            # Drop ranges as it's not needed for display
+            del rows[i]['ranges']
+            # Compute depth
+            while prev_row and (
+                row['vrf_id'] != prev_row[-1]['vrf_id'] or not _subnet_of(primary_range, prev_row[-1]['primary_range'])
+            ):
+                prev_row.pop()
+            rows[i]['depth'] = len(prev_row)
+            # Keep reference of previous row for depth calculation
+            if row.status != Subnet.STATUS_DELETED:
+                prev_row.append(rows[i])
+        return rows

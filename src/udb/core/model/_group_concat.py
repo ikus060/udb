@@ -14,28 +14,18 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.functions import GenericFunction
 
-from sqlalchemy.exc import InvalidRequestError
+
+class group_concat(GenericFunction):
+    name = "group_concat"
+    inherit_cache = True
 
 
-class JsonMixin:
-    def to_json(self):
-        def _value(value):
-            if hasattr(value, 'isoformat'):  # datetime
-                return value.isoformat()
-            if isinstance(value, list):  # List
-                return [_value(i) for i in value]
-            return value
-
-        data = dict()
-        for c in self.__table__.columns:
-            if not c.name.startswith('_'):
-                try:
-                    data[c.name] = _value(getattr(self, c.name))
-                except InvalidRequestError:
-                    pass
-        return data
-
-    def from_json(self, data):
-        for k, v in data.items():
-            setattr(self, k, v)
+@compiles(group_concat, "postgresql")
+def _render_group_concat_pg(element, compiler, **kw):
+    """
+    On Postgresql, `group_concat` should be `string_agg`
+    """
+    return "string_agg(%s, ',')" % (compiler.process(element.clauses, **kw),)

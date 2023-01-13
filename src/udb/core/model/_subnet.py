@@ -18,16 +18,16 @@
 import ipaddress
 
 import cherrypy
-from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint, Index, event
+from sqlalchemy import Column, Computed, ForeignKey, ForeignKeyConstraint, Index, event, func
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import defer, joinedload, raiseload, relationship, undefer, validates
+from sqlalchemy.orm import deferred, relationship, validates
 from sqlalchemy.types import Integer, String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
 
-from ._cidr import CidrType
+from ._cidr import CidrType, InetType
 from ._common import CommonMixin
 from ._follower import FollowerMixin
 from ._json import JsonMixin
@@ -48,6 +48,11 @@ class SubnetRange(Base):
     __table_args__ = (
         ForeignKeyConstraint(["subnet_id", "vrf_id"], ["subnet.id", "subnet.vrf_id"], onupdate="CASCADE"),
     )
+    version = deferred(Column(Integer, Computed(range.family(), persisted=True), index=True))
+    start_ip = deferred(Column(InetType, Computed(func.inet(range.host()), persisted=True), index=True))
+    end_ip = deferred(
+        Column(InetType, Computed(func.inet(func.host(func.broadcast(range), persisted=True))), index=True)
+    )
 
     def __init__(self, range=None):
         """
@@ -65,13 +70,6 @@ class SubnetRange(Base):
             # Repport error on 'ranges' instead of 'range'
             raise ValueError('ranges', "`%s` " % value + _('does not appear to be a valid IPv6 or IPv4 network'))
 
-    @property
-    def version(self):
-        return ipaddress.ip_network(self.range).version
-
-    def subnet_of(self, other):
-        return ipaddress.ip_network(self.range).subnet_of(ipaddress.ip_network(other.range))
-
     def __str__(self) -> str:
         return self.range
 
@@ -80,7 +78,7 @@ class SubnetRange(Base):
 Index('subnetrange_index', SubnetRange.vrf_id, SubnetRange.range, unique=True)
 
 # Index for cidr sorting
-Index('subnetrange_order', SubnetRange.vrf_id, SubnetRange.range.family().desc(), SubnetRange.range.sortable())
+Index('subnetrange_order', SubnetRange.vrf_id, SubnetRange.version.desc(), SubnetRange.range)
 
 
 class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
@@ -94,7 +92,7 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
     subnet_ranges = relationship(
         "SubnetRange",
         lazy=False,
-        order_by=(SubnetRange.vrf_id, SubnetRange.range.family().desc(), SubnetRange.range.sortable()),
+        order_by=(SubnetRange.vrf_id, SubnetRange.version.desc(), SubnetRange.range),
         cascade="all, delete-orphan",
     )
     ranges = association_proxy("subnet_ranges", "range")
@@ -114,58 +112,9 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
     def summary(self):
         return self.name
 
-    @property
-    def primary_range(self):
-        return self.ranges and self.ranges[0]
-
-    @classmethod
-    def query_with_depth(cls):
-        from ._dnszone import DnsZone
-
-        query = Subnet.query.options(
-            joinedload(Subnet.subnet_ranges),
-            joinedload(Subnet.dnszones).options(
-                defer('*'),
-                undefer(DnsZone.id),
-                undefer(DnsZone.name),
-                raiseload(DnsZone.owner),
-            ),
-            joinedload(Subnet.vrf).options(
-                defer('*'),
-                undefer(Vrf.id),
-                undefer(Vrf.name),
-                raiseload(Vrf.owner),
-            ),
-        )
-        subnets = query.all()
-
-        # Update depth
-        order = 0
-        prev_subnet = []
-        for subnet in subnets:
-            while prev_subnet and (
-                subnet.vrf_id != prev_subnet[-1].vrf_id
-                or not subnet.subnet_ranges
-                or subnet.subnet_ranges[0].version != prev_subnet[-1].subnet_ranges[0].version
-                or not subnet.subnet_ranges[0].subnet_of(prev_subnet[-1].subnet_ranges[0])
-            ):
-                prev_subnet.pop()
-            order = order + 1
-            subnet.order = order
-            subnet.depth = len(prev_subnet)
-            if subnet.status != Subnet.STATUS_DELETED:
-                prev_subnet.append(subnet)
-        return subnets
-
     def to_json(self):
         data = super().to_json()
-        if self.order is not None:
-            data['order'] = self.order
-        if self.depth is not None:
-            data['depth'] = self.depth
         data['ranges'] = list(self.ranges)
-        # Explicitly add primary_range
-        data['primary_range'] = self.ranges[0] if self.ranges else None
         return data
 
 

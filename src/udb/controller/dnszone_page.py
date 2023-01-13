@@ -78,10 +78,7 @@ class DnsZonePage(CommonPage):
     def __init__(self):
         super().__init__(DnsZone, object_form=DnsZoneForm)
 
-    def _query(self):
-        return DnsZone.query.options(undefer(DnsZone.subnets_count))
-
-    def _to_json(self, obj):
-        data = super()._to_json(obj)
-        data['subnets_count'] = obj.subnets_count
-        return data
+    def _list_query(self):
+        return DnsZone.query.outerjoin(DnsZone.owner).with_entities(
+            DnsZone.id, DnsZone.status, DnsZone.name, DnsZone.subnets_count, DnsZone.notes, User.summary.label('owner')
+        )

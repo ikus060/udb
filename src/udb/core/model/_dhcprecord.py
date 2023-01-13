@@ -30,7 +30,7 @@ from udb.tools.i18n import gettext_lazy as _
 from ._cidr import InetType
 from ._common import CommonMixin
 from ._follower import FollowerMixin
-from ._ip import HasIpMixin, Ip
+from ._ip_mixin import HasIpMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
 from ._search_vector import SearchableMixing
@@ -44,7 +44,7 @@ Session = cherrypy.tools.db.get_session()
 class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, HasIpMixin, Base):
     ip = Column(InetType, ForeignKey("ip.ip"), nullable=False)
     mac = Column(String, nullable=False, unique=True)
-    _ip = relationship(Ip, backref='related_dhcp_records', lazy=True)
+    _ip = relationship("Ip", back_populates='related_dhcp_records', lazy=True)
 
     @classmethod
     def _search_string(cls):

@@ -41,7 +41,7 @@ class CommonMixin(object):
     modified_at = Column(Timestamp(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
     @declared_attr
-    def owner_id(clS):
+    def owner_id(cls):
         return Column(Integer, ForeignKey('user.id'))
 
     @declared_attr
