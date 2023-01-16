@@ -62,12 +62,21 @@ class RefererField(HiddenField):
 @cherrypy.popargs('key')
 class CommonPage(object):
     def __init__(
-        self, model, object_form: CherryForm, has_new: bool = True, list_role=User.ROLE_GUEST, edit_role=User.ROLE_USER
+        self,
+        model,
+        edit_form: CherryForm,
+        new_form: CherryForm = None,
+        has_new: bool = True,
+        list_role=User.ROLE_GUEST,
+        edit_role=User.ROLE_USER,
     ) -> None:
         assert model
-        assert object_form
+        assert edit_form
         self.model = model
-        self.object_form = object_form
+        self.edit_form = edit_form
+        self.edit_form.referer = RefererField()
+        self.new_form = new_form if new_form else edit_form
+        self.new_form.referer = RefererField()
         self.list_role = list_role
         self.edit_role = edit_role
         # Support a primary key based on sqlalquemy
@@ -131,7 +140,7 @@ class CommonPage(object):
             'has_owner': self.has_owner,
             'has_followers': self.has_followers,
             'has_messages': self.has_messages,
-            'form': self.object_form(),
+            'form': self.edit_form(),
             'model': self.model,
             'model_name': self.model.__name__.lower(),
         }
@@ -169,7 +178,7 @@ class CommonPage(object):
     def new(self, **kwargs):
         self._verify_role(self.edit_role)
         # Validate form
-        form = self.object_form()
+        form = self.new_form()
         if form.validate_on_submit():
             obj = self.model()
             try:
@@ -179,7 +188,7 @@ class CommonPage(object):
             except Exception as e:
                 handle_exception(e, form)
             else:
-                raise cherrypy.HTTPRedirect(url_for(self.model))
+                raise cherrypy.HTTPRedirect(form.referer.data or url_for(self.model))
         elif not form.is_submitted():
             # Apply the default value from params
             for key, value in kwargs.items():
@@ -201,7 +210,7 @@ class CommonPage(object):
         # Return Not found if object doesn't exists
         obj = self._get_or_404(key)
         # Update object if form was submited
-        form = self.object_form(obj=obj)
+        form = self.edit_form(obj=obj)
         if form.validate_on_submit():
             self._verify_role(self.edit_role)
             try:
@@ -221,7 +230,7 @@ class CommonPage(object):
                 handle_exception(e, form)
             else:
                 flash(_('Record updated successfully'))
-                raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
+                raise cherrypy.HTTPRedirect(form.referer.data or url_for(obj, 'edit'))
         # Return object form
         return {
             'has_new': self.has_new,

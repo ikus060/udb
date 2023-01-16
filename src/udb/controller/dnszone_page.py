@@ -76,7 +76,7 @@ class DnsZoneForm(CherryForm):
 
 class DnsZonePage(CommonPage):
     def __init__(self):
-        super().__init__(DnsZone, object_form=DnsZoneForm)
+        super().__init__(DnsZone, DnsZoneForm)
 
     def _list_query(self):
         return DnsZone.query.outerjoin(DnsZone.owner).with_entities(

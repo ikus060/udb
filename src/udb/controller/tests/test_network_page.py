@@ -325,6 +325,56 @@ class CommonTest:
         for k, v in self.edit_data.items():
             self.assertEqual(data[k], v)
 
+    def test_new_with_referer(self):
+        # Given a referer URL
+        referer = url_for("referer-testing")
+        # When redirect to new page with referer
+        self.getPage(
+            url_for(self.base_url, 'new'),
+            headers=[('Referer', referer)],
+        )
+        # Then page contains referer value
+        self.assertInBody('href="%s"' % referer)
+        self.assertInBody('<input id="referer" name="referer" type="hidden" value="%s">' % referer)
+        # When page is submit
+        body = {'referer': referer}
+        body.update(self.new_data)
+        self.getPage(
+            url_for(self.base_url, 'new'),
+            method='POST',
+            body=body,
+        )
+        # Then user is redirected to referer
+        self.assertStatus(303)
+        self.assertHeaderItemValue('Location', referer)
+
+    def test_edit_with_referer(self):
+        # Given a referer URL
+        referer = url_for("referer-testing")
+        # Given a database with a record.
+        obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
+        # When redirect to edit page with referer
+        self.getPage(
+            url_for(self.base_url, obj.id, 'edit'),
+            headers=[('Referer', referer)],
+        )
+        self.assertStatus(200)
+        # Then page contains referer value
+        self.assertInBody('href="%s"' % referer)
+        self.assertInBody('<input id="referer" name="referer" type="hidden" value="%s">' % referer)
+        # When editing the record with a referer
+        body = {'referer': referer}
+        body.update(self.edit_data)
+        self.getPage(
+            url_for(self.base_url, obj.id, 'edit'),
+            method='POST',
+            body=body,
+        )
+        # Then user is redirected to referer
+        self.assertStatus(303)
+        self.assertHeaderItemValue('Location', referer)
+
 
 class DhcpRecordTest(WebCase, CommonTest):
 
