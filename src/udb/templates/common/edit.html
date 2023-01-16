@@ -30,7 +30,7 @@
     <div class="col-xl-8 order-1 order-xl-1">
       {# Flash messages #}
       {% include "flash.html" %}
-      <form method="POST">
+      <form method="POST" action="{{ url_for(obj, 'edit') }}">
         <div class="card mb-3 {{ _status.bg_color(obj) }}">
           <div class="card-body">
             {% if has_status %}

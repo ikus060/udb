@@ -7,7 +7,9 @@
         {{ form.related_dns_records(class='form-control') }}
         <div class="text-end">
           <a class="btn btn-sm btn-primary"
-             href="{{ url_for('dnsrecord', 'new') }}">{% trans %}Create new{% endtrans %}</a>
+             href="{{ url_for('dnsrecord', 'new', **{'d-value':obj.ip, 'd-type':'A'}) }}">{% trans %}Create Forward{% endtrans %}</a>
+          <a class="btn btn-sm btn-primary"
+             href="{{ url_for('dnsrecord', 'new', **{'d-name':obj.reverse_pointer, 'd-type':'PTR'}) }}">{% trans %}Create Reverse{% endtrans %}</a>
         </div>
       </div>
     </div>
@@ -19,7 +21,7 @@
         {{ form.related_dhcp_records(class='form-control') }}
         <div class="text-end">
           <a class="btn btn-sm btn-primary"
-             href="{{ url_for('dhcprecord', 'new') }}">{% trans %}Create new{% endtrans %}</a>
+             href="{{ url_for('dhcprecord', 'new', **{'d-ip':obj.ip}) }}">{% trans %}Create new{% endtrans %}</a>
         </div>
       </div>
     </div>

@@ -12,7 +12,7 @@
       <p>{% trans %}General information about your account.{% endtrans %}</p>
     </div>
     <div class="col-md-9">
-      <form method="POST">
+      <form method="POST" action="{{ url_for() }}">
         {{ form }}
         <button type="submit" class="btn btn-primary">{% trans %}Save account settings{% endtrans %}</button>
       </form>
@@ -26,7 +26,7 @@
       <p>{% trans %}Change your current password{% endtrans %}</p>
     </div>
     <div class="col-md-9">
-      <form method="POST">
+      <form method="POST" action="{{ url_for() }}">
         {{ password_form }}
         <button type="submit" class="btn btn-primary">{% trans %}Save password{% endtrans %}</button>
       </form>

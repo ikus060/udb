@@ -41,6 +41,18 @@ class IPTest(WebCase):
         # Then no create new exists
         self.assertNotInBody('Create IP Address')
 
+    def test_get_ip(self):
+        # Given a database with records
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj.commit()
+        ip = Ip.query.one()
+        # When showing the IP Page
+        self.getPage('/ip/%s/edit' % ip.id)
+        # Then Create new button are displayed
+        self.assertInBody('Create Forward')
+        self.assertInBody('Create Reverse')
+        self.assertInBody('Create new')
+
     def test_edit_ip(self):
         # Given a database with records
         user = User.create(username='guest', password='password', role=User.ROLE_GUEST).add()

@@ -6,7 +6,7 @@
       <div class="d-flex mb-2">
         {# Go Back #}
         <a class="btn btn-primary btn-circle me-2 align-self-center"
-           href="{{ url_for(model)}}"
+           href="{{ url_for(model) }}"
            data-bs-toggle="tooltip"
            data-bs-placement="top"
            title="{% trans %}Go Back{% endtrans %}">
@@ -17,7 +17,7 @@
         <h2 class="flex-fill mb-0">Create a new {{ macro.display_name(model_name)}}</h2>
       </div>
       {% include "flash.html" %}
-      <form method="POST">
+      <form method="POST" action="{{ url_for(model, 'new') }}">
         <div class="card">
           <div class="card-body">{{ form()}}</div>
           <div class="card-footer">
@@ -28,7 +28,7 @@
               {% trans %}Create{% endtrans %}
               {{ macro.display_name(model_name)}}
             </button>
-            <a class="btn btn-secondary" href="{{ url_for(model)}}">{% trans %}Cancel{% endtrans %}</a>
+            <a class="btn btn-secondary" href="{{ url_for(model) }}">{% trans %}Cancel{% endtrans %}</a>
           </div>
         </div>
       </form>

@@ -180,6 +180,12 @@ class CommonPage(object):
                 handle_exception(e, form)
             else:
                 raise cherrypy.HTTPRedirect(url_for(self.model))
+        elif not form.is_submitted():
+            # Apply the default value from params
+            for key, value in kwargs.items():
+                if key.startswith('d-') and hasattr(form, key[2:]):
+                    getattr(form, key[2:]).default = value
+            form.process()
         # return data form template
         return {
             'model': self.model,
