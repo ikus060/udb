@@ -1,5 +1,4 @@
 {% import "components/table.html" as _table with context %}
-
 {% macro show_value(value) %}
   {%- if value is none -%}<i>{% trans %}Undefined{% endtrans %}</i>{%- else -%}{{ value }}{%- endif -%}
 {% endmacro %}
@@ -49,7 +48,6 @@
     </ul>
   {% endif %}
 {% endmacro %}
-
 {% if has_messages %}
   <div id="messages" class="card">
     {{ _table.table('messages',

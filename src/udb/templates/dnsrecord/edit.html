@@ -1,28 +1,28 @@
 {% extends 'common/edit.html' %}
 {% block extra_actions %}
-    {# Reverse Record #}
-    {% if obj.type in ['A', 'AAAA', 'PTR'] %}
-        <div class="col mb-2">
-            {% set reverse_record = obj.get_reverse_dns_record() %}
-            {% if reverse_record %}
-                <a href="{{ url_for(reverse_record, 'edit')}}"
-                   class="btn btn-outline-primary text-nowrap w-100">
-                    {{ _('Show Reverse Record') if obj.type in ['A', 'AAAA'] else _('Show Forward Record')}}
-                </a>
-            {% else %}
-                <form action="reverse_record" method="post">
-                    <input class="btn btn-outline-primary text-nowrap w-100"
-                           type="submit"
-                           value="{{ _('Create Reverse Record') if obj.type in ['A', 'AAAA'] else _('Create Forward Record')}}">
-                </form>
-            {% endif %}
-        </div>
-    {% endif %}
-    {# Related IP #}
-    {% if obj._ip %}
-        <div class="col mb-2">
-            <a href="{{ url_for(obj._ip, 'edit')}}"
-               class="btn btn-outline-primary text-nowrap w-100">{% trans %}Show Related IP{% endtrans %}</a>
-        </div>
-    {% endif %}
+  {# Reverse Record #}
+  {% if obj.type in ['A', 'AAAA', 'PTR'] %}
+    <div class="col mb-2">
+      {% set reverse_record = obj.get_reverse_dns_record() %}
+      {% if reverse_record %}
+        <a href="{{ url_for(reverse_record, 'edit')}}"
+           class="btn btn-outline-primary text-nowrap w-100">
+          {{ _('Show Reverse Record') if obj.type in ['A', 'AAAA'] else _('Show Forward Record')}}
+        </a>
+      {% else %}
+        <form action="reverse_record" method="post">
+          <input class="btn btn-outline-primary text-nowrap w-100"
+                 type="submit"
+                 value="{{ _('Create Reverse Record') if obj.type in ['A', 'AAAA'] else _('Create Forward Record')}}">
+        </form>
+      {% endif %}
+    </div>
+  {% endif %}
+  {# Related IP #}
+  {% if obj._ip %}
+    <div class="col mb-2">
+      <a href="{{ url_for(obj._ip, 'edit')}}"
+         class="btn btn-outline-primary text-nowrap w-100">{% trans %}Show Related IP{% endtrans %}</a>
+    </div>
+  {% endif %}
 {% endblock %}
