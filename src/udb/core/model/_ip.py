@@ -99,6 +99,13 @@ class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, Base):
     def referenced(self):
         return self.related_dhcp_records_count > 0 or self.related_dns_records_count > 0
 
+    @property
+    def reverse_pointer(self):
+        """
+        Return the reverse PTR value of this IP.
+        """
+        return ipaddress.ip_address(self.ip).reverse_pointer
+
 
 @event.listens_for(Session, "before_flush", insert=True)
 def _update_ip(session, flush_context, instances):

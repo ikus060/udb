@@ -51,6 +51,12 @@ class DnsRecordTest(WebCase, CommonTest):
         self.assertStatus(200)
         self.assertInBody('value must be a valid domain name')
 
+    def test_new_with_default(self):
+        # Given a URL with default value
+        self.getPage(url_for(self.base_url, 'new', **{'d-value': '192.168.34.56'}))
+        # Then the page get loaded with those value
+        self.assertInBody('192.168.34.56')
+
     def test_new_ptr_invalid(self):
         # Given an invalid PTR record.
         data = {'name': 'foo.example.com', 'type': 'PTR', 'value': 'bar.example.com'}

@@ -155,7 +155,7 @@ class SubnetForm(CherryForm):
 
 class SubnetPage(CommonPage):
     def __init__(self):
-        super().__init__(Subnet, object_form=SubnetForm)
+        super().__init__(Subnet, SubnetForm)
 
     def _list_query(self):
         query = (

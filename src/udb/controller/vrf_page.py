@@ -57,7 +57,7 @@ class VrfForm(CherryForm):
 
 class VrfPage(CommonPage):
     def __init__(self):
-        super().__init__(Vrf, object_form=VrfForm)
+        super().__init__(Vrf, VrfForm)
 
     def _list_query(self):
         return Vrf.session.query(

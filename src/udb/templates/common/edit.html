@@ -9,7 +9,7 @@
       <div class="d-flex mb-4">
         {# Go Back button #}
         <a class="btn btn-primary btn-circle me-2 align-self-center"
-           onclick="history.back()"
+           href="{{ form.referer.data or url_for(model) }}"
            data-bs-toggle="tooltip"
            data-bs-placement="top"
            title="{% trans %}Go Back{% endtrans %}">
@@ -18,7 +18,7 @@
         </a>
         {# Title #}
         <h2 class="flex-fill mb-0">
-          {{ _('Edit') if is_editable else _('View') }} {{ macro.display_name(model_name)}} {{(form|first).data }}
+          {{ _('Edit') }} {{ macro.display_name(model_name)}} {{(form|first).data }}
         </h2>
         {# /Title #}
       </div>
@@ -30,7 +30,7 @@
     <div class="col-xl-8 order-1 order-xl-1">
       {# Flash messages #}
       {% include "flash.html" %}
-      <form method="POST">
+      <form method="POST" action="{{ url_for(obj, 'edit') }}">
         <div class="card mb-3 {{ _status.bg_color(obj) }}">
           <div class="card-body">
             {% if has_status %}

@@ -65,7 +65,8 @@ def url_for(*args, relative=None, **kwargs):
     path = ""
     for chunk in args:
         if isinstance(chunk, str):
-            path += "/"
+            if not chunk.startswith('.'):
+                path += "/"
             path += chunk.rstrip("/")
         elif isinstance(chunk, int):
             path += "/"

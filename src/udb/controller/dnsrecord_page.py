@@ -125,19 +125,9 @@ class NewDnsRecordForm(EditDnsRecordForm):
                 record.add()
 
 
-def form_constructor(obj=None, **kwargs):
-    """
-    Special constructor for edit and new
-    """
-    if obj:
-        return EditDnsRecordForm(obj=obj)
-    else:
-        return NewDnsRecordForm(obj=obj)
-
-
 class DnsRecordPage(CommonPage):
     def __init__(self):
-        super().__init__(DnsRecord, form_constructor)
+        super().__init__(DnsRecord, EditDnsRecordForm, NewDnsRecordForm)
 
     @cherrypy.expose()
     def reverse_record(self, key, **kwargs):
