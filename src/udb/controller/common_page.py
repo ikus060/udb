@@ -22,7 +22,7 @@ from sqlalchemy.inspection import inspect
 from wtforms.fields import HiddenField, TextAreaField
 from wtforms.validators import InputRequired, Length
 
-from udb.controller import flash, handle_exception, lastupdated, url_for
+from udb.controller import flash, handle_exception, lastupdated, url_for, verify_role
 from udb.core.model import Message, User
 from udb.tools.i18n import gettext as _
 
@@ -97,14 +97,6 @@ class CommonPage(object):
             raise cherrypy.HTTPError(404)
         return obj
 
-    def _verify_role(self, role):
-        """
-        Verify if the current user has the required role.
-        """
-        user = cherrypy.serving.request.currentuser
-        if user is None or not user.has_role(role):
-            raise cherrypy.HTTPError(403, 'Insufficient privileges')
-
     def _list_query(self):
         """
         Build a query with supported feature of the current object class.
@@ -117,12 +109,6 @@ class CommonPage(object):
         """
         return self.model.query.filter_by(**{self.primary_key: key})
 
-    def _key(self, obj):
-        """
-        Return a string representation of this object primary key.
-        """
-        return getattr(obj, self.primary_key)
-
     def _to_dict(self, data):
         if type(data) != dict:
             data = dict(data)
@@ -132,7 +118,7 @@ class CommonPage(object):
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/list.html', 'common/list.html'])
     def index(self):
-        self._verify_role(self.list_role)
+        verify_role(self.list_role)
         # return data for templates
         return {
             'has_new': self.has_new,
@@ -148,7 +134,7 @@ class CommonPage(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def data_json(self, **kwargs):
-        self._verify_role(self.list_role)
+        verify_role(self.list_role)
         obj_list = self._list_query()
         data = {'data': [self._to_dict(obj) for obj in obj_list]}
         return data
@@ -156,7 +142,7 @@ class CommonPage(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def messages(self, key, **kwargs):
-        self._verify_role(self.list_role)
+        verify_role(self.list_role)
         # Return Not found if object doesn't exists
         obj = self._get_or_404(key)
         # Query Object Messages
@@ -176,7 +162,7 @@ class CommonPage(object):
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/new.html', 'common/new.html'])
     def new(self, **kwargs):
-        self._verify_role(self.edit_role)
+        verify_role(self.edit_role)
         # Validate form
         form = self.new_form()
         if form.validate_on_submit():
@@ -206,13 +192,13 @@ class CommonPage(object):
     @cherrypy.tools.jinja2(template=['{model_name}/edit.html', 'common/edit.html'])
     def edit(self, key, **kwargs):
         currentuser = cherrypy.serving.request.currentuser
-        self._verify_role(self.list_role)
+        verify_role(self.list_role)
         # Return Not found if object doesn't exists
         obj = self._get_or_404(key)
         # Update object if form was submited
         form = self.edit_form(obj=obj)
         if form.validate_on_submit():
-            self._verify_role(self.edit_role)
+            verify_role(self.edit_role)
             try:
                 form.populate_obj(obj)
                 # Add Message to explain changes.
@@ -253,7 +239,7 @@ class CommonPage(object):
         """
         if cherrypy.request.method not in ['POST', 'PUT']:
             raise cherrypy.HTTPError(405)
-        self._verify_role(self.list_role)
+        verify_role(self.list_role)
         obj = self._get_or_404(key)
         userobj = User.query.filter_by(id=user_id).first()
         if userobj and not obj.is_following(userobj):
@@ -268,7 +254,7 @@ class CommonPage(object):
         """
         if cherrypy.request.method not in ['POST', 'PUT']:
             raise cherrypy.HTTPError(405)
-        self._verify_role(self.list_role)
+        verify_role(self.list_role)
         obj = self._get_or_404(key)
         userobj = User.query.filter_by(id=user_id).first()
         if userobj and obj.is_following(userobj):
@@ -283,6 +269,7 @@ class CommonPage(object):
         DatabaseError: 400,
     }
 )
+@cherrypy.popargs('id')
 class CommonApi(object):
     def __init__(self, object_cls, list_role=User.ROLE_GUEST, edit_role=User.ROLE_USER):
         assert object_cls
@@ -292,7 +279,7 @@ class CommonApi(object):
 
     @cherrypy.expose()
     def default(self, id=None, **kwargs):
-        self._verify_role(self.list_role)
+        verify_role(self.list_role)
         with cherrypy.HTTPError.handle(405):
             method = cherrypy.request.method
             assert method in ['GET', 'PUT', 'POST', 'DELETE']
@@ -313,7 +300,7 @@ class CommonApi(object):
         """
         obj = self.object_cls.query.filter_by(id=id).first()
         if not obj:
-            raise cherrypy.HTTPError(404)
+            raise cherrypy.HTTPError(404, "Record ID not found")
         return obj
 
     def _verify_role(self, role):
@@ -334,7 +321,7 @@ class CommonApi(object):
         """
         Update an existing record.
         """
-        self._verify_role(self.edit_role)
+        verify_role(self.edit_role)
         data = cherrypy.request.json
         obj = self._get_or_404(id)
         obj.from_json(data)
@@ -346,7 +333,7 @@ class CommonApi(object):
         """
         Create a new record
         """
-        self._verify_role(self.edit_role)
+        verify_role(self.edit_role)
         data = cherrypy.request.json
         obj = self.object_cls()
         obj.from_json(data)
@@ -355,7 +342,7 @@ class CommonApi(object):
         return self._get_or_404(obj.id).to_json()
 
     def delete(self, id, **kwargs):
-        self._verify_role(self.edit_role)
+        verify_role(self.edit_role)
         obj = self._get_or_404(id)
         obj.status = self.object_cls.STATUS_DELETED
         obj.add()

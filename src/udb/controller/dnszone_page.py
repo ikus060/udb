@@ -16,12 +16,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
+from sqlalchemy import case, func
 from sqlalchemy.orm import defer, joinedload, undefer
 from wtforms.fields import StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length
 
-from udb.core.model import DnsZone, Subnet, User
+from udb.core.model import DnsRecord, DnsZone, Subnet, User
 from udb.tools.i18n import gettext as _
 
 from .common_page import CommonPage
@@ -82,3 +83,30 @@ class DnsZonePage(CommonPage):
         return DnsZone.query.outerjoin(DnsZone.owner).with_entities(
             DnsZone.id, DnsZone.status, DnsZone.name, DnsZone.subnets_count, DnsZone.notes, User.summary.label('owner')
         )
+
+    @cherrypy.expose()
+    @cherrypy.tools.jinja2(template=['dnszone/zone.j2'])
+    @cherrypy.tools.response_headers(headers=[('Content-Type', 'text/plain')])
+    def zonefile(self, key, **kwargs):
+        """
+        Generate a DNS Zone file.
+        """
+        zone = self._get_or_404(key)
+        # Get list of dns record included in this zone.
+        # Make sure SOA is first
+        dnsrecords = (
+            DnsRecord.query.with_entities(
+                DnsRecord.id,
+                DnsRecord.name,
+                DnsRecord.type,
+                DnsRecord.ttl,
+                DnsRecord.value,
+            )
+            .filter(
+                DnsRecord.status == DnsRecord.STATUS_ENABLED,
+                DnsRecord.hostname_value.endswith(zone.name),
+            )
+            .order_by(case([(DnsRecord.type == 'SOA', 0)], else_=1), func.reverse(DnsRecord.name))
+            .all()
+        )
+        return {'dnsrecords': [dict(r) for r in dnsrecords]}

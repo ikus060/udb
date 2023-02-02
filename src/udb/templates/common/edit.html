@@ -17,9 +17,7 @@
           <span class="visually-hidden">{% trans %}Go Back{% endtrans %}</span>
         </a>
         {# Title #}
-        <h2 class="flex-fill mb-0">
-          {{ _('Edit') }} {{ macro.display_name(model_name)}} {{(form|first).data }}
-        </h2>
+        <h2 class="flex-fill mb-0">{{ _('Edit') }} {{ macro.display_name(model_name)}} {{(form|first).data }}</h2>
         {# /Title #}
       </div>
     </div>
@@ -97,12 +95,14 @@
                 {# Submit button #}
                 <button type="submit" class="btn btn-primary">{% trans %}Save changes{% endtrans %}</button>
               {% endif %}
-              <a class="btn btn-secondary" href="{{ url_for(model)}}">{% trans %}Cancel{% endtrans %}</a>
+              <a class="btn btn-secondary" href="{{ url_for(model) }}">{% trans %}Cancel{% endtrans %}</a>
             </div>
             {# /Submit Area #}
           </div>
         </div>
       </form>
+      {% block extra_form %}
+      {% endblock %}
       {# Message thread #}
       {% include "common/messages.html" %}
     </div>

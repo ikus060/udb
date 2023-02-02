@@ -18,6 +18,7 @@ import cherrypy
 from sqlalchemy import event
 
 from . import _group_concat  # noqa
+from ._deployment import Deployment, Environment  # noqa
 from ._dhcprecord import DhcpRecord  # noqa
 from ._dnsrecord import DnsRecord  # noqa
 from ._dnszone import DnsZone  # noqa
@@ -78,3 +79,8 @@ def db_after_create(target, connection, **kw):
         Message.query.filter(Message.body.startswith('{')).update(
             {Message.body: '', Message._changes: Message.body}, synchronize_session=False
         )
+
+    # Add 'token' to deployment
+    add_column(Deployment.__table__.c.token)
+    # Add 'status' to environment
+    add_column(Environment.__table__.c.status)

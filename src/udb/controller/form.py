@@ -60,13 +60,17 @@ class CherryForm(Form):
 
     class Meta:
         def render_field(self, field, render_kw):
-            render_kw = {k: v for k, v in render_kw.items()}
-
+            # Merge the two render_kw
+            render_kw = render_kw.copy()
             other_kw = getattr(field, "render_kw", None)
-            if other_kw is not None:
-                other_kw = {k: v for k, v in other_kw.items()}
-                render_kw = dict(other_kw, **render_kw)
-
+            if other_kw:
+                other_kw = other_kw.copy()
+                for k, v in render_kw.items():
+                    if k in ['class', 'class_']:
+                        other_kw['class'] = other_kw.get('class', '') + ' ' + render_kw[k]
+                    else:
+                        other_kw[k] = render_kw[k]
+                render_kw = other_kw
             env = cherrypy.request.config.get('tools.jinja2.env')
             tmpl = env.get_template('components/field.html')
             return Markup(tmpl.render(field=field, render_kw=render_kw))

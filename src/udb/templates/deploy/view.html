@@ -1,0 +1,85 @@
+{% extends 'layout.html' %}
+{% import "components/table.html" as _table %}
+{% import "common/status.html" as _status %}
+{% import "macro.html" as macro %}
+{% block title %}
+    {% trans %}Deployment #{% endtrans %}{{ deployment.id }}
+{% endblock %}
+{% block body %}
+    {# Title #}
+    {% set choices = dict([
+    (0, '<span class="badge bg-warning">'|safe + _('Starting...') + '</span>'|safe),
+    (1, '<span class="badge bg-info"><span class="spinner-border spinner-border-sm"
+      role="status"
+      aria-hidden="true"></span> '|safe + _('Running...') + '</span>'|safe),
+    (2, '<span class="badge bg-success">'|safe + _('Success') + '</span>'|safe),
+    (3, '<span class="badge bg-danger">'|safe + _('Failed') + '</span>'|safe)])%}
+    <h3>
+        {{ choices[deployment.state] }} {% trans %}Deployment #{% endtrans %}{{ deployment.id }}
+        {% trans %}to{% endtrans %}
+        {{ deployment.environment.name }}
+    </h3>
+    {% include "flash.html" %}
+    <hr />
+    {# Changes #}
+    <div class="row">
+        <div class="col-md">
+            <h4>{% trans %}Changes{% endtrans %}</h4>
+            <p>{% trans %}List of changes activated by this deployment.{% endtrans %}</p>
+        </div>
+        <div class="col-md-9">
+            <div class="card mb-2">
+                {% set columns = [
+                {'data': 'body', 'title':_('Changes'), 'orderable': False, 'render':'message_body'},
+                {'data': 'summary', 'title':_('On record'), 'orderable': False, 'render':'summary'}
+                ] %}
+                {{ _table.table('changes.json',
+                columns=columns,
+                order=[[ 0, 'desc' ]],
+                searching=False,
+                show_header=False,
+                show_action_column=False,
+                empty_message=_('No changes activated by this deployment.'),
+                paging=True,
+                pageLength=5) }}
+            </div>
+        </div>
+    </div>
+    <hr />
+    {# Output #}
+    <div class="row">
+        <div class="col-md">
+            <h4>{% trans %}Log{% endtrans %}</h4>
+            <p>{% trans %}Output of command line executed by this deployment.{% endtrans %}</p>
+        </div>
+        <div class="col-md-9">
+            <div class="card mb-2 bg-dark text-white p-1">
+                <pre><code id="output">{{ deployment.output }}</code></pre>
+                {# Show Spinner when running #}
+                {% if deployment.state < 2 %}
+                    <span class="spinner-border spinner-border-sm"
+                          role="status"
+                          aria-hidden="true"></span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% if deployment.state < 2 %}
+        <script>
+        myInterval = setInterval(refreshOutput, 1000);
+        function refreshOutput() {
+            $.ajax({
+                url: "output.json",
+            }).done(function(data) {
+                {# If starting or running, continue to refresh the logs #}
+                if(data.state < 2) {
+                    $('#output').html(data.output);
+                    $("html, body").animate({ scrollTop: $(document).height() });
+                } else {
+                    location.reload();
+                }
+            });
+        }
+        </script>
+    {% endif %}
+{% endblock %}

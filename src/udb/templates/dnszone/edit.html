@@ -1,0 +1,11 @@
+{% extends 'common/edit.html' %}
+{% block extra_actions %}
+  <div class="col mb-2">
+    <a href="{{ url_for(obj, 'zonefile') }}"
+       class="btn btn-outline-primary text-nowrap w-100"
+       download="{{obj.name}}.zone">
+      <i class="bi bi-download" aria-hidden="true"></i>
+      {% trans %}Download Zone file{% endtrans %}
+    </a>
+  </div>
+{% endblock %}

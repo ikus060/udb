@@ -61,19 +61,11 @@ def _sqlite_reverse(string):
     return string[::-1]
 
 
-def _sqlite_regexp_replace(source, pattern, replacement_string):
-    """
-    SQLite implementation of regex_replace function.
-    """
-    return re.sub(pattern, replacement_string, source)
-
-
 @event.listens_for(Engine, "connect")
 def _register_sqlite_functions(dbapi_con, unused):
     if 'sqlite' in repr(dbapi_con):
         dbapi_con.create_function("split_part", 3, _sqlite_split_part, deterministic=True)
         dbapi_con.create_function("reverse", 1, _sqlite_reverse, deterministic=True)
-        dbapi_con.create_function("regexp_replace", 3, _sqlite_regexp_replace, deterministic=True)
 
 
 def _reverse_ipv4(value):
