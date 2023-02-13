@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
-from sqlalchemy import case, func
 from sqlalchemy.orm import defer, joinedload, undefer
 from wtforms.fields import StringField
 from wtforms.fields.simple import TextAreaField
@@ -106,7 +105,6 @@ class DnsZonePage(CommonPage):
                 DnsRecord.status == DnsRecord.STATUS_ENABLED,
                 DnsRecord.hostname_value.endswith(zone.name),
             )
-            .order_by(case([(DnsRecord.type == 'SOA', 0)], else_=1), func.reverse(DnsRecord.name))
             .all()
         )
-        return {'dnsrecords': [dict(r) for r in dnsrecords]}
+        return {'dnsrecords': [dict(r) for r in dnsrecords], 'dnsrecord_sort_key': DnsRecord.dnsrecord_sort_key}
