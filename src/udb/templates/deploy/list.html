@@ -1,0 +1,36 @@
+{% extends 'layout.html' %}
+{% import "components/table.html" as _table %}
+{% import "common/status.html" as _status %}
+{% import "macro.html" as macro %}
+{% block title %}{% trans %}Deployment{% endtrans %}{%endblock%}
+{% block body %}
+    {# Title #}
+    <h2>{% trans %}Recent Deployment{% endtrans %}</h2>
+    {% include "flash.html" %}
+    {# List of deployment #}
+    <div class="row">
+        <div class="col">
+            <div class="card mb-2">
+                {% set choices = [
+                (0, '<span class="badge bg-warning">'|safe + _('Starting') + '</span>'|safe),
+                (1, '<span class="badge bg-info">'|safe + _('Running') + '</span>'|safe),
+                (2, '<span class="badge bg-success">'|safe + _('Success') + '</span>'|safe),
+                (3, '<span class="badge bg-danger">'|safe + _('Failed') + '</span>'|safe)]%}
+                {% set columns = [
+                {'data': 'id', 'title':_('Deployment'), 'orderable': False, 'render':'summary', 'width':'25'},
+                {'data': 'state', 'title':_('State'), 'orderable': False, 'render':'choices', 'render_arg': choices},
+                {'data': 'environment', 'title':_('Environment'), 'orderable': False},
+                {'data': 'created_at', 'title':_('Started on'), 'orderable': False, 'render':'datetime'},
+                {'data': 'change_count', 'title':_('Number of changes'), 'orderable': False},
+                {'data': 'owner', 'title':_('Deployed by'), 'orderable': False},
+                ] %}
+                {{ _table.table('deployments.json',
+                empty_message=_('Changes never deployed.'),
+                searching=False,
+                show_header=False,
+                columns = columns,
+                order=[[ 0, 'desc' ]],) }}
+            </div>
+        </div>
+    </div>
+{% endblock %}

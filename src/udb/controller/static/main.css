@@ -143,11 +143,11 @@ table.dataTable.sorted-0 .depth-9 {
 }
 
 /* Fix header of history in edit view */
-#messages.card thead {
+#messages.card thead, #changes.card thead {
     background-color: rgba(0, 0, 0, .03);
 }
 
-#messages.card thead th {
+#messages.card thead th, #changes.card thead {
     border-bottom: 1px solid rgba(0, 0, 0, .125)
 }
 

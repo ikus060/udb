@@ -325,6 +325,18 @@ class CommonTest:
         for k, v in self.edit_data.items():
             self.assertEqual(data[k], v)
 
+    def test_api_delete(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
+        # When deleting that record
+        self.getPage(url_for('api', self.base_url, obj.id), method='DELETE', headers=self.authorization)
+        # Then our records's status is updated
+        self.assertStatus(200)
+        obj.expire()
+        obj = self.obj_cls.query.filter(self.obj_cls.id == obj.id).one()
+        self.assertEqual(self.obj_cls.STATUS_DELETED, obj.status)
+
     def test_new_with_referer(self):
         # Given a referer URL
         referer = url_for("referer-testing")

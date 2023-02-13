@@ -175,6 +175,18 @@ $.fn.dataTable.render.choices = function (choices) {
         },
     };
 }
+
+$.fn.dataTable.render.datetime = function () {
+    return {
+        display: function (data, type, row, meta) {
+            return toDate(data).toLocaleString();
+        },
+        sort: function (data, type, row, meta) {
+            return toDate(data).getTime();
+        }
+    };
+}
+
 $.fn.dataTable.render.message_body = function () {
     return {
         display: function (data, type, row, meta) {
@@ -236,21 +248,25 @@ $.fn.dataTable.render.primary_range = function () {
     };
 }
 $.fn.dataTable.render.summary = function (model_name=null) {
+    /* FIXME Need to make this list canonical */
     let icon_table = {
         'dnszone': 'bi-collection',
         'subnet': 'bi-diagram-3-fill',
-        'dhcprecord': 'bi-ethernet',
+        'dhcprecord': 'bi-pin',
         'dnsrecord': 'bi-signpost-split-fill',
         'ip': 'bi-geo-fill',
+        'mac': 'bi-ethernet',
         'user': 'bi-person-fill',
-        'vrf': 'bi-layers'
+        'vrf': 'bi-layers',
+        'deployment':'bi-cloud-upload-fill',
+        'environment':'bi-terminal-fill'
     };
 
     return {
         display: function (data, type, row, meta) {
-            model_name = model_name || row.model_name;
+            const effective_model_name = model_name || row.model_name;
             let html = '<a href="' + encodeURI(row.url) + '">' +
-                '<i class="bi ' + icon_table[model_name] + ' me-1" aria-hidden="true"></i>' +
+                '<i class="bi ' + icon_table[effective_model_name] + ' me-1" aria-hidden="true"></i>' +
                 '<strong>' + safe(data) + '</strong>' +
                 '</a>';
             if (row.status == 'disabled') {

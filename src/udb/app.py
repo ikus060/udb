@@ -35,9 +35,11 @@ from udb.controller import lastupdated, template_processor, url_for
 from udb.controller.api import Api
 from udb.controller.common_page import CommonApi
 from udb.controller.dashboard_page import DashboardPage
+from udb.controller.deployment_page import DeploymentApi, DeploymentPage
 from udb.controller.dhcprecord_page import DhcpRecordPage
 from udb.controller.dnsrecord_page import DnsRecordPage
 from udb.controller.dnszone_page import DnsZonePage
+from udb.controller.environment_page import EnvironmentApi, EnvironmentPage
 from udb.controller.ip_page import IpPage
 from udb.controller.load_page import LoadPage
 from udb.controller.login_page import LoginPage
@@ -221,12 +223,16 @@ class Root(object):
         self.ip = IpPage()
         self.user = UserPage()
         self.mac = MacPage()
+        self.environment = EnvironmentPage()
+        self.deployment = DeploymentPage()
         # Api
         self.api.dnszone = CommonApi(DnsZone)
         self.api.subnet = CommonApi(Subnet)
         self.api.dnsrecord = CommonApi(DnsRecord)
         self.api.dhcprecord = CommonApi(DhcpRecord)
         self.api.vrf = CommonApi(Vrf)
+        self.api.deployment = DeploymentApi()
+        self.api.environment = EnvironmentApi()
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='index.html')

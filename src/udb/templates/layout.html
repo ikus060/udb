@@ -45,10 +45,12 @@
           crossorigin="anonymous"/>
     <title>
       {% block title %}{% endblock %}
-    | {{ header_name }}</title>
+      | {{ header_name }}
+    </title>
     <link rel="icon"
           type="image/svg+xml"
           href="{{ url_for('static/favicon.svg')}}">
+    {% block head %}{% endblock %}
   </head>
   <body>
     {% block navbar %}

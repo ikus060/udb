@@ -1,0 +1,28 @@
+{% extends 'common/edit.html' %}
+{% import "components/table.html" as _table %}
+{% block extra_actions %}
+  {# Deployment #}
+  <div class="mb-2">
+    <form method="POST" action="{{ url_for('environment', obj.id, 'deploy') }}">
+      {{ deploy_form }}
+    </form>
+  </div>
+{% endblock %}
+{% block extra_form %}
+  {# Display pendings changes #}
+  <div id="changes" class="card mb-2">
+    {% set columns = [
+    {'data': 'body', 'title':_('Pending Changes'), 'orderable': False, 'render':'message_body'},
+    {'data': 'summary', 'title':_('On record'), 'orderable': False, 'render':'summary'}
+    ] %}
+    {{ _table.table('changes.json',
+    columns=columns,
+    order=[[ 0, 'desc' ]],
+    searching=False,
+    show_header=False,
+    show_action_column=False,
+    empty_message=_('No changes since last deployment.'),
+    paging=True,
+    pageLength=5) }}
+  </div>
+{% endblock %}

@@ -1,4 +1,4 @@
-{%- set icon_table = {'dnszone': 'bi-collection', 'subnet':'bi-diagram-3-fill', 'dhcprecord': 'bi-pin', 'dnsrecord': 'bi-signpost-split-fill', 'ip':'bi-geo-fill', 'mac': 'bi-ethernet', 'user':'bi-person-fill', 'vrf':'bi-layers' } -%}
+{%- set icon_table = {'dnszone': 'bi-collection', 'subnet':'bi-diagram-3-fill', 'dhcprecord': 'bi-pin', 'dnsrecord': 'bi-signpost-split-fill', 'ip':'bi-geo-fill', 'mac': 'bi-ethernet', 'user':'bi-person-fill', 'vrf':'bi-layers', 'deployment':'bi-cloud-upload-fill', 'environment':'bi-terminal-fill' } -%}
 {%- macro icon(value, extra_class=None) -%}
   {%- if value.model_name is defined() -%}
     {%- set model_name = value.model_name -%}
@@ -10,7 +10,7 @@
   <i class="bi {{ icon_table.get(model_name, '')}} {{ extra_class or '' }}"
      aria-hidden="true"></i>
 {%- endmacro -%}
-{%- set display_name_table = {'dnszone': _('DNS Zone'), 'subnet':_('Subnet'), 'dnsrecord': _('DNS Record'), 'dhcprecord':_('DHCP Reservation'), 'ip':_('IP'), 'mac':_('MAC'), 'user': _('User'), 'vrf': _('VRF') } -%}
+{%- set display_name_table = {'dnszone': _('DNS Zone'), 'subnet':_('Subnet'), 'dnsrecord': _('DNS Record'), 'dhcprecord':_('DHCP Reservation'), 'ip':_('IP'), 'mac':_('MAC'), 'user': _('User'), 'vrf': _('VRF'), 'deployment':_('Deployment'), 'environment':_('Environment') } -%}
 {%- macro display_name(value) -%}
   {%- if value.model_name is defined() -%}
     {%- set model_name = value.model_name -%}

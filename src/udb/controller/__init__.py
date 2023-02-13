@@ -95,7 +95,21 @@ def url_for(*args, relative=None, **kwargs):
         qs = [(k, v) for k, v in sorted(params.items()) if v is not None]
     else:
         qs = [(k, v) for k, v in sorted(kwargs.items()) if v is not None]
-    return cherrypy.url(path=path, qs=qs, relative=relative)
+    # Outside a request, use the external_url as base if defined
+    base = None
+    if not cherrypy.request.app:
+        app = cherrypy.tree.apps[''].root
+        base = app.cfg.external_url
+    return cherrypy.url(path=path, qs=qs, relative=relative, base=base)
+
+
+def verify_role(role):
+    """
+    Verify if the current user has the required role.
+    """
+    user = cherrypy.serving.request.currentuser
+    if user is None or not user.has_role(role):
+        raise cherrypy.HTTPError(403, 'Insufficient privileges')
 
 
 def lastupdated(value, now=None):
