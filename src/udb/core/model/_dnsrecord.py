@@ -425,6 +425,29 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
             pass
         return objects
 
+    @classmethod
+    def dnsrecord_sort_key(cls, record):
+        """
+        Return a key appropriate to be used for sorting dns records.
+        """
+        # Pick hostname according to record type
+        hostname = record.get('name' if record.get('type', None) != 'PTR' else 'value', '')
+        # Reverse order the hostname
+        parts = hostname.split('.')[::-1]
+        # Replace the wildcard (*) with a higher character to be sure to place the wildcard at the end of the subdomains.
+        parts = [p if p != '*' else '\xff' for p in parts]
+
+        return (
+            # Make sure to place SOA records first
+            record.get('type', None) != 'SOA',
+            # Reverse domain name
+            parts,
+            # Then sort by type
+            record.get('type', ''),
+            # and value
+            record.get('value', ''),
+        )
+
 
 @event.listens_for(DnsRecord, "before_update")
 def before_update(mapper, connection, instance):

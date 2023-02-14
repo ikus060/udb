@@ -21,7 +21,7 @@ import cherrypy
 from udb.controller import lastupdated, url_for, verify_role
 from udb.controller.api import checkpassword
 from udb.controller.common_page import CommonApi
-from udb.core.model import Deployment, DnsZone, Environment, Message, User
+from udb.core.model import Deployment, DnsRecord, DnsZone, Environment, Message, User
 
 TOKEN_USERNAME = 'token'
 
@@ -193,10 +193,14 @@ class DeploymentApi(CommonApi):
         if zone is None:
             raise cherrypy.HTTPError(404, "Zone name not found")
 
+        # Filter out records base on zone name
+        dnsrecords = [
+            r for r in dnsrecords if r.get('name' if r.get('type', None) != 'PTR' else 'value', '').endswith(name)
+        ]
+
         # Then simply sort the dnsrecords
         # Make sure SOA record are first.
-        dnsrecords = sorted(dnsrecords, key=lambda r: (0 if r['type'] == 'SOA' else 1, r['name']))
-        return {'dnsrecords': dnsrecords}
+        return {'dnsrecords': dnsrecords, 'dnsrecord_sort_key': DnsRecord.dnsrecord_sort_key}
 
 
 DeploymentApi._cp_dispatch = cherrypy.popargs('id', handler=DeploymentApi())
