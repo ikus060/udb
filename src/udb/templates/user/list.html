@@ -1,6 +1,8 @@
 {% extends 'common/list.html' %}
 {% set columns = [
-{'data':'username', 'title':form.username.label.text, 'orderable':True, 'render':'summary', 'render_arg':'user'},
-{'data':'fullname', 'title':form.fullname.label.text, 'orderable': True},
-{'data':'email', 'title':form.email.label.text, 'orderable':True},
-{'data':'role', 'title':form.role.label.text, 'orderable':True, 'render':'choices', 'render_arg':form.role.choices}] %}
+{'name':'id', 'visible':False},
+{'name':'status', 'visible':False},
+{'name':'username', 'title':form.username.label.text, 'orderable':True, 'render':'summary', 'render_arg':'user'},
+{'name':'fullname', 'title':form.fullname.label.text, 'orderable': True},
+{'name':'email', 'title':form.email.label.text, 'orderable':True},
+{'name':'role', 'title':form.role.label.text, 'orderable':True, 'render':'choices', 'render_arg':form.role.choices}] %}

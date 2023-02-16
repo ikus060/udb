@@ -87,8 +87,8 @@ class MacPage(CommonPage):
             .with_entities(
                 Mac.id,
                 Mac.mac,
-                Mac.notes,
                 func.count(DhcpRecord.id).label('count'),
+                Mac.notes,
                 func.min(User.summary).label('owner'),
             )
         )

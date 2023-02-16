@@ -1,6 +1,8 @@
 {% extends 'common/list.html' %}
 {% set columns = [
-{'data':'ip', 'title':form.ip.label.text, 'orderable':True, 'render':'summary', 'render_arg':'dhcprecord'},
-{'data':'mac', 'title':form.mac.label.text, 'orderable':True},
-{'data':'notes', 'title':form.notes.label.text, 'orderable':True},
-{'name':'owner', 'data':'owner', 'title':form.owner_id.label.text, 'orderable':True}] %}
+{'name':'id', 'visible':False},
+{'name':'status', 'visible':False},
+{'name':'ip', 'title':form.ip.label.text, 'orderable':True, 'render':'summary', 'render_arg':'dhcprecord'},
+{'name':'mac', 'title':form.mac.label.text, 'orderable':True},
+{'name':'notes', 'title':form.notes.label.text, 'orderable':True},
+{'name':'owner', 'title':form.owner_id.label.text, 'orderable':True}] %}

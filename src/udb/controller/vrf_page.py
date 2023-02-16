@@ -62,8 +62,8 @@ class VrfPage(CommonPage):
     def _list_query(self):
         return Vrf.session.query(
             Vrf.id,
+            Vrf.status,
             Vrf.name,
             Vrf.notes,
-            Vrf.status,
             User.summary.label('owner'),
         ).outerjoin(Vrf.owner)

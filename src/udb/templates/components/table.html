@@ -1,8 +1,5 @@
 {% import "macro.html" as macro %}
-{% macro table(data, columns=[], order=[], empty_message=None, info_message=None, searching=True, buttons=[], paging=False, pageLength=5, show_action_column=True, show_header=True) %}
-  {% if show_action_column %}
-    {% set columns = columns + [{'data':'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px', 'className':'all'}] %}
-  {% endif %}
+{% macro table(data, columns=[], order=[], empty_message=None, info_message=None, searching=True, buttons=[], paging=False, pageLength=5, show_header=True) %}
   {% set language = {
   "aria": {
   "sortAscending": _('activate to sort column ascending'),

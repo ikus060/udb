@@ -105,11 +105,11 @@ class EnvironmentPage(CommonPage):
             Environment.status,
             Environment.name,
             Environment.model_name,
-            Environment.notes,
             self._pending_changes_query(Environment)
             .with_entities(func.count(Message.id))
             .scalar_subquery()
             .label('changes_count'),
+            Environment.notes,
         )
 
     def _pending_changes_query(self, environment):

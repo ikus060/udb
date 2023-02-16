@@ -1,6 +1,8 @@
 {% extends 'common/list.html' %}
 {% set columns = [
-{'data':'name', 'title':form.name.label.text, 'orderable':True, 'render':'summary', 'render_arg':'dnszone'},
-{'data':'subnets_count', 'title':_('Subnet count'), 'orderable':True},
-{'data':'notes', 'title':form.notes.label.text, 'orderable':True},
-{'name':'owner', 'data':'owner', 'title':form.owner_id.label.text, 'orderable':True}] %}
+{'name':'id', 'visible':False},
+{'name':'status', 'visible':False},
+{'name':'name', 'title':form.name.label.text, 'orderable':True, 'render':'summary', 'render_arg':'dnszone'},
+{'name':'subnets_count', 'title':_('Subnet count'), 'orderable':True},
+{'name':'notes', 'title':form.notes.label.text, 'orderable':True},
+{'name':'owner', 'title':form.owner_id.label.text, 'orderable':True}] %}

@@ -1,6 +1,8 @@
 {% extends 'common/list.html' %}
 {% set columns = [
-{'data':'name', 'title':form.name.label.text, 'orderable':True, 'render':'summary', 'render_arg':'environment'},
-{'data':'model_name', 'title':form.model_name.label.text, 'orderable':True, 'render':'choices', 'render_arg': form.model_name.choices},
-{'data':'changes_count', 'title':_('Number of pending changes'), 'orderable':True},
-{'data':'notes', 'title':form.notes.label.text, 'orderable':True}] %}
+{'name':'id', 'visible':False},
+{'name':'status', 'visible':False},
+{'name':'name', 'title':form.name.label.text, 'orderable':True, 'render':'summary', 'render_arg':'environment'},
+{'name':'model_name', 'title':form.model_name.label.text, 'orderable':True, 'render':'choices', 'render_arg': form.model_name.choices},
+{'name':'changes_count', 'title':_('Number of pending changes'), 'orderable':True},
+{'name':'notes', 'title':form.notes.label.text, 'orderable':True}] %}
