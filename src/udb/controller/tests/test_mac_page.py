@@ -80,13 +80,13 @@ class MacPageTest(WebCase):
         # When requesting data.json
         data = self.getJson(url_for('mac/data.json'))
         # Then json data is returned
-        data['data'] = sorted(data['data'], key=lambda row: row['id'])
+        data['data'] = sorted(data['data'], key=lambda row: row[0])
         self.assertEqual(
             data,
             {
                 'data': [
-                    {'id': 1, 'mac': '02:42:d7:e4:aa:59', 'notes': '', 'count': 0, 'owner': None, 'url': '/mac/1/edit'},
-                    {'id': 2, 'mac': '02:42:d7:e4:aa:ff', 'notes': '', 'count': 1, 'owner': None, 'url': '/mac/2/edit'},
+                    [1, '02:42:d7:e4:aa:59', 0, '', None, '/mac/1/edit'],
+                    [2, '02:42:d7:e4:aa:ff', 1, '', None, '/mac/2/edit'],
                 ]
             },
         )

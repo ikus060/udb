@@ -65,7 +65,7 @@ class DeploymentPageTest(WebCase):
         self.assertStatus(200)
         self.assertInBody('Deployment #%s' % obj.id)
 
-    def test_get_deployment_json(self):
+    def test_get_deployments_json(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
@@ -75,20 +75,18 @@ class DeploymentPageTest(WebCase):
         self.assertStatus(200)
         self.assertHeaderItemValue('Content-Type', 'application/json')
         self.assertEqual(
-            data,
-            {
-                'data': [
-                    {
-                        'id': 1,
-                        'environment': 'test-env',
-                        'change_count': 1,
-                        'created_at': ANY,
-                        'state': 0,
-                        'owner': 'admin',
-                        'url': 'http://127.0.0.1:54583/deployment/1/view',
-                    }
+            data['data'],
+            [
+                [
+                    1,
+                    0,
+                    'test-env',
+                    ANY,
+                    1,
+                    'admin',
+                    'http://127.0.0.1:54583/deployment/1/view',
                 ]
-            },
+            ],
         )
 
     def test_get_deployment_changes_json(self):

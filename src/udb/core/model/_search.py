@@ -28,7 +28,9 @@ search_query = union(
         select(
             literal(model.__name__.lower()).label('model_name'),
             model.id.label('model_id'),
+            model.status,
             model.summary,
+            model.notes,
             model.owner_id,
             model.modified_at,
             model._search_vector,

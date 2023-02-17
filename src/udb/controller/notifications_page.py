@@ -125,19 +125,32 @@ class NotificationsPage:
     def data_json(self, **kwargs):
         # List object followed by current user
         userobj = cherrypy.request.currentuser
-        query = Search.query.join(
-            Follower,
-            and_(
-                Search.model_name == Follower.model_name, Search.model_id == Follower.model_id, Follower.model_id != 0
-            ),
-        ).filter(Follower.user_id == userobj.id)
+        query = (
+            Search.session.query(
+                Search.model_id,
+                Search.status,
+                Search.model_name,
+                Search.summary,
+            )
+            .join(
+                Follower,
+                and_(
+                    Search.model_name == Follower.model_name,
+                    Search.model_id == Follower.model_id,
+                    Follower.model_id != 0,
+                ),
+            )
+            .filter(Follower.user_id == userobj.id)
+        )
         return {
             'data': [
-                {
-                    'url': url_for(obj),
-                    'summary': obj.summary,
-                    'model_name': obj.model_name,
-                }
+                [
+                    obj.model_id,
+                    obj.status,
+                    obj.model_name,
+                    obj.summary,
+                    url_for(obj, 'edit'),
+                ]
                 for obj in query.all()
             ]
         }

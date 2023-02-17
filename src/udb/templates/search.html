@@ -22,8 +22,10 @@
     </form>
   </div>
   {% set columns = [
-  {'data':'summary', 'title':_('Summary'), 'orderable':True, 'render':'summary'},
-  {'data':'notes', 'title':_('Notes'), 'orderable':True},
-  ]%}
+  {'name':'id', 'visible':False},
+  {'name':'status', 'visible':False},
+  {'name':'model_name', 'visible':False},
+  {'name': 'summary', 'title':_('Summary'), 'orderable': True, 'render':'summary'},
+  {'name':'notes', 'title':_('Notes'), 'orderable':True}] %}
   {{ _table.table(url_for('search', 'query.json', q=form.q.data), columns = columns, searching=False, empty_message=_('Sorry, that filter combination has no result. Please try different criteria.')) }}
 {% endblock %}

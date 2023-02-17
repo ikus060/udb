@@ -92,13 +92,13 @@ class IPTest(WebCase):
         # When requesting data.json
         data = self.getJson(url_for('ip/data.json'))
         # Then json data is returned
-        data['data'] = sorted(data['data'], key=lambda row: row['id'])
+        data['data'] = sorted(data['data'], key=lambda row: row[0])
         self.assertEqual(
             data,
             {
                 'data': [
-                    {'id': 1, 'ip': '1.2.3.4', 'notes': '', 'count': 0, 'owner': None, 'url': '/ip/1/edit'},
-                    {'id': 2, 'ip': '2.3.4.5', 'notes': '', 'count': 1, 'owner': None, 'url': '/ip/2/edit'},
+                    [1, '1.2.3.4', 0, '', None, '/ip/1/edit'],
+                    [2, '2.3.4.5', 1, '', None, '/ip/2/edit'],
                 ]
             },
         )

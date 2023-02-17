@@ -2,7 +2,9 @@
 {% import "components/table.html" as _table %}
 {% import "common/status.html" as _status %}
 {% import "macro.html" as macro %}
-{% block title %}{% trans %}Deployment{% endtrans %}{%endblock%}
+{% block title %}
+    {% trans %}Deployment{% endtrans %}
+{% endblock %}
 {% block body %}
     {# Title #}
     <h2>{% trans %}Recent Deployment{% endtrans %}</h2>
@@ -17,12 +19,12 @@
                 (2, '<span class="badge bg-success">'|safe + _('Success') + '</span>'|safe),
                 (3, '<span class="badge bg-danger">'|safe + _('Failed') + '</span>'|safe)]%}
                 {% set columns = [
-                {'data': 'id', 'title':_('Deployment'), 'orderable': False, 'render':'summary', 'width':'25'},
-                {'data': 'state', 'title':_('State'), 'orderable': False, 'render':'choices', 'render_arg': choices},
-                {'data': 'environment', 'title':_('Environment'), 'orderable': False},
-                {'data': 'created_at', 'title':_('Started on'), 'orderable': False, 'render':'datetime'},
-                {'data': 'change_count', 'title':_('Number of changes'), 'orderable': False},
-                {'data': 'owner', 'title':_('Deployed by'), 'orderable': False},
+                {'name': 'id', 'title':_('Deployment'), 'orderable': False, 'render':'summary', 'width':'25'},
+                {'name': 'state', 'title':_('State'), 'orderable': False, 'render':'choices', 'render_arg': choices},
+                {'name': 'environment', 'title':_('Environment'), 'orderable': False},
+                {'name': 'created_at', 'title':_('Started on'), 'orderable': False, 'render':'datetime'},
+                {'name': 'change_count', 'title':_('Number of changes'), 'orderable': False},
+                {'name': 'owner', 'title':_('Deployed by'), 'orderable': False},
                 ] %}
                 {{ _table.table('deployments.json',
                 empty_message=_('Changes never deployed.'),

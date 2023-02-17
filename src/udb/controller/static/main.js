@@ -158,7 +158,7 @@ function safe(data) {
 $.fn.dataTable.render.action = function () {
     return {
         display: function (data, type, row, meta) {
-            return '<a class="btn btn-primary btn-circle btn-hover" href="' + encodeURI(row.url) + '"><i class="bi bi-chevron-right" aria-hidden="true"></i><span class="visually-hidden">Edit</span></a>'
+            return '<a class="btn btn-primary btn-circle btn-hover" href="' + encodeURI(data) + '"><i class="bi bi-chevron-right" aria-hidden="true"></i><span class="visually-hidden">Edit</span></a>'
         },
     };
 }
@@ -237,17 +237,25 @@ $.fn.dataTable.render.message_body = function () {
 $.fn.dataTable.render.primary_range = function () {
     return {
         display: function (data, type, row, meta) {
-            return '<a href="' + encodeURI(row.url) + '" class="depth-' + safe(row.depth) + '">' +
+            let html = '<a href="' + encodeURI(row[row.length - 1]) + '" class="depth-' + safe(row[3]) + '">' +
                 '<i class="bi bi-diagram-3-fill me-1" aria-hidden="true"></i>' +
                 '<strong>' + safe(data) + '</strong>' +
                 '</a> ';
+            if (meta.settings.aoColumns[1].name == 'status') {
+                if (row[1] == 'disabled') {
+                    html += ' <span class="badge bg-warning">' + meta.settings.oLanguage['disabled'] + '</span>';
+                } else if (row[1] == 'deleted') {
+                    html += ' <span class="badge bg-danger">' + meta.settings.oLanguage['deleted'] + '</span>';
+                }
+            }
+            return html;
         },
         sort: function (data, type, row, meta) {
-            return row.order;
+            return row[2];
         },
     };
 }
-$.fn.dataTable.render.summary = function (model_name=null) {
+$.fn.dataTable.render.summary = function (model_name = null) {
     /* FIXME Need to make this list canonical */
     let icon_table = {
         'dnszone': 'bi-collection',
@@ -258,21 +266,26 @@ $.fn.dataTable.render.summary = function (model_name=null) {
         'mac': 'bi-ethernet',
         'user': 'bi-person-fill',
         'vrf': 'bi-layers',
-        'deployment':'bi-cloud-upload-fill',
-        'environment':'bi-terminal-fill'
+        'deployment': 'bi-cloud-upload-fill',
+        'environment': 'bi-terminal-fill'
     };
 
     return {
         display: function (data, type, row, meta) {
-            const effective_model_name = model_name || row.model_name;
-            let html = '<a href="' + encodeURI(row.url) + '">' +
+            let effective_model_name = model_name;
+            if (effective_model_name == null && meta.settings.aoColumns[2].name == 'model_name') {
+                effective_model_name = row[2];
+            }
+            let html = '<a href="' + encodeURI(row[row.length - 1]) + '">' +
                 '<i class="bi ' + icon_table[effective_model_name] + ' me-1" aria-hidden="true"></i>' +
                 '<strong>' + safe(data) + '</strong>' +
                 '</a>';
-            if (row.status == 'disabled') {
-                html += ' <span class="badge bg-warning">' + meta.settings.oLanguage['disabled'] + '</span>';
-            } else if (row.status == 'deleted') {
-                html += ' <span class="badge bg-danger">' + meta.settings.oLanguage['deleted'] + '</span>';
+            if (meta.settings.aoColumns[1].name == 'status') {
+                if (row[1] == 'disabled') {
+                    html += ' <span class="badge bg-warning">' + meta.settings.oLanguage['disabled'] + '</span>';
+                } else if (row[1] == 'deleted') {
+                    html += ' <span class="badge bg-danger">' + meta.settings.oLanguage['deleted'] + '</span>';
+                }
             }
             return html;
         },
@@ -315,15 +328,22 @@ jQuery(function () {
             columns: columns,
             searchCols: searchCols,
             drawCallback: function (_settings) {
-                // Remove sorting class
+                // This call back is responsible to add and remove 'sorting-x-x' class
+                // to allow CSS customization of the table based on the sorted column
                 this.removeClass(function (_index, className) {
                     return className.split(/\s+/).filter(function (c) {
                         return c.startsWith('sorted-');
                     }).join(' ');
                 });
                 // Add sorting class when sorting without filter
-                if (this.api().order() && this.api().order()[0] && this.api().order()[0][1] === 'asc' && this.api().order()[0][0] >= 0 && this.api().search() === '') {
-                    this.addClass('sorted-' + this.api().order()[0][0]);
+                if (this.api().order() && this.api().order()[0] && this.api().order()[0][0] >= 0 && this.api().search() === '') {
+                    const colIdx = this.api().order()[0][0];
+                    const direction = this.api().order()[0][1]
+                    this.addClass('sorted-' + colIdx + '-' + direction);
+                    const colName = _settings.aoColumns[colIdx].name;
+                    if (colName) {
+                        this.addClass('sorted-' + colName + '-' + direction);
+                    }
                 }
             },
             initComplete: function () {

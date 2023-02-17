@@ -106,39 +106,39 @@ table.dataTable.no-footer {
 }
 
 /* Custom class for subnet depth */
-table.dataTable.sorted-0 .depth-1 {
+table.dataTable.sorted-primary_range-asc .depth-1 {
     padding-left: 2em;
 }
 
-table.dataTable.sorted-0 .depth-2 {
+table.dataTable.sorted-primary_range-asc .depth-2 {
     padding-left: 4em;
 }
 
-table.dataTable.sorted-0 .depth-3 {
+table.dataTable.sorted-primary_range-asc .depth-3 {
     padding-left: 6em;
 }
 
-table.dataTable.sorted-0 .depth-4 {
+table.dataTable.sorted-primary_range-asc .depth-4 {
     padding-left: 8em;
 }
 
-table.dataTable.sorted-0 .depth-5 {
+table.dataTable.sorted-primary_range-asc .depth-5 {
     padding-left: 10em;
 }
 
-table.dataTable.sorted-0 .depth-6 {
+table.dataTable.sorted-primary_range-asc .depth-6 {
     padding-left: 12em;
 }
 
-table.dataTable.sorted-0 .depth-7 {
+table.dataTable.sorted-primary_range-asc .depth-7 {
     padding-left: 14em;
 }
 
-table.dataTable.sorted-0 .depth-8 {
+table.dataTable.sorted-primary_range-asc .depth-8 {
     padding-left: 16em;
 }
 
-table.dataTable.sorted-0 .depth-9 {
+table.dataTable.sorted-primary_range-asc .depth-9 {
     padding-left: 18em;
 }
 

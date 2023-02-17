@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import ipaddress
+from collections import namedtuple
 
 import cherrypy
 from sqlalchemy import case, func
@@ -153,6 +154,25 @@ class SubnetForm(CherryForm):
     )
 
 
+SubnetRow = namedtuple(
+    'SubnetRow',
+    [
+        'id',
+        'status',
+        'order',
+        'depth',
+        'primary_range',
+        'secondary_ranges',
+        'name',
+        'vrf_name',
+        'l3vni',
+        'l2vni',
+        'vlan',
+        'dnszone_names',
+    ],
+)
+
+
 class SubnetPage(CommonPage):
     def __init__(self):
         super().__init__(Subnet, SubnetForm)
@@ -165,8 +185,8 @@ class SubnetPage(CommonPage):
             .group_by(Subnet.id, SubnetRange.vrf_id, Vrf.name)
             .with_entities(
                 Subnet.id,
-                Subnet.name,
                 Subnet.status,
+                Subnet.name,
                 SubnetRange.vrf_id,
                 Vrf.name.label('vrf_name'),
                 Subnet.l3vni,
@@ -196,22 +216,30 @@ class SubnetPage(CommonPage):
             dnszone_names = ', '.join(row.dnszone_names.split(',')) if row.dnszone_names else None
             # Re-create a new row
             order = order + 1
-            rows[i] = dict(
-                rows[i],
-                order=order,
-                primary_range=primary_range,
-                secondary_ranges=secondary_ranges,
-                dnszone_names=dnszone_names,
-            )
-            # Drop ranges as it's not needed for display
-            del rows[i]['ranges']
             # Compute depth
             while prev_row and (
                 row['vrf_id'] != prev_row[-1]['vrf_id'] or not _subnet_of(primary_range, prev_row[-1]['primary_range'])
             ):
                 prev_row.pop()
-            rows[i]['depth'] = len(prev_row)
+            yield SubnetRow(
+                id=row.id,
+                status=row.status,
+                order=order,
+                depth=len(prev_row),
+                primary_range=primary_range,
+                secondary_ranges=secondary_ranges,
+                name=row.name,
+                vrf_name=row.vrf_name,
+                l3vni=row.l3vni,
+                l2vni=row.l2vni,
+                vlan=row.vlan,
+                dnszone_names=dnszone_names,
+            )
             # Keep reference of previous row for depth calculation
             if row.status != Subnet.STATUS_DELETED:
-                prev_row.append(rows[i])
-        return rows
+                prev_row.append(
+                    {
+                        'vrf_id': row.vrf_id,
+                        'primary_range': primary_range,
+                    }
+                )

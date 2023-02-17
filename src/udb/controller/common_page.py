@@ -109,10 +109,10 @@ class CommonPage(object):
         """
         return self.model.query.filter_by(**{self.primary_key: key})
 
-    def _to_dict(self, data):
-        if type(data) != dict:
-            data = dict(data)
-        data['url'] = url_for(self.model, data['id'], 'edit', relative='server')
+    def _to_list(self, data):
+        if type(data) != list:
+            data = list(data)
+        data.append(url_for(self.model, data[0], 'edit', relative='server'))
         return data
 
     @cherrypy.expose
@@ -136,7 +136,7 @@ class CommonPage(object):
     def data_json(self, **kwargs):
         verify_role(self.list_role)
         obj_list = self._list_query()
-        data = {'data': [self._to_dict(obj) for obj in obj_list]}
+        data = {'data': [self._to_list(obj) for obj in obj_list]}
         return data
 
     @cherrypy.expose

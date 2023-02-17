@@ -164,10 +164,10 @@ class DnsRecordPage(CommonPage):
         return DnsRecord.query.outerjoin(DnsRecord.owner).with_entities(
             DnsRecord.id,
             DnsRecord.status,
-            DnsRecord.name.label('n'),
-            DnsRecord.type.label('t'),
-            DnsRecord.ttl.label('l'),
-            DnsRecord.value.label('v'),
-            DnsRecord.notes.label('c'),
+            DnsRecord.name,
+            DnsRecord.type,
+            DnsRecord.ttl,
+            DnsRecord.value,
+            DnsRecord.notes,
             User.summary.label('owner'),
         )

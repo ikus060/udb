@@ -129,8 +129,8 @@ class IpPage(CommonPage):
             .with_entities(
                 Ip.id,
                 Ip.ip,
-                Ip.notes,
                 (func.count(DhcpRecord.id) + func.count(DnsRecord.id)).label('count'),
+                Ip.notes,
                 func.min(User.summary).label('owner'),
             )
         )

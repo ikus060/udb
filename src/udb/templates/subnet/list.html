@@ -1,12 +1,16 @@
 {% extends 'common/list.html' %}
-{# Subnet are sorted a in specific wayt to mimic the IP CIDR ordering. #}
-{# data-depth is used by datatables to create a "tree" representation of the data. #}
+{# Subnet are sorted a in specific way to mimic the IP CIDR ordering. #}
+{# The `primary_range` render is responsible to define the ordering using the 'order' column and the depth using `depth` column. #}
 {% set columns = [
-{'data':'primary_range', 'title': _('Primary IP Range'), 'orderable':True, 'render':'primary_range', 'type':'number', 'width':250},
-{'data':'secondary_ranges', 'title': _('Secondary IP Range(s)'), 'orderable':True, 'width':250},
-{'data':'name', 'title':form.name.label.text, 'orderable':True},
-{'data':'vrf_name', 'title':form.vrf_id.label.text, 'orderable':True},
-{'data':'l3vni', 'title':form.l3vni.label.text, 'orderable':True},
-{'data':'l2vni', 'title':form.l2vni.label.text, 'orderable':True},
-{'data':'vlan','title': form.vlan.label.text, 'orderable':True},
-{'data':'dnszone_names', 'title':form.dnszones.label.text, 'orderable':False}] %}
+{'name':'id', 'visible':False},
+{'name':'status', 'visible':False},
+{'name':'order', 'visible':False},
+{'name':'depth', 'visible':False},
+{'name':'primary_range', 'title': _('Primary IP Range'), 'orderable':True, 'render':'primary_range', 'type':'number', 'width':250},
+{'name':'secondary_ranges', 'title': _('Secondary IP Range(s)'), 'orderable':True, 'width':250},
+{'name':'name', 'title':form.name.label.text, 'orderable':True},
+{'name':'vrf_name', 'title':form.vrf_id.label.text, 'orderable':True},
+{'name':'l3vni', 'title':form.l3vni.label.text, 'orderable':True},
+{'name':'l2vni', 'title':form.l2vni.label.text, 'orderable':True},
+{'name':'vlan','title': form.vlan.label.text, 'orderable':True},
+{'name':'dnszone_names', 'title':form.dnszones.label.text, 'orderable':False}] %}

@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from collections import namedtuple
+
 import cherrypy
 
 from udb.controller import lastupdated, url_for, verify_role
@@ -36,6 +38,11 @@ def checkpassword_or_token(realm, username, password):
         deployment_id = cherrypy.request.params.get('id', None)
         return Deployment.query.filter(Deployment.id == deployment_id, Deployment.token == password).count() >= 1
     return valid
+
+
+DeploymentRow = namedtuple(
+    'DeploymentRow', ['id', 'state', 'environment', 'created_at', 'change_count', 'owner', 'url']
+)
 
 
 class DeploymentPage:
@@ -93,10 +100,10 @@ class DeploymentPage:
         obj_list = (
             Deployment.session.query(
                 Deployment.id,
+                Deployment.state,
                 Environment.name.label('environment'),
                 Deployment.change_count,
                 Deployment.created_at,
-                Deployment.state,
                 User.summary.label('owner'),
             )
             .outerjoin(Deployment.owner)
@@ -107,12 +114,14 @@ class DeploymentPage:
         )
         return {
             'data': [
-                dict(
-                    obj,
-                    **{
-                        'created_at': obj.created_at.isoformat(),
-                        'url': url_for('deployment', obj.id, 'view'),
-                    }
+                DeploymentRow(
+                    id=obj.id,
+                    state=obj.state,
+                    environment=obj.environment,
+                    change_count=obj.change_count,
+                    created_at=obj.created_at.isoformat(),
+                    owner=obj.owner,
+                    url=url_for('deployment', obj.id, 'view'),
                 )
                 for obj in obj_list
             ]
