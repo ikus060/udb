@@ -133,6 +133,26 @@ class NotificationPluginTest(WebCase):
             message=mock.ANY,
         )
 
+    def test_with_too_many_changes(self):
+        # Given a lister
+        self.listener.send_mail.reset_mock()
+        # When making multiple changes
+        follower1 = User.create(username='follower1', email='follower1@test.com').add()
+        vrf = Vrf(name='default')
+        for i in range(1, 24):
+            subnet = Subnet(ranges=[f'192.168.{i}.0/24'], name=f'subnet {i}', vrf=vrf).add().flush()
+            subnet.add_follower(follower1)
+        subnet.commit()
+        # Then wait for task to get processed
+        self.wait_for_tasks()
+        # Then a single notification is sent to the followers
+        self.listener.send_mail.assert_any_call(
+            to='follower1@test.com',
+            subject='Subnet subnet 1, Subnet subnet 2, Subnet subnet 3, Subnet subnet 4, Subnet subnet 5 created by nobody And 18 more changes',
+            message=mock.ANY,
+        )
+        self.assertIn("And 18 more changes", self.listener.send_mail.call_args[1]['message'])
+
     def test_with_new_catchall(self):
         # Given a catchall notification email in configuration
         cherrypy.config.update({'notification.catch_all_email': 'my@email.com'})
