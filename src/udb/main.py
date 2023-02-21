@@ -20,6 +20,7 @@ import logging.handlers
 import sys
 
 import cherrypy
+from cherrypy.process.plugins import DropPrivileges
 
 from udb.app import Root
 from udb.config import parse_args
@@ -103,6 +104,10 @@ def main(args=None):
             'server.socket_port': cfg.server_port,
         }
     )
+
+    # DropPriviledge
+    cherrypy.drop_privileges = DropPrivileges(cherrypy.engine, umask=cfg.umask, uid=cfg.user, gid=cfg.group)
+    cherrypy.drop_privileges.subscribe()
 
     # start app
     cherrypy.quickstart(Root(cfg=cfg), '/')

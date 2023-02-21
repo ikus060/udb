@@ -273,7 +273,7 @@ $.fn.dataTable.render.summary = function (model_name = null) {
     return {
         display: function (data, type, row, meta) {
             let effective_model_name = model_name;
-            if (effective_model_name == null && meta.settings.aoColumns[2].name == 'model_name') {
+            if (effective_model_name == null && meta.settings.aoColumns.length > 2 && meta.settings.aoColumns[2].name == 'model_name') {
                 effective_model_name = row[2];
             }
             let html = '<a href="' + encodeURI(row[row.length - 1]) + '">' +

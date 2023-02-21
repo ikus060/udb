@@ -6,7 +6,7 @@
       <div class="col-md-8 col-lg-6 col-xl-5 col-xxl-3">
         <div class="card p-3">
           <h2 class="d-flex align-items-center">
-            <img src="{{ url_for('static', 'favicon.svg')}}"
+            <img src="{{ url_for('static', 'favicon.svg', v=cache_invalidate)}}"
                  class="d-inline-block me-2"
                  height="24"
                  alt="logo"/>
@@ -30,7 +30,7 @@
   </section>
   <style>
     main {
-        background: url({{url_for('static', 'login_bg.jpg')}});
+        background: url({{url_for('static', 'login_bg.jpg', v=cache_invalidate)}});
         background-size: cover;
     }
   </style>

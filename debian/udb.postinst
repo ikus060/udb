@@ -5,7 +5,8 @@ set -e
 case "${1}" in
 	configure)
 		# Create default log directory
-		mkdir -p /var/log/udb
+		mkdir -p /var/log/udb /var/lib/udb
+		chown www-data:www-data /var/log/udb /var/lib/udb
 		;;
 
 	abort-upgrade|abort-remove|abort-deconfigure)

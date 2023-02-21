@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
+import grp
+import pwd
 import sys
 
 import cherrypy
@@ -30,6 +32,44 @@ try:
     __version__ = pkg_resources.get_distribution("udb").version
 except Exception:
     __version__ = 'DEV'
+
+
+def _userid(value):
+    """
+    Parse the user value attribute that could be either a username or a userid.
+    """
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    try:
+        return pwd.getpwnam(value).pw_uid
+    except KeyError:
+        raise argparse.ArgumentError('user %s not found' % value)
+
+
+def _groupid(value):
+    """
+    Parse the group value that could be either a group name or groupid.
+    """
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    try:
+        return grp.getgrnam(value).gr_gid
+    except KeyError:
+        raise argparse.ArgumentError('group %s not found' % value)
+
+
+def _umask(value):
+    """
+    Validate the umask value. Read it as octal and return integer.
+    """
+    try:
+        return int(value, base=8)
+    except ValueError:
+        raise argparse.ArgumentError('invalid umask value %s' % value)
 
 
 def parse_args(args=None, config_file_contents=None):
@@ -378,11 +418,30 @@ def parse_args(args=None, config_file_contents=None):
     )
 
     parser.add(
-        '--deploy-cmd',
-        help=_("Command line executed by the application to launch the deployment process."),
-        default=_(
-            'echo "You must configure --deploy-cmd."; for i in {1..30}; do sleep 1 && echo "."; done; echo "DONE";'
+        '--umask',
+        help=_(
+            "Force a specific umask value. Usually expressed in octal format, for example, ``0022``. Default value is inherit from parent process."
         ),
+        metavar='UMASK',
+        type=_umask,
+    )
+
+    parser.add(
+        '--user',
+        help=_(
+            "User under which the server will answer requests. In order to use this directive, the process must be run initially as root. If you start the server as a non-root user, it will fail to change to the lesser privileged user, and will instead continue to run as that original user."
+        ),
+        metavar='USER',
+        type=_userid,
+    )
+
+    parser.add(
+        '--group',
+        help=_(
+            "Group under which the server will answer requests. In order to use this directive, the process must be run initially as root."
+        ),
+        metavar='GROUP',
+        type=_groupid,
     )
 
     return parser.parse_args(args, config_file_contents=config_file_contents)

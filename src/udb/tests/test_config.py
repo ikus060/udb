@@ -15,9 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import grp
+import os
 import unittest
 
 from udb.config import parse_args
+
+try:
+    _login = os.getlogin()
+except Exception:
+    _login = None
 
 
 class TestConfig(unittest.TestCase):
@@ -48,3 +55,43 @@ class TestConfig(unittest.TestCase):
         cfg = parse_args(args)
         # Then configuration matches the arguments value
         self.assertEqual(cfg.ldap_fullname_attribute, ['sn'])
+
+    def test_uid_gid_umask(self):
+        # Given username, group define using id.
+        args = [
+            '--server-host',
+            '1.2.3.4',
+            '--server-port',
+            '5000',
+            '--user',
+            '123',
+            '--group',
+            '123',
+            '--umask',
+            '0002',
+        ]
+        # When parsing the arguments list
+        cfg = parse_args(args)
+        # Then configuration return integer value.
+        self.assertEqual(cfg.user, 123)
+        self.assertEqual(cfg.group, 123)
+        self.assertEqual(cfg.umask, 0o0002)
+
+    @unittest.skipIf(_login is None, reason="real username required to run to this test")
+    def test_user_group_umask(self):
+        # Given username, group define using name.
+        args = [
+            '--server-host',
+            '1.2.3.4',
+            '--server-port',
+            '5000',
+            '--user',
+            _login,
+            '--group',
+            grp.getgrgid(os.getgid()).gr_name,
+        ]
+        # When parsing the arguments list
+        cfg = parse_args(args)
+        # Then username and group are resolved as uid, gid
+        self.assertEqual(cfg.user, os.getuid())
+        self.assertEqual(cfg.group, os.getgid())
