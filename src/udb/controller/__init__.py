@@ -17,6 +17,7 @@
 import datetime
 import logging
 import re
+import time
 from collections import namedtuple
 
 import cherrypy
@@ -28,6 +29,9 @@ from udb.tools.i18n import gettext as _
 logger = logging.getLogger(__name__)
 
 FlashMessage = namedtuple('FlashMessage', ['message', 'level'])
+
+# Capture epoch time to invalidate cache of static file.
+_cache_invalidate = int(time.time())
 
 
 def flash(message, level='info'):
@@ -148,6 +152,7 @@ def template_processor(request):
         'footer_name': app.cfg.footer_name,
         'get_flashed_messages': get_flashed_messages,
         'current_url': cherrypy.url(path=cherrypy.request.path_info),
+        'cache_invalidate': _cache_invalidate,
     }
     if hasattr(cherrypy.serving.request, 'login'):
         values['username'] = cherrypy.serving.request.login
