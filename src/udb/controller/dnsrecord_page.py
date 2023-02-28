@@ -21,7 +21,7 @@ from wtforms.fields import BooleanField, IntegerField, SelectField, StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length
 
-from udb.controller import flash, handle_exception, url_for, verify_role
+from udb.controller import flash, handle_exception, url_for, verify_perm
 from udb.core.model import DnsRecord, User
 from udb.tools.i18n import gettext as _
 
@@ -134,13 +134,13 @@ class DnsRecordPage(CommonPage):
         """
         Redirect user to reverse record or pre-fill a new form to create the record.
         """
-        verify_role(self.list_role)
+        verify_perm(self.list_perm)
         # Return Not found if object doesn't exists
         obj = self._get_or_404(key)
         # If the reverse record doesn't exists, create it.
         reverse_record = obj.get_reverse_dns_record()
         if not reverse_record:
-            verify_role(self.edit_role)
+            verify_perm(self.new_perm)
             try:
                 reverse_record = obj.create_reverse_dns_record(owner=cherrypy.serving.request.currentuser)
                 if reverse_record:

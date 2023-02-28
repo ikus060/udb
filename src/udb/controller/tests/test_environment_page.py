@@ -20,7 +20,7 @@ from udb.controller import url_for
 from udb.controller.tests import WebCase
 from udb.core.model import Deployment, DhcpRecord, Environment, Message
 
-from .test_network_page import CommonTest
+from .test_common_page import CommonTest
 
 
 class EnvironmentPageTest(WebCase, CommonTest):

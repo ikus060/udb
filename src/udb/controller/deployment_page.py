@@ -20,7 +20,7 @@ from collections import namedtuple
 
 import cherrypy
 
-from udb.controller import lastupdated, url_for, verify_role
+from udb.controller import lastupdated, url_for, verify_perm
 from udb.controller.api import checkpassword
 from udb.controller.common_page import CommonApi
 from udb.core.model import Deployment, DnsRecord, DnsZone, Environment, Message, User
@@ -49,7 +49,6 @@ class DeploymentPage:
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['deploy/list.html'])
     def index(self):
-        verify_role(User.ROLE_ADMIN)
         return {}
 
     @cherrypy.expose()
@@ -58,7 +57,6 @@ class DeploymentPage:
         """
         Return list of changes since last deployment.
         """
-        verify_role(User.ROLE_ADMIN)
         # List all activities by dates
         deployment = Deployment.query.filter(Deployment.id == id).first()
         if not deployment:
@@ -96,7 +94,6 @@ class DeploymentPage:
         """
         Return list of deployment.
         """
-        verify_role(User.ROLE_ADMIN)
         obj_list = (
             Deployment.session.query(
                 Deployment.id,
@@ -133,7 +130,6 @@ class DeploymentPage:
         """
         Called by Web interface to refresh the ouput view at regular interval.
         """
-        verify_role(User.ROLE_ADMIN)
         # Return Not found if object doesn't exists
         deployment = Deployment.query.filter(Deployment.id == id).first()
         if not deployment:
@@ -146,7 +142,6 @@ class DeploymentPage:
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='deploy/view.html')
     def view(self, id, **kwargs):
-        verify_role(User.ROLE_ADMIN)
         # Return Not found if object doesn't exists
         deployment = Deployment.query.filter(Deployment.id == id).first()
         if not deployment:
@@ -166,7 +161,7 @@ class DeploymentApi(CommonApi):
     """
 
     def __init__(self):
-        super().__init__(Deployment, list_role=User.ROLE_ADMIN, edit_role=-1)
+        super().__init__(Deployment, list_perm=User.PERM_NETWORK_LIST, edit_perm=-1, new_perm=-1)
 
     @cherrypy.expose()
     @cherrypy.tools.auth_basic(on=True, checkpassword=checkpassword_or_token)
@@ -175,7 +170,7 @@ class DeploymentApi(CommonApi):
         Return deployment data as Json.
         """
         # Check role
-        verify_role(self.list_role)
+        verify_perm(self.list_perm)
         # Get object
         deployment = self._get_or_404(id)
         # Return data

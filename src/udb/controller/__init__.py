@@ -107,12 +107,12 @@ def url_for(*args, relative=None, **kwargs):
     return cherrypy.url(path=path, qs=qs, relative=relative, base=base)
 
 
-def verify_role(role):
+def verify_perm(perm):
     """
-    Verify if the current user has the required role.
+    Verify if the current user has the required permissions.
     """
     user = cherrypy.serving.request.currentuser
-    if user is None or not user.has_role(role):
+    if user is None or not user.has_permissions(perm):
         raise cherrypy.HTTPError(403, 'Insufficient privileges')
 
 

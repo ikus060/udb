@@ -15,22 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import Vrf
+from udb.core.model import DhcpRecord, User
 
 from .test_common_page import CommonTest
 
 
-class VrfTest(WebCase, CommonTest):
+class DhcpRecordTest(WebCase, CommonTest):
 
-    base_url = 'vrf'
+    base_url = 'dhcprecord'
 
-    obj_cls = Vrf
+    obj_cls = DhcpRecord
 
-    new_data = {'name': 'test'}
+    new_data = {'ip': '1.2.3.4', 'mac': '02:42:d7:e4:aa:58'}
 
-    edit_data = {'name': 'new name', 'notes': 'test'}
+    edit_data = {'ip': '1.2.3.5', 'mac': '02:42:d7:e4:aa:67'}
 
     def test_new_duplicate(self):
         # Given a database with a record
@@ -42,3 +43,20 @@ class VrfTest(WebCase, CommonTest):
         # Then error is repported to the user.
         self.assertStatus(200)
         self.assertInBody('A record already exists in database with the same value.')
+
+    def test_edit_owner_and_notes(self):
+        # Given a database with a record
+        user_obj = User.query.first()
+        obj = self.obj_cls(**self.new_data)
+        obj.add()
+        obj.commit()
+        self.assertEqual(1, len(obj.messages))
+        obj.expire()
+        # When editing notes and owner
+        self.getPage(
+            url_for(self.base_url, obj.id, 'edit'),
+            method='POST',
+            body={'notes': 'Change me to get notification !', 'owner': user_obj.id},
+        )
+        # Then a single message is added to the record
+        self.assertEqual(2, len(obj.messages))

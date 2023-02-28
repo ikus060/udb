@@ -11,11 +11,11 @@
     </div>
     <div class="col text-end mb-2">
       {% if has_new %}
-        {% set new_disabled = not currentuser.allow_new_record() %}
-        <a class="btn btn-primary {% if new_disabled %}disabled{% endif %}"
+        <a class="btn btn-primary {% if not new_perm %}disabled{% endif %}"
            href="{{ url_for(model, 'new')}}"
            role="button"
-           {% if new_disabled %}aria-disabled="true"{% endif %}>{% trans %}Create{% endtrans %}
+           {% if not new_perm %}aria-disabled="true" title="{% trans %}Permissions required{% endtrans %}"{% endif %}>
+          {% trans %}Create{% endtrans %}
         {{ macro.display_name(model_name)}}</a>
       {% endif %}
     </div>
@@ -32,7 +32,7 @@
   {# Append Action columns #}
   {% set table_columns = table_columns + [{'name':'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px', 'className':'all'}] %}
   {# Add Status Filter if status column exists #}
-  {% if has_status %}
+  {% if 'status' in (table_columns|map(attribute='name')|list) %}
     {% set table_default_buttons = table_default_buttons + [{'text': _('Hide Deleted'), 'extend': 'filter', 'column': 'status:name', 'search': 'enabled'}] %}
   {% endif %}
   {# Add Owner filter if owner column exists #}

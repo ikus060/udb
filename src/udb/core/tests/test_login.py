@@ -43,7 +43,7 @@ class TestLogin(WebCase):
         # Given valids credentials from database
         username = 'user01'
         password = 'password'
-        User.create(username=username, password=password, role=User.ROLE_USER).commit()
+        User.create(username=username, password=password, role='user').commit()
         # When trying to login with those credentials
         login = cherrypy.engine.publish('login', username, password)
         # Then user is login
@@ -51,13 +51,13 @@ class TestLogin(WebCase):
         # Then user is created in database with default role
         userobj = User.query.filter_by(username=username).first()
         self.assertEqual('user01', userobj.username)
-        self.assertEqual(User.ROLE_USER, userobj.role)
+        self.assertEqual('user', userobj.role)
 
     def test_login_with_invalid_challenge(self):
         # Given a user created with "raw" password.
         username = 'user01'
         password = 'password'
-        User(username=username, password=password, role=User.ROLE_USER).add().commit()
+        User(username=username, password=password, role='user').add().commit()
         # When trying to login with those credentials
         login = cherrypy.engine.publish('login', username, password)
         # Then user is not login
@@ -67,7 +67,7 @@ class TestLogin(WebCase):
         # Given valids credentials from mock
         username = 'user01'
         password = 'password'
-        User.create(username=username, role=User.ROLE_USER).commit()
+        User.create(username=username, role='user').commit()
         self.listener.authenticate.return_value = ('user01', {'_email': 'john@test.com'})
         # When trying to login with those credentials
         login = cherrypy.engine.publish('login', username, password)
@@ -82,7 +82,7 @@ class TestLogin(WebCase):
         # Given valids credentials from mock
         username = 'user01'
         password = 'password'
-        User.create(username=username, role=User.ROLE_USER).commit()
+        User.create(username=username, role='user').commit()
         self.listener.authenticate.return_value = ('user01', {'_fullname': 'John Kennedy'})
         # When trying to login with those credentials
         login = cherrypy.engine.publish('login', username, password)
@@ -95,7 +95,7 @@ class TestLogin(WebCase):
 
     def test_login_with_invalid_username(self):
         # Given a valid user in database
-        User.create(username='user01', password='password', role=User.ROLE_USER).commit()
+        User.create(username='user01', password='password', role='user').commit()
         # When trying to login with those credentials
         login = cherrypy.engine.publish('login', 'invalid', 'password')
         # Then user is login
@@ -103,7 +103,7 @@ class TestLogin(WebCase):
 
     def test_login_with_invalid_password(self):
         # Given a valid user in database
-        User.create(username='user01', password='password', role=User.ROLE_USER).commit()
+        User.create(username='user01', password='password', role='user').commit()
         # When trying to login with those credentials
         login = cherrypy.engine.publish('login', 'user01', 'invalid')
         # Then user is login
@@ -133,10 +133,10 @@ class TestLoginWithAddMissing(WebCase):
         login = cherrypy.engine.publish('login', username, password)
         # Then user is login
         self.assertTrue(login[0])
-        # Then user is created in database with default role
+        # Then user is created in database with default role guest
         userobj = User.query.filter_by(username=username).first()
         self.assertEqual('user01', userobj.username)
-        self.assertEqual(User.ROLE_GUEST, userobj.role)
+        self.assertEqual('guest', userobj.role)
 
     def test_login_with_email_and_fullname(self):
         # Given valids credentials from mock with email and fullname
@@ -183,4 +183,4 @@ class TestLoginWithAddMissingAndRole(WebCase):
         # Then user is created in database with default role
         userobj = User.query.filter_by(username=username).first()
         self.assertEqual('user01', userobj.username)
-        self.assertEqual(User.ROLE_ADMIN, userobj.role)
+        self.assertEqual('admin', userobj.role)

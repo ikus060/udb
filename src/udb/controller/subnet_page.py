@@ -175,7 +175,7 @@ SubnetRow = namedtuple(
 
 class SubnetPage(CommonPage):
     def __init__(self):
-        super().__init__(Subnet, SubnetForm)
+        super().__init__(Subnet, SubnetForm, new_perm=User.PERM_SUBNET_CREATE)
 
     def _list_query(self):
         query = (
