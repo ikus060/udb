@@ -276,7 +276,8 @@ $.fn.dataTable.render.summary = function (model_name = null) {
             if (effective_model_name == null && meta.settings.aoColumns.length > 2 && meta.settings.aoColumns[2].name == 'model_name') {
                 effective_model_name = row[2];
             }
-            let html = '<a href="' + encodeURI(row[row.length - 1]) + '">' +
+            const url = encodeURI('url' in row ? row.url : row[row.length - 1]);
+            let html = '<a href="' + url + '">' +
                 '<i class="bi ' + icon_table[effective_model_name] + ' me-1" aria-hidden="true"></i>' +
                 '<strong>' + safe(data) + '</strong>' +
                 '</a>';
