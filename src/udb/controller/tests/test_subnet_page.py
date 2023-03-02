@@ -20,7 +20,7 @@ from udb.controller import url_for
 from udb.controller.tests import WebCase
 from udb.core.model import DnsZone, Subnet, Vrf
 
-from .test_network_page import CommonTest
+from .test_common_page import CommonTest
 
 
 class SubnetTest(WebCase, CommonTest):

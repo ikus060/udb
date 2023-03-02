@@ -23,7 +23,7 @@ from sqlalchemy.orm import defer, undefer
 from wtforms.fields import HiddenField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, ValidationError
 
-from udb.controller import flash, lastupdated, url_for, verify_role
+from udb.controller import flash, lastupdated, url_for, verify_perm
 from udb.controller.common_page import CommonApi
 from udb.core.model import Deployment, Environment, Message, User
 from udb.tools.i18n import gettext as _
@@ -94,7 +94,13 @@ class DeployForm(CherryForm):
 
 class EnvironmentPage(CommonPage):
     def __init__(self):
-        super().__init__(Environment, EnvironmentForm, list_role=User.ROLE_ADMIN, edit_role=User.ROLE_ADMIN)
+        super().__init__(
+            Environment,
+            EnvironmentForm,
+            list_perm=User.PERM_NETWORK_LIST,
+            edit_perm=User.PERM_ENVIRONMENT_EDIT,
+            new_perm=User.PERM_ENVIRONMENT_EDIT,
+        )
 
     def _list_query(self):
         """
@@ -150,7 +156,7 @@ class EnvironmentPage(CommonPage):
         """
         Triger a deployment to specific environment.
         """
-        verify_role(User.ROLE_ADMIN)
+        verify_perm(User.PERM_NETWORK_LIST)
         # Find environment or return Not Found
         environment = self._get_or_404(key)
         # Identity last change
@@ -189,7 +195,6 @@ class EnvironmentPage(CommonPage):
         """
         Return list of pending changes for this environment.
         """
-        verify_role(User.ROLE_ADMIN)
         # Find environment or return Not Found
         environment = self._get_or_404(key)
         # List all activities by dates
@@ -215,4 +220,9 @@ EnvironmentPage._cp_dispatch = cherrypy.popargs('key', handler=EnvironmentPage()
 
 class EnvironmentApi(CommonApi):
     def __init__(self):
-        super().__init__(Environment, list_role=User.ROLE_ADMIN, edit_role=User.ROLE_ADMIN)
+        super().__init__(
+            Environment,
+            list_perm=User.PERM_NETWORK_LIST,
+            edit_perm=User.PERM_ENVIRONMENT_EDIT,
+            new_perm=User.PERM_ENVIRONMENT_EDIT,
+        )

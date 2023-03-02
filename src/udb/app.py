@@ -192,7 +192,7 @@ class Root(object):
                 'smtp.encryption': cfg.smtp_encryption,
                 # Configure login
                 'login.add_missing_user': cfg.add_missing_user,
-                'login.add_user_default_role': User.coerce_role_name(cfg.add_user_default_role),
+                'login.add_user_default_role': cfg.add_user_default_role,
                 # Configure notification
                 'notification.env': env,
                 'notification.header_name': cfg.header_name,
@@ -226,8 +226,8 @@ class Root(object):
         self.environment = EnvironmentPage()
         self.deployment = DeploymentPage()
         # Api
-        self.api.dnszone = CommonApi(DnsZone)
-        self.api.subnet = CommonApi(Subnet)
+        self.api.dnszone = CommonApi(DnsZone, new_perm=User.PERM_DNSZONE_CREATE)
+        self.api.subnet = CommonApi(Subnet, new_perm=User.PERM_SUBNET_CREATE)
         self.api.dnsrecord = CommonApi(DnsRecord)
         self.api.dhcprecord = CommonApi(DhcpRecord)
         self.api.vrf = CommonApi(Vrf)

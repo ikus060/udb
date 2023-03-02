@@ -46,7 +46,7 @@
           </div>
           <div class="card-footer">
             {# Submit Area #}
-            {% if is_editable and has_messages %}
+            {% if edit_perm and has_messages %}
               <div class="mb-2 form-floating">
                 <textarea name="body"
                           class="form-control"
@@ -57,7 +57,7 @@
               </div>
             {% endif %}
             <div class="text-start">
-              {% if is_editable and has_status %}
+              {% if edit_perm and has_status %}
                 {# Submit button with state #}
                 <div class="btn-group">
                   <button type="submit" class="btn btn-primary">{% trans %}Save changes{% endtrans %}</button>
@@ -91,7 +91,7 @@
                     </li>
                   </ul>
                 </div>
-              {% elif is_editable %}
+              {% elif edit_perm %}
                 {# Submit button #}
                 <button type="submit" class="btn btn-primary">{% trans %}Save changes{% endtrans %}</button>
               {% endif %}

@@ -34,7 +34,7 @@ class LoginPlugin(SimplePlugin):
     """
 
     add_missing_user = False
-    add_user_default_role = User.ROLE_GUEST
+    add_user_default_role = 'guest'
 
     def start(self):
         self.bus.log('Start Login plugin')

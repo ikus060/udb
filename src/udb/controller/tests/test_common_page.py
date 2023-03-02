@@ -22,8 +22,7 @@ from base64 import b64encode
 from parameterized import parameterized
 
 from udb.controller import url_for
-from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsZone, User
+from udb.core.model import User
 
 
 class CommonTest:
@@ -387,117 +386,37 @@ class CommonTest:
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', referer)
 
-
-class DhcpRecordTest(WebCase, CommonTest):
-
-    base_url = 'dhcprecord'
-
-    obj_cls = DhcpRecord
-
-    new_data = {'ip': '1.2.3.4', 'mac': '02:42:d7:e4:aa:58'}
-
-    edit_data = {'ip': '1.2.3.5', 'mac': '02:42:d7:e4:aa:67'}
-
-    def test_new_duplicate(self):
-        # Given a database with a record
-        obj = self.obj_cls(**self.new_data)
-        obj.add()
-        obj.commit()
-        # When trying to create the same record.
-        self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
-        # Then error is repported to the user.
-        self.assertStatus(200)
-        self.assertInBody('A record already exists in database with the same value.')
-
-    def test_edit_owner_and_notes(self):
-        # Given a database with a record
-        user_obj = User.query.first()
-        obj = self.obj_cls(**self.new_data)
-        obj.add()
-        obj.commit()
-        self.assertEqual(1, len(obj.messages))
-        obj.expire()
-        # When editing notes and owner
-        self.getPage(
-            url_for(self.base_url, obj.id, 'edit'),
-            method='POST',
-            body={'notes': 'Change me to get notification !', 'owner': user_obj.id},
-        )
-        # Then a single message is added to the record
-        self.assertEqual(2, len(obj.messages))
-
-
-class RoleTest(WebCase):
-    """
-    Test role verification.
-    """
-
-    login = False
-
-    authorization = [('Authorization', 'Basic %s' % b64encode(b'guest:password').decode('ascii'))]
-
-    def setUp(self):
-        super().setUp()
-        user = User.create(username='guest', password='password', role=User.ROLE_GUEST).add()
+    def test_list_as_guest(self):
+        # Given a 'guest' user authenticated
+        user = User.create(username='guest', password='password', role='guest').add()
         user.commit()
+        self.getPage("/logout", method='POST')
         self.getPage(
             "/login/", method='POST', body={'username': user.username, 'password': 'password', 'redirect': '/'}
         )
         self.assertStatus('303 See Other')
-
-    def test_list_as_guest(self):
-        # Given a 'guest' user authenticated
         # Given a DnsZone
-        obj = DnsZone(name='examples.com').add()
+        obj = self.obj_cls(**self.new_data).add()
         obj.commit()
         # When requesting list of records
-        self.getPage(url_for(DnsZone, 'data.json'))
+        data = self.getJson(url_for(self.base_url, 'data.json'))
         # Then the list is available
         self.assertStatus(200)
-        self.assertInBody('examples.com')
+        self.assertEqual(1, len(data['data']))
 
     def test_edit_as_guest(self):
         # Given a 'guest' user authenticated
+        user = User.create(username='guest', password='password', role='guest').add()
+        user.commit()
+        self.getPage("/logout", method='POST')
+        self.getPage(
+            "/login/", method='POST', body={'username': user.username, 'password': 'password', 'redirect': '/'}
+        )
+        self.assertStatus('303 See Other')
         # Given a DnsZone
-        zone = DnsZone(name='examples.com').add()
-        zone.commit()
-        # When trying to edit a record
-        self.getPage(url_for(zone, 'edit'), method='POST', body={'name': 'newname.com'})
-        # Then a 403 Forbidden is raised
-        self.assertStatus(403)
-
-    def test_new_as_guest(self):
-        # Given a 'guest' user authenticated
-        # When trying to create a record
-        self.getPage(url_for('dnszone', 'new'), method='POST', body={'name': 'newname.com'})
-        # Then a 403 Forbidden is raised
-        self.assertStatus(403)
-
-    def test_api_post_as_guest(self):
-        # Given a valid payload
-        payload = json.dumps({'name': 'newname.com'})
-        # When sending a POST request to the API
-        self.getPage(
-            url_for('api', 'dnszone'),
-            headers=[('Content-Type', 'application/json'), ('Content-Length', str(len(payload)))] + self.authorization,
-            method='POST',
-            body=payload,
-        )
-        # Then a 403 Forbidden is raised
-        self.assertStatus(403)
-
-    def test_api_put_as_guest(self):
-        # Given a existing record
-        obj = DnsZone(name='examples.com').add()
+        obj = self.obj_cls(**self.new_data).add()
         obj.commit()
-        # Given a valid payload
-        payload = json.dumps({'name': 'newname.com'})
-        # When sending a PUT request to the API
-        self.getPage(
-            url_for('api', 'dnszone', obj.id),
-            headers=[('Content-Type', 'application/json'), ('Content-Length', str(len(payload)))] + self.authorization,
-            method='PUT',
-            body=payload,
-        )
+        # When trying to edit a record
+        self.getPage(url_for(obj, 'edit'), method='POST', body=self.edit_data)
         # Then a 403 Forbidden is raised
         self.assertStatus(403)
