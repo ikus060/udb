@@ -24,9 +24,9 @@ from udb.core.model import User
 
 class UserTest(WebCase):
 
-    new_data = {'username': 'newuser', 'role': 10}
+    new_data = {'username': 'newuser', 'role': 'guest'}
 
-    edit_data = {'fullname': 'My Fullname', 'role': 10}
+    edit_data = {'fullname': 'My Fullname', 'role': 'guest'}
 
     def test_get_list_page(self):
         # Given a database with a record
@@ -161,9 +161,9 @@ class UserTest(WebCase):
         # Given a database with admin user
         obj = User.query.first()
         self.assertEqual('admin', obj.username)
-        self.assertEqual(0, obj.role)
+        self.assertEqual('admin', obj.role)
         # When trying to update our own status
-        self.getPage(url_for(obj, 'edit'), method='POST', body={'role': 10})
+        self.getPage(url_for(obj, 'edit'), method='POST', body={'role': 'guest'})
         # Then user is redirected to edit page showing an error message
         self.assertStatus(200)
         self.assertInBody('A user cannot update his own role.')

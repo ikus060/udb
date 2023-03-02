@@ -81,9 +81,7 @@ class NotificationPluginTest(WebCase):
 
     def test_with_changes(self):
         # Given a record with followers
-        follower = User.create(
-            username='afollower', password='password', email='follower@test.com', role=User.ROLE_USER
-        ).add()
+        follower = User.create(username='afollower', password='password', email='follower@test.com', role='user').add()
         record = DnsZone(name='my.zone.com').add().flush()
         record.add_follower(follower)
         record.commit()
@@ -169,9 +167,7 @@ class NotificationPluginTest(WebCase):
 
     def test_with_changes_catchall(self):
         # Given a record with followers
-        follower = User.create(
-            username='afollower', password='password', email='follower@test.com', role=User.ROLE_USER
-        ).add()
+        follower = User.create(username='afollower', password='password', email='follower@test.com', role='user').add()
         record = DnsZone(name='my.zone.com').add().flush()
         record.add_follower(follower)
         record.commit()
@@ -285,7 +281,7 @@ class NotificationPluginTest(WebCase):
 
     def test_with_follow_all(self):
         # Given a follower of all record of a given type Vrf
-        follower = User.create(username='afollower', email='follower@test.com', role=User.ROLE_USER).add()
+        follower = User.create(username='afollower', email='follower@test.com', role='user').add()
         Follower(user=follower, model_name='vrf', model_id=0).add().commit()
         # When an object of that type get updated (model_id = 0)
         vrf = Vrf(name='default')

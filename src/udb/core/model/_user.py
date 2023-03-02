@@ -18,7 +18,7 @@
 import cherrypy
 from sqlalchemy import Column, String, case, event, inspect
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import deferred
+from sqlalchemy.orm import deferred, validates
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
@@ -37,9 +37,29 @@ Base = cherrypy.tools.db.get_base()
 class User(JsonMixin, StatusMixing, Base):
     __tablename__ = 'user'
 
-    ROLE_ADMIN = 0
-    ROLE_USER = 5
-    ROLE_GUEST = 10
+    # Define permissions.
+    PERM_USER_MGMT = 1
+    PERM_SUBNET_CREATE = 1 << 2
+    PERM_DNSZONE_CREATE = 1 << 3
+    PERM_NETWORK_EDIT = 1 << 4
+    PERM_NETWORK_LIST = 1 << 5
+    PERM_ENVIRONMENT_EDIT = 1 << 6
+
+    # Define role using permissions
+    ROLE_GUEST = PERM_NETWORK_LIST
+    ROLE_USER = ROLE_GUEST | PERM_NETWORK_EDIT
+    ROLE_DNSZONE_MGMT = ROLE_USER | PERM_DNSZONE_CREATE
+    ROLE_SUBNET_MGMT = ROLE_DNSZONE_MGMT | PERM_SUBNET_CREATE
+    ROLE_ADMIN = ROLE_SUBNET_MGMT | PERM_USER_MGMT | PERM_ENVIRONMENT_EDIT
+
+    # Define roles using a name
+    ROLES = {
+        'guest': ROLE_GUEST,
+        'user': ROLE_USER,
+        'dnszone-mgmt': ROLE_DNSZONE_MGMT,
+        'subnet-mgmt': ROLE_SUBNET_MGMT,
+        'admin': ROLE_ADMIN,
+    }
 
     id = Column(Integer, primary_key=True)
     # Unique
@@ -47,7 +67,7 @@ class User(JsonMixin, StatusMixing, Base):
     password = deferred(Column(String, nullable=True))
     fullname = Column(String, nullable=False, default='')
     email = Column(String, nullable=True, unique=True)
-    role = Column(Integer, nullable=True, default=ROLE_GUEST)
+    role = Column(String, nullable=True, default='guest')
 
     @classmethod
     def create_default_admin(cls, default_username, default_password):
@@ -63,7 +83,7 @@ class User(JsonMixin, StatusMixing, Base):
         password = default_password or 'admin123'
         if not password.startswith('{SSHA}'):
             password = hash_password(password)
-        user = cls(username=default_username, password=password, role=User.ROLE_ADMIN)
+        user = cls(username=default_username, password=password, role='admin')
         return user.add()
 
     @classmethod
@@ -76,39 +96,16 @@ class User(JsonMixin, StatusMixing, Base):
         user = cls(username=username, password=password, **kwargs)
         return user.add()
 
-    @classmethod
-    def coerce_role_name(cls, name):
-        return {'admin': User.ROLE_ADMIN, 'user': User.ROLE_USER, 'guest': User.ROLE_GUEST}.get(name)
-
-    def is_local(self):
-        """
-        True if the user authentication is local.
-        """
-        return self.password is not None
-
     def is_admin(self):
         """
         Return true if this user is an administrator
         """
-        return self.role == User.ROLE_ADMIN
+        return self.role == 'admin'
 
-    def is_user(self):
-        """Return True if this user has role `user` or `admin`."""
-        return self.role <= User.ROLE_USER
-
-    def is_guest(self):
-        """Return True if this user has role `guest`, `user` or `admin`."""
-        return self.role <= User.ROLE_GUEST
-
-    def has_role(self, role):
-        assert isinstance(role, int)
-        return self.role <= role
-
-    def allow_new_record(self):
-        return self.is_user()
-
-    def allow_edit_record(self):
-        return self.is_user()
+    def has_permissions(self, perm):
+        assert isinstance(perm, int)
+        current_perm = User.ROLES.get(self.role, 0)
+        return (current_perm | perm) == current_perm
 
     @hybrid_property
     def summary(self):
@@ -148,6 +145,12 @@ class User(JsonMixin, StatusMixing, Base):
         if 'password' in data:
             del data['password']
         return data
+
+    @validates('role')
+    def validate_role(self, key, value):
+        if value not in User.ROLES:
+            raise ValueError('invalid role')
+        return value
 
 
 # Create a unique index for username

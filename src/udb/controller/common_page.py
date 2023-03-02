@@ -22,7 +22,7 @@ from sqlalchemy.inspection import inspect
 from wtforms.fields import HiddenField, TextAreaField
 from wtforms.validators import InputRequired, Length
 
-from udb.controller import flash, handle_exception, lastupdated, url_for, verify_role
+from udb.controller import flash, handle_exception, lastupdated, url_for, verify_perm
 from udb.core.model import Message, User
 from udb.tools.i18n import gettext as _
 
@@ -67,8 +67,9 @@ class CommonPage(object):
         edit_form: CherryForm,
         new_form: CherryForm = None,
         has_new: bool = True,
-        list_role=User.ROLE_GUEST,
-        edit_role=User.ROLE_USER,
+        list_perm=User.PERM_NETWORK_LIST,
+        edit_perm=User.PERM_NETWORK_EDIT,
+        new_perm=User.PERM_NETWORK_EDIT,
     ) -> None:
         assert model
         assert edit_form
@@ -77,14 +78,14 @@ class CommonPage(object):
         self.edit_form.referer = RefererField()
         self.new_form = new_form if new_form else edit_form
         self.new_form.referer = RefererField()
-        self.list_role = list_role
-        self.edit_role = edit_role
+        self.list_perm = list_perm
+        self.edit_perm = edit_perm
+        self.new_perm = new_perm
         # Support a primary key based on sqlalquemy
         self.primary_key = inspect(self.model).primary_key[0].name
         # Detect features supported by model.
         self.has_new = has_new
         self.has_status = hasattr(self.model, 'status')
-        self.has_owner = hasattr(self.model, 'owner')
         self.has_followers = hasattr(self.model, 'followers')
         self.has_messages = hasattr(self.model, 'messages')
 
@@ -118,14 +119,12 @@ class CommonPage(object):
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/list.html', 'common/list.html'])
     def index(self):
-        verify_role(self.list_role)
+        verify_perm(self.list_perm)
+        currentuser = cherrypy.serving.request.currentuser
         # return data for templates
         return {
             'has_new': self.has_new,
-            'has_status': self.has_status,
-            'has_owner': self.has_owner,
-            'has_followers': self.has_followers,
-            'has_messages': self.has_messages,
+            'new_perm': self.has_new and currentuser.has_permissions(self.new_perm),
             'form': self.edit_form(),
             'model': self.model,
             'model_name': self.model.__name__.lower(),
@@ -134,7 +133,7 @@ class CommonPage(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def data_json(self, **kwargs):
-        verify_role(self.list_role)
+        verify_perm(self.list_perm)
         obj_list = self._list_query()
         data = {'data': [self._to_list(obj) for obj in obj_list]}
         return data
@@ -142,7 +141,7 @@ class CommonPage(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def messages(self, key, **kwargs):
-        verify_role(self.list_role)
+        verify_perm(self.list_perm)
         # Return Not found if object doesn't exists
         obj = self._get_or_404(key)
         # Query Object Messages
@@ -162,7 +161,7 @@ class CommonPage(object):
     @cherrypy.expose
     @cherrypy.tools.jinja2(template=['{model_name}/new.html', 'common/new.html'])
     def new(self, **kwargs):
-        verify_role(self.edit_role)
+        verify_perm(self.new_perm)
         # Validate form
         form = self.new_form()
         if form.validate_on_submit():
@@ -192,13 +191,13 @@ class CommonPage(object):
     @cherrypy.tools.jinja2(template=['{model_name}/edit.html', 'common/edit.html'])
     def edit(self, key, **kwargs):
         currentuser = cherrypy.serving.request.currentuser
-        verify_role(self.list_role)
+        verify_perm(self.list_perm)
         # Return Not found if object doesn't exists
         obj = self._get_or_404(key)
         # Update object if form was submited
         form = self.edit_form(obj=obj)
         if form.validate_on_submit():
-            verify_role(self.edit_role)
+            verify_perm(self.edit_perm)
             try:
                 form.populate_obj(obj)
                 # Add Message to explain changes.
@@ -219,12 +218,10 @@ class CommonPage(object):
                 raise cherrypy.HTTPRedirect(form.referer.data or url_for(obj, 'edit'))
         # Return object form
         return {
-            'has_new': self.has_new,
             'has_status': self.has_status,
-            'has_owner': self.has_owner,
             'has_followers': self.has_followers,
             'has_messages': self.has_messages,
-            'is_editable': currentuser.has_role(self.edit_role),
+            'edit_perm': currentuser.has_permissions(self.edit_perm),
             'model': self.model,
             'model_name': self.model.__name__.lower(),
             'form': form,
@@ -239,7 +236,7 @@ class CommonPage(object):
         """
         if cherrypy.request.method not in ['POST', 'PUT']:
             raise cherrypy.HTTPError(405)
-        verify_role(self.list_role)
+        verify_perm(self.list_perm)
         obj = self._get_or_404(key)
         userobj = User.query.filter_by(id=user_id).first()
         if userobj and not obj.is_following(userobj):
@@ -254,7 +251,7 @@ class CommonPage(object):
         """
         if cherrypy.request.method not in ['POST', 'PUT']:
             raise cherrypy.HTTPError(405)
-        verify_role(self.list_role)
+        verify_perm(self.list_perm)
         obj = self._get_or_404(key)
         userobj = User.query.filter_by(id=user_id).first()
         if userobj and obj.is_following(userobj):
@@ -271,15 +268,22 @@ class CommonPage(object):
 )
 @cherrypy.popargs('id')
 class CommonApi(object):
-    def __init__(self, object_cls, list_role=User.ROLE_GUEST, edit_role=User.ROLE_USER):
+    def __init__(
+        self,
+        object_cls,
+        list_perm=User.PERM_NETWORK_LIST,
+        edit_perm=User.PERM_NETWORK_EDIT,
+        new_perm=User.PERM_NETWORK_EDIT,
+    ):
         assert object_cls
         self.object_cls = object_cls
-        self.list_role = list_role
-        self.edit_role = edit_role
+        self.list_perm = list_perm
+        self.edit_perm = edit_perm
+        self.new_perm = new_perm
 
     @cherrypy.expose()
     def default(self, id=None, **kwargs):
-        verify_role(self.list_role)
+        verify_perm(self.list_perm)
         with cherrypy.HTTPError.handle(405):
             method = cherrypy.request.method
             assert method in ['GET', 'PUT', 'POST', 'DELETE']
@@ -303,14 +307,6 @@ class CommonApi(object):
             raise cherrypy.HTTPError(404, "Record ID not found")
         return obj
 
-    def _verify_role(self, role):
-        """
-        Verify if the current user has the required role.
-        """
-        user = cherrypy.serving.request.currentuser
-        if user is None or not user.has_role(role):
-            raise cherrypy.HTTPError(403, 'Insufficient privileges')
-
     def list(self, **kwargs):
         return [obj.to_json() for obj in self.object_cls.query.all()]
 
@@ -321,7 +317,7 @@ class CommonApi(object):
         """
         Update an existing record.
         """
-        verify_role(self.edit_role)
+        verify_perm(self.edit_perm)
         data = cherrypy.request.json
         obj = self._get_or_404(id)
         obj.from_json(data)
@@ -333,7 +329,7 @@ class CommonApi(object):
         """
         Create a new record
         """
-        verify_role(self.edit_role)
+        verify_perm(self.new_perm)
         data = cherrypy.request.json
         obj = self.object_cls()
         obj.from_json(data)
@@ -342,7 +338,7 @@ class CommonApi(object):
         return self._get_or_404(obj.id).to_json()
 
     def delete(self, id, **kwargs):
-        verify_role(self.edit_role)
+        verify_perm(self.edit_perm)
         obj = self._get_or_404(id)
         obj.status = self.object_cls.STATUS_DELETED
         obj.add()

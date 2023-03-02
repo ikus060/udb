@@ -43,7 +43,7 @@ class MacPageTest(WebCase):
 
     def test_edit_mac(self):
         # Given a database with records
-        user = User.create(username='guest', password='password', role=User.ROLE_GUEST).add()
+        user = User.create(username='guest', password='password', role='guest').add()
         obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
         obj.commit()
         mac = Mac.query.one()

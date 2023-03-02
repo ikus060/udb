@@ -55,7 +55,7 @@ class IPTest(WebCase):
 
     def test_edit_ip(self):
         # Given a database with records
-        user = User.create(username='guest', password='password', role=User.ROLE_GUEST).add()
+        user = User.create(username='guest', password='password', role='guest').add()
         obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
         obj.commit()
         ip = Ip.query.one()

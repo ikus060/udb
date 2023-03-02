@@ -36,12 +36,13 @@ class UserForm(CherryForm):
 
     role = SelectField(
         _('Role'),
-        coerce=int,
-        default=User.ROLE_GUEST,
+        default='guest',
         choices=[
-            (User.ROLE_GUEST, _('Guest - Permissions to view the records')),
-            (User.ROLE_USER, _('User - Permissions to view and edit records')),
-            (User.ROLE_ADMIN, _('Administrator - All permissions')),
+            ('guest', _('Guest - Permissions to view the records')),
+            ('user', _('User - Permissions to view and edit records')),
+            ('dnszone-mgmt', _('DNS Zone Manager - Permissions to create a new DNS zone')),
+            ('subnet-mgmt', _('Subnet Manager - Permissions to create new Subnet')),
+            ('admin', _('Administrator - All permissions including user')),
         ],
     )
 
@@ -68,7 +69,9 @@ class UserForm(CherryForm):
 
 class UserPage(CommonPage):
     def __init__(self) -> None:
-        super().__init__(User, UserForm, list_role=User.ROLE_ADMIN, edit_role=User.ROLE_ADMIN)
+        super().__init__(
+            User, UserForm, list_perm=User.PERM_USER_MGMT, edit_perm=User.PERM_USER_MGMT, new_perm=User.PERM_USER_MGMT
+        )
 
     def _list_query(self):
         return User.query.with_entities(
