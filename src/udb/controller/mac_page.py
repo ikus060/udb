@@ -53,7 +53,7 @@ class MacForm(CherryForm):
         _('Notes'),
         default='',
         validators=[Length(max=256)],
-        render_kw={"placeholder": _("Enter details information about this MAC Address")},
+        render_kw={"placeholder": _("Enter details information about this MAC Address"), "autofocus": True},
     )
 
     owner_id = SelectObjectField(

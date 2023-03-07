@@ -34,7 +34,9 @@ from .form import CherryForm, SelectObjectField
 
 
 class EnvironmentForm(CherryForm):
-    name = StringField(_('Environment Name'), validators=[DataRequired()], render_kw={'width': '1/2'})
+    name = StringField(
+        _('Environment Name'), validators=[DataRequired()], render_kw={'width': '1/2', "autofocus": True}
+    )
     model_name = SelectField(
         _('Data Type'),
         validators=[

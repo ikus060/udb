@@ -105,7 +105,11 @@ class StringFieldSet(Field):
 class SubnetForm(CherryForm):
 
     object_cls = Subnet
-    name = StringField(_('Name'), validators=[Length(max=256)], render_kw={"placeholder": _("Enter a description")})
+    name = StringField(
+        _('Name'),
+        validators=[Length(max=256)],
+        render_kw={"placeholder": _("Enter a description"), "autofocus": True},
+    )
     ranges = StringFieldSet(
         label=_('IP Ranges'),
         validators=[Length(max=256)],

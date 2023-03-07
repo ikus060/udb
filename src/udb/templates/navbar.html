@@ -34,7 +34,8 @@
                    placeholder="{% trans %}Search all{% endtrans %}"
                    aria-label="{% trans %}Search all{% endtrans %}"
                    name="q"
-                   aria-describedby="button-search">
+                   aria-describedby="button-search"
+                   {% if current_url.startswith(url_for('dashboard')) %}autofocus="autofocus"{% endif %}>
             <button class="btn btn-outline-secondary" id="button-search" type="submit">
               <i class="fbi bi-search" aria-hidden="true"></i>
             </button>

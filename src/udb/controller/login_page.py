@@ -35,7 +35,7 @@ class LoginForm(CherryForm):
             InputRequired(),
             Length(max=256),
         ],
-        render_kw={"placeholder": _("Enter a valid email address")},
+        render_kw={"placeholder": _("Enter a valid email address"), "autofocus": True},
     )
     password = PasswordField(
         _('Password'),

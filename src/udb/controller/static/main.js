@@ -348,7 +348,10 @@ jQuery(function () {
                 }
             },
             initComplete: function () {
+                // Remove no-footer class to fix CSS display with bootstrap5
                 $(this).removeClass("no-footer");
+                // If searching is enabled, focus on search field.
+                $("div.dataTables_filter input").focus();
             },
             processing: true,
             stateSave: true,

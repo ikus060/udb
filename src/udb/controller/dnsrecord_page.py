@@ -39,7 +39,7 @@ class EditDnsRecordForm(CherryForm):
             DataRequired(),
             Length(max=256),
         ],
-        render_kw={"placeholder": _("Enter a FQDN")},
+        render_kw={"placeholder": _("Enter a FQDN"), "autofocus": True},
     )
 
     type = SelectField(
