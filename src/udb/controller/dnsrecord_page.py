@@ -23,7 +23,7 @@ from wtforms.validators import DataRequired, Length
 
 from udb.controller import flash, handle_exception, url_for, verify_perm
 from udb.core.model import DnsRecord, User
-from udb.tools.i18n import gettext as _
+from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
 from .form import CherryForm, SelectObjectField

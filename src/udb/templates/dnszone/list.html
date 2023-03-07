@@ -2,7 +2,7 @@
 {% set columns = [
 {'name':'id', 'visible':False},
 {'name':'status', 'visible':False},
-{'name':'name', 'title':form.name.label.text, 'orderable':True, 'render':'summary', 'render_arg':'dnszone'},
+{'name':'name', 'title':form.name.label.text|string, 'orderable':True, 'render':'summary', 'render_arg':'dnszone'},
 {'name':'subnets_count', 'title':_('Subnet count'), 'orderable':True},
-{'name':'notes', 'title':form.notes.label.text, 'orderable':True},
-{'name':'owner', 'title':form.owner_id.label.text, 'orderable':True}] %}
+{'name':'notes', 'title':form.notes.label.text|string, 'orderable':True},
+{'name':'owner', 'title':form.owner_id.label.text|string, 'orderable':True}] %}

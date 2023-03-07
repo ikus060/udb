@@ -27,7 +27,7 @@ from wtforms.validators import DataRequired, Length, Optional, StopValidation, V
 from wtforms.widgets import TextInput
 
 from udb.core.model import DnsZone, Subnet, SubnetRange, User, Vrf
-from udb.tools.i18n import gettext as _
+from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
 from .form import CherryForm, SelectMultiCheckbox, SelectMultipleObjectField, SelectObjectField, StringFieldSetWidget

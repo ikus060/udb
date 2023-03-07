@@ -18,7 +18,9 @@ from wtforms.fields import PasswordField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, Optional
 
 from udb.core.model import User
-from udb.tools.i18n import gettext as _
+from udb.tools.i18n import gettext
+from udb.tools.i18n import gettext_lazy as _
+from udb.tools.i18n import list_available_locales
 
 from .common_page import CommonPage
 from .form import CherryForm
@@ -34,17 +36,9 @@ class UserForm(CherryForm):
 
     email = StringField(_('Email'), validators=[Optional(), Email(), Length(max=256)])
 
-    role = SelectField(
-        _('Role'),
-        default='guest',
-        choices=[
-            ('guest', _('Guest - Permissions to view the records')),
-            ('user', _('User - Permissions to view and edit records')),
-            ('dnszone-mgmt', _('DNS Zone Manager - Permissions to create a new DNS zone')),
-            ('subnet-mgmt', _('Subnet Manager - Permissions to create new Subnet')),
-            ('admin', _('Administrator - All permissions including user')),
-        ],
-    )
+    role = SelectField(_('Role'), default='guest')
+
+    lang = SelectField(_('Preferred Language'), default='')
 
     password = PasswordField(
         _('Password'),
@@ -56,11 +50,28 @@ class UserForm(CherryForm):
 
     clear_password = SubmitField(_('Clear password'))
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Load available languages
+        languages = [(locale.language, locale.display_name.capitalize()) for locale in list_available_locales()]
+        languages = sorted(languages, key=lambda x: x[1])
+        languages.insert(0, ('', _('(default)')))
+        self.lang.choices = languages
+        # Define available roles
+        self.role.choices = [
+            ('guest', gettext('Guest - Permissions to view the records')),
+            ('user', gettext('User - Permissions to view and edit records')),
+            ('dnszone-mgmt', gettext('DNS Zone Manager - Permissions to create a new DNS zone')),
+            ('subnet-mgmt', gettext('Subnet Manager - Permissions to create new Subnet')),
+            ('admin', gettext('Administrator - All permissions including user')),
+        ]
+
     def populate_obj(self, obj):
         obj.username = self.username.data
         obj.fullname = self.fullname.data
         obj.email = self.email.data
         obj.role = self.role.data
+        obj.lang = self.lang.data
         if self.clear_password.data:
             obj.password = None
         elif self.password.data:

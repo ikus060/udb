@@ -125,7 +125,7 @@ def json_handler(*args, **kwargs):
 @cherrypy.tools.sessions()
 @cherrypy.tools.auth_form()
 @cherrypy.tools.currentuser(userobj=lambda username: User.query.filter_by(username=username).first())
-@cherrypy.tools.i18n(mo_dir=pkg_resources.resource_filename('udb', 'locales'), default='en_US', domain='messages')
+@cherrypy.tools.i18n(func=lambda: getattr(cherrypy.request, 'currentuser', False) and cherrypy.request.currentuser.lang)
 @cherrypy.tools.secure_headers(
     csp="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/ https://cdn.datatables.net/; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/ https://cdn.datatables.net/; img-src 'self' data: https://cdn.jsdelivr.net/ https://cdn.datatables.net/;font-src https://cdn.jsdelivr.net/"
 )
@@ -197,6 +197,10 @@ class Root(object):
                 'notification.env': env,
                 'notification.header_name': cfg.header_name,
                 'notification.catch_all_email': cfg.notification_catch_all_email,
+                # Configure locales
+                'tools.i18n.default': cfg.default_lang,
+                'tools.i18n.mo_dir': pkg_resources.resource_filename('udb', 'locales'),
+                'tools.i18n.domain': 'messages',
             }
         )
         # Create database if required

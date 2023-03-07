@@ -67,7 +67,8 @@ class User(JsonMixin, StatusMixing, Base):
     password = deferred(Column(String, nullable=True))
     fullname = Column(String, nullable=False, default='')
     email = Column(String, nullable=True, unique=True)
-    role = Column(String, nullable=True, default='guest')
+    role = Column(String, nullable=False, default='guest')
+    lang = Column(String, nullable=False, default='')
 
     @classmethod
     def create_default_admin(cls, default_username, default_password):

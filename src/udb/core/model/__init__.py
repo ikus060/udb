@@ -45,7 +45,7 @@ def db_after_create(target, connection, **kw):
         table_name = column.table.fullname
         column_name = column.name
         if 'SQLite' in connection.engine.dialect.__class__.__name__:
-            sql = "SELECT %s FROM %s" % (column_name, table_name)
+            sql = 'SELECT %s FROM "%s"' % (column_name, table_name)
             try:
                 connection.engine.execute(sql).first()
                 return True
@@ -65,7 +65,7 @@ def db_after_create(target, connection, **kw):
         table_name = column.table.fullname
         column_name = column.name
         column_type = column.type.compile(connection.engine.dialect)
-        connection.engine.execute('ALTER TABLE %s ADD COLUMN %s %s' % (table_name, column_name, column_type))
+        connection.engine.execute('ALTER TABLE "%s" ADD COLUMN "%s" %s' % (table_name, column_name, column_type))
         return True
 
     if getattr(connection, '_transaction', None):
@@ -84,3 +84,5 @@ def db_after_create(target, connection, **kw):
     add_column(Deployment.__table__.c.token)
     # Add 'status' to environment
     add_column(Environment.__table__.c.status)
+    # Add 'lang' to user
+    add_column(User.__table__.c.lang)

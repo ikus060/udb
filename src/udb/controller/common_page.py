@@ -24,7 +24,7 @@ from wtforms.validators import InputRequired, Length
 
 from udb.controller import flash, handle_exception, lastupdated, url_for, verify_perm
 from udb.core.model import Message, User
-from udb.tools.i18n import gettext as _
+from udb.tools.i18n import gettext_lazy as _
 
 from .form import CherryForm
 
