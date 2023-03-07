@@ -18,33 +18,10 @@
 from sqlalchemy import or_
 
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Message, Search, Subnet, User, Vrf
+from udb.core.model import Message, Search
 
 
 class SearchTest(WebCase):
-    def add_records(self):
-        self.user = User(username='test')
-        self.vrf = Vrf(name='(default)')
-        self.subnet = Subnet(
-            ranges=['147.87.250.0/24'], name='DMZ', vrf=self.vrf, notes='public', owner=self.user
-        ).add()
-        self.subnet.add_message(Message(body='Message on subnet', author=self.user))
-        Subnet(ranges=['147.87.0.0/16'], name='its-main-4', vrf=self.vrf, notes='main', owner=self.user).add()
-        Subnet(
-            ranges=['2002::1234:abcd:ffff:c0a8:101/64'], name='its-main-6', vrf=self.vrf, notes='main', owner=self.user
-        ).add()
-        Subnet(ranges=['147.87.208.0/24'], name='ARZ', vrf=self.vrf, notes='BE.net', owner=self.user).add()
-        self.zone = DnsZone(name='bfh.ch', notes='DMZ Zone', subnets=[self.subnet], owner=self.user).add()
-        self.zone.add_message(Message(body='Here is a message', author=self.user))
-        DnsZone(name='bfh.science', notes='This is a note', owner=self.user).add()
-        DnsZone(name='bfh.info', notes='This is a note', owner=self.user).add().flush()
-        DhcpRecord(ip='147.87.250.1', mac='00:ba:d5:a2:34:56', notes='webserver bla bla bla', owner=self.user).add()
-        self.dnsrecord = DnsRecord(name='foo.bfh.ch', type='A', value='147.87.250.3', owner=self.user).add()
-        self.dnsrecord.add_message(Message(body='This is a message', author=self.user))
-        DnsRecord(name='bar.bfh.ch', type='A', value='147.87.250.1', owner=self.user).add()
-        DnsRecord(name='bar.bfh.ch', type='CNAME', value='www.bar.bfh.ch', owner=self.user).add()
-        DnsRecord(name='baz.bfh.ch', type='A', value='147.87.250.2', owner=self.user).add().commit()
-
     def test_search_without_term(self):
         # Given a database with records
         self.add_records()

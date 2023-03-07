@@ -22,7 +22,7 @@ from parameterized import parameterized
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import Deployment, DhcpRecord, DnsRecord, DnsZone, Environment, Message, Subnet, User, Vrf
+from udb.core.model import DnsZone, User
 
 
 class RoleTest(WebCase):
@@ -33,38 +33,6 @@ class RoleTest(WebCase):
     login = False
 
     authorization = [('Authorization', 'Basic %s' % b64encode(b'test-user:password').decode('ascii'))]
-
-    def add_records(self):
-        self.user = User(username='test')
-        self.vrf = Vrf(name='(default)')
-        self.subnet = Subnet(
-            ranges=['147.87.250.0/24'], name='DMZ', vrf=self.vrf, notes='public', owner=self.user
-        ).add()
-        self.subnet.add_message(Message(body='Message on subnet', author=self.user))
-        Subnet(ranges=['147.87.0.0/16'], name='its-main-4', vrf=self.vrf, notes='main', owner=self.user).add()
-        Subnet(
-            ranges=['2002::1234:abcd:ffff:c0a8:101/64'], name='its-main-6', vrf=self.vrf, notes='main', owner=self.user
-        ).add()
-        Subnet(ranges=['147.87.208.0/24'], name='ARZ', vrf=self.vrf, notes='BE.net', owner=self.user).add()
-        self.zone = DnsZone(name='bfh.ch', notes='DMZ Zone', subnets=[self.subnet], owner=self.user).add()
-        self.zone.add_message(Message(body='Here is a message', author=self.user))
-        self.zone.flush()
-        DnsZone(name='bfh.science', notes='This is a note', owner=self.user).add()
-        DnsZone(name='bfh.info', notes='This is a note', owner=self.user).add()
-        DhcpRecord(ip='147.87.250.1', mac='00:ba:d5:a2:34:56', notes='webserver bla bla bla', owner=self.user).add()
-        self.dnsrecord = DnsRecord(name='foo.bfh.ch', type='A', value='147.87.250.3', owner=self.user).add()
-        self.dnsrecord.add_message(Message(body='This is a message', author=self.user))
-        DnsRecord(name='bar.bfh.ch', type='A', value='147.87.250.1', owner=self.user).add()
-        DnsRecord(name='bar.bfh.ch', type='CNAME', value='www.bar.bfh.ch', owner=self.user).add()
-        DnsRecord(name='baz.bfh.ch', type='A', value='147.87.250.2', owner=self.user).add()
-        env = Environment(name='test-env', script='echo FOO', model_name='dhcprecord').add().commit()
-        Deployment(
-            environment_id=env.id,
-            owner=User.query.first(),
-            change_count=1,
-            start_id=0,
-            end_id=Message.query.order_by(Message.id.desc()).first().id,
-        ).add().commit()
 
     def setUp(self):
         super().setUp()
