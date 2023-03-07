@@ -71,6 +71,10 @@ class CheckLinkTest(WebCase):
             else:
                 self.assertStatus('200 OK', "can't access page [%s] referenced by [%s]" % (page, ref))
 
+                # Check if valid HTML
+                if dict(self.headers).get('Content-Type').startswith('text/html'):
+                    self.assertValidHTML()
+
             done.add(page)
 
             # Collect all link in the page.
@@ -80,4 +84,3 @@ class CheckLinkTest(WebCase):
                     newpage = re.sub("\\?.*", "", page) + newpage
                 if newpage not in done and not any(re.match(i, newpage) for i in self.ignore_url):
                     todo[newpage] = page
-        pass

@@ -25,6 +25,7 @@ from urllib.parse import urlencode
 
 import cherrypy
 import cherrypy.test.helper
+import html5lib
 from selenium import webdriver
 
 from udb.app import Root
@@ -124,6 +125,20 @@ class WebCase(BaseClass):
             start_id=0,
             end_id=Message.query.order_by(Message.id.desc()).first().id,
         ).add().commit()
+
+    def assertValidHTML(self, msg=None):
+        """
+        Verify if the current body is compliant HTML.
+        """
+        try:
+            parser = html5lib.HTMLParser(strict=True)
+            parser.parse(self.body)
+        except html5lib.html5parser.ParseError as e:
+            self.assertHeader
+            row, col_unused = parser.errors[0][0]
+            line = self.body.splitlines()[row - 1].decode('utf8', errors='replace')
+            msg = msg or ('URL %s contains invalid HTML: %s on line %s: %s' % (self.url, e, row, line))
+            self.fail(msg)
 
     @property
     def app(self):
