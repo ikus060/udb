@@ -8,9 +8,9 @@
 {'name':'depth', 'visible':False},
 {'name':'primary_range', 'title': _('Primary IP Range'), 'orderable':True, 'render':'primary_range', 'type':'number', 'width':250},
 {'name':'secondary_ranges', 'title': _('Secondary IP Range(s)'), 'orderable':True, 'width':250},
-{'name':'name', 'title':form.name.label.text, 'orderable':True},
-{'name':'vrf_name', 'title':form.vrf_id.label.text, 'orderable':True},
-{'name':'l3vni', 'title':form.l3vni.label.text, 'orderable':True},
-{'name':'l2vni', 'title':form.l2vni.label.text, 'orderable':True},
-{'name':'vlan','title': form.vlan.label.text, 'orderable':True},
-{'name':'dnszone_names', 'title':form.dnszones.label.text, 'orderable':False}] %}
+{'name':'name', 'title':form.name.label.text|string, 'orderable':True},
+{'name':'vrf_name', 'title':form.vrf_id.label.text|string, 'orderable':True},
+{'name':'l3vni', 'title':form.l3vni.label.text|string, 'orderable':True},
+{'name':'l2vni', 'title':form.l2vni.label.text|string, 'orderable':True},
+{'name':'vlan','title': form.vlan.label.text|string, 'orderable':True},
+{'name':'dnszone_names', 'title':form.dnszones.label.text|string, 'orderable':False}] %}

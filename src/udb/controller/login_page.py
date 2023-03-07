@@ -24,7 +24,7 @@ from udb.config import Option
 from udb.controller import flash
 from udb.controller.form import CherryForm
 from udb.tools.auth_form import LOGIN_PERSISTENT, SESSION_KEY
-from udb.tools.i18n import gettext as _
+from udb.tools.i18n import gettext_lazy as _
 
 
 class LoginForm(CherryForm):

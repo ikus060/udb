@@ -23,7 +23,7 @@ from wtforms.fields import BooleanField
 from udb.controller import flash, handle_exception, url_for
 from udb.core import model
 from udb.core.model import Follower, Search
-from udb.tools.i18n import gettext as _
+from udb.tools.i18n import gettext_lazy as _
 
 from .form import CherryForm
 

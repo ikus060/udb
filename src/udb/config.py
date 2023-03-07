@@ -124,6 +124,12 @@ def parse_args(args=None, config_file_contents=None):
         ),
     )
 
+    parser.add_argument(
+        '--default-lang',
+        help='default application locale. e.g.: `fr`',
+        default='en_US',
+    )
+
     parser.add(
         '--rate-limit',
         metavar='LIMIT',

@@ -22,7 +22,7 @@ from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length
 
 from udb.core.model import DnsRecord, DnsZone, Subnet, User
-from udb.tools.i18n import gettext as _
+from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
 from .form import CherryForm, DualListWidget, SelectMultipleObjectField, SelectObjectField

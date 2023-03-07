@@ -26,7 +26,8 @@ from wtforms.validators import DataRequired, Length, ValidationError
 from udb.controller import flash, lastupdated, url_for, verify_perm
 from udb.controller.common_page import CommonApi
 from udb.core.model import Deployment, Environment, Message, User
-from udb.tools.i18n import gettext as _
+from udb.tools.i18n import gettext
+from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
 from .form import CherryForm, SelectObjectField
@@ -40,7 +41,6 @@ class EnvironmentForm(CherryForm):
             DataRequired(),
             Length(max=256),
         ],
-        choices=[('subnet', _('Subnets')), ('dnsrecord', _('DNS Records')), ('dhcprecord', _('DHCP Reservation'))],
         render_kw={'width': '1/2'},
     )
     script = TextAreaField(
@@ -73,6 +73,14 @@ class EnvironmentForm(CherryForm):
         ),
         default=lambda: cherrypy.serving.request.currentuser.id,
     )
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.model_name.choices = [
+            ('subnet', gettext('Subnets')),
+            ('dnsrecord', gettext('DNS Records')),
+            ('dhcprecord', gettext('DHCP Reservation')),
+        ]
 
 
 class DeployForm(CherryForm):

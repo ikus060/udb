@@ -95,7 +95,9 @@ class CherryForm(Form):
     @property
     def error_message(self):
         if self.errors:
-            return ' '.join(['%s: %s' % (field, ', '.join(messages)) for field, messages in self.errors.items()])
+            return ' '.join(
+                ['%s: %s' % (field, ', '.join([str(m) for m in messages])) for field, messages in self.errors.items()]
+            )
 
     def add_error(self, field, message):
         """

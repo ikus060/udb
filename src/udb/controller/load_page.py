@@ -27,7 +27,7 @@ from wtforms.fields import FileField, SelectField
 
 from udb.controller import flash, handle_exception
 from udb.core.model import DnsRecord, DnsZone, Subnet, Vrf
-from udb.tools.i18n import gettext as _
+from udb.tools.i18n import gettext_lazy as _
 
 from .form import CherryForm
 

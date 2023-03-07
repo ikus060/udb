@@ -25,7 +25,7 @@
   {% set table_default_buttons = [] %}
   {% for field in form %}
     {% if field.widget['input_type'] != 'hidden' %}
-      {% set ns.default_columns = ns.default_columns + [{'name': field.name, 'title': field.label.text, 'orderable':True, 'render': 'summary' if loop.first else 'text'}] %}
+      {% set ns.default_columns = ns.default_columns + [{'name': field.name, 'title': field.label.text|string, 'orderable':True, 'render': 'summary' if loop.first else 'text'}] %}
     {% endif %}
   {% endfor %}
   {% set table_columns = columns|d(ns.default_columns) %}

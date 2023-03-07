@@ -17,12 +17,13 @@
 
 
 import cherrypy
-from wtforms.fields import PasswordField, StringField
+from wtforms.fields import PasswordField, SelectField, StringField
 from wtforms.validators import DataRequired, Email, EqualTo, InputRequired, Length, Optional, ValidationError
 
 from udb.controller import flash
 from udb.controller.form import CherryForm
-from udb.tools.i18n import gettext as _
+from udb.tools.i18n import gettext_lazy as _
+from udb.tools.i18n import list_available_locales
 
 
 class AccountForm(CherryForm):
@@ -52,11 +53,18 @@ class AccountForm(CherryForm):
         ],
     )
 
+    lang = SelectField(_('Preferred Language'), default='')
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Make username field read_only
         self.username.process = lambda *args, **kwargs: None
         self.username.populate_obj = lambda *args, **kwargs: None
+        # Load available languages
+        languages = [(locale.language, locale.display_name.capitalize()) for locale in list_available_locales()]
+        languages = sorted(languages, key=lambda x: x[1])
+        languages.insert(0, ('', _('(default)')))
+        self.lang.choices = languages
 
 
 class PasswordForm(CherryForm):
