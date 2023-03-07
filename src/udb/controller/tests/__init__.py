@@ -20,10 +20,12 @@ import os
 import tempfile
 import time
 import unittest
+from contextlib import contextmanager
 from urllib.parse import urlencode
 
 import cherrypy
 import cherrypy.test.helper
+from selenium import webdriver
 
 from udb.app import Root
 from udb.config import parse_args
@@ -151,3 +153,37 @@ class WebCase(BaseClass):
         # Authenticate
         self.getPage("/login/", method='POST', body={'username': username, 'password': password, 'redirect': redirect})
         self.assertStatus('303 See Other')
+
+    @property
+    def session_id(self):
+        if hasattr(self, 'cookies') and self.cookies:
+            for unused, value in self.cookies:
+                for part in value.split(';'):
+                    key, unused, value = part.partition('=')
+                    if key == 'session_id':
+                        return value
+
+    @contextmanager
+    def selenium(self):
+        """
+        Decorator to load selenium for a test.
+        """
+        # Skip selenium test is display is not available.
+        if not os.environ.get('DISPLAY', False):
+            raise unittest.SkipTest("selenium require a display")
+        # Start selenium driver
+        options = webdriver.ChromeOptions()
+        options.add_argument('--headless')
+        if os.geteuid() == 0:
+            options.add_argument('--no-sandbox')
+            options.add_argument('--disable-dev-shm-usage')
+        driver = webdriver.Chrome(options=options)
+        # If logged in, reuse the same session id.
+        try:
+            if self.session_id:
+                driver.get('http://%s:%s/login/' % (self.HOST, self.PORT))
+                driver.add_cookie({"name": "session_id", "value": self.session_id})
+            yield driver
+        finally:
+            # Code to release resource, e.g.:
+            driver.close()

@@ -47,6 +47,16 @@ class CommonTest:
         self.assertStatus(200)
         self.assertInBody('<table')
 
+    def test_get_list_page_selenium(self):
+        # Given a webpage
+        with self.selenium() as driver:
+            # When getting web page.
+            driver.get(url_for(self.base_url, ''))
+            # Then the web page contains a table
+            driver.find_element('css selector', 'table.table')
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
+
     def test_get_edit_page(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
@@ -57,6 +67,19 @@ class CommonTest:
         self.assertStatus(200)
         self.assertInBody('Save changes')
 
+    def test_get_edit_page_selenium(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
+        # Given a webpage
+        with self.selenium() as driver:
+            # When getting web page.
+            driver.get(url_for(self.base_url, obj.id, 'edit'))
+            # Then the web page contains a table
+            driver.find_element('id', 'save-changes')
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
+
     def test_get_new_page(self):
         # Given an empty database
         # When querying the new page
@@ -64,6 +87,16 @@ class CommonTest:
         # Then a web page is return
         self.assertStatus(200)
         self.assertInBody('Create')
+
+    def test_get_new_page_selenium(self):
+        # Given a webpage
+        with self.selenium() as driver:
+            # When getting web page.
+            driver.get(url_for(self.base_url, 'new'))
+            # Then the web page contains a table
+            driver.find_element('id', 'create')
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
 
     def test_edit(self):
         # Given a database with a record
