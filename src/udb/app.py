@@ -71,6 +71,8 @@ env = jinja2.Environment(
     loader=jinja2.PackageLoader('udb'),
     auto_reload=True,
     autoescape=True,
+    trim_blocks=True,
+    lstrip_blocks=True,
     extensions=[
         'jinja2.ext.i18n',
     ],

@@ -105,7 +105,19 @@
       </form>
       {% block extra_form %}{% endblock %}
       {# Message thread #}
-      {% include "common/messages.html" %}
+      {% import "components/table.html" as _table with context %}
+      {% if has_messages %}
+        <div id="messages" class="card">
+          {{ _table.table('messages',
+          columns=[{'data': 'body', 'title':_('History'), 'orderable':True, 'render':'message_body'}],
+          order=[[ 0, 'desc' ]],
+          searching=False,
+          empty_message=_('No history'),
+          show_header=False,
+          paging=True,
+          pageLength=10) }}
+        </div>
+      {% endif %}
     </div>
     <div class="col flex-grow-1 order-0 order-xl-2">
       <div class="row align-items-baseline">
