@@ -5,9 +5,7 @@
 {% block body %}
   <div class="row">
     <div class="col">
-      <h4 id="title">
-        {{ macro.icon(model_name)}} {% trans %}List of{% endtrans %} {{ macro.display_name(model_name)}}
-      </h4>
+      <h4 id="title">{{ macro.icon(model_name)}} {% trans %}List of{% endtrans %} {{ macro.display_name(model_name)}}</h4>
     </div>
     <div class="col text-end mb-2">
       {% if has_new %}
@@ -22,7 +20,7 @@
   </div>
   {# Define a default columns list from form #}
   {% set ns = namespace(default_columns=[]) %}
-  {% set table_default_buttons = [] %}
+  {% set buttons = [] %}
   {% for field in form %}
     {% if field.widget['input_type'] != 'hidden' %}
       {% set ns.default_columns = ns.default_columns + [{'name': field.name, 'title': field.label.text|string, 'orderable':True, 'render': 'summary' if loop.first else 'text'}] %}
@@ -33,22 +31,14 @@
   {% set table_columns = table_columns + [{'name':'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px', 'className':'all'}] %}
   {# Add Status Filter if status column exists #}
   {% if 'status' in (table_columns|map(attribute='name')|list) %}
-    {% set table_default_buttons = table_default_buttons + [{'text': _('Hide Deleted'), 'extend': 'filter', 'column': 'status:name', 'search': 'enabled'}] %}
+    {% set buttons = buttons + [{'text': _('Show Deleted'), 'extend': 'filter', 'column': 'status:name', 'search':'(enabled|disabled|deleted)', 'search_off': '(enabled|disabled)', 'regex': True }] %}
   {% endif %}
   {# Add Owner filter if owner column exists #}
   {% if 'owner' in (table_columns|map(attribute='name')|list) %}
-    {% set table_default_buttons = table_default_buttons + [{'text': _('Owned by me'), 'extend': 'filter', 'column': 'owner:name', 'search': currentuser.summary}] %}
+    {% set buttons = buttons + [{'text': _('Owned by me'), 'extend': 'filter', 'column': 'owner:name', 'search': currentuser.summary}] %}
   {% endif %}
   {# Always add "Clear" filter #}
-  {% set table_default_buttons = table_default_buttons + [{'text': _('Clear'), 'extend': 'clear'}] %}
+  {% set buttons = buttons + [{'text': _('Clear'), 'extend': 'clear'}] %}
   {# Show default table #}
-  {{ _table.table(data="data.json", paging=True, pageLength=100, columns=table_columns, buttons=table_extra_buttons|d([]) + table_default_buttons)}}
+  {{ _table.table(data="data.json", paging=True, pageLength=100, columns=table_columns, buttons=buttons)}}
 {% endblock body %}
-{% block script %}
-  <script>
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
-    })
-  </script>
-{% endblock %}

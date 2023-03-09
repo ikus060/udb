@@ -125,25 +125,44 @@ jQuery(function () {
     });
 });
 
-/** Filter button for DataTables */
+/**
+ * Buttons to filter content of datatable.
+ * 
+ * Options:
+ * - search: Define the search criteria when filter is active
+ * - search_off: Define the search criteria when filter is not active (optional)
+ * - regex: True to enable regex lookup (optional)
+ */
 $.fn.dataTable.ext.buttons.filter = {
     text: 'Filter',
+    className: 'udb-btn-filter',
     action: function (e, dt, node, config) {
         if (node.hasClass('active')) {
-            dt.column(config.column).search('');
+            dt.column(config.column).search(config.search_off || '', config.regex);
         } else {
-            dt.column(config.column).search(config.search);
+            dt.column(config.column).search(config.search, config.regex);
         }
         dt.draw(true);
     }
 };
 
-/** Button to clear filter and reset the state of the table. */
+/**
+ * Button to reset the filters of datatable.
+ * Default settings are restored using init() API.
+ */
 $.fn.dataTable.ext.buttons.clear = {
     text: 'Clear',
     action: function (e, dt, node, config) {
         dt.search('');
-        dt.columns().search('');
+        if (dt.init().aoSearchCols) {
+            const searchCols = dt.init().aoSearchCols;
+            for (let i = 0; i < searchCols.length; i++) {
+                const search = searchCols[i].search || "";
+                dt.column(i).search(search);
+            }
+        } else {
+            dt.columns().search('');
+        }
         dt.draw(true);
     }
 };
@@ -321,7 +340,7 @@ jQuery(function () {
         });
         let searchCols = columns.map(function (item, _index) {
             if (item.search) {
-                return { "search": item.search };
+                return { "search": item.search, "regex": item.regex || False };
             }
             return null;
         });

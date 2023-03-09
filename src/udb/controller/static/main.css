@@ -142,12 +142,39 @@ table.dataTable.sorted-primary_range-asc .depth-9 {
     padding-left: 18em;
 }
 
+/* Make filter buttons stand out when active*/
+.udb-btn-filter.active {
+    color: var(--bs-white);
+    border-color: var(--bs-primary);
+    background-color: var(--bs-primary);
+}
+
+.udb-btn-filter::before {
+    content: "\F5D7";
+    padding-right: 5px;
+    display: inline-block;
+    font-family: bootstrap-icons !important;
+    font-style: normal;
+    font-weight: normal !important;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    vertical-align: -0.125em;
+    -webkit-font-smoothing: antialiased;
+}
+
+.udb-btn-filter.active::before {
+    content: "\F5D8";
+}
+
 /* Fix header of history in edit view */
-#messages.card thead, #changes.card thead {
+#messages.card thead,
+#changes.card thead {
     background-color: rgba(0, 0, 0, .03);
 }
 
-#messages.card thead th, #changes.card thead {
+#messages.card thead th,
+#changes.card thead {
     border-bottom: 1px solid rgba(0, 0, 0, .125)
 }
 

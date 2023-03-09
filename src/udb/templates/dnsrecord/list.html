@@ -1,7 +1,7 @@
 {% extends 'common/list.html' %}
 {% set columns = [
 {'name':'id', 'visible':False},
-{'name':'status', 'visible':False},
+{'name':'status', 'visible':False, 'search': '(enabled|disabled)', 'regex':True},
 {'name':'name', 'title':form.name.label.text|string, 'orderable':True, 'render':'summary', 'render_arg':'dnsrecord'},
 {'name':'type', 'title':form.type.label.text|string, 'orderable':True},
 {'name':'ttl', 'title':form.ttl.label.text|string, 'orderable':True},
