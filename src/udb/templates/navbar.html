@@ -26,22 +26,23 @@
     <div id="sidebarMenu"
          class="collapse navbar-collapse flex-column align-items-start w-100 mt-3">
       {# Search form #}
-      {% if not hide_search %}
-        <form class="d-flex" method="GET" action="{{ url_for('search')}}">
-          <div class="input-group mb-1">
-            <input type="text"
-                   class="form-control"
-                   placeholder="{% trans %}Search all{% endtrans %}"
-                   aria-label="{% trans %}Search all{% endtrans %}"
-                   name="q"
-                   aria-describedby="button-search"
-                   {% if current_url.startswith(url_for('dashboard')) %}autofocus="autofocus"{% endif %}>
-            <button class="btn btn-outline-secondary" id="button-search" type="submit">
-              <i class="fbi bi-search" aria-hidden="true"></i>
-            </button>
-          </div>
-        </form>
-      {% endif %}
+      <form class="d-flex" method="GET" action="{{ url_for('search')}}">
+        <div class="input-group mb-1">
+          {% set search_autofocus = current_url.startswith(url_for('search')) or current_url.startswith(url_for('dashboard')) %}
+          {% set search_value = current_url.startswith(url_for('search')) and form.q.data %}
+          <input type="text"
+                 class="form-control"
+                 placeholder="{% trans %}Search{% endtrans %}"
+                 aria-label="{% trans %}Search{% endtrans %}"
+                 name="q"
+                 aria-describedby="button-search"
+                 {% if search_value %}value="{{ form.q.data }}"{% endif %}
+                 {% if search_autofocus %}autofocus="autofocus"{% endif %}>
+          <button class="btn btn-outline-secondary" id="button-search" type="submit">
+            <i class="fbi bi-search" aria-hidden="true"></i>
+          </button>
+        </div>
+      </form>
       {# Menu items #}
       <div class="navbar-text mt-2 text-white">
         <strong>{% trans %}Network{% endtrans %}</strong>
