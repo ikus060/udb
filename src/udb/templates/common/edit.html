@@ -39,9 +39,11 @@
               {# /Status Badge #}
             {% endif %}
             {# Edit Form #}
-            <div class="row">
-              {% block edit_form %}{{ form()}}{% endblock %}
-            </div>
+            <fieldset {% if not edit_perm %}disabled{% endif %}>
+              <div class="row">
+                {% block edit_form %}{{ form() }}{% endblock %}
+              </div>
+            </fieldset>
             {# /Edit Form #}
           </div>
           <div class="card-footer">
@@ -101,8 +103,7 @@
           </div>
         </div>
       </form>
-      {% block extra_form %}
-      {% endblock %}
+      {% block extra_form %}{% endblock %}
       {# Message thread #}
       {% include "common/messages.html" %}
     </div>
