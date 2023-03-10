@@ -47,7 +47,7 @@ DeploymentRow = namedtuple(
 
 class DeploymentPage:
     @cherrypy.expose()
-    @cherrypy.tools.jinja2(template=['deploy/list.html'])
+    @cherrypy.tools.jinja2(template=['deployment/list.html'])
     def index(self):
         return {}
 
@@ -140,7 +140,7 @@ class DeploymentPage:
         }
 
     @cherrypy.expose
-    @cherrypy.tools.jinja2(template='deploy/view.html')
+    @cherrypy.tools.jinja2(template='deployment/view.html')
     def view(self, id, **kwargs):
         # Return Not found if object doesn't exists
         deployment = Deployment.query.filter(Deployment.id == id).first()
