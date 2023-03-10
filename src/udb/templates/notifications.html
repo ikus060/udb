@@ -46,8 +46,8 @@
       {'name': 'summary', 'title':_('Following'), 'orderable': True, 'render':'summary'}] %}
       {{ _table.table('data.json',
       empty_message=_('You are not following any record.'),
-      paging=True,
-      pageLength=5,
+      page_length=10,
+      length_change=False,
       columns = columns,
       buttons=[{'text': _('Clear'), 'extend': 'clear'}]) }}
     </div>

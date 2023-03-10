@@ -189,3 +189,18 @@ def handle_exception(e, form=None):
     else:
         flash(_('Database error: %s') % e, level='error')
         logger.warning('database error', exc_info=1)
+
+
+def validate_int(value, message=None, min=None, max=None):
+    """
+    Raise HTTP Error if the value is not an integer
+    """
+    try:
+        value = int(value)
+        if min and value < min:
+            raise cherrypy.HTTPError(400, message)
+        if max and value > max:
+            raise cherrypy.HTTPError(400, message)
+        return value
+    except ValueError:
+        raise cherrypy.HTTPError(400, message)

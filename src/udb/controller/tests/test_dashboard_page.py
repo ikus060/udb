@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from udb.controller import url_for
 from udb.controller.tests import WebCase
 
 
@@ -26,3 +27,15 @@ class TestDashboardPage(WebCase):
         self.getPage('/dashboard/')
         # Then an html page is returned
         self.assertInBody("Last activities")
+
+    def test_dashboard_selenium(self):
+        # Given a database with data
+        self.add_records()
+        with self.selenium(headless=False) as driver:
+            # When making a query to audit log
+            driver.get(url_for('dashboard'))
+            driver.implicitly_wait(10)
+            # Then the web page contains a table
+            driver.find_element('css selector', 'table.table')
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))

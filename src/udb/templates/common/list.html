@@ -40,5 +40,5 @@
   {# Always add "Clear" filter #}
   {% set buttons = buttons + [{'text': _('Clear'), 'extend': 'clear'}] %}
   {# Show default table #}
-  {{ _table.table(data="data.json", paging=True, pageLength=100, columns=table_columns, buttons=buttons)}}
+  {{ _table.table(data="data.json", columns=table_columns, buttons=buttons)}}
 {% endblock body %}

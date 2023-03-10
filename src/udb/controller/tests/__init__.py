@@ -214,7 +214,7 @@ class WebCase(BaseClass):
                         return value
 
     @contextmanager
-    def selenium(self):
+    def selenium(self, headless=True):
         """
         Decorator to load selenium for a test.
         """
@@ -223,7 +223,10 @@ class WebCase(BaseClass):
             raise unittest.SkipTest("selenium require a display")
         # Start selenium driver
         options = webdriver.ChromeOptions()
-        options.add_argument('--headless')
+        if headless:
+            options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--window-size=1280,800')
         if os.geteuid() == 0:
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')

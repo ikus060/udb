@@ -100,9 +100,32 @@ table.dataTable.no-footer {
     border-bottom: 1px solid #dee2e6;
 }
 
+/* Remove floating attribute */
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_info {
+    float: none;
+    display: inline-block;
+    margin-right: 3px;
+}
+
 .dataTables_wrapper .dataTables_processing {
     height: 100%;
-    background: rgba(255, 255, 255, 0.9);
+    top: inherit;
+    padding-top: 15%;
+}
+.dataTables_wrapper .dataTables_processing::before {
+    content: '';
+    color: var(--bs-primary);
+    margin-right: 10px;
+    /* The following is a copy-past of style: .spinner-border */
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    vertical-align: -0.5rem;
+    border: 0.25em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    -webkit-animation: .75s linear infinite spinner-border;
+    animation: .75s linear infinite spinner-border;
 }
 
 /* Custom class for subnet depth */

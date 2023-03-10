@@ -43,7 +43,7 @@
           </button>
         </div>
       </form>
-      {# Menu items #}
+      {# Network #}
       <div class="navbar-text mt-2 text-white">
         <strong>{% trans %}Network{% endtrans %}</strong>
       </div>
@@ -59,11 +59,28 @@
           </li>
         {% endfor %}
       </ul>
+      {# Deployment #}
       <div class="navbar-text mt-2 text-white">
         <strong>{% trans %}Setup{% endtrans %}</strong>
       </div>
       <ul class="nav nav-pills flex-column w-100">
         {% set items = ['environment', 'deployment'] %}
+        {% for model_name in items %}
+          <li class="nav-item">
+            {% set active = current_url.startswith(url_for(model_name)) %}
+            <a href="{{ url_for(model_name) }}"
+               class="nav-link text-white {% if active %}active{% endif %}">
+              {{ macro.icon(model_name, 'me-3') }}<span>{{ macro.display_name(model_name) }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+      {# System #}
+      <div class="navbar-text mt-2 text-white">
+        <strong>{% trans %}System{% endtrans %}</strong>
+      </div>
+      <ul class="nav nav-pills flex-column w-100">
+        {% set items = ['audit'] %}
         {% for model_name in items %}
           <li class="nav-item">
             {% set active = current_url.startswith(url_for(model_name)) %}

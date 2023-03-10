@@ -30,15 +30,20 @@ from ._common import CommonMixin
 from ._follower import FollowerMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
+from ._search_vector import SearchableMixing
 
 Base = cherrypy.tools.db.get_base()
 
 Session = cherrypy.tools.db.get_session()
 
 
-class Mac(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, Base):
+class Mac(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, Base):
     __tablename__ = 'mac'
     mac = Column(String, nullable=False, unique=True)
+
+    @classmethod
+    def _search_string(cls):
+        return cls.mac + " " + cls.notes
 
     @hybrid_property
     def summary(self):

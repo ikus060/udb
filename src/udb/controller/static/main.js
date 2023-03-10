@@ -24,12 +24,12 @@ function toDate(n) {
     let matches, year, month, day;
     if (typeof n === "number") {
         n = new Date(n * 1000); // epoch
-    } else if ((matches = n.match(DATE_PATTERN))) {
+    } else if (typeof n === 'string' && (matches = n.match(DATE_PATTERN))) {
         year = parseInt(matches[1], 10);
         month = parseInt(matches[3], 10) - 1;
         day = parseInt(matches[5], 10);
         return new Date(year, month, day);
-    } else { // str
+    } else if (n) { // str
         n = isNaN(n) ? new Date(n) : new Date(parseInt(n) * 1000);
     }
     return n;
@@ -73,6 +73,7 @@ jQuery(function () {
         }
     });
 });
+
 /**
  * Control showif
  */
@@ -206,6 +207,42 @@ $.fn.dataTable.render.datetime = function () {
     };
 }
 
+$.fn.dataTable.render.changes = function () {
+    return {
+        display: function (data, type, row, meta) {
+            const api = new $.fn.dataTable.Api(meta.settings);
+            let html = '';
+            const body_idx = api.column('body:name').index();
+            if (body_idx && row[body_idx]) {
+                html += safe(row[body_idx]);
+            }
+            const type_idx = api.column('type:name').index();
+            html += '<ul class="mb-0">';
+            if (row[type_idx] === 'new') {
+                for (const [key, values] of Object.entries(data)) {
+                    html += '<li><b>' + safe(key) + '</b>: ' + safe(values[1]) + ' </li>';
+                }
+            } else {
+                for (const [key, values] of Object.entries(data)) {
+                    html += '<li><b>' + safe(key) + '</b>: '
+                    if (Array.isArray(values[0])) {
+                        for (const deleted of values[0]) {
+                            html += '<br/> - ' + safe(deleted);
+                        }
+                        for (const added of values[1]) {
+                            html += '<br/> + ' + safe(added);
+                        }
+                    } else {
+                        html += safe(values[0]) + ' → ' + safe(values[1]) + '</li>';
+                    }
+                }
+            }
+            html += '</ul>';
+            return html;
+        }
+    };
+}
+
 $.fn.dataTable.render.message_body = function () {
     return {
         display: function (data, type, row, meta) {
@@ -253,6 +290,7 @@ $.fn.dataTable.render.message_body = function () {
         },
     };
 }
+
 $.fn.dataTable.render.primary_range = function () {
     return {
         display: function (data, type, row, meta) {
@@ -260,8 +298,10 @@ $.fn.dataTable.render.primary_range = function () {
                 '<i class="bi bi-diagram-3-fill me-1" aria-hidden="true"></i>' +
                 '<strong>' + safe(data) + '</strong>' +
                 '</a> ';
-            if (meta.settings.aoColumns[1].name == 'status') {
-                if (row[1] == 'disabled') {
+            const api = new $.fn.dataTable.Api(meta.settings);
+            const status_idx = api.column('status:name').index();
+            if (status_idx) {
+                if (row[status_idx] == 'disabled') {
                     html += ' <span class="badge bg-warning">' + meta.settings.oLanguage['disabled'] + '</span>';
                 } else if (row[1] == 'deleted') {
                     html += ' <span class="badge bg-danger">' + meta.settings.oLanguage['deleted'] + '</span>';
@@ -291,17 +331,23 @@ $.fn.dataTable.render.summary = function (model_name = null) {
 
     return {
         display: function (data, type, row, meta) {
+            const api = new $.fn.dataTable.Api(meta.settings);
+            /* Get model_name from arguments or from row data */
             let effective_model_name = model_name;
-            if (effective_model_name == null && meta.settings.aoColumns.length > 2 && meta.settings.aoColumns[2].name == 'model_name') {
-                effective_model_name = row[2];
+            if (effective_model_name == null) {
+                const idx = api.column('model_name:name').index();
+                if (idx) {
+                    effective_model_name = row[idx];
+                }
             }
             const url = encodeURI('url' in row ? row.url : row[row.length - 1]);
             let html = '<a href="' + url + '">' +
                 '<i class="bi ' + icon_table[effective_model_name] + ' me-1" aria-hidden="true"></i>' +
                 '<strong>' + safe(data) + '</strong>' +
                 '</a>';
-            if (meta.settings.aoColumns[1].name == 'status') {
-                if (row[1] == 'disabled') {
+            const idx = api.column('status:name').index();
+            if (idx) {
+                if (row[idx] == 'disabled') {
                     html += ' <span class="badge bg-warning">' + meta.settings.oLanguage['disabled'] + '</span>';
                 } else if (row[1] == 'deleted') {
                     html += ' <span class="badge bg-danger">' + meta.settings.oLanguage['deleted'] + '</span>';

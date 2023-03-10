@@ -28,7 +28,7 @@ class SearchTest(WebCase):
         # When making a query without filter
         obj_list = Search.query.all()
         # Then all records are returned
-        self.assertEqual(13, len(obj_list))
+        self.assertEqual(18, len(obj_list))
 
     def test_search_summary(self):
         # Given a database with records

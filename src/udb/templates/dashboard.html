@@ -51,7 +51,7 @@
           {% set columns = [
           {'data': 'summary', 'title':_('Record'), 'orderable': True, 'render':'summary'},
           {'data': 'body', 'title':_('Changes'), 'orderable': True, 'render':'message_body'}] %}
-          {{ _table.table('activities.json', columns=columns, searching=False, empty_message=_('No modification'), info_message=_('Showing last _TOTAL_ modifications')) }}
+          {{ _table.table('activities.json', columns=columns, searching=False, empty_message=_('No modification'), info_message=_('Showing last _TOTAL_ modifications'), paging=False) }}
         </div>
       </div>
     </div>

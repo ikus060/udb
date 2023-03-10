@@ -33,6 +33,7 @@ import udb.tools.ratelimit
 import udb.tools.secure_headers  # noqa: import cherrypy.tools.secure_headers
 from udb.controller import lastupdated, template_processor, url_for
 from udb.controller.api import Api
+from udb.controller.audit_page import AuditPage
 from udb.controller.common_page import CommonApi
 from udb.controller.dashboard_page import DashboardPage
 from udb.controller.deployment_page import DeploymentApi, DeploymentPage
@@ -213,6 +214,7 @@ class Root(object):
         # Commit changes to database.
         cherrypy.tools.db.get_session().commit()
         self.api = Api()
+        self.audit = AuditPage()
         self.dashboard = DashboardPage()
         self.login = LoginPage()
         self.notifications = NotificationsPage()

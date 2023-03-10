@@ -33,6 +33,7 @@ from ._dnsrecord import DnsRecord
 from ._follower import FollowerMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
+from ._search_vector import SearchableMixing
 from ._subnet import Subnet, SubnetRange
 
 Base = cherrypy.tools.db.get_base()
@@ -40,15 +41,23 @@ Base = cherrypy.tools.db.get_base()
 Session = cherrypy.tools.db.get_session()
 
 
-class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, Base):
+class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, Base):
     __tablename__ = 'ip'
     ip = Column(InetType, nullable=False, unique=True)
     related_dhcp_records = relationship(DhcpRecord, back_populates="_ip", lazy=True)
     related_dns_records = relationship(DnsRecord, back_populates="_ip", lazy=True)
 
+    @classmethod
+    def _search_string(cls):
+        return cls.ip.host() + " " + cls.notes
+
     @hybrid_property
     def summary(self):
         return self.ip
+
+    @summary.expression
+    def summary(self):
+        return self.ip.host()
 
     @validates('ip')
     def validate_ip(self, key, value):
