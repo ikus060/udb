@@ -21,7 +21,6 @@ import cherrypy
 from cherrypy.process.plugins import SimplePlugin
 
 from udb.core.model import User
-from udb.tools.auth_form import SESSION_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -87,19 +86,17 @@ class LoginPlugin(SimplePlugin):
             return None
 
         # Update user attributes
-        dirty = False
         if fullname:
             userobj.fullname = fullname
-            dirty = True
-        if email:
-            userobj.email = email
-            dirty = True
-        if dirty:
             userobj.add().commit()
+        if email:
+            try:
+                userobj.email = email
+                userobj.add().commit()
+            except Exception:
+                # Email as a unique constrains what might be raised in case multiple users as the same mail.
+                logger.warning('duplicate email address: %s' % email, exc_info=1)
 
-        # Save username in session if session is enabled.
-        if cherrypy.request.config and cherrypy.request.config.get('tools.sessions.on', False):
-            cherrypy.session[SESSION_KEY] = userobj.username
         self.bus.publish('user_login', userobj)
         return userobj
 

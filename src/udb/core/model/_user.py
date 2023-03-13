@@ -66,7 +66,7 @@ class User(JsonMixin, StatusMixing, Base):
     username = Column(String)
     password = deferred(Column(String, nullable=True))
     fullname = Column(String, nullable=False, default='')
-    email = Column(String, nullable=True, unique=True)
+    email = Column(String, nullable=False, default='')
     role = Column(String, nullable=False, default='guest')
     lang = Column(String, nullable=False, default='')
 
@@ -156,6 +156,9 @@ class User(JsonMixin, StatusMixing, Base):
 
 # Create a unique index for username
 Index('user_username_index', func.lower(User.username), unique=True)
+
+# Create a unique index for non-empty email.
+Index('user_email_index', case((User.email != '', func.lower(User.email)), else_=None), unique=True)
 
 
 @event.listens_for(User, "before_update")
