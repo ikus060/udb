@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import json
 from collections import namedtuple
 
 import cherrypy
@@ -29,16 +28,6 @@ from udb.tools.i18n import gettext as _
 AuditRow = namedtuple(
     'AuditRow', ['model_id', 'status', 'summary', 'model_name', 'author', 'date', 'type', 'body', 'changes', 'url']
 )
-
-
-def json_changes(value):
-    """
-    Safely convert a string to Json data.
-    """
-    try:
-        return json.loads(value)
-    except Exception:
-        return None
 
 
 class AuditPage:
@@ -90,7 +79,7 @@ class AuditPage:
             max=len(query.column_descriptions) - 1,
             message=_('Invalid column for sorting'),
         )
-        order_dir = kwargs.get('order[0][dir]', 'asc')
+        order_dir = kwargs.get('order[0][dir]', 'desc')
         order_col = query.column_descriptions[int(order_idx)]['expr']
         if order_dir == 'desc':
             query = query.order_by(desc(order_col))
@@ -121,7 +110,7 @@ class AuditPage:
                     date=obj.date.isoformat(),
                     type=obj.type,
                     body=obj.body,
-                    changes=json_changes(obj.changes),
+                    changes=Message.json_changes(obj.changes),
                     url=url_for(obj.model_name, obj.model_id, 'edit', relative='server'),
                 )
                 for obj in data

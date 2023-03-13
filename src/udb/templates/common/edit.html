@@ -107,9 +107,16 @@
       {# Message thread #}
       {% import "components/table.html" as _table with context %}
       {% if has_messages %}
+        {% set columns = [
+        {'name':'id', 'visible':False},
+        {'name':'author', 'title':_('Author'), 'orderable':True},
+        {'name':'date', 'title':_('Date'), 'render':'datetime'},
+        {'name':'type', 'title':_('Type'), 'render':'choices', 'render_arg': [ ['new',_('Created')], ['dirty',_('Modified')]] },
+        {'name':'body', 'visible':False},
+        {'name':'changes', 'title':_('Changes'), 'render':'message_body' }] %}
         <div id="messages" class="card">
           {{ _table.table('messages',
-          columns=[{'data': 'body', 'title':_('History'), 'orderable':True, 'render':'message_body'}],
+          columns=columns,
           order=[[ 0, 'desc' ]],
           searching=False,
           empty_message=_('No history'),

@@ -12,7 +12,7 @@
     {% set columns = [
     {'name':'id', 'visible':False},
     {'name':'status', 'visible':False},
-    {'name':'name', 'title':_('Record'), 'orderable':True, 'render':'summary'},
+    {'name':'summary', 'title':_('Record'), 'orderable':True, 'render':'summary'},
     {'name':'model_name', 'title':_('Model'), 'orderable':True, 'render':'choices', 'render_arg': macro.display_name_table.items()|list },
     {'name':'author', 'title':_('Author'), 'orderable':True},
     {'name':'date', 'title':_('Date'), 'render':'datetime'},

@@ -102,21 +102,17 @@ class DeploymentPageTest(WebCase):
             data,
             {
                 'data': [
-                    {
-                        'id': 1,
-                        'model_name': 'dhcprecord',
-                        'model_id': 1,
-                        'author_id': None,
-                        'type': 'new',
-                        'body': '',
-                        'changes': {'ip': [None, '192.168.45.67'], 'mac': [None, 'E5:D3:56:7B:22:A3']},
-                        'date': ANY,
-                        'sent': True,
-                        'url': 'http://127.0.0.1:54583/dhcprecord/1/edit',
-                        'summary': '192.168.45.67 (E5:D3:56:7B:22:A3)',
-                        'author_name': 'nobody',
-                        'date_lastupdated': ANY,
-                    }
+                    [
+                        1,
+                        '192.168.45.67 (E5:D3:56:7B:22:A3)',
+                        'dhcprecord',
+                        'nobody',
+                        ANY,
+                        'new',
+                        '',
+                        {'ip': [None, '192.168.45.67'], 'mac': [None, 'E5:D3:56:7B:22:A3']},
+                        '/dhcprecord/1/edit',
+                    ]
                 ]
             },
         )

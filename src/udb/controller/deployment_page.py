@@ -20,7 +20,7 @@ from collections import namedtuple
 
 import cherrypy
 
-from udb.controller import lastupdated, url_for, verify_perm
+from udb.controller import url_for, verify_perm
 from udb.controller.api import checkpassword
 from udb.controller.common_page import CommonApi
 from udb.core.model import Deployment, DnsRecord, DnsZone, Environment, Message, User
@@ -42,6 +42,10 @@ def checkpassword_or_token(realm, username, password):
 
 DeploymentRow = namedtuple(
     'DeploymentRow', ['id', 'state', 'environment', 'created_at', 'change_count', 'owner', 'url']
+)
+
+ChangeRow = namedtuple(
+    'ChangeRow', ['model_id', 'summary', 'model_name', 'author', 'date', 'type', 'body', 'changes', 'url']
 )
 
 
@@ -75,14 +79,16 @@ class DeploymentPage:
 
         return {
             'data': [
-                dict(
-                    obj.to_json(),
-                    **{
-                        'url': url_for(obj.model_object, 'edit'),
-                        'summary': obj.summary,
-                        'author_name': obj.author_name,
-                        'date_lastupdated': lastupdated(obj.date),
-                    }
+                ChangeRow(
+                    model_id=obj.model_id,
+                    summary=obj.summary,
+                    model_name=obj.model_name,
+                    author=obj.author_name,
+                    date=obj.date.isoformat(),
+                    type=obj.type,
+                    body=obj.body,
+                    changes=obj.changes,
+                    url=url_for(obj.model_name, obj.model_id, 'edit', relative='server'),
                 )
                 for obj in obj_list
             ]

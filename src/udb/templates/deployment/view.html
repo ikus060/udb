@@ -30,9 +30,14 @@
         <div class="col-md-9">
             <div class="card mb-2">
                 {% set columns = [
-                {'data': 'body', 'title':_('Changes'), 'orderable': False, 'render':'message_body'},
-                {'data': 'summary', 'title':_('On record'), 'orderable': False, 'render':'summary'}
-                ] %}
+                {'name':'id', 'visible':False},
+                {'name':'summary', 'title':_('Record'), 'orderable':False, 'render':'summary'},
+                {'name':'model_name', 'visible':False },
+                {'name':'author', 'visible':False},
+                {'name':'date', 'visible':False},
+                {'name':'type', 'visible':False },
+                {'name':'body', 'visible':False},
+                {'name':'changes', 'title':_('Changes'), 'orderable':False, 'render':'message_body' }] %}
                 {{ _table.table('changes.json',
                 columns=columns,
                 order=[[ 0, 'desc' ]],

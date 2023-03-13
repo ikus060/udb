@@ -31,7 +31,7 @@ import udb.tools.errors  # noqa
 import udb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
 import udb.tools.ratelimit
 import udb.tools.secure_headers  # noqa: import cherrypy.tools.secure_headers
-from udb.controller import lastupdated, template_processor, url_for
+from udb.controller import template_processor, url_for
 from udb.controller.api import Api
 from udb.controller.audit_page import AuditPage
 from udb.controller.common_page import CommonApi
@@ -79,7 +79,6 @@ env = jinja2.Environment(
     ],
 )
 env.install_gettext_callables(gettext, ngettext, newstyle=True)
-env.filters['lastupdated'] = lastupdated
 env.globals['url_for'] = url_for
 
 

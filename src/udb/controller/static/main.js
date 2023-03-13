@@ -17,7 +17,10 @@
  */
 
 /**
- * Convert a value to a date.
+ * Convert a string to a date. This function support the following input:
+ * - full ISO format
+ * - epoch as number or string
+ * - YYYY-MM-dd
  */
 const DATE_PATTERN = /^(\d\d\d\d)(\-)?(\d\d)(\-)?(\d\d)$/i;
 function toDate(n) {
@@ -36,32 +39,14 @@ function toDate(n) {
 }
 
 /**
- * Handle local datetime using <time datetime="value"></time>. 
- * Uses the value of `datetime` to converted it into local timezone. 
- * Class `js-date` could be used to only display the date portion. e.g.: 2021-05-28
- * Class `js-datetime` could be used to display the date and time portion e.g.: 2021-05-28 1:04pm
- * Class `js-time` could be used to display the time portion. e.g.: 1:04 pm
+ * Escape string value.
  */
-jQuery(function () {
+function safe(data) {
+    return typeof data === 'string' ?
+        data.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') :
+        data;
+}
 
-    $('time[datetime]').each(function () {
-        const t = $(this);
-        const d = toDate(t.attr('datetime'));
-        if (t.hasClass("js-date")) {
-            t.attr('title', d.toLocaleDateString());
-            t.text(d.toLocaleDateString());
-        } else if ($(this).hasClass("js-datetime")) {
-            t.attr('title', d.toLocaleString());
-            t.text(d.toLocaleString());
-        } else if ($(this).hasClass("js-time")) {
-            t.attr('title', d.toLocaleString());
-            t.text(d.toLocaleTimeString());
-        } else {
-            t.attr('title', d.toLocaleString());
-        }
-    })
-
-});
 /**
  * Prompt user before form submit
  */
@@ -168,13 +153,9 @@ $.fn.dataTable.ext.buttons.clear = {
     }
 };
 
-/** Default render */
-function safe(data) {
-    return typeof data === 'string' ?
-        data.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') :
-        data;
-}
-
+/**
+ * Default render
+ */
 $.fn.dataTable.render.action = function () {
     return {
         display: function (data, type, row, meta) {
@@ -199,10 +180,35 @@ $.fn.dataTable.render.choices = function (choices) {
 $.fn.dataTable.render.datetime = function () {
     return {
         display: function (data, type, row, meta) {
-            return toDate(data).toLocaleString();
+            const api = new $.fn.dataTable.Api(meta.settings);
+            const date = toDate(data);
+            const localDate = date ? safe(date.toLocaleString()) : '';
+            /* Format date as 2 month ago */
+            const seconds = Math.floor((new Date() - date) / 1000);
+            const years = seconds / 31536000;
+            const months = seconds / 2592000;
+            const days = seconds / 86400;
+            const hours = seconds / 3600;
+            const minutes = seconds / 60;
+            let relativeDate;
+            if (years > 1) {
+                relativeDate = api.settings().i18n("udb.years", "%d years ago", Math.floor(years));
+            } else if (months > 1) {
+                relativeDate = api.settings().i18n("udb.months", "%d months ago", Math.floor(months));
+            } else if (days > 1) {
+                relativeDate = api.settings().i18n("udb.days", "%d days ago", Math.floor(days));
+            } else if (hours > 1) {
+                relativeDate = api.settings().i18n("udb.hours", "%d hours ago", Math.floor(hours));
+            } else if (minutes > 1) {
+                relativeDate = api.settings().i18n("udb.minutes", "%d minutes ago", Math.floor(minutes));
+            } else {
+                relativeDate = api.settings().i18n("udb.seconds", "%d seconds ago", Math.floor(seconds));
+            }
+            return `<time datetime="${date}" title="${localDate}">${relativeDate}</time>`;
         },
         sort: function (data, type, row, meta) {
-            return toDate(data).getTime();
+            const date = toDate(data);
+            return date ? toDate(data).getTime() : 0;
         }
     };
 }
@@ -217,57 +223,14 @@ $.fn.dataTable.render.changes = function () {
                 html += safe(row[body_idx]);
             }
             const type_idx = api.column('type:name').index();
-            html += '<ul class="mb-0">';
-            if (row[type_idx] === 'new') {
-                for (const [key, values] of Object.entries(data)) {
-                    html += '<li><b>' + safe(key) + '</b>: ' + safe(values[1]) + ' </li>';
-                }
-            } else {
-                for (const [key, values] of Object.entries(data)) {
-                    html += '<li><b>' + safe(key) + '</b>: '
-                    if (Array.isArray(values[0])) {
-                        for (const deleted of values[0]) {
-                            html += '<br/> - ' + safe(deleted);
-                        }
-                        for (const added of values[1]) {
-                            html += '<br/> + ' + safe(added);
-                        }
-                    } else {
-                        html += safe(values[0]) + ' → ' + safe(values[1]) + '</li>';
-                    }
-                }
-            }
-            html += '</ul>';
-            return html;
-        }
-    };
-}
-
-$.fn.dataTable.render.message_body = function () {
-    return {
-        display: function (data, type, row, meta) {
-            let html = '';
-            if ('message_' + row.type in meta.settings.oLanguage) {
-                html += meta.settings.oLanguage['message_' + row.type];
-            } else {
-                html += row.type;
-            }
-            html += '<em>' + row.author_name + '</em> • ';
-            html += '<time datetime="' + row.date + '" title="' + toDate(row.date).toLocaleString() + '">' + row.date_lastupdated + '</time>';
-            if (row.body) {
-                html += '<br />' + safe(row.body);
-            }
-            switch (row.type) {
-                case 'new':
-                    html += '<ul class="mb-0">';
-                    for (const [key, values] of Object.entries(row.changes)) {
+            if (data) {
+                html += '<ul class="mb-0">';
+                if (row[type_idx] === 'new') {
+                    for (const [key, values] of Object.entries(data)) {
                         html += '<li><b>' + safe(key) + '</b>: ' + safe(values[1]) + ' </li>';
                     }
-                    html += '</ul>';
-                    break;
-                case 'dirty':
-                    html += '<ul class="mb-0">';
-                    for (const [key, values] of Object.entries(row.changes)) {
+                } else {
+                    for (const [key, values] of Object.entries(data)) {
                         html += '<li><b>' + safe(key) + '</b>: '
                         if (Array.isArray(values[0])) {
                             for (const deleted of values[0]) {
@@ -280,13 +243,48 @@ $.fn.dataTable.render.message_body = function () {
                             html += safe(values[0]) + ' → ' + safe(values[1]) + '</li>';
                         }
                     }
-                    html += '</ul>';
-                    break;
+                }
+                html += '</ul>';
             }
+            return html;
+        }
+    };
+}
+
+$.fn.dataTable.render.message_body = function () {
+
+    const datetime = $.fn.dataTable.render.datetime().display;
+
+    const changes = $.fn.dataTable.render.changes().display;
+
+    return {
+        display: function (data, type, row, meta) {
+            const api = new $.fn.dataTable.Api(meta.settings);
+            let html = '';
+
+            const type_idx = api.column('type:name').index();
+            if (type_idx) {
+                const type = row[type_idx];
+                html += api.settings().i18n(`message_${type}`, type);
+            }
+
+            const author_idx = api.column('author:name').index();
+            if (author_idx) {
+                html += ' <em>' + row[author_idx] + '</em> • ';
+            }
+
+            const date_idx = api.column('date:name').index();
+            if (date_idx) {
+                html += datetime(row[date_idx], type, row, meta);
+            }
+
+            html += '<br />' + changes(data, type, row, meta);
             return html;
         },
         sort: function (data, type, row, meta) {
-            return toDate(row.date).getTime();
+            const api = new $.fn.dataTable.Api(meta.settings);
+            const date_idx = api.column('date:name').index();
+            return toDate(row[date_idx]);
         },
     };
 }
@@ -302,9 +300,9 @@ $.fn.dataTable.render.primary_range = function () {
             const status_idx = api.column('status:name').index();
             if (status_idx) {
                 if (row[status_idx] == 'disabled') {
-                    html += ' <span class="badge bg-warning">' + meta.settings.oLanguage['disabled'] + '</span>';
+                    html += ' <span class="badge bg-warning">' + api.settings().i18n('disabled') + '</span>';
                 } else if (row[1] == 'deleted') {
-                    html += ' <span class="badge bg-danger">' + meta.settings.oLanguage['deleted'] + '</span>';
+                    html += ' <span class="badge bg-danger">' + api.settings().i18n('deleted') + '</span>';
                 }
             }
             return html;
@@ -348,9 +346,9 @@ $.fn.dataTable.render.summary = function (model_name = null) {
             const idx = api.column('status:name').index();
             if (idx) {
                 if (row[idx] == 'disabled') {
-                    html += ' <span class="badge bg-warning">' + meta.settings.oLanguage['disabled'] + '</span>';
+                    html += ' <span class="badge bg-warning">' + api.settings().i18n('disabled') + '</span>';
                 } else if (row[1] == 'deleted') {
-                    html += ' <span class="badge bg-danger">' + meta.settings.oLanguage['deleted'] + '</span>';
+                    html += ' <span class="badge bg-danger">' + api.settings().i18n('deleted') + '</span>';
                 }
             }
             return html;

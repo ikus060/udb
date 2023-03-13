@@ -49,9 +49,16 @@
         {# Card Body #}
         <div class="card-body" style="height: 420px; overflow-y: auto;">
           {% set columns = [
-          {'data': 'summary', 'title':_('Record'), 'orderable': True, 'render':'summary'},
-          {'data': 'body', 'title':_('Changes'), 'orderable': True, 'render':'message_body'}] %}
-          {{ _table.table('activities.json', columns=columns, searching=False, empty_message=_('No modification'), info_message=_('Showing last _TOTAL_ modifications'), paging=False) }}
+          {'name':'id', 'visible':False},
+          {'name':'status', 'visible':False},
+          {'name':'summary', 'title':_('Record'), 'orderable':False, 'render':'summary'},
+          {'name':'model_name', 'visible':False },
+          {'name':'author', 'visible':False},
+          {'name':'date', 'visible':False},
+          {'name':'type', 'visible':False },
+          {'name':'body', 'visible':False},
+          {'name':'changes', 'title':_('Changes'), 'orderable':False, 'render':'message_body' }] %}
+          {{ _table.table(url_for('audit','data.json'), columns=columns, searching=False, empty_message=_('No modification'), info_message=_('Showing last _TOTAL_ modifications'), paging=False) }}
         </div>
       </div>
     </div>

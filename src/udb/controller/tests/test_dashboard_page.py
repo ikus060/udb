@@ -31,7 +31,7 @@ class TestDashboardPage(WebCase):
     def test_dashboard_selenium(self):
         # Given a database with data
         self.add_records()
-        with self.selenium(headless=False) as driver:
+        with self.selenium() as driver:
             # When making a query to audit log
             driver.get(url_for('dashboard'))
             driver.implicitly_wait(10)

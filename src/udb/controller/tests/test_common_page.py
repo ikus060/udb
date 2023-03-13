@@ -87,8 +87,11 @@ class CommonTest:
         self.assertInBody('Save changes')
 
     def test_get_edit_page_selenium(self):
-        # Given a database with a record
+        # Given a database with a new record with editing
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
+        obj.status = 'disabled'
+        obj.add()
         obj.commit()
         # Given a webpage
         with self.selenium() as driver:
@@ -98,6 +101,9 @@ class CommonTest:
             driver.find_element('id', 'save-changes')
             # Then the web page is loaded without error.
             self.assertFalse(driver.get_log('browser'))
+            # Then history section contains our modification
+            driver.implicitly_wait(10)
+            driver.find_element('xpath', "//li[contains(text(), 'disabled')]")
 
     def test_get_new_page(self):
         # Given an empty database
