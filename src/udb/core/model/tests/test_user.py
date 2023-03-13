@@ -45,3 +45,10 @@ class UserTest(WebCase):
         # When trying to add another user with empty email
         # Then user is created without error.
         User(username='user2', email='').add().commit()
+
+    def test_duplicate_email_none(self):
+        # Given a database with a User
+        User(username='user1', email=None).add().commit()
+        # When trying to add another user with empty email
+        # Then user is created without error.
+        User(username='user2', email=None).add().commit()

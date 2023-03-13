@@ -19,7 +19,7 @@ import ipaddress
 
 import cherrypy
 import validators
-from sqlalchemy import Column, ForeignKey, event
+from sqlalchemy import Column, ForeignKey, Index, event
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.types import String
@@ -46,7 +46,7 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
 
     ip = Column(InetType, ForeignKey("ip.ip"), nullable=False)
     _ip = relationship("Ip", back_populates='related_dhcp_records', lazy=True)
-    mac = Column(String, ForeignKey("mac.mac"), nullable=False, unique=True)
+    mac = Column(String, ForeignKey("mac.mac"), nullable=False)
     _mac = relationship("Mac", backref='related_dhcp_records', lazy=True)
 
     @classmethod
@@ -76,6 +76,9 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
     @summary.expression
     def summary(self):
         return self.ip.host() + " (" + self.mac + ")"
+
+
+Index('dhcprecord_mac_key', DhcpRecord.mac, unique=True)
 
 
 @event.listens_for(DhcpRecord.ip, 'set')

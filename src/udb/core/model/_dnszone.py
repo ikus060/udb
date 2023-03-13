@@ -44,7 +44,7 @@ dnszone_subnet = Table(
 
 
 class DnsZone(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
-    name = Column(String, unique=True, nullable=False)
+    name = Column(String, nullable=False)
     subnets = relationship(
         "Subnet",
         secondary=dnszone_subnet,

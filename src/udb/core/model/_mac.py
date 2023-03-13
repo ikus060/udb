@@ -19,7 +19,7 @@ import itertools
 
 import cherrypy
 import validators
-from sqlalchemy import Column, String, event
+from sqlalchemy import Column, Index, String, event
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import validates
 
@@ -39,7 +39,7 @@ Session = cherrypy.tools.db.get_session()
 
 class Mac(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, Base):
     __tablename__ = 'mac'
-    mac = Column(String, nullable=False, unique=True)
+    mac = Column(String, nullable=False)
 
     @classmethod
     def _search_string(cls):
@@ -54,6 +54,9 @@ class Mac(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing,
         if not validators.mac_address(value):
             raise ValueError('mac', _('expected a valid mac'))
         return value
+
+
+Index('mac_mac_key', Mac.mac, unique=True)
 
 
 @event.listens_for(Session, "before_flush", insert=True)
