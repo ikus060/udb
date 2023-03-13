@@ -42,6 +42,7 @@ class AccountForm(CherryForm):
         validators=[
             Length(max=256),
         ],
+        render_kw={"autofocus": True},
     )
 
     email = StringField(

@@ -36,6 +36,7 @@ from ._dhcprecord import DhcpRecord
 from ._dnsrecord import DnsRecord
 from ._json import JsonMixin
 from ._message import MessageMixin
+from ._search_vector import SearchableMixing
 from ._status import StatusMixing
 from ._subnet import Subnet, SubnetRange
 from ._vrf import Vrf
@@ -211,11 +212,15 @@ class Deployment(CommonMixin, JsonMixin, Base):
         }
 
 
-class Environment(CommonMixin, JsonMixin, MessageMixin, StatusMixing, Base):
+class Environment(CommonMixin, JsonMixin, MessageMixin, StatusMixing, SearchableMixing, Base):
     name = Column(String, nullable=False)
     script = Column(Text, nullable=False, default='')
     model_name = Column(String, nullable=False)
     deployments = relationship("Deployment", back_populates='environment', lazy=True)
+
+    @classmethod
+    def _search_string(cls):
+        return cls.name
 
     @hybrid_property
     def summary(self):

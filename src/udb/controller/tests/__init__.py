@@ -25,11 +25,12 @@ from urllib.parse import urlencode
 
 import cherrypy
 import cherrypy.test.helper
+import html5lib
 from selenium import webdriver
 
 from udb.app import Root
 from udb.config import parse_args
-from udb.core.model import User
+from udb.core.model import Deployment, DhcpRecord, DnsRecord, DnsZone, Environment, Message, Subnet, User, Vrf
 
 BaseClass = cherrypy.test.helper.CPWebCase
 del BaseClass.test_gc
@@ -46,7 +47,7 @@ class WebCase(BaseClass):
     username = 'admin'
     password = 'admin'
 
-    default_config = {'debug': True}
+    default_config = {'debug': False}
 
     @classmethod
     def setup_class(cls):
@@ -89,6 +90,55 @@ class WebCase(BaseClass):
         self.wait_for_tasks()
         cherrypy.tools.db.drop_all()
         super().tearDown()
+
+    def add_records(self):
+        """
+        Generate a preset of data for testing.
+        """
+        self.user = User(username='test')
+        self.vrf = Vrf(name='(default)')
+        self.subnet = Subnet(
+            ranges=['147.87.250.0/24'], name='DMZ', vrf=self.vrf, notes='public', owner=self.user
+        ).add()
+        self.subnet.add_message(Message(body='Message on subnet', author=self.user))
+        Subnet(ranges=['147.87.0.0/16'], name='its-main-4', vrf=self.vrf, notes='main', owner=self.user).add()
+        Subnet(
+            ranges=['2002::1234:abcd:ffff:c0a8:101/64'], name='its-main-6', vrf=self.vrf, notes='main', owner=self.user
+        ).add()
+        Subnet(ranges=['147.87.208.0/24'], name='ARZ', vrf=self.vrf, notes='BE.net', owner=self.user).add()
+        self.zone = DnsZone(name='bfh.ch', notes='DMZ Zone', subnets=[self.subnet], owner=self.user).add()
+        self.zone.add_message(Message(body='Here is a message', author=self.user))
+        self.zone.flush()
+        DnsZone(name='bfh.science', notes='This is a note', owner=self.user).add()
+        DnsZone(name='bfh.info', notes='This is a note', owner=self.user).add()
+        DhcpRecord(ip='147.87.250.1', mac='00:ba:d5:a2:34:56', notes='webserver bla bla bla', owner=self.user).add()
+        self.dnsrecord = DnsRecord(name='foo.bfh.ch', type='A', value='147.87.250.3', owner=self.user).add()
+        self.dnsrecord.add_message(Message(body='This is a message', author=self.user))
+        DnsRecord(name='bar.bfh.ch', type='A', value='147.87.250.1', owner=self.user).add()
+        DnsRecord(name='bar.bfh.ch', type='CNAME', value='www.bar.bfh.ch', owner=self.user).add()
+        DnsRecord(name='baz.bfh.ch', type='A', value='147.87.250.2', owner=self.user).add()
+        env = Environment(name='test-env', script='echo FOO', model_name='dhcprecord').add().commit()
+        Deployment(
+            environment_id=env.id,
+            owner=User.query.first(),
+            change_count=1,
+            start_id=0,
+            end_id=Message.query.order_by(Message.id.desc()).first().id,
+        ).add().commit()
+
+    def assertValidHTML(self, msg=None):
+        """
+        Verify if the current body is compliant HTML.
+        """
+        try:
+            parser = html5lib.HTMLParser(strict=True)
+            parser.parse(self.body)
+        except html5lib.html5parser.ParseError as e:
+            self.assertHeader
+            row, col_unused = parser.errors[0][0]
+            line = self.body.splitlines()[row - 1].decode('utf8', errors='replace')
+            msg = msg or ('URL %s contains invalid HTML: %s on line %s: %s' % (self.url, e, row, line))
+            self.fail(msg)
 
     @property
     def app(self):
@@ -164,7 +214,7 @@ class WebCase(BaseClass):
                         return value
 
     @contextmanager
-    def selenium(self):
+    def selenium(self, headless=True):
         """
         Decorator to load selenium for a test.
         """
@@ -173,7 +223,10 @@ class WebCase(BaseClass):
             raise unittest.SkipTest("selenium require a display")
         # Start selenium driver
         options = webdriver.ChromeOptions()
-        options.add_argument('--headless')
+        if headless:
+            options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--window-size=1280,800')
         if os.geteuid() == 0:
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')

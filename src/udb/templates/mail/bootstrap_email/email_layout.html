@@ -1,0 +1,28 @@
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>
+            {% block title %}
+            {% endblock title %}
+        </title>
+    </head>
+    <body class="bg-light">
+        <div class="container">
+            <div class="card my-10">
+                <div class="bg-dark text-white h-16 p-2">
+                    <h1 class="text-center">{{ header_name }}</h1>
+                </div>
+                <div class="card-body">
+                    {% block body %}
+                    {% endblock body %}
+                    <hr/>
+                    <p class="text-xs">
+                        {% trans %}You received this email because you are following changes on these records.{% endtrans %}
+                        <br />
+                        <a href="{{ url_for('notifications')}}">{% trans %}Edit notification settings{% endtrans %}</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

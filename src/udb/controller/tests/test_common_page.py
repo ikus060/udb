@@ -57,6 +57,25 @@ class CommonTest:
             # Then the web page is loaded without error.
             self.assertFalse(driver.get_log('browser'))
 
+    def test_get_list_filter_selenium(self):
+        # Given a database with a deleted record
+        obj = self.obj_cls(**self.new_data).add()
+        obj.status = self.obj_cls.STATUS_DELETED
+        obj.commit()
+        with self.selenium() as driver:
+            # When showing the page with default filter
+            driver.get(url_for(self.base_url, ''))
+            # Then the deleted record badge are hidden
+            with self.assertRaises(Exception):
+                driver.find_element('xpath', "//span[@class='badge bg-danger' and contains(text(), 'Deleted')]")
+
+            # When user click on "Show deleted" buttons
+            element = driver.find_element('css selector', 'a.udb-btn-filter')
+            self.assertEqual("Show Deleted", element.text)
+            element.click()
+            # Then the list show deleted record.
+            driver.find_element('xpath', "//span[@class='badge bg-danger' and contains(text(), 'Deleted')]")
+
     def test_get_edit_page(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
@@ -68,8 +87,11 @@ class CommonTest:
         self.assertInBody('Save changes')
 
     def test_get_edit_page_selenium(self):
-        # Given a database with a record
+        # Given a database with a new record with editing
         obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
+        obj.status = 'disabled'
+        obj.add()
         obj.commit()
         # Given a webpage
         with self.selenium() as driver:
@@ -79,6 +101,9 @@ class CommonTest:
             driver.find_element('id', 'save-changes')
             # Then the web page is loaded without error.
             self.assertFalse(driver.get_log('browser'))
+            # Then history section contains our modification
+            driver.implicitly_wait(10)
+            driver.find_element('xpath', "//li[contains(text(), 'disabled')]")
 
     def test_get_new_page(self):
         # Given an empty database

@@ -39,9 +39,11 @@
               {# /Status Badge #}
             {% endif %}
             {# Edit Form #}
-            <div class="row">
-              {% block edit_form %}{{ form()}}{% endblock %}
-            </div>
+            <fieldset {% if not edit_perm %}disabled{% endif %}>
+              <div class="row">
+                {% block edit_form %}{{ form() }}{% endblock %}
+              </div>
+            </fieldset>
             {# /Edit Form #}
           </div>
           <div class="card-footer">
@@ -101,10 +103,28 @@
           </div>
         </div>
       </form>
-      {% block extra_form %}
-      {% endblock %}
+      {% block extra_form %}{% endblock %}
       {# Message thread #}
-      {% include "common/messages.html" %}
+      {% import "components/table.html" as _table with context %}
+      {% if has_messages %}
+        {% set columns = [
+        {'name':'id', 'visible':False},
+        {'name':'author', 'title':_('Author'), 'orderable':True},
+        {'name':'date', 'title':_('Date'), 'render':'datetime'},
+        {'name':'type', 'title':_('Type'), 'render':'choices', 'render_arg': [ ['new',_('Created')], ['dirty',_('Modified')]] },
+        {'name':'body', 'visible':False},
+        {'name':'changes', 'title':_('Changes'), 'render':'message_body' }] %}
+        <div id="messages" class="card">
+          {{ _table.table('messages',
+          columns=columns,
+          order=[[ 0, 'desc' ]],
+          searching=False,
+          empty_message=_('No history'),
+          show_header=False,
+          page_length=10,
+          length_change=False) }}
+        </div>
+      {% endif %}
     </div>
     <div class="col flex-grow-1 order-0 order-xl-2">
       <div class="row align-items-baseline">

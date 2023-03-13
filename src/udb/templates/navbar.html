@@ -26,22 +26,24 @@
     <div id="sidebarMenu"
          class="collapse navbar-collapse flex-column align-items-start w-100 mt-3">
       {# Search form #}
-      {% if not hide_search %}
-        <form class="d-flex" method="GET" action="{{ url_for('search')}}">
-          <div class="input-group mb-1">
-            <input type="text"
-                   class="form-control"
-                   placeholder="{% trans %}Search all{% endtrans %}"
-                   aria-label="{% trans %}Search all{% endtrans %}"
-                   name="q"
-                   aria-describedby="button-search">
-            <button class="btn btn-outline-secondary" id="button-search" type="submit">
-              <i class="fbi bi-search" aria-hidden="true"></i>
-            </button>
-          </div>
-        </form>
-      {% endif %}
-      {# Menu items #}
+      <form class="d-flex" method="GET" action="{{ url_for('search')}}">
+        <div class="input-group mb-1">
+          {% set search_autofocus = current_url.startswith(url_for('search')) or current_url.startswith(url_for('dashboard')) %}
+          {% set search_value = current_url.startswith(url_for('search')) and form.q.data %}
+          <input type="text"
+                 class="form-control"
+                 placeholder="{% trans %}Search{% endtrans %}"
+                 aria-label="{% trans %}Search{% endtrans %}"
+                 name="q"
+                 aria-describedby="button-search"
+                 {% if search_value %} value="{{ form.q.data }}"{% endif %}
+                 {% if search_autofocus %} autofocus="autofocus"{% endif %}>
+          <button class="btn btn-outline-secondary" id="button-search" type="submit">
+            <i class="fbi bi-search" aria-hidden="true"></i>
+          </button>
+        </div>
+      </form>
+      {# Network #}
       <div class="navbar-text mt-2 text-white">
         <strong>{% trans %}Network{% endtrans %}</strong>
       </div>
@@ -57,11 +59,28 @@
           </li>
         {% endfor %}
       </ul>
+      {# Deployment #}
       <div class="navbar-text mt-2 text-white">
         <strong>{% trans %}Setup{% endtrans %}</strong>
       </div>
       <ul class="nav nav-pills flex-column w-100">
         {% set items = ['environment', 'deployment'] %}
+        {% for model_name in items %}
+          <li class="nav-item">
+            {% set active = current_url.startswith(url_for(model_name)) %}
+            <a href="{{ url_for(model_name) }}"
+               class="nav-link text-white {% if active %}active{% endif %}">
+              {{ macro.icon(model_name, 'me-3') }}<span>{{ macro.display_name(model_name) }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+      {# System #}
+      <div class="navbar-text mt-2 text-white">
+        <strong>{% trans %}System{% endtrans %}</strong>
+      </div>
+      <ul class="nav nav-pills flex-column w-100">
+        {% set items = ['audit'] %}
         {% for model_name in items %}
           <li class="nav-item">
             {% set active = current_url.startswith(url_for(model_name)) %}

@@ -14,7 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import datetime
 import logging
 import re
 import time
@@ -42,7 +41,7 @@ def flash(message, level='info'):
     assert level in ['info', 'error', 'warning', 'success']
     if 'flash' not in cherrypy.session:  # @UndefinedVariable
         cherrypy.session['flash'] = []  # @UndefinedVariable
-    flash_message = FlashMessage(message, level)
+    flash_message = FlashMessage(str(message), level)
     cherrypy.session['flash'].append(flash_message)
 
 
@@ -116,34 +115,6 @@ def verify_perm(perm):
         raise cherrypy.HTTPError(403, 'Insufficient privileges')
 
 
-def lastupdated(value, now=None):
-    """
-    Used to format date as "Updated 10 minutes ago".
-
-    Value could be a RdiffTime or an epoch as int.
-    """
-    if not value:
-        return ""
-    if value.tzinfo:
-        now = datetime.datetime.now(datetime.timezone.utc)
-    else:
-        now = datetime.datetime.now()
-    delta = now - value
-    if delta.days > 365:
-        return _('%d years ago') % (delta.days / 365)
-    if delta.days > 60:
-        return _('%d months ago') % (delta.days / 30)
-    if delta.days > 7:
-        return _('%d weeks ago') % (delta.days / 7)
-    elif delta.days > 1:
-        return _('%d days ago') % delta.days
-    elif delta.seconds > 3600:
-        return _('%d hours ago') % (delta.seconds / 3600)
-    elif delta.seconds > 60:
-        return _('%d minutes ago') % (delta.seconds / 60)
-    return _('%d seconds ago') % delta.seconds
-
-
 def template_processor(request):
     app = cherrypy.tree.apps[''].root
     values = {
@@ -189,3 +160,18 @@ def handle_exception(e, form=None):
     else:
         flash(_('Database error: %s') % e, level='error')
         logger.warning('database error', exc_info=1)
+
+
+def validate_int(value, message=None, min=None, max=None):
+    """
+    Raise HTTP Error if the value is not an integer
+    """
+    try:
+        value = int(value)
+        if min and value < min:
+            raise cherrypy.HTTPError(400, message)
+        if max and value > max:
+            raise cherrypy.HTTPError(400, message)
+        return value
+    except ValueError:
+        raise cherrypy.HTTPError(400, message)

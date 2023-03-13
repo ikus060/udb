@@ -17,51 +17,36 @@
  */
 
 /**
- * Convert a value to a date.
+ * Convert a string to a date. This function support the following input:
+ * - full ISO format
+ * - epoch as number or string
+ * - YYYY-MM-dd
  */
 const DATE_PATTERN = /^(\d\d\d\d)(\-)?(\d\d)(\-)?(\d\d)$/i;
 function toDate(n) {
     let matches, year, month, day;
     if (typeof n === "number") {
         n = new Date(n * 1000); // epoch
-    } else if ((matches = n.match(DATE_PATTERN))) {
+    } else if (typeof n === 'string' && (matches = n.match(DATE_PATTERN))) {
         year = parseInt(matches[1], 10);
         month = parseInt(matches[3], 10) - 1;
         day = parseInt(matches[5], 10);
         return new Date(year, month, day);
-    } else { // str
+    } else if (n) { // str
         n = isNaN(n) ? new Date(n) : new Date(parseInt(n) * 1000);
     }
     return n;
 }
 
 /**
- * Handle local datetime using <time datetime="value"></time>. 
- * Uses the value of `datetime` to converted it into local timezone. 
- * Class `js-date` could be used to only display the date portion. e.g.: 2021-05-28
- * Class `js-datetime` could be used to display the date and time portion e.g.: 2021-05-28 1:04pm
- * Class `js-time` could be used to display the time portion. e.g.: 1:04 pm
+ * Escape string value.
  */
-jQuery(function () {
+function safe(data) {
+    return typeof data === 'string' ?
+        data.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') :
+        data;
+}
 
-    $('time[datetime]').each(function () {
-        const t = $(this);
-        const d = toDate(t.attr('datetime'));
-        if (t.hasClass("js-date")) {
-            t.attr('title', d.toLocaleDateString());
-            t.text(d.toLocaleDateString());
-        } else if ($(this).hasClass("js-datetime")) {
-            t.attr('title', d.toLocaleString());
-            t.text(d.toLocaleString());
-        } else if ($(this).hasClass("js-time")) {
-            t.attr('title', d.toLocaleString());
-            t.text(d.toLocaleTimeString());
-        } else {
-            t.attr('title', d.toLocaleString());
-        }
-    })
-
-});
 /**
  * Prompt user before form submit
  */
@@ -73,6 +58,7 @@ jQuery(function () {
         }
     });
 });
+
 /**
  * Control showif
  */
@@ -125,36 +111,51 @@ jQuery(function () {
     });
 });
 
-/** Filter button for DataTables */
+/**
+ * Buttons to filter content of datatable.
+ * 
+ * Options:
+ * - search: Define the search criteria when filter is active
+ * - search_off: Define the search criteria when filter is not active (optional)
+ * - regex: True to enable regex lookup (optional)
+ */
 $.fn.dataTable.ext.buttons.filter = {
     text: 'Filter',
+    className: 'udb-btn-filter',
     action: function (e, dt, node, config) {
         if (node.hasClass('active')) {
-            dt.column(config.column).search('');
+            dt.column(config.column).search(config.search_off || '', config.regex);
         } else {
-            dt.column(config.column).search(config.search);
+            dt.column(config.column).search(config.search, config.regex);
         }
         dt.draw(true);
     }
 };
 
-/** Button to clear filter and reset the state of the table. */
+/**
+ * Button to reset the filters of datatable.
+ * Default settings are restored using init() API.
+ */
 $.fn.dataTable.ext.buttons.clear = {
     text: 'Clear',
     action: function (e, dt, node, config) {
         dt.search('');
-        dt.columns().search('');
+        if (dt.init().aoSearchCols) {
+            const searchCols = dt.init().aoSearchCols;
+            for (let i = 0; i < searchCols.length; i++) {
+                const search = searchCols[i].search || "";
+                dt.column(i).search(search);
+            }
+        } else {
+            dt.columns().search('');
+        }
         dt.draw(true);
     }
 };
 
-/** Default render */
-function safe(data) {
-    return typeof data === 'string' ?
-        data.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') :
-        data;
-}
-
+/**
+ * Default render
+ */
 $.fn.dataTable.render.action = function () {
     return {
         display: function (data, type, row, meta) {
@@ -179,39 +180,57 @@ $.fn.dataTable.render.choices = function (choices) {
 $.fn.dataTable.render.datetime = function () {
     return {
         display: function (data, type, row, meta) {
-            return toDate(data).toLocaleString();
+            const api = new $.fn.dataTable.Api(meta.settings);
+            const date = toDate(data);
+            const localDate = date ? safe(date.toLocaleString()) : '';
+            /* Format date as 2 month ago */
+            const seconds = Math.floor((new Date() - date) / 1000);
+            const years = seconds / 31536000;
+            const months = seconds / 2592000;
+            const days = seconds / 86400;
+            const hours = seconds / 3600;
+            const minutes = seconds / 60;
+            let relativeDate;
+            if (years > 1) {
+                relativeDate = api.settings().i18n("udb.years", "%d years ago", Math.floor(years));
+            } else if (months > 1) {
+                relativeDate = api.settings().i18n("udb.months", "%d months ago", Math.floor(months));
+            } else if (days > 1) {
+                relativeDate = api.settings().i18n("udb.days", "%d days ago", Math.floor(days));
+            } else if (hours > 1) {
+                relativeDate = api.settings().i18n("udb.hours", "%d hours ago", Math.floor(hours));
+            } else if (minutes > 1) {
+                relativeDate = api.settings().i18n("udb.minutes", "%d minutes ago", Math.floor(minutes));
+            } else {
+                relativeDate = api.settings().i18n("udb.seconds", "%d seconds ago", Math.floor(seconds));
+            }
+            return `<time datetime="${date}" title="${localDate}">${relativeDate}</time>`;
         },
         sort: function (data, type, row, meta) {
-            return toDate(data).getTime();
+            const date = toDate(data);
+            return date ? toDate(data).getTime() : 0;
         }
     };
 }
 
-$.fn.dataTable.render.message_body = function () {
+$.fn.dataTable.render.changes = function () {
     return {
         display: function (data, type, row, meta) {
+            const api = new $.fn.dataTable.Api(meta.settings);
             let html = '';
-            if ('message_' + row.type in meta.settings.oLanguage) {
-                html += meta.settings.oLanguage['message_' + row.type];
-            } else {
-                html += row.type;
+            const body_idx = api.column('body:name').index();
+            if (body_idx && row[body_idx]) {
+                html += safe(row[body_idx]);
             }
-            html += '<em>' + row.author_name + '</em> • ';
-            html += '<time datetime="' + row.date + '" title="' + toDate(row.date).toLocaleString() + '">' + row.date_lastupdated + '</time>';
-            if (row.body) {
-                html += '<br />' + safe(row.body);
-            }
-            switch (row.type) {
-                case 'new':
-                    html += '<ul class="mb-0">';
-                    for (const [key, values] of Object.entries(row.changes)) {
+            const type_idx = api.column('type:name').index();
+            if (data) {
+                html += '<ul class="mb-0">';
+                if (row[type_idx] === 'new') {
+                    for (const [key, values] of Object.entries(data)) {
                         html += '<li><b>' + safe(key) + '</b>: ' + safe(values[1]) + ' </li>';
                     }
-                    html += '</ul>';
-                    break;
-                case 'dirty':
-                    html += '<ul class="mb-0">';
-                    for (const [key, values] of Object.entries(row.changes)) {
+                } else {
+                    for (const [key, values] of Object.entries(data)) {
                         html += '<li><b>' + safe(key) + '</b>: '
                         if (Array.isArray(values[0])) {
                             for (const deleted of values[0]) {
@@ -224,16 +243,52 @@ $.fn.dataTable.render.message_body = function () {
                             html += safe(values[0]) + ' → ' + safe(values[1]) + '</li>';
                         }
                     }
-                    html += '</ul>';
-                    break;
+                }
+                html += '</ul>';
             }
+            return html;
+        }
+    };
+}
+
+$.fn.dataTable.render.message_body = function () {
+
+    const datetime = $.fn.dataTable.render.datetime().display;
+
+    const changes = $.fn.dataTable.render.changes().display;
+
+    return {
+        display: function (data, type, row, meta) {
+            const api = new $.fn.dataTable.Api(meta.settings);
+            let html = '';
+
+            const type_idx = api.column('type:name').index();
+            if (type_idx) {
+                const type = row[type_idx];
+                html += api.settings().i18n(`message_${type}`, type);
+            }
+
+            const author_idx = api.column('author:name').index();
+            if (author_idx) {
+                html += ' <em>' + row[author_idx] + '</em> • ';
+            }
+
+            const date_idx = api.column('date:name').index();
+            if (date_idx) {
+                html += datetime(row[date_idx], type, row, meta);
+            }
+
+            html += '<br />' + changes(data, type, row, meta);
             return html;
         },
         sort: function (data, type, row, meta) {
-            return toDate(row.date).getTime();
+            const api = new $.fn.dataTable.Api(meta.settings);
+            const date_idx = api.column('date:name').index();
+            return toDate(row[date_idx]);
         },
     };
 }
+
 $.fn.dataTable.render.primary_range = function () {
     return {
         display: function (data, type, row, meta) {
@@ -241,11 +296,13 @@ $.fn.dataTable.render.primary_range = function () {
                 '<i class="bi bi-diagram-3-fill me-1" aria-hidden="true"></i>' +
                 '<strong>' + safe(data) + '</strong>' +
                 '</a> ';
-            if (meta.settings.aoColumns[1].name == 'status') {
-                if (row[1] == 'disabled') {
-                    html += ' <span class="badge bg-warning">' + meta.settings.oLanguage['disabled'] + '</span>';
+            const api = new $.fn.dataTable.Api(meta.settings);
+            const status_idx = api.column('status:name').index();
+            if (status_idx) {
+                if (row[status_idx] == 'disabled') {
+                    html += ' <span class="badge bg-warning">' + api.settings().i18n('disabled') + '</span>';
                 } else if (row[1] == 'deleted') {
-                    html += ' <span class="badge bg-danger">' + meta.settings.oLanguage['deleted'] + '</span>';
+                    html += ' <span class="badge bg-danger">' + api.settings().i18n('deleted') + '</span>';
                 }
             }
             return html;
@@ -272,20 +329,26 @@ $.fn.dataTable.render.summary = function (model_name = null) {
 
     return {
         display: function (data, type, row, meta) {
+            const api = new $.fn.dataTable.Api(meta.settings);
+            /* Get model_name from arguments or from row data */
             let effective_model_name = model_name;
-            if (effective_model_name == null && meta.settings.aoColumns.length > 2 && meta.settings.aoColumns[2].name == 'model_name') {
-                effective_model_name = row[2];
+            if (effective_model_name == null) {
+                const idx = api.column('model_name:name').index();
+                if (idx) {
+                    effective_model_name = row[idx];
+                }
             }
             const url = encodeURI('url' in row ? row.url : row[row.length - 1]);
             let html = '<a href="' + url + '">' +
                 '<i class="bi ' + icon_table[effective_model_name] + ' me-1" aria-hidden="true"></i>' +
                 '<strong>' + safe(data) + '</strong>' +
                 '</a>';
-            if (meta.settings.aoColumns[1].name == 'status') {
-                if (row[1] == 'disabled') {
-                    html += ' <span class="badge bg-warning">' + meta.settings.oLanguage['disabled'] + '</span>';
+            const idx = api.column('status:name').index();
+            if (idx) {
+                if (row[idx] == 'disabled') {
+                    html += ' <span class="badge bg-warning">' + api.settings().i18n('disabled') + '</span>';
                 } else if (row[1] == 'deleted') {
-                    html += ' <span class="badge bg-danger">' + meta.settings.oLanguage['deleted'] + '</span>';
+                    html += ' <span class="badge bg-danger">' + api.settings().i18n('deleted') + '</span>';
                 }
             }
             return html;
@@ -321,7 +384,7 @@ jQuery(function () {
         });
         let searchCols = columns.map(function (item, _index) {
             if (item.search) {
-                return { "search": item.search };
+                return { "search": item.search, "regex": item.regex || False };
             }
             return null;
         });
@@ -348,7 +411,10 @@ jQuery(function () {
                 }
             },
             initComplete: function () {
+                // Remove no-footer class to fix CSS display with bootstrap5
                 $(this).removeClass("no-footer");
+                // If searching is enabled, focus on search field.
+                $("div.dataTables_filter input").focus();
             },
             processing: true,
             stateSave: true,

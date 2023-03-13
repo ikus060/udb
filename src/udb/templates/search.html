@@ -2,25 +2,8 @@
 {% import 'macro.html' as macro %}
 {% import "common/status.html" as _status %}
 {% import "components/table.html" as _table %}
-{% set hide_search = True %}
 {% block body %}
   <h4>{% trans %}Search{% endtrans %}</h4>
-  <div class="d-flex align-items-center">
-    <form class="flex-grow-1 me-2" method="GET" action="{{ url_for() }}">
-      <div class="input-group">
-        <input type="text"
-               class="form-control"
-               placeholder="Search"
-               aria-label="Search"
-               name="q"
-               value="{{ form.q.data }}"
-               aria-describedby="button-search">
-        <button class="btn btn-outline-secondary" type="submit" id="button-search">
-          <i class="bi bi-search" aria-hidden="true"></i>
-        </button>
-      </div>
-    </form>
-  </div>
   {% set columns = [
   {'name':'id', 'visible':False},
   {'name':'status', 'visible':False},

@@ -122,12 +122,7 @@ class Message(JsonMixin, SearchableMixing, Base):
         """
         Return Json changes stored in message.
         """
-        if not self._changes or self._changes[0] != '{':
-            return None
-        try:
-            return json.loads(self._changes)
-        except Exception:
-            return None
+        return Message.json_changes(self._changes)
 
     @classmethod
     def _search_string(cls):
@@ -156,6 +151,18 @@ class Message(JsonMixin, SearchableMixing, Base):
         if self.author is None:
             return _('nobody')
         return str(self.author)
+
+    @classmethod
+    def json_changes(cls, value):
+        """
+        Safely convert a string to Json data.
+        """
+        if not value or value[0] != '{':
+            return None
+        try:
+            return json.loads(value)
+        except Exception:
+            return None
 
 
 class MessageMixin:

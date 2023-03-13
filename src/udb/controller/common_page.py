@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
+from collections import namedtuple
 
 import cherrypy
 from sqlalchemy.exc import DatabaseError
@@ -22,13 +23,16 @@ from sqlalchemy.inspection import inspect
 from wtforms.fields import HiddenField, TextAreaField
 from wtforms.validators import InputRequired, Length
 
-from udb.controller import flash, handle_exception, lastupdated, url_for, verify_perm
+from udb.controller import flash, handle_exception, url_for, verify_perm
 from udb.core.model import Message, User
 from udb.tools.i18n import gettext_lazy as _
 
 from .form import CherryForm
 
 logger = logging.getLogger(__name__)
+
+
+HistoryRow = namedtuple('HistoryRow', ['id', 'author', 'date', 'type', 'body', 'changes'])
 
 
 class MessageForm(CherryForm):
@@ -145,16 +149,31 @@ class CommonPage(object):
         # Return Not found if object doesn't exists
         obj = self._get_or_404(key)
         # Query Object Messages
-        messages = (
-            Message.query.filter(Message.model_id == obj.id, Message.model_name == obj.__tablename__)
-            .join(User)
+        query = (
+            Message.query.with_entities(
+                Message.id,
+                User.summary.label('author'),
+                Message.date,
+                Message.type,
+                Message.body,
+                Message._changes.label('changes'),
+            )
+            .outerjoin(Message.author)
             .order_by(Message.date.desc())
-            .all()
+            .filter(Message.model_id == obj.id, Message.model_name == obj.__tablename__)
         )
+        data = query.all()
         return {
             'data': [
-                dict(msg.to_json(), **{'author_name': msg.author_name, 'date_lastupdated': lastupdated(msg.date)})
-                for msg in messages
+                HistoryRow(
+                    id=obj.id,
+                    author=obj.author,
+                    date=obj.date.isoformat(),
+                    type=obj.type,
+                    body=obj.body,
+                    changes=Message.json_changes(obj.changes),
+                )
+                for obj in data
             ]
         }
 

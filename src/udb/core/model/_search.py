@@ -18,7 +18,7 @@ import cherrypy
 from sqlalchemy import and_, literal, select, union
 from sqlalchemy.orm import foreign, relationship, remote
 
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Message, Subnet, User, Vrf
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Environment, Ip, Mac, Message, Subnet, User, Vrf
 
 Base = cherrypy.tools.db.get_base()
 
@@ -28,14 +28,14 @@ search_query = union(
         select(
             literal(model.__name__.lower()).label('model_name'),
             model.id.label('model_id'),
-            model.status,
+            getattr(model, 'status', literal('enabled')).label('status'),
             model.summary,
             model.notes,
             model.owner_id,
             model.modified_at,
             model._search_vector,
         )
-        for model in [DhcpRecord, DnsRecord, DnsZone, Subnet, Vrf]
+        for model in [DhcpRecord, DnsRecord, DnsZone, Subnet, Vrf, Ip, Mac, Environment]
     ]
 ).subquery()
 

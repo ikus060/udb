@@ -31,8 +31,9 @@ import udb.tools.errors  # noqa
 import udb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
 import udb.tools.ratelimit
 import udb.tools.secure_headers  # noqa: import cherrypy.tools.secure_headers
-from udb.controller import lastupdated, template_processor, url_for
+from udb.controller import template_processor, url_for
 from udb.controller.api import Api
+from udb.controller.audit_page import AuditPage
 from udb.controller.common_page import CommonApi
 from udb.controller.dashboard_page import DashboardPage
 from udb.controller.deployment_page import DeploymentApi, DeploymentPage
@@ -71,12 +72,13 @@ env = jinja2.Environment(
     loader=jinja2.PackageLoader('udb'),
     auto_reload=True,
     autoescape=True,
+    trim_blocks=True,
+    lstrip_blocks=True,
     extensions=[
         'jinja2.ext.i18n',
     ],
 )
 env.install_gettext_callables(gettext, ngettext, newstyle=True)
-env.filters['lastupdated'] = lastupdated
 env.globals['url_for'] = url_for
 
 
@@ -211,6 +213,7 @@ class Root(object):
         # Commit changes to database.
         cherrypy.tools.db.get_session().commit()
         self.api = Api()
+        self.audit = AuditPage()
         self.dashboard = DashboardPage()
         self.login = LoginPage()
         self.notifications = NotificationsPage()

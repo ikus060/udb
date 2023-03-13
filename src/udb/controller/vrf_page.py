@@ -32,7 +32,9 @@ class VrfForm(CherryForm):
     object_cls = Vrf
 
     name = StringField(
-        _('Name'), validators=[DataRequired(), Length(max=256)], render_kw={"placeholder": _("Enter a VRF name")}
+        _('Name'),
+        validators=[DataRequired(), Length(max=256)],
+        render_kw={"placeholder": _("Enter a VRF name"), "autofocus": True},
     )
 
     notes = TextAreaField(

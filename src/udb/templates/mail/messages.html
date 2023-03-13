@@ -1,10 +1,12 @@
-{% import "components/table.html" as _table with context %}
 {% macro show_value(value) %}
   {%- if value is none -%}<i>{% trans %}Undefined{% endtrans %}</i>{%- else -%}{{ value }}{%- endif -%}
 {% endmacro %}
 {% macro show_message(message) %}
   <small>{% trans %}By {% endtrans %} {{ message.author_name }} •
-    <time datetime="{{ message.date }}">{{ message.date | lastupdated }}</time></small>
+    <time datetime="{{ message.date }}">
+      {{ message.date.astimezone().strftime('%c %Z') }}
+    </time>
+  </small>
   {# Message Comment #}
   {% if message.body %}<p>{{ message.body }}</p>{% endif %}
   {% if message.type == 'new' and message.changes %}
@@ -48,15 +50,3 @@
     </ul>
   {% endif %}
 {% endmacro %}
-{% if has_messages %}
-  <div id="messages" class="card">
-    {{ _table.table('messages',
-    columns=[{'data': 'body', 'title':_('History'), 'orderable':True, 'render':'message_body'}],
-    order=[[ 0, 'desc' ]],
-    searching=False,
-    empty_message=_('No history'),
-    show_header=False,
-    paging=True,
-    pageLength=10) }}
-  </div>
-{% endif %}

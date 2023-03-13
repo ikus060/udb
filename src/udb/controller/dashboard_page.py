@@ -14,15 +14,19 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from collections import namedtuple
 from datetime import datetime, timedelta
 
 import cherrypy
 from sqlalchemy import desc, func
 
-from udb.controller import lastupdated, url_for
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Mac, Message, Subnet, User, Vrf
 
 Base = cherrypy.tools.db.get_base()
+
+ActivityRow = namedtuple(
+    'ActivityRow', ['model_id', 'status', 'summary', 'model_name', 'author', 'date', 'type', 'body', 'changes', 'url']
+)
 
 
 class DashboardPage:
@@ -58,29 +62,4 @@ class DashboardPage:
             'dhcprecord_count': dhcprecord_count,
             'mac_count': mac_count,
             'user_activities': user_activities,
-        }
-
-    @cherrypy.expose()
-    @cherrypy.tools.json_out()
-    def activities_json(self, **kwargs):
-        # List all activities by dates
-        obj_list = (
-            Message.query.filter(Message.type.in_([Message.TYPE_NEW, Message.TYPE_DIRTY]))
-            .order_by(Message.date.desc())
-            .limit(10)
-            .all()
-        )
-        return {
-            'data': [
-                dict(
-                    obj.to_json(),
-                    **{
-                        'url': url_for(obj.model_object, 'edit'),
-                        'summary': obj.summary,
-                        'author_name': obj.author_name,
-                        'date_lastupdated': lastupdated(obj.date),
-                    }
-                )
-                for obj in obj_list
-            ]
         }

@@ -82,7 +82,7 @@ class IpForm(CherryForm):
         _('Notes'),
         default='',
         validators=[Length(max=256)],
-        render_kw={"placeholder": _("Enter details information about this IP Address")},
+        render_kw={"placeholder": _("Enter details information about this IP Address"), "autofocus": True},
     )
 
     owner_id = SelectObjectField(

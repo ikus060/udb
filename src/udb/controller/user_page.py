@@ -30,9 +30,13 @@ class UserForm(CherryForm):
 
     object_cls = User
 
-    username = StringField(_('Username'), validators=[DataRequired(), Length(max=256)])
+    username = StringField(
+        _('Username'),
+        validators=[DataRequired(), Length(max=256)],
+        render_kw={"readonly": True},
+    )
 
-    fullname = StringField(_('Fullname'), validators=[Length(max=256)])
+    fullname = StringField(_('Fullname'), validators=[Length(max=256)], render_kw={"autofocus": True})
 
     email = StringField(_('Email'), validators=[Optional(), Email(), Length(max=256)])
 

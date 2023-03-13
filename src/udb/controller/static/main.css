@@ -100,9 +100,32 @@ table.dataTable.no-footer {
     border-bottom: 1px solid #dee2e6;
 }
 
+/* Remove floating attribute */
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_info {
+    float: none;
+    display: inline-block;
+    margin-right: 3px;
+}
+
 .dataTables_wrapper .dataTables_processing {
     height: 100%;
-    background: rgba(255, 255, 255, 0.9);
+    top: inherit;
+    padding-top: 15%;
+}
+.dataTables_wrapper .dataTables_processing::before {
+    content: '';
+    color: var(--bs-primary);
+    margin-right: 10px;
+    /* The following is a copy-past of style: .spinner-border */
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    vertical-align: -0.5rem;
+    border: 0.25em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    -webkit-animation: .75s linear infinite spinner-border;
+    animation: .75s linear infinite spinner-border;
 }
 
 /* Custom class for subnet depth */
@@ -142,12 +165,39 @@ table.dataTable.sorted-primary_range-asc .depth-9 {
     padding-left: 18em;
 }
 
+/* Make filter buttons stand out when active*/
+.udb-btn-filter.active {
+    color: var(--bs-white);
+    border-color: var(--bs-primary);
+    background-color: var(--bs-primary);
+}
+
+.udb-btn-filter::before {
+    content: "\F5D7";
+    padding-right: 5px;
+    display: inline-block;
+    font-family: bootstrap-icons !important;
+    font-style: normal;
+    font-weight: normal !important;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    vertical-align: -0.125em;
+    -webkit-font-smoothing: antialiased;
+}
+
+.udb-btn-filter.active::before {
+    content: "\F5D8";
+}
+
 /* Fix header of history in edit view */
-#messages.card thead, #changes.card thead {
+#messages.card thead,
+#changes.card thead {
     background-color: rgba(0, 0, 0, .03);
 }
 
-#messages.card thead th, #changes.card thead {
+#messages.card thead th,
+#changes.card thead {
     border-bottom: 1px solid rgba(0, 0, 0, .125)
 }
 

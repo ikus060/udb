@@ -1,6 +1,5 @@
 {% extends 'layout.html' %}
 {% import "components/table.html" as _table with context %}
-{% import "common/messages.html" as _messages with context %}
 {% import "common/status.html" as _status %}
 {% import "macro.html" as macro %}
 {% macro dashboard_card(model_name, count, color) %}
@@ -27,15 +26,15 @@
     {# VRF #}
     {{ dashboard_card('vrf', vrf_count, 'primary') }}
     {# Subnet #}
-    {{ dashboard_card('subnet', subnet_count, 'info') }}
+    {{ dashboard_card('subnet', subnet_count, 'primary') }}
     {# IP #}
     {{ dashboard_card('ip', ip_count, 'primary') }}
     {# DNS Zones #}
-    {{ dashboard_card('dnszone', dnszone_count, 'info') }}
+    {{ dashboard_card('dnszone', dnszone_count, 'primary') }}
     {# DNS Record #}
     {{ dashboard_card('dnsrecord', dnsrecord_count, 'primary') }}
     {# DHCP Reservation #}
-    {{ dashboard_card('dhcprecord', dhcprecord_count, 'info') }}
+    {{ dashboard_card('dhcprecord', dhcprecord_count, 'primary') }}
     {# DHCP Reservation #}
     {{ dashboard_card('mac', mac_count, 'primary') }}
   </div>
@@ -50,9 +49,16 @@
         {# Card Body #}
         <div class="card-body" style="height: 420px; overflow-y: auto;">
           {% set columns = [
-          {'data': 'summary', 'title':_('Record'), 'orderable': True, 'render':'summary'},
-          {'data': 'body', 'title':_('Changes'), 'orderable': True, 'render':'message_body'}] %}
-          {{ _table.table('activities.json', columns=columns, searching=False, empty_message=_('No modification'), info_message=_('Showing last _TOTAL_ modifications')) }}
+          {'name':'id', 'visible':False},
+          {'name':'status', 'visible':False},
+          {'name':'summary', 'title':_('Record'), 'orderable':False, 'render':'summary'},
+          {'name':'model_name', 'visible':False },
+          {'name':'author', 'visible':False},
+          {'name':'date', 'visible':False},
+          {'name':'type', 'visible':False },
+          {'name':'body', 'visible':False},
+          {'name':'changes', 'title':_('Changes'), 'orderable':False, 'render':'message_body' }] %}
+          {{ _table.table(url_for('audit','data.json'), columns=columns, searching=False, empty_message=_('No modification'), info_message=_('Showing last _TOTAL_ modifications'), paging=False) }}
         </div>
       </div>
     </div>

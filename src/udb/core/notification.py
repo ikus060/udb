@@ -143,7 +143,7 @@ class NotifiationPlugin(SimplePlugin):
     def _send_notification(self, messages, recipient):
         assert recipient
         # Get jinja2 template to generate email body
-        template = self.env.get_template('mail/notification.j2')
+        template = self.env.get_template('mail/notification.html')
         values = {
             'header_name': self.header_name,
             'messages': messages,
@@ -152,7 +152,7 @@ class NotifiationPlugin(SimplePlugin):
         # Extract title and use it as subject
         m = re.search(r'<title>(.*)</title>', message_body, re.DOTALL)
         if m:
-            subject = m.group(1).replace('\n', '')
+            subject = m.group(1).replace('\n', '').strip()
         else:
             subject = _('Notification')
         self.bus.publish('send_mail', to=recipient, subject=subject, message=message_body)

@@ -38,7 +38,7 @@ class DhcpRecordForm(CherryForm):
     ip = StringField(
         _('IP'),
         validators=[DataRequired(), IPAddress(ipv4=True, ipv6=True)],
-        render_kw={"placeholder": _("Enter an IPv4 or IPv6 address")},
+        render_kw={"placeholder": _("Enter an IPv4 or IPv6 address"), "autofocus": True},
     )
 
     mac = StringField(

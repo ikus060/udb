@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import inspect
+from collections import namedtuple
 
 import cherrypy
 from sqlalchemy import and_, func, or_
@@ -23,7 +24,7 @@ from sqlalchemy.orm import defer, undefer
 from wtforms.fields import HiddenField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, ValidationError
 
-from udb.controller import flash, lastupdated, url_for, verify_perm
+from udb.controller import flash, url_for, verify_perm
 from udb.controller.common_page import CommonApi
 from udb.core.model import Deployment, Environment, Message, User
 from udb.tools.i18n import gettext
@@ -32,9 +33,15 @@ from udb.tools.i18n import gettext_lazy as _
 from .common_page import CommonPage
 from .form import CherryForm, SelectObjectField
 
+ChangeRow = namedtuple(
+    'ChangeRow', ['model_id', 'summary', 'model_name', 'author', 'date', 'type', 'body', 'changes', 'url']
+)
+
 
 class EnvironmentForm(CherryForm):
-    name = StringField(_('Environment Name'), validators=[DataRequired()], render_kw={'width': '1/2'})
+    name = StringField(
+        _('Environment Name'), validators=[DataRequired()], render_kw={'width': '1/2', "autofocus": True}
+    )
     model_name = SelectField(
         _('Data Type'),
         validators=[
@@ -209,14 +216,16 @@ class EnvironmentPage(CommonPage):
         obj_list = self._pending_changes_query(environment).order_by(Message.id.desc()).limit(100).all()
         return {
             'data': [
-                dict(
-                    obj.to_json(),
-                    **{
-                        'url': url_for(obj.model_object, 'edit'),
-                        'summary': obj.summary,
-                        'author_name': obj.author_name,
-                        'date_lastupdated': lastupdated(obj.date),
-                    }
+                ChangeRow(
+                    model_id=obj.model_id,
+                    summary=obj.summary,
+                    model_name=obj.model_name,
+                    author=obj.author_name,
+                    date=obj.date.isoformat(),
+                    type=obj.type,
+                    body=obj.body,
+                    changes=obj.changes,
+                    url=url_for(obj.model_name, obj.model_id, 'edit', relative='server'),
                 )
                 for obj in obj_list
             ]

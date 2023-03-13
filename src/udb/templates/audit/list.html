@@ -1,0 +1,23 @@
+{% extends 'layout.html' %}
+{% import "components/table.html" as _table %}
+{% import "common/status.html" as _status %}
+{% import "macro.html" as macro %}
+{% block title %}
+    {% trans %}Audit log{% endtrans %}
+{% endblock %}
+{% block body %}
+    {# Title #}
+    <h2>{% trans %}Audit log{% endtrans %}</h2>
+    {% include "flash.html" %}
+    {% set columns = [
+    {'name':'id', 'visible':False},
+    {'name':'status', 'visible':False},
+    {'name':'summary', 'title':_('Record'), 'orderable':True, 'render':'summary'},
+    {'name':'model_name', 'title':_('Model'), 'orderable':True, 'render':'choices', 'render_arg': macro.display_name_table.items()|list },
+    {'name':'author', 'title':_('Author'), 'orderable':True},
+    {'name':'date', 'title':_('Date'), 'render':'datetime'},
+    {'name':'type', 'title':_('Type'), 'render':'choices', 'render_arg': [ ['new',_('Created')], ['dirty',_('Modified')]] },
+    {'name':'body', 'visible':False},
+    {'name':'changes', 'title':_('Changes'), 'render':'changes' }] %}
+    {{ _table.table('data.json', server_side=True, columns=columns, searching=True) }}
+{% endblock %}

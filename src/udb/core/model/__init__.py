@@ -86,3 +86,7 @@ def db_after_create(target, connection, **kw):
     add_column(Environment.__table__.c.status)
     # Add 'lang' to user
     add_column(User.__table__.c.lang)
+    # Add Search vector to IP and Mac
+    add_column(Mac.__table__.c._search_vector)
+    add_column(Ip.__table__.c._search_vector)
+    add_column(Environment.__table__.c._search_vector)
