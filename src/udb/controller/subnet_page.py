@@ -21,16 +21,15 @@ from collections import namedtuple
 import cherrypy
 from sqlalchemy import case, func
 from sqlalchemy.orm import defer, undefer
-from wtforms.fields import Field, IntegerField, StringField
+from wtforms.fields import IntegerField, StringField
 from wtforms.fields.simple import TextAreaField
-from wtforms.validators import DataRequired, Length, Optional, StopValidation, ValidationError
-from wtforms.widgets import TextInput
+from wtforms.validators import DataRequired, Length, Optional
 
 from udb.core.model import DnsZone, Subnet, SubnetRange, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, SelectMultiCheckbox, SelectMultipleObjectField, SelectObjectField, StringFieldSetWidget
+from .form import CherryForm, DualListWidget, SelectMultipleObjectField, SelectObjectField, StringFieldSet
 
 unset_value = "UNSET_DATA"
 
@@ -52,54 +51,6 @@ def _sort_ranges(ranges):
     ranges = [ipaddress.ip_network(r) for r in ranges]
     ranges = sorted(ranges, key=lambda r: (-r.version, r.network_address.packed))
     return [r.compressed for r in ranges]
-
-
-class StringFieldSet(Field):
-
-    widget = StringFieldSetWidget()
-
-    inner_widget = TextInput()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, default=[], **kwargs)
-
-    def process_formdata(self, valuelist):
-        if valuelist:
-            self.data = [v for v in set(valuelist) if v.strip()]
-
-    def _run_validation_chain(self, form, validators):
-        """
-        Run a validation chain, stopping if any validator raises StopValidation.
-
-        :param form: The Form instance this field belongs to.
-        :param validators: a sequence or iterable of validator callables.
-        :return: True if validation was stopped, False otherwise.
-        """
-        f = StringField()
-        for value in self.data:
-            f.data = value
-            for validator in validators:
-                try:
-                    validator(form, f)
-                except StopValidation as e:
-                    if e.args and e.args[0]:
-                        self.errors.append(e.args[0])
-                    return True
-                except ValidationError as e:
-                    self.errors.append(e.args[0])
-        return False
-
-    def populate_obj(self, obj, name):
-        proxy = getattr(obj, name)
-        if hasattr(proxy, 'append'):
-            for value in list(proxy):
-                if value not in self.data:
-                    proxy.remove(value)
-            for value in self.data:
-                if value not in proxy:
-                    proxy.append(value)
-        else:
-            setattr(obj, name, self.data)
 
 
 class SubnetForm(CherryForm):
@@ -137,7 +88,7 @@ class SubnetForm(CherryForm):
             undefer('id'),
             undefer('name'),
         ),
-        widget=SelectMultiCheckbox(),
+        widget=DualListWidget(),
     )
     notes = TextAreaField(
         _('Notes'),

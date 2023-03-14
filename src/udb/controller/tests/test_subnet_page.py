@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from selenium.webdriver.common.keys import Keys
+
 from udb.controller import url_for
 from udb.controller.tests import WebCase
 from udb.core.model import DnsZone, Subnet, Vrf
@@ -38,6 +40,28 @@ class SubnetTest(WebCase, CommonTest):
         self.vrf = Vrf(name='default').add().commit()
         self.new_data['vrf_id'] = self.vrf.id
 
+    def test_edit_dnszone_selenium(self):
+        # Given a database with a record
+        zone = DnsZone(name='examples.com').add()
+        obj = self.obj_cls(**self.new_data).add().commit()
+        # Then editing that record
+        with self.selenium() as driver:
+            # When making a query to audit log
+            driver.get(url_for(self.base_url, obj.id, 'edit'))
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
+            # When user transfert item to selected list and save
+            available = driver.find_element('xpath', '//select[@id="dnszones-not-checked"]/option[@value="1"]')
+            available.click()
+            add_item_btn = driver.find_element('id', 'multiselect_rightSelected')
+            add_item_btn.click()
+            driver.find_element('xpath', '//select[@id="dnszones"]/option[@value="1"]')
+            save_change_btn = driver.find_element('id', 'save-changes')
+            save_change_btn.send_keys(Keys.ENTER)
+        # Then record got updated.
+        obj.expire()
+        self.assertEqual([zone], obj.dnszones)
+
     def test_edit_invalid(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add().commit()
@@ -56,7 +80,7 @@ class SubnetTest(WebCase, CommonTest):
         # Then the zone is selected
         self.assertStatus(200)
         self.assertInBody(
-            '<input class="form-check-input"  type="checkbox" name="dnszones" value="1" id="dnszones-%s" checked>'
+            'Selected    <select name="dnszones"\n            id="dnszones"\n            class="form-control"\n            size="8"\n            multiple="multiple">\n          <option value="%s">\n            examples.com\n          </option>\n    </select>'
             % zone.id
         )
 
@@ -71,7 +95,7 @@ class SubnetTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
         self.assertInBody(
-            '<input class="form-check-input"  type="checkbox" name="dnszones" value="1" id="dnszones-%s" checked>'
+            'Selected    <select name="dnszones"\n            id="dnszones"\n            class="form-control"\n            size="8"\n            multiple="multiple">\n          <option value="%s">\n            examples.com\n          </option>\n    </select>'
             % zone.id
         )
 
