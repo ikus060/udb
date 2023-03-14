@@ -1,5 +1,7 @@
 /usr/share/javascript/jquery-datatables/css/jquery.dataTables.min.css   /usr/lib/python3/dist-packages/udb/static/datatables/css/jquery.dataTables.min.css
+/usr/share/javascript/jquery-datatables-extensions/Buttons/js/buttons.html5.min.js /usr/lib/python3/dist-packages/udb/static/datatables/js/buttons.html5.min.js
 /usr/share/javascript/jquery-datatables-extensions/Buttons/js/dataTables.buttons.min.js /usr/lib/python3/dist-packages/udb/static/datatables/js/dataTables.buttons.min.js
+/usr/share/javascript/jquery-datatables-extensions/JSZip/jszip.min.js /usr/lib/python3/dist-packages/udb/static/datatables/js/jszip.min.js
 /usr/share/javascript/jquery-datatables-extensions/Responsive/css/responsive.dataTables.min.css /usr/lib/python3/dist-packages/udb/static/datatables/css/responsive.dataTables.min.css
 /usr/share/javascript/jquery-datatables-extensions/Responsive/js/dataTables.responsive.min.js   /usr/lib/python3/dist-packages/udb/static/datatables/js/dataTables.responsive.min.js
 /usr/share/javascript/jquery-datatables/images/sort_asc.png /usr/lib/python3/dist-packages/udb/static/datatables/images/sort_asc.png

@@ -101,7 +101,8 @@ table.dataTable.no-footer {
 }
 
 /* Remove floating attribute */
-.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_info {
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_info {
     float: none;
     display: inline-block;
     margin-right: 3px;
@@ -112,6 +113,7 @@ table.dataTable.no-footer {
     top: inherit;
     padding-top: 15%;
 }
+
 .dataTables_wrapper .dataTables_processing::before {
     content: '';
     color: var(--bs-primary);
@@ -172,8 +174,9 @@ table.dataTable.sorted-primary_range-asc .depth-9 {
     background-color: var(--bs-primary);
 }
 
-.udb-btn-filter::before {
-    content: "\F5D7";
+.udb-btn-filter::before,
+.udb-btn-download::before {
+    /* Apply bootstrap icons */
     padding-right: 5px;
     display: inline-block;
     font-family: bootstrap-icons !important;
@@ -186,8 +189,17 @@ table.dataTable.sorted-primary_range-asc .depth-9 {
     -webkit-font-smoothing: antialiased;
 }
 
+.udb-btn-filter::before {
+    content: "\F5D7";
+}
+
 .udb-btn-filter.active::before {
     content: "\F5D8";
+}
+
+/* Customize the download button */
+.udb-btn-download::before {
+    content: "\F30A";
 }
 
 /* Fix header of history in edit view */
