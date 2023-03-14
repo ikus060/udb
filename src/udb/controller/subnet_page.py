@@ -29,7 +29,7 @@ from udb.core.model import DnsZone, Subnet, SubnetRange, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, SelectMultiCheckbox, SelectMultipleObjectField, SelectObjectField, StringFieldSet
+from .form import CherryForm, DualListWidget, SelectMultipleObjectField, SelectObjectField, StringFieldSet
 
 unset_value = "UNSET_DATA"
 
@@ -88,7 +88,7 @@ class SubnetForm(CherryForm):
             undefer('id'),
             undefer('name'),
         ),
-        widget=SelectMultiCheckbox(),
+        widget=DualListWidget(),
     )
     notes = TextAreaField(
         _('Notes'),
