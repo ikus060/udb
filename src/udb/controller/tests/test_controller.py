@@ -81,16 +81,18 @@ class TestApp(WebCase):
 
     @parameterized.expand(
         [
-            '/static/jquery/jquery.min.js',
-            '/static/datatables/css/jquery.dataTables.min.css',
             '/static/datatables/css/buttons.dataTables.min.css',
+            '/static/datatables/css/jquery.dataTables.min.css',
             '/static/datatables/css/responsive.dataTables.min.css',
-            '/static/datatables/js/jquery.dataTables.min.js',
+            '/static/datatables/js/buttons.html5.min.js',
             '/static/datatables/js/dataTables.buttons.min.js',
             '/static/datatables/js/dataTables.responsive.min.js',
-            '/static/main.js',
-            '/static/main.css',
+            '/static/datatables/js/jquery.dataTables.min.js',
+            '/static/datatables/js/jszip.min.js',
             '/static/favicon.svg',
+            '/static/jquery/jquery.min.js',
+            '/static/main.css',
+            '/static/main.js',
         ]
     )
     def test_static(self, url):

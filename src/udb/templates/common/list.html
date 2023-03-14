@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 {% import "macro.html" as macro %}
 {% import "components/table.html" as _table with context %}
-{% block title %}{{ macro.display_name(model_name)}}{% endblock %}
+{% block title %}{{ macro.display_name(model_name) }}{% endblock %}
 {% block body %}
   <div class="row">
     <div class="col">
@@ -37,8 +37,11 @@
   {% if 'owner' in (table_columns|map(attribute='name')|list) %}
     {% set buttons = buttons + [{'text': _('Owned by me'), 'extend': 'filter', 'column': 'owner:name', 'search': currentuser.summary}] %}
   {% endif %}
-  {# Always add "Clear" filter #}
+  {# Add "Clear" filter #}
   {% set buttons = buttons + [{'text': _('Clear'), 'extend': 'clear'}] %}
+  {# Add "Download" button #}
+  {% set download_filename = _('export_') + macro.display_name(model_name)|lower %}
+  {% set buttons = buttons + [{'text': _('Download'), 'extend': 'excel', 'exportOptions': {'columns': ':visible'}, 'className': 'udb-btn-download', 'title': download_filename }] %}
   {# Show default table #}
   {{ _table.table(data="data.json", columns=table_columns, buttons=buttons)}}
 {% endblock body %}
