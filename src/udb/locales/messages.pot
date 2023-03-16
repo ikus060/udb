@@ -581,7 +581,7 @@ msgid "invalid redirect url"
 msgstr ""
 
 #: src/udb/controller/login_page.py:75
-msgid "Invalid crentials"
+msgid "Invalid credentials"
 msgstr ""
 
 #: src/udb/controller/mac_page.py:44 src/udb/templates/mac/list.html:4

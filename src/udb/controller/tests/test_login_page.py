@@ -116,7 +116,7 @@ class TestLogin(WebCase):
         self.getPage("/login/", method="POST", body={"username": username, "password": "invalid"})
         # Then login page is displayed with an error message.
         self.assertStatus("200 OK")
-        self.assertInBody("Invalid crentials")
+        self.assertInBody("Invalid credentials")
         # Then the username field is populated
         self.assertInBody(username)
         # Then the password field is blank

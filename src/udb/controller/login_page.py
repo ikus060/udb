@@ -72,7 +72,7 @@ class LoginPage:
                 cherrypy.tools.auth_form.login(username=results[0].username, persistent=form.persistent.data)
                 cherrypy.tools.auth_form.redirect_to_original_url()
             else:
-                flash(_('Invalid crentials'))
+                flash(_('Invalid credentials'))
         elif form.error_message:
             flash(form.error_message)
 

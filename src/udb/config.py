@@ -229,33 +229,74 @@ def parse_args(args=None, config_file_contents=None):
     )
 
     parser.add_argument(
-        '--ldap-filter',
+        '--ldap-user-filter',
         help=_(
-            "search filter to limit LDAP lookup. If not provided, defaults to (objectClass=*), which searches for all objects in the tree."
+            "search filter to limit LDAP lookup. If not provided, defaults to `(objectClass=*)`, which searches for all objects in the tree. For improved performance it's recommanded to narrow the search to your user object class. e.g.: `(objectClass=posixAccount)`"
         ),
         default='(objectClass=*)',
     )
 
     parser.add_argument(
+        '--ldap-admin-group',
+        metavar='CN',
+        help=_("list of CN of the group(s) containing administrator. Not cn=groupname or the full DN."),
+        action='append',
+        default=[],
+    )
+
+    parser.add_argument(
+        '--ldap-subnet-mgmt-group',
+        metavar='CN',
+        help=_("list of CN of the group(s) containing Subnet Managers. Not cn=groupname or the full DN."),
+        action='append',
+        default=[],
+    )
+
+    parser.add_argument(
+        '--ldap-dnszone-mgmt-group',
+        metavar='CN',
+        help=_("list of CN of the group(s) containing DNS Zone Managers. Not cn=groupname or the full DN."),
+        action='append',
+        default=[],
+    )
+
+    parser.add_argument(
+        '--ldap-user-group',
+        metavar='CN',
+        help=_("list of CN of the group(s) containing Users. Not cn=groupname or the full DN."),
+        action='append',
+        default=[],
+    )
+
+    parser.add_argument(
+        '--ldap-guest-group',
         '--ldap-required-group',
-        metavar='GROUPNAME',
+        metavar='CN',
+        help=_("list of CN of the group(s) containing Guests. Not cn=groupname or the full DN."),
+        action='append',
+        default=[],
+    )
+
+    parser.add_argument(
+        '--ldap-group-filter',
         help=_(
-            "name of the group of which the user must be a member to access the application. Should be used with ldap-group-attribute and ldap-group-attribute-is-dn."
+            "search filter to limit LDAP lookup of groups. If not provided, defaults to `(objectClass=*)`, which searches for all objects in the tree. For improved performance it's recommanded to narrow the search to your group object class. e.g.: `(objectClass=posixGroup)`"
         ),
+        default='(objectClass=*)',
     )
 
     parser.add_argument(
         '--ldap-group-attribute',
         metavar='ATTRIBUTE',
         help=_(
-            "name of the attribute defining the groups of which the user is a member. Should be used with ldap-required-group and ldap-group-attribute-is-dn."
+            "name of the attribute on the Group that hold the list of members. Default: `member`. Other common value is: `memberUid`"
         ),
         default='member',
     )
 
     parser.add_argument(
         '--ldap-group-attribute-is-dn',
-        help=_("True if the content of the attribute `ldap-group-attribute` is a DN."),
+        help=_("True If the group contains list of user defined with DN instead of username."),
         action='store_true',
     )
 
@@ -272,7 +313,7 @@ def parse_args(args=None, config_file_contents=None):
         '--ldap-bind-password',
         metavar='PASSWORD',
         help=_(
-            "password to use in conjunction with LdapBindDn. Note that the bind password is probably sensitive data, and should be properly protected. You should only use the LdapBindDn and LdapBindPassword if you absolutely need them to search the directory."
+            "password to use in conjunction with `--ldap-bind-dn`. Note that the bind password is probably sensitive data, and should be properly protected. You should only use the `--ldap-bind-dn` and `--ldap-bind-password` if you absolutely need them to search the directory."
         ),
         default="",
     )
@@ -306,15 +347,6 @@ def parse_args(args=None, config_file_contents=None):
         metavar='ENCODING',
         help=_("encoding used by your LDAP server."),
         default="utf-8",
-    )
-
-    parser.add_argument(
-        '--ldap-check-shadow-expire',
-        help=_(
-            "enable validation of shadow expired when validating user's credential. User will not be allowed to login if the account expired."
-        ),
-        default=False,
-        action='store_true',
     )
 
     parser.add_argument(
