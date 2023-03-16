@@ -21,7 +21,6 @@ import cherrypy
 from cherrypy.process.plugins import SimplePlugin
 
 from udb.core.model import User
-from udb.tools.auth_form import SESSION_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +34,11 @@ class LoginPlugin(SimplePlugin):
 
     add_missing_user = False
     add_user_default_role = 'guest'
+    admin_group = None
+    dnszone_mgmt_group = None
+    subnet_mgmt_group = None
+    user_group = None
+    guest_group = None
 
     def start(self):
         self.bus.log('Start Login plugin')
@@ -55,6 +59,24 @@ class LoginPlugin(SimplePlugin):
             return username, {}
         return False
 
+    def _get_user_role(self, member_of):
+        """
+        Look for user role based on group member ship.
+        """
+        if member_of is None:
+            return None
+        group_map = [
+            ('admin', self.admin_group),
+            ('dnszone-mgmt', self.dnszone_mgmt_group),
+            ('subnet-mgmt', self.dnszone_mgmt_group),
+            ('user', self.user_group),
+            ('guest', self.guest_group),
+        ]
+        for role, groups in group_map:
+            if groups and member_of and set(groups) & set(member_of):
+                return role
+        return None
+
     def login(self, username, password):
         """
         Validate username password using database and LDAP.
@@ -68,6 +90,8 @@ class LoginPlugin(SimplePlugin):
         extra_attrs = authenticates[0][1]
         fullname = extra_attrs.get('_fullname', None)
         email = extra_attrs.get('_email', None)
+        member_of = extra_attrs.get('_member_of', None)
+        role = self._get_user_role(member_of)
         # When enabled, create missing userobj in database.
         userobj = User.query.filter_by(username=username).first()
         if userobj is None and self.add_missing_user:
@@ -75,11 +99,7 @@ class LoginPlugin(SimplePlugin):
                 # At this point, we need to create a new user in database.
                 # In case default values are invalid, let evaluate them
                 # before creating the user in database.
-                userobj = (
-                    User(username=real_username, fullname=fullname, email=email, role=self.add_user_default_role)
-                    .add()
-                    .commit()
-                )
+                userobj = User(username=real_username, role=self.add_user_default_role).add().commit()
             except Exception:
                 logger.warning('fail to create new user', exc_info=1)
         if userobj is None:
@@ -87,21 +107,29 @@ class LoginPlugin(SimplePlugin):
             return None
 
         # Update user attributes
-        dirty = False
-        if fullname:
-            userobj.fullname = fullname
-            dirty = True
-        if email:
-            userobj.email = email
-            dirty = True
-        if dirty:
-            userobj.add().commit()
+        self._update_user(userobj, role=role, fullname=fullname, email=email)
 
-        # Save username in session if session is enabled.
-        if cherrypy.request.config and cherrypy.request.config.get('tools.sessions.on', False):
-            cherrypy.session[SESSION_KEY] = userobj.username
         self.bus.publish('user_login', userobj)
         return userobj
+
+    def _update_user(self, userobj, role, fullname, email):
+        """
+        Update user's attributes from external source.
+        """
+        if role and userobj.role != role:
+            userobj.role = role
+            userobj.add().commit()
+        if fullname and userobj.fullname != fullname:
+            userobj.fullname = fullname
+            userobj.add().commit()
+        if email and userobj.email != email:
+            try:
+                userobj.email = email
+                userobj.add().commit()
+            except Exception:
+                # Email as a unique constrains what might be raised in case multiple users as the same mail.
+                logger.warning('duplicate email address: %s' % email, exc_info=1)
+                userobj.rollback()
 
 
 cherrypy.login = LoginPlugin(cherrypy.engine)

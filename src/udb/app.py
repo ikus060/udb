@@ -174,14 +174,19 @@ class Root(object):
                 'ldap.scope': cfg.ldap_scope,
                 'ldap.tls': cfg.ldap_tls,
                 'ldap.username_attribute': cfg.ldap_username_attribute,
-                'ldap.required_group': cfg.ldap_required_group,
+                'ldap.user_filter': cfg.ldap_user_filter,
+                'ldap.required_group': cfg.ldap_admin_group
+                + cfg.ldap_dnszone_mgmt_group
+                + cfg.ldap_subnet_mgmt_group
+                + cfg.ldap_user_group
+                + cfg.ldap_guest_group,
+                'ldap.group_filter': cfg.ldap_group_filter,
                 'ldap.group_attribute': cfg.ldap_group_attribute,
                 'ldap.group_attribute_is_dn': cfg.ldap_group_attribute_is_dn,
                 'ldap.version': cfg.ldap_version,
                 'ldap.network_timeout': cfg.ldap_network_timeout,
                 'ldap.timeout': cfg.ldap_timeout,
                 'ldap.encoding': cfg.ldap_encoding,
-                'ldap.check_shadow_expire': cfg.ldap_check_shadow_expire,
                 'ldap.fullname_attribute': cfg.ldap_fullname_attribute,
                 'ldap.firstname_attribute': cfg.ldap_firstname_attribute,
                 'ldap.lastname_attribute': cfg.ldap_lastname_attribute,
@@ -195,6 +200,11 @@ class Root(object):
                 # Configure login
                 'login.add_missing_user': cfg.add_missing_user,
                 'login.add_user_default_role': cfg.add_user_default_role,
+                'login.admin_group': cfg.ldap_admin_group,
+                'login.dnszone_mgmt_group': cfg.ldap_dnszone_mgmt_group,
+                'login.subnet_mgmt_group': cfg.ldap_subnet_mgmt_group,
+                'login.user_group': cfg.ldap_user_group,
+                'login.guest_group': cfg.ldap_guest_group,
                 # Configure notification
                 'notification.env': env,
                 'notification.header_name': cfg.header_name,

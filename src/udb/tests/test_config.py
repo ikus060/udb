@@ -95,3 +95,25 @@ class TestConfig(unittest.TestCase):
         # Then username and group are resolved as uid, gid
         self.assertEqual(cfg.user, os.getuid())
         self.assertEqual(cfg.group, os.getgid())
+
+    def test_ldap_group(self):
+        # Given a ldap-admin-group define in arguments
+        args = [
+            '--server-host',
+            '1.2.3.4',
+            '--server-port',
+            '5000',
+            '--ldap-admin-group',
+            'udb-admin',
+            '--ldap-admin-group',
+            'udb-devops',
+        ]
+        # When parsing the arguments list
+        cfg = parse_args(args)
+        # Then ldap-admin-group is an array
+        self.assertEqual(cfg.ldap_admin_group, ['udb-admin', 'udb-devops'])
+        # Then other group are defined as empty array
+        self.assertEqual(cfg.ldap_subnet_mgmt_group, [])
+        self.assertEqual(cfg.ldap_dnszone_mgmt_group, [])
+        self.assertEqual(cfg.ldap_user_group, [])
+        self.assertEqual(cfg.ldap_guest_group, [])

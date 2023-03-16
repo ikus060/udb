@@ -17,7 +17,7 @@
 
 
 import cherrypy
-from sqlalchemy import Column
+from sqlalchemy import Column, Index
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import validates
 from sqlalchemy.types import String
@@ -36,7 +36,7 @@ Base = cherrypy.tools.db.get_base()
 
 
 class Vrf(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
-    name = Column(String, unique=True, nullable=False)
+    name = Column(String, nullable=False)
 
     @classmethod
     def _search_string(cls):
@@ -55,3 +55,6 @@ class Vrf(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, Sea
     @hybrid_property
     def summary(self):
         return self.name
+
+
+Index('vrf_name_key', Vrf.name, unique=True)

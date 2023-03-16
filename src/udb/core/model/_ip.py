@@ -19,7 +19,7 @@ import ipaddress
 import itertools
 
 import cherrypy
-from sqlalchemy import Column, event, func, select
+from sqlalchemy import Column, Index, event, func, select
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import column_property, declared_attr, relationship, validates
 
@@ -43,7 +43,7 @@ Session = cherrypy.tools.db.get_session()
 
 class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, Base):
     __tablename__ = 'ip'
-    ip = Column(InetType, nullable=False, unique=True)
+    ip = Column(InetType, nullable=False)
     related_dhcp_records = relationship(DhcpRecord, back_populates="_ip", lazy=True)
     related_dns_records = relationship(DnsRecord, back_populates="_ip", lazy=True)
 
@@ -114,6 +114,9 @@ class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, 
         Return the reverse PTR value of this IP.
         """
         return ipaddress.ip_address(self.ip).reverse_pointer
+
+
+Index('ip_unique_index', Ip.ip, unique=True)
 
 
 @event.listens_for(Session, "before_flush", insert=True)

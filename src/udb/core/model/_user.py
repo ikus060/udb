@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
-from sqlalchemy import Column, String, case, event, inspect
+from sqlalchemy import Column, String, and_, case, event, inspect
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import deferred, validates
 from sqlalchemy.sql.expression import func
@@ -66,7 +66,7 @@ class User(JsonMixin, StatusMixing, Base):
     username = Column(String)
     password = deferred(Column(String, nullable=True))
     fullname = Column(String, nullable=False, default='')
-    email = Column(String, nullable=True, unique=True)
+    email = Column(String, nullable=False, default='')
     role = Column(String, nullable=False, default='guest')
     lang = Column(String, nullable=False, default='')
 
@@ -156,6 +156,10 @@ class User(JsonMixin, StatusMixing, Base):
 
 # Create a unique index for username
 Index('user_username_index', func.lower(User.username), unique=True)
+
+# Create a unique index for non-empty email.
+_where = and_(User.email != None, User.email != '')  # noqa
+Index('user_email_key', func.lower(User.email), unique=True, sqlite_where=_where, postgresql_where=_where)
 
 
 @event.listens_for(User, "before_update")
