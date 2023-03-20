@@ -147,7 +147,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
         # Take a snapshot of the data within the deployment.
         if model_name == 'subnet':
             subnet = (
-                Subnet.quer.with_entities(
+                Subnet.query.with_entities(
                     Subnet.id,
                     Vrf.name.label('vrf'),
                     Subnet.l3vni,
