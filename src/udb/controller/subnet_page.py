@@ -20,7 +20,6 @@ from collections import namedtuple
 
 import cherrypy
 from sqlalchemy import case, func
-from sqlalchemy.orm import defer, undefer
 from wtforms.fields import IntegerField, StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length, Optional
@@ -69,11 +68,6 @@ class SubnetForm(CherryForm):
     vrf_id = SelectObjectField(
         _('VRF'),
         object_cls=Vrf,
-        object_query=lambda query: query.options(
-            defer('*'),
-            undefer('id'),
-            undefer('name'),
-        ),
         validators=[DataRequired()],
         render_kw={"placeholder": _("Enter a VRF number (optional)")},
     )
@@ -83,11 +77,6 @@ class SubnetForm(CherryForm):
     dnszones = SelectMultipleObjectField(
         _('Allowed DNS zone(s)'),
         object_cls=DnsZone,
-        object_query=lambda query: query.options(
-            defer('*'),
-            undefer('id'),
-            undefer('name'),
-        ),
         widget=DualListWidget(),
     )
     notes = TextAreaField(
@@ -99,12 +88,6 @@ class SubnetForm(CherryForm):
     owner_id = SelectObjectField(
         _('Owner'),
         object_cls=User,
-        object_query=lambda query: query.options(
-            defer('*'),
-            undefer('id'),
-            undefer('fullname'),
-            undefer('username'),
-        ),
         default=lambda: cherrypy.serving.request.currentuser.id,
     )
 

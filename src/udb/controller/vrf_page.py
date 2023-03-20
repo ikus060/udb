@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
-from sqlalchemy.orm import defer, undefer
 from wtforms.fields import StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length
@@ -47,12 +46,6 @@ class VrfForm(CherryForm):
     owner_id = SelectObjectField(
         _('Owner'),
         object_cls=User,
-        object_query=lambda query: query.options(
-            defer('*'),
-            undefer('id'),
-            undefer('fullname'),
-            undefer('username'),
-        ),
         default=lambda: cherrypy.serving.request.currentuser.id,
     )
 

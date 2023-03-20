@@ -99,6 +99,69 @@ class SubnetTest(WebCase, CommonTest):
             % zone.id
         )
 
+    def test_edit_with_deleted_vrf(self):
+        # Given a Subnet associated to deleted VRF
+        self.vrf.status = Vrf.STATUS_DELETED
+        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[], vrf=self.vrf).add().commit()
+        # When editing the record
+        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        self.assertStatus(200)
+        # Then the VRF Field contains our deleted VRF
+        self.assertInBody('default [deleted]')
+
+    def test_edit_assign_deleted_vrf(self):
+        # Given a Subnet associated to VRF
+        deleted_vrf = Vrf(name='MyVrf', status=Vrf.STATUS_DELETED).add()
+        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[], vrf=self.vrf).add().commit()
+        # When editing the Subnet
+        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        self.assertStatus(200)
+        # Then the deleted VRF is not listed
+        self.assertNotInBody('MyVrf [deleted]')
+        # When trying to assign a deleted VRF to the subnet
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'vrf_id': deleted_vrf.id})
+        self.assertStatus(303)
+        obj.expire()
+        # Then the Subnet is used with the new value
+        self.assertEqual(obj.vrf_id, deleted_vrf.id)
+        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        self.assertStatus(200)
+        self.assertInBody('MyVrf [deleted]')
+
+    def test_edit_with_deleted_zone(self):
+        # Given a Subnet associated to deleted VRF
+        zone = DnsZone(name='examples.com', status=DnsZone.STATUS_DELETED).add().flush()
+        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[zone], vrf=self.vrf).add().commit()
+        # When editing the record
+        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        self.assertStatus(200)
+        # Then the VRF Field contains our deleted VRF
+        self.assertInBody('examples.com [deleted]')
+
+    def test_edit_assign_deleted_zone(self):
+        # Given a Subnet associated to VRF
+        zone = DnsZone(name='examples.com').add().flush()
+        deleted_zone = DnsZone(name='foo.com', status=DnsZone.STATUS_DELETED).add().flush()
+        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[zone], vrf=self.vrf).add().commit()
+        # When editing the Subnet
+        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        self.assertStatus(200)
+        # Then the deleted VRF is not listed
+        self.assertInBody('examples.com')
+        self.assertNotInBody('foo.com [deleted]')
+        # When trying to assign a deleted VRF to the subnet
+        self.getPage(
+            url_for(self.base_url, obj.id, 'edit'), method='POST', body={'dnszones': [zone.id, deleted_zone.id]}
+        )
+        self.assertStatus(303)
+        obj.expire()
+        # Then the Subnet is used with the new value
+        self.assertEqual(obj.dnszones, [zone, deleted_zone])
+        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        self.assertStatus(200)
+        self.assertInBody('examples.com')
+        self.assertInBody('foo.com [deleted]')
+
     def test_new_duplicate(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data)
