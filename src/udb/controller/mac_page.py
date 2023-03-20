@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from sqlalchemy import func
-from sqlalchemy.orm import defer, undefer
 from wtforms.fields import FieldList, FormField, StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.form import Form
@@ -59,12 +58,6 @@ class MacForm(CherryForm):
     owner_id = SelectObjectField(
         _('Owner'),
         object_cls=User,
-        object_query=lambda query: query.options(
-            defer('*'),
-            undefer('id'),
-            undefer('fullname'),
-            undefer('username'),
-        ),
     )
 
     def populate_obj(self, obj):

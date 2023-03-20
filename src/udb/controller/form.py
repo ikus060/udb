@@ -171,10 +171,19 @@ class SelectMultipleObjectField(SelectMultipleField):
         """
         Replace default implementation by returning the list of objects.
         """
-        return [(obj.id, str(obj)) for obj in self._query().all()]
+        entries = [
+            (
+                obj.id,
+                obj.summary if obj.status == self.object_cls.STATUS_ENABLED else "%s [%s]" % (obj.summary, obj.status),
+            )
+            for obj in self._query().all()
+            if obj.status != self.object_cls.STATUS_DELETED or obj.id in self.data
+        ]
+        return entries
 
     @choices.setter
     def choices(self, new_choices):
+        # Disallow modification of choices
         pass
 
     def db_obj(self, value):
@@ -188,12 +197,16 @@ class SelectMultipleObjectField(SelectMultipleField):
         """
         Assign object value.
         """
-        values = self._query().filter(self.object_cls.id.in_(self.data)).all()
+        values = self.object_cls.query.filter(self.object_cls.id.in_(self.data)).all()
         setattr(obj, name, values)
 
     def _query(self):
-        q = self.object_cls.query
+        """
+        Build query of object to be listed by the Field.
+        """
+        q = self.object_cls.query.with_entities(self.object_cls.id, self.object_cls.summary, self.object_cls.status)
         if self.object_query:
+            assert hasattr(self.object_query, '__call__'), "object_query should be callable"
             q = self.object_query(q)
         return q
 
@@ -215,14 +228,22 @@ class SelectObjectField(SelectField):
         """
         Replace default implementation by returning the list of objects.
         """
-        # TODO Avoid showing deleted records.
-        entries = [(obj.id, str(obj)) for obj in self._query().all()]
+        entries = [
+            (
+                obj.id,
+                obj.summary if obj.status == self.object_cls.STATUS_ENABLED else "%s [%s]" % (obj.summary, obj.status),
+            )
+            for obj in self._query().all()
+            if obj.status != self.object_cls.STATUS_DELETED or obj.id == self.data
+        ]
+        # Add a "null" option if the field is optional
         if 'required' not in self.flags:
             entries.insert(0, (None, _("-")))
         return entries
 
     @choices.setter
     def choices(self, new_choices):
+        # Disallow modification of choices
         pass
 
     def obj_id(self, value):
@@ -239,14 +260,19 @@ class SelectObjectField(SelectField):
         """
         # If the attribute could be assigned as an object, let update the object.
         if name.endswith('_id') and hasattr(obj, name[:-3]):
-            value = self._query().filter_by(id=self.data).first()
+            # Then fetch the object using another query.
+            value = self.object_cls.query.filter(self.object_cls.id == self.data).first()
             setattr(obj, name[:-3], value)
         else:
             super().populate_obj(obj, name)
 
     def _query(self):
-        q = self.object_cls.query
+        """
+        Build query of object to be listed by the Field.
+        """
+        q = self.object_cls.query.with_entities(self.object_cls.id, self.object_cls.summary, self.object_cls.status)
         if self.object_query:
+            assert hasattr(self.object_query, '__call__'), "object_query should be callable"
             q = self.object_query(q)
         return q
 

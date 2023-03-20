@@ -22,10 +22,29 @@ class group_concat(GenericFunction):
     name = "group_concat"
     inherit_cache = True
 
+    def __init__(self, *clauses, order_by=None, **kwargs):
+        self.order_by = order_by
+        super().__init__(*clauses, **kwargs)
+
 
 @compiles(group_concat, "postgresql")
 def _render_group_concat_pg(element, compiler, **kw):
     """
     On Postgresql, `group_concat` should be `string_agg`
     """
+    if element.order_by is not None:
+        return "string_agg(%s, ',' ORDER BY %s)" % (
+            compiler.process(element.clauses, **kw),
+            compiler.process(element.order_by, **kw),
+        )
     return "string_agg(%s, ',')" % (compiler.process(element.clauses, **kw),)
+
+
+@compiles(group_concat, "sqlite")
+def _render_group_concat_sqlite(element, compiler, **kw):
+    """
+    On SQLite, `group_concat` doesn't support order_by
+    """
+    # Ignore order_by, it's not supported by SQLite
+    # Avoid defining a separator as it fail parsing when using DISTINCT
+    return "group_concat(%s)" % (compiler.process(element.clauses, **kw),)

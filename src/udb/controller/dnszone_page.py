@@ -16,16 +16,37 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
-from sqlalchemy.orm import defer, joinedload, undefer
+from sqlalchemy import case, func
 from wtforms.fields import StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length
 
-from udb.core.model import DnsRecord, DnsZone, Subnet, User
+from udb.core.model import DnsRecord, DnsZone, Subnet, SubnetRange, User
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
 from .form import CherryForm, DualListWidget, SelectMultipleObjectField, SelectObjectField
+
+
+def _subnet_query(query):
+    """
+    Adjust the original query to list the subnet name and subnet ranges.
+    """
+    return (
+        query.with_entities(
+            Subnet.id,
+            (func.group_concat(SubnetRange.range.text(), order_by=SubnetRange.range.desc()) + " " + Subnet.name).label(
+                'summary'
+            ),
+            Subnet.status,
+        )
+        .join(Subnet.subnet_ranges)
+        .group_by(Subnet.id)
+        .order_by(
+            func.min(case((SubnetRange.version == 6, SubnetRange.range), else_=None)),
+            func.min(case((SubnetRange.version == 4, SubnetRange.range), else_=None)),
+        )
+    )
 
 
 class DnsZoneForm(CherryForm):
@@ -44,13 +65,8 @@ class DnsZoneForm(CherryForm):
     subnets = SelectMultipleObjectField(
         _('Allowed subnets'),
         object_cls=Subnet,
-        # Only select required field for performance reasons.
-        object_query=lambda query: query.options(
-            defer('*'),
-            undefer('id'),
-            undefer('name'),
-            joinedload(Subnet.subnet_ranges).options(undefer('*')),
-        ),
+        # Completly replace the query to include the subnet ranges in the summary
+        object_query=_subnet_query,
         widget=DualListWidget(),
     )
 
@@ -64,12 +80,6 @@ class DnsZoneForm(CherryForm):
     owner_id = SelectObjectField(
         _('Owner'),
         object_cls=User,
-        object_query=lambda query: query.options(
-            defer('*'),
-            undefer('id'),
-            undefer('fullname'),
-            undefer('username'),
-        ),
         default=lambda: cherrypy.serving.request.currentuser.id,
     )
 

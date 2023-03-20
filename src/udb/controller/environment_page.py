@@ -20,7 +20,6 @@ from collections import namedtuple
 
 import cherrypy
 from sqlalchemy import and_, func, or_
-from sqlalchemy.orm import defer, undefer
 from wtforms.fields import HiddenField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, ValidationError
 
@@ -72,12 +71,6 @@ class EnvironmentForm(CherryForm):
     owner_id = SelectObjectField(
         _('Owner'),
         object_cls=User,
-        object_query=lambda query: query.options(
-            defer('*'),
-            undefer('id'),
-            undefer('fullname'),
-            undefer('username'),
-        ),
         default=lambda: cherrypy.serving.request.currentuser.id,
     )
 

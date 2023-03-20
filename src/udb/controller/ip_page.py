@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from sqlalchemy import func
-from sqlalchemy.orm import defer, joinedload, undefer
+from sqlalchemy.orm import joinedload
 from wtforms.fields import FieldList, FormField, IntegerField, StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.form import Form
@@ -88,12 +88,6 @@ class IpForm(CherryForm):
     owner_id = SelectObjectField(
         _('Owner'),
         object_cls=User,
-        object_query=lambda query: query.options(
-            defer('*'),
-            undefer('id'),
-            undefer('fullname'),
-            undefer('username'),
-        ),
     )
 
     def populate_obj(self, obj):
