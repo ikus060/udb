@@ -28,7 +28,19 @@ class SubnetTest(WebCase):
     def test_json(self):
         # Given a DnsZone
         vrf = Vrf(name='default')
-        obj = Subnet(name='test', ranges=['192.168.1.0/24'], vrf=vrf).add().commit()
+        obj = (
+            Subnet(
+                name='test',
+                ranges=['192.168.1.0/24'],
+                vrf=vrf,
+                l3vni=1,
+                l2vni=2,
+                vlan=3,
+                rir_status=Subnet.RIR_STATUS_ASSIGNED,
+            )
+            .add()
+            .commit()
+        )
         # When serializing the object to json
         data = obj.to_json()
         # Then a json representation is return
@@ -43,10 +55,11 @@ class SubnetTest(WebCase):
                 'name': 'test',
                 'ranges': ['192.168.1.0/24'],
                 'vrf_id': 1,
-                'l3vni': None,
-                'l2vni': None,
-                'vlan': None,
+                'l3vni': 1,
+                'l2vni': 2,
+                'vlan': 3,
                 'owner_id': None,
+                'rir_status': 'ASSIGNED',
             },
         )
 

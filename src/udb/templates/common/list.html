@@ -38,6 +38,7 @@
   {% if 'owner' in (table_columns|map(attribute='name')|list) %}
     {% set buttons = buttons + [{'text': _('Owned by me'), 'extend': 'filter', 'column': 'owner:name', 'search': currentuser.summary}] %}
   {% endif %}
+  {% set buttons = buttons + extra_buttons|d([]) %}
   {# Add "Clear" filter #}
   {% set buttons = buttons + [{'text': _('Clear'), 'extend': 'clear'}] %}
   {# Add "Download" button #}

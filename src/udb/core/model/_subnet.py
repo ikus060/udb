@@ -82,6 +82,8 @@ Index('subnetrange_order', SubnetRange.vrf_id, SubnetRange.version.desc(), Subne
 
 
 class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
+    RIR_STATUS_ASSIGNED = "ASSIGNED"
+    RIR_STATUS_ALLOCATED_BY_LIR = "ALLOCATED-BY-LIR"
 
     name = Column(String, nullable=False, default='')
     vrf_id = Column(Integer, ForeignKey("vrf.id"), nullable=False)
@@ -96,6 +98,7 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
         cascade="all, delete-orphan",
     )
     ranges = association_proxy("subnet_ranges", "range")
+    rir_status = Column(String, nullable=True, default=None)
 
     # Transient fields for ordering
     depth = None
@@ -116,6 +119,14 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
         data = super().to_json()
         data['ranges'] = list(self.ranges)
         return data
+
+    @validates('rir_status')
+    def validate_range(self, key, value):
+        if not value:
+            return None
+        if value not in [Subnet.RIR_STATUS_ASSIGNED, Subnet.RIR_STATUS_ALLOCATED_BY_LIR]:
+            raise ValueError('rir_status', "`%s` " % value + _('is not a valid RIR status'))
+        return value
 
 
 @event.listens_for(Subnet, 'before_insert')
