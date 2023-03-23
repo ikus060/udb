@@ -26,8 +26,16 @@ import pkg_resources
 @cherrypy.tools.secure_headers(on=False)
 @cherrypy.tools.sessions(on=False)
 class Static:
+    @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'bootstrap5'))
+    def bootstrap5(*args, **kwargs):
+        raise cherrypy.HTTPError(400)
+
     @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'datatables'))
     def datatables(*args, **kwargs):
+        raise cherrypy.HTTPError(400)
+
+    @cherrypy.tools.staticfile(filename=pkg_resources.resource_filename(__name__, 'udb_16.svg'))
+    def favicon_svg(self):
         raise cherrypy.HTTPError(400)
 
     @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'jquery'))
@@ -48,6 +56,6 @@ class Static:
     def main_js(self):
         raise cherrypy.HTTPError(400)
 
-    @cherrypy.tools.staticfile(filename=pkg_resources.resource_filename(__name__, 'udb_16.svg'))
-    def favicon_svg(self):
+    @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'popper.js'))
+    def popper_js(self):
         raise cherrypy.HTTPError(400)

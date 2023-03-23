@@ -8,4 +8,6 @@
 /usr/share/javascript/jquery-datatables/images/sort_both.png    /usr/lib/python3/dist-packages/udb/static/datatables/images/sort_both.png
 /usr/share/javascript/jquery-datatables/images/sort_desc.png    /usr/lib/python3/dist-packages/udb/static/datatables/images/sort_desc.png
 /usr/share/javascript/jquery-datatables/jquery.dataTables.min.js    /usr/lib/python3/dist-packages/udb/static/datatables/js/jquery.dataTables.min.js
-/usr/share/javascript/jquery/   /usr/lib/python3/dist-packages/udb/static/jquery
+/usr/share/javascript/jquery/      /usr/lib/python3/dist-packages/udb/static/jquery
+/usr/share/javascript/bootstrap5/   /usr/lib/python3/dist-packages/udb/static/bootstrap5
+/usr/share/javascript/popper.js/umd/     /usr/lib/python3/dist-packages/udb/static/popper.js

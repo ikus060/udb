@@ -37,6 +37,8 @@ Vcs-Browser: https://gitlab.com/ikus-soft/udb
 Package: udb
 Architecture: all
 Depends:
+ bootstrap-icons,
+ libjs-bootstrap5,
  libjs-jquery,
  libjs-jquery-datatables,
  libjs-jquery-datatables-extensions,
