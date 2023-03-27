@@ -90,3 +90,5 @@ def db_after_create(target, connection, **kw):
     add_column(Mac.__table__.c._search_vector)
     add_column(Ip.__table__.c._search_vector)
     add_column(Environment.__table__.c._search_vector)
+    # Add rir_status column
+    add_column(Subnet.__table__.c.rir_status)

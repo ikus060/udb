@@ -13,4 +13,7 @@
 {'name':'l3vni', 'title':form.l3vni.label.text|string, 'orderable':True},
 {'name':'l2vni', 'title':form.l2vni.label.text|string, 'orderable':True},
 {'name':'vlan','title': form.vlan.label.text|string, 'orderable':True},
+{'name':'rir_status','title': form.rir_status.label.text|string, 'orderable':True},
 {'name':'dnszone_names', 'title':form.dnszones.label.text|string, 'orderable':False}] %}
+{# Define customer filter for RIR Status #}
+{% set extra_buttons = [{'text': _('RIR Managed'), 'extend': 'filter', 'column': 'rir_status:name', 'search':'.+', 'regex': True }] %}

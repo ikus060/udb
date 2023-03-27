@@ -20,8 +20,7 @@ from collections import namedtuple
 
 import cherrypy
 from sqlalchemy import case, func
-from wtforms.fields import IntegerField, StringField
-from wtforms.fields.simple import TextAreaField
+from wtforms.fields import IntegerField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional
 
 from udb.core.model import DnsZone, Subnet, SubnetRange, User, Vrf
@@ -74,6 +73,17 @@ class SubnetForm(CherryForm):
     l3vni = IntegerField(_('L3VNI'), validators=[Optional()], render_kw={'width': '1/3'})
     l2vni = IntegerField(_('L2VNI'), validators=[Optional()], render_kw={'width': '1/3'})
     vlan = IntegerField(_('VLAN'), validators=[Optional()], render_kw={'width': '1/3'})
+    rir_status = SelectField(
+        _('RIR Status'),
+        choices=[
+            ('', _("-")),
+            (Subnet.RIR_STATUS_ASSIGNED, Subnet.RIR_STATUS_ASSIGNED),
+            (Subnet.RIR_STATUS_ALLOCATED_BY_LIR, Subnet.RIR_STATUS_ALLOCATED_BY_LIR),
+        ],
+        validators=[Optional()],
+        coerce=lambda value: value if value else None,
+        default='',
+    )
     dnszones = SelectMultipleObjectField(
         _('Allowed DNS zone(s)'),
         object_cls=DnsZone,
@@ -106,6 +116,7 @@ SubnetRow = namedtuple(
         'l3vni',
         'l2vni',
         'vlan',
+        'rir_status',
         'dnszone_names',
     ],
 )
@@ -130,6 +141,7 @@ class SubnetPage(CommonPage):
                 Subnet.l3vni,
                 Subnet.l2vni,
                 Subnet.vlan,
+                Subnet.rir_status,
                 func.group_concat(SubnetRange.range.text().distinct()).label('ranges'),
                 func.group_concat(DnsZone.name.distinct()).label('dnszone_names'),
             )
@@ -171,6 +183,7 @@ class SubnetPage(CommonPage):
                 l3vni=row.l3vni,
                 l2vni=row.l2vni,
                 vlan=row.vlan,
+                rir_status=row.rir_status,
                 dnszone_names=dnszone_names,
             )
             # Keep reference of previous row for depth calculation
