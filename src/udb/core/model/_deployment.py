@@ -27,7 +27,7 @@ import cherrypy
 from sqlalchemy import Column, ForeignKey, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
-from sqlalchemy.types import JSON, Integer, String, Text
+from sqlalchemy.types import JSON, Integer, SmallInteger, String, Text
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
 
@@ -131,7 +131,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
     start_id = Column(Integer, nullable=False)
     end_id = Column(Integer, nullable=False)
     change_count = Column(Integer, nullable=False)
-    state = Column(Integer, nullable=False, default=STATE_STARTING)
+    state = Column(SmallInteger, nullable=False, default=STATE_STARTING)
     data = Column(JSON, nullable=False)
     output = Column(Text, nullable=False, default='')
     token = Column(String, nullable=False, default=lambda: binascii.hexlify(os.urandom(20)).decode('ascii'))

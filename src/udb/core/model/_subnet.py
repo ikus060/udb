@@ -22,7 +22,7 @@ from sqlalchemy import Column, Computed, ForeignKey, ForeignKeyConstraint, Index
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import deferred, relationship, validates
-from sqlalchemy.types import Integer, String
+from sqlalchemy.types import Integer, SmallInteger, String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
@@ -48,7 +48,7 @@ class SubnetRange(Base):
     __table_args__ = (
         ForeignKeyConstraint(["subnet_id", "vrf_id"], ["subnet.id", "subnet.vrf_id"], onupdate="CASCADE"),
     )
-    version = deferred(Column(Integer, Computed(range.family(), persisted=True), index=True))
+    version = deferred(Column(SmallInteger, Computed(range.family(), persisted=True), index=True))
     start_ip = deferred(Column(InetType, Computed(func.inet(range.host()), persisted=True), index=True))
     end_ip = deferred(
         Column(InetType, Computed(func.inet(func.host(func.broadcast(range), persisted=True))), index=True)

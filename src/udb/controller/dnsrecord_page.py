@@ -18,7 +18,7 @@
 import cherrypy
 from wtforms.fields import BooleanField, IntegerField, SelectField, StringField
 from wtforms.fields.simple import TextAreaField
-from wtforms.validators import DataRequired, Length
+from wtforms.validators import DataRequired, Length, NumberRange
 
 from udb.controller import flash, handle_exception, url_for, verify_perm
 from udb.core.model import DnsRecord, User
@@ -53,9 +53,13 @@ class EditDnsRecordForm(CherryForm):
 
     ttl = IntegerField(
         _('TTL'),
-        validators=[DataRequired()],
-        default='3600',
-        render_kw={"placeholder": _("Time-to-live value (default: 3600)")},
+        validators=[DataRequired(), NumberRange(min=1, max=2147483647, message=_('TTL must be at least %(min)s.'))],
+        default=3600,
+        render_kw={
+            "placeholder": _("Time-to-live value (default: 3600)"),
+            "pattern": "\\d+",
+            "title": _('Time to live in seconds.'),
+        },
     )
 
     value = StringField(

@@ -22,7 +22,7 @@ import cherrypy
 from sqlalchemy import CheckConstraint, Column, Computed, ForeignKey, and_, case, event, func, literal
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import declared_attr, defer, relationship, undefer, validates
+from sqlalchemy.orm import declared_attr, relationship, validates
 from sqlalchemy.types import Integer, String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
@@ -193,9 +193,9 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
             # IP should be within the corresponding DNS Zone
             ip_address = ipaddress.ip_network(self.ip_value)
             all_ranges = (
-                SubnetRange.query.join(Subnet)
+                SubnetRange.query.with_entities(SubnetRange.range)
+                .join(Subnet)
                 .join(Subnet.dnszones)
-                .options(defer('*'), undefer(SubnetRange.id), undefer(SubnetRange.range))
                 .filter(DnsZone.id == dnszone.id, SubnetRange.version == ip_address.version)
                 .all()
             )
