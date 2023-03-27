@@ -29,7 +29,7 @@
         {{ _table.table('deployments.json',
         empty_message=_('Changes never deployed.'),
         searching=False,
-        show_header=False,
+        dom_cfg=_table.dom_without_header,
         columns = columns,
         order=[[ 0, 'desc' ]],) }}
       </div>

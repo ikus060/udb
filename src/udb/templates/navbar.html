@@ -37,7 +37,8 @@
                  name="q"
                  aria-describedby="button-search"
                  {% if search_value %} value="{{ form.q.data }}"{% endif %}
-                 {% if search_autofocus %} autofocus="autofocus"{% endif %}>
+                 {% if search_autofocus %} autofocus="autofocus"{% endif %}
+                 required>
           <button class="btn btn-outline-secondary" id="button-search" type="submit">
             <i class="fbi bi-search" aria-hidden="true"></i>
           </button>

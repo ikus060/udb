@@ -24,7 +24,7 @@
     columns=columns,
     order=[[ 0, 'desc' ]],
     searching=False,
-    show_header=False,
+    dom_cfg=_table.dom_without_header,
     empty_message=_('No changes since last deployment.'),
     page_length=5) }}
   </div>
