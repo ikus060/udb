@@ -39,3 +39,15 @@ class TestDashboardPage(WebCase):
             driver.find_element('css selector', 'table.table')
             # Then the web page is loaded without error.
             self.assertFalse(driver.get_log('browser'))
+
+    def test_dropdown_selenium(self):
+        # Given an authenticated users
+        self.add_records()
+        with self.selenium() as driver:
+            driver.get(url_for('dashboard'))
+            driver.implicitly_wait(10)
+            # When user click on "username" dropdown
+            dropdown = driver.find_element('id', 'dropdownUser1')
+            dropdown.click()
+            # Then no error raised
+            self.assertFalse(driver.get_log('browser'))
