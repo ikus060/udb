@@ -21,7 +21,7 @@ from collections import namedtuple
 import cherrypy
 from sqlalchemy import case, func
 from wtforms.fields import IntegerField, SelectField, StringField, TextAreaField
-from wtforms.validators import DataRequired, Length, Optional
+from wtforms.validators import DataRequired, Length, NumberRange, Optional
 
 from udb.core.model import DnsZone, Subnet, SubnetRange, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
@@ -70,9 +70,33 @@ class SubnetForm(CherryForm):
         validators=[DataRequired()],
         render_kw={"placeholder": _("Enter a VRF number (optional)")},
     )
-    l3vni = IntegerField(_('L3VNI'), validators=[Optional()], render_kw={'width': '1/3'})
-    l2vni = IntegerField(_('L2VNI'), validators=[Optional()], render_kw={'width': '1/3'})
-    vlan = IntegerField(_('VLAN'), validators=[Optional()], render_kw={'width': '1/3'})
+    l3vni = IntegerField(
+        _('L3VNI'),
+        validators=[Optional(), NumberRange(min=1, max=2147483647, message=_('L3VNI must be at least %(min)s.'))],
+        render_kw={
+            'width': '1/3',
+            "pattern": "\\d+",
+            "title": _('L3VNI number.'),
+        },
+    )
+    l2vni = IntegerField(
+        _('L2VNI'),
+        validators=[Optional(), NumberRange(min=1, max=2147483647, message=_('L2VNI must be at least %(min)s.'))],
+        render_kw={
+            'width': '1/3',
+            "pattern": "\\d+",
+            "title": _('L2VNI number.'),
+        },
+    )
+    vlan = IntegerField(
+        _('VLAN'),
+        validators=[Optional(), NumberRange(min=1, max=2147483647, message=_('VLAN must be at least %(min)s.'))],
+        render_kw={
+            'width': '1/3',
+            "pattern": "\\d+",
+            "title": _('VLAN number.'),
+        },
+    )
     rir_status = SelectField(
         _('RIR Status'),
         choices=[
