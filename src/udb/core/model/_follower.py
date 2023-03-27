@@ -79,7 +79,9 @@ class FollowerMixin:
         """
         return (
             Follower.query.where(
-                Follower.model_name == self.__tablename__, Follower.model_id == self.id, Follower.user == user
-            ).first()
-            is not None
+                Follower.model_name == self.__tablename__,
+                Follower.model_id == self.id,
+                Follower.user == user,
+            ).count()
+            > 0
         )
