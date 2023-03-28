@@ -33,6 +33,9 @@ py3:
       - coverage.xml
       - xunit.xml
 
+sqlalchemy2:
+  <<: *tox
+
 selenium:
   <<: *tox
   before_script:

@@ -32,7 +32,6 @@ class TestApiPage(WebCase):
         self.assertStatus(200)
         self.assertBody('{"status":"OK"}')
 
-    def test_api_error(self):
         # Given the application is started
         # When making an invalid query to api page
         self.getPage('/api/invalid', headers=self.authorization)

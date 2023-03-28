@@ -117,4 +117,4 @@ class DnsZonePage(CommonPage):
             )
             .all()
         )
-        return {'dnsrecords': [dict(r) for r in dnsrecords], 'dnsrecord_sort_key': DnsRecord.dnsrecord_sort_key}
+        return {'dnsrecords': [r._asdict() for r in dnsrecords], 'dnsrecord_sort_key': DnsRecord.dnsrecord_sort_key}

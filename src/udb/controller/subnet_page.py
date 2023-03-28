@@ -192,7 +192,7 @@ class SubnetPage(CommonPage):
             order = order + 1
             # Compute depth
             while prev_row and (
-                row['vrf_id'] != prev_row[-1]['vrf_id'] or not _subnet_of(primary_range, prev_row[-1]['primary_range'])
+                row.vrf_id != prev_row[-1]['vrf_id'] or not _subnet_of(primary_range, prev_row[-1]['primary_range'])
             ):
                 prev_row.pop()
             yield SubnetRow(

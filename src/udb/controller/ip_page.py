@@ -48,7 +48,7 @@ class RelatedSubnetForm(Form):
         _('IP Ranges'), render_kw={"readonly": True}, filters=[lambda ranges: ', '.join([str(r) for r in ranges])]
     )
     vrf = IntegerField(_('VRF'), render_kw={"readonly": True})
-    dnszones = SelectMultipleObjectField(_('DNS zones'), object_cls=DnsZone.query)
+    dnszones = SelectMultipleObjectField(_('DNS zones'), object_cls=DnsZone)
 
 
 class IpForm(CherryForm):

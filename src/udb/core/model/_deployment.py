@@ -161,7 +161,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
                 .group_by(Subnet.id)
                 .all()
             )
-            self.data = {'subnet': [dict(s) for s in subnet]}
+            self.data = {'subnet': [s._asdict() for s in subnet]}
         elif model_name == 'dnsrecord':
             dnsrecord = (
                 DnsRecord.query.with_entities(
@@ -174,7 +174,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
                 .filter(DnsRecord.status == DnsRecord.STATUS_ENABLED)
                 .all()
             )
-            self.data = {'dnsrecord': [dict(s) for s in dnsrecord]}
+            self.data = {'dnsrecord': [s._asdict() for s in dnsrecord]}
         elif model_name == 'dhcprecord':
             dhcprecord = (
                 DhcpRecord.query.with_entities(
@@ -185,7 +185,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
                 .filter(DhcpRecord.status == DhcpRecord.STATUS_ENABLED)
                 .all()
             )
-            self.data = {'dhcprecord': [dict(s) for s in dhcprecord]}
+            self.data = {'dhcprecord': [s._asdict() for s in dhcprecord]}
         else:
             raise ValueError('unsuported model_name: %s' % model_name)
 
