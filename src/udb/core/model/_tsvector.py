@@ -14,9 +14,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from sqlalchemy import String, TypeDecorator, event, func
+from sqlalchemy import String, TypeDecorator, func
 from sqlalchemy.dialects.postgresql import TSVECTOR
-from sqlalchemy.engine import Engine
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 from sqlalchemy.sql.operators import match_op
@@ -28,17 +27,25 @@ mimic version for SQLite.
 """
 
 
-def _sqlite_to_tsvector(regconfig, text):
-    """
-    SQLite implementation of to_tsvector() to mimic postgresql. Will Simply store the text as is.
-    """
-    return text
+class to_tsvector(GenericFunction):
+    name = "to_tsvector"
+    inherit_cache = True
 
 
-@event.listens_for(Engine, "connect")
-def _register_sqlite_tsvector_functions(dbapi_con, unused):
-    if 'sqlite' in repr(dbapi_con):
-        dbapi_con.create_function("to_tsvector", 2, _sqlite_to_tsvector, deterministic=True)
+@compiles(to_tsvector, "postgresql")
+def _render_to_tsvector_of_pg(element, compiler, **kw):
+    """
+    On Postgresql, websearch() uses ts_vector, but we need to replace dot to create multiple "word" out of foo.bar.example.com
+    """
+    return "to_tsvector('simple', replace(%s, '.', ' '))" % compiler.process(element.clauses, **kw)
+
+
+@compiles(to_tsvector, 'sqlite')
+def _render_to_tsvector_of_sqlite(element, compiler, **kw):
+    """
+    On SQLite, websearch uses LIKE operator, so simply lowercase the text value.
+    """
+    return "lower(%s)" % compiler.process(element.clauses, **kw)
 
 
 class websearch(GenericFunction):
@@ -52,7 +59,7 @@ def _render_websearch_of_pg(element, compiler, **kw):
     On Postgresql, websearch() should use full text search functions `websearch_to_tsquery()`.
     """
     left, right = element.clauses
-    return "%s @@ websearch_to_tsquery(%s)" % (
+    return "%s @@ websearch_to_tsquery('simple', replace(%s, '.', ' '))" % (
         compiler.process(left, **kw),
         compiler.process(right, **kw),
     )

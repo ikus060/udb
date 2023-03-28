@@ -85,6 +85,3 @@ class MacPage(CommonPage):
                 func.min(User.summary).label('owner'),
             )
         )
-
-    def _to_json(self, obj):
-        return super()._to_json(obj)

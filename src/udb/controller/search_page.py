@@ -56,7 +56,7 @@ class SearchPage:
                 Search.notes,
             )
             .filter(
-                Search._search_vector.websearch(value),
+                Search.search_vector.websearch(value),
             )
             .limit(100)
         )

@@ -213,10 +213,10 @@ class DnsZoneTest(WebCase):
         science = DnsZone(name='science.example.com', notes='testing').add()
         DnsZone(name='dmz.example.com', notes='Use for DMZ').add().commit()
         # When searching for a term in notes
-        records = DnsZone.query.filter(DnsZone._search_vector.websearch('main')).all()
+        records = DnsZone.query.filter(DnsZone.search_vector.websearch('main')).all()
         # Then a single record is returned
         self.assertEqual(main, records[0])
         # When searching for a term in name
-        records = DnsZone.query.filter(DnsZone._search_vector.websearch('science.example.com')).all()
+        records = DnsZone.query.filter(DnsZone.search_vector.websearch('science.example.com')).all()
         # Then a single record is returned
         self.assertEqual(science, records[0])
