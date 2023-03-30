@@ -28,12 +28,12 @@ class SearchableMixing(object):
     """
 
     @declared_attr
-    def _search_vector(cls):
+    def search_vector(cls):
         return deferred(
             Column(
                 TSVectorType,
                 Computed(
-                    func.to_tsvector('english', cls._search_string()),
+                    func.to_tsvector(cls._search_string()),
                     persisted=True,
                 ),
             )
@@ -41,7 +41,7 @@ class SearchableMixing(object):
 
     @declared_attr
     def __table_args__(cls):
-        return (Index('idx_%s_search_vector' % cls.__tablename__, '_search_vector', postgresql_using='gin'),)
+        return (Index('idx_%s_search_vector' % cls.__tablename__, 'search_vector', postgresql_using='gin'),)
 
     @classmethod
     def _search_string(cls):

@@ -218,11 +218,11 @@ class SubnetTest(WebCase):
         )
 
         # When searching for a term in notes
-        records = Subnet.query.filter(Subnet._search_vector.websearch('specific')).all()
+        records = Subnet.query.filter(Subnet.search_vector.websearch('specific')).all()
         # Then a single record is returned
         self.assertEqual(subnet, records[0])
 
         # When searching for a term in name
-        records = Subnet.query.filter(Subnet._search_vector.websearch('test')).all()
+        records = Subnet.query.filter(Subnet.search_vector.websearch('test')).all()
         # Then a single record is returned
         self.assertEqual(subnet, records[0])

@@ -154,6 +154,7 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
 
     @classmethod
     def _search_string(cls):
+        # Replace dot(.) by space for PostgreSQL vector search.
         return cls.name + " " + cls.type + " " + cls.value
 
     def _validate(self):

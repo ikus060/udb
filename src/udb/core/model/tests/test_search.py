@@ -18,7 +18,7 @@
 from sqlalchemy import or_
 
 from udb.controller.tests import WebCase
-from udb.core.model import Message, Search
+from udb.core.model import DnsRecord, DnsZone, Ip, Message, Search, Subnet, Vrf
 
 
 class SearchTest(WebCase):
@@ -34,7 +34,7 @@ class SearchTest(WebCase):
         # Given a database with records
         self.add_records()
         # When searching a term present in summary
-        obj_list = Search.query.filter(Search._search_vector.websearch('DMZ')).order_by(Search.summary).all()
+        obj_list = Search.query.filter(Search.search_vector.websearch('DMZ')).order_by(Search.summary).all()
         # Then records are returned.
         self.assertEqual(2, len(obj_list))
         self.assertEqual(['DMZ', 'bfh.ch'], sorted([obj.summary for obj in obj_list]))
@@ -46,8 +46,8 @@ class SearchTest(WebCase):
         obj_list = (
             Search.query.filter(
                 or_(
-                    Search._search_vector.websearch('message'),
-                    Search.messages.any(Message._search_vector.websearch('message')),
+                    Search.search_vector.websearch('message'),
+                    Search.messages.any(Message.search_vector.websearch('message')),
                 )
             )
             .order_by(Search.summary)
@@ -56,3 +56,63 @@ class SearchTest(WebCase):
         # Then records are returned.
         self.assertEqual(3, len(obj_list))
         self.assertEqual(['DMZ', 'bfh.ch', 'foo.bfh.ch = 147.87.250.3(A)'], sorted([o.summary for o in obj_list]))
+
+    def test_search_domain_name(self):
+        # Given a DNS Record
+        vrf = Vrf(name='default').add()
+        subnet = Subnet(ranges=['192.168.1.0/24', '2001:db8:85a3::/64'], vrf=vrf).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        record = DnsRecord(name='lumos.example.com', type='A', value='192.168.1.14')
+        record.add().commit()
+        # When searching the first CN
+        result = (
+            Search.query.filter(
+                Search.search_vector.websearch('lumos'),
+            )
+            .order_by(Search.summary)
+            .all()
+        )
+        # Then search content should contains our DNS Record
+        self.assertIn((record.id, 'dnsrecord'), [(r.model_id, r.model_name) for r in result])
+
+    def test_search_ipv4_address(self):
+        # Given a DNS Record creating an ip address
+        vrf = Vrf(name='default').add()
+        subnet = Subnet(ranges=['192.168.1.0/24', '2001:db8:85a3::/64'], vrf=vrf).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        record = DnsRecord(name='lumos.example.com', type='A', value='192.168.1.14')
+        record.add().commit()
+        # When searching for partial IP Address 192.168
+        result = (
+            Search.query.filter(
+                Search.search_vector.websearch('192.168'),
+            )
+            .order_by(Search.summary)
+            .all()
+        )
+        ip = Ip.query.filter(Ip.ip == record.generated_ip).one()
+        # Then search content should contains our DNS Record
+        self.assertIn((record.id, 'dnsrecord'), [(r.model_id, r.model_name) for r in result])
+        # Then search content should also contain our IP
+        self.assertIn((ip.id, 'ip'), [(r.model_id, r.model_name) for r in result])
+
+    def test_search_ipv6_address(self):
+        # Given a DNS Record creating an ip address
+        vrf = Vrf(name='default').add()
+        subnet = Subnet(ranges=['192.168.1.0/24', '	2a07:6b43::/32'], vrf=vrf).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        record = DnsRecord(name='lumos.example.com', type='AAAA', value='2a07:6b43:115:11::127')
+        record.add().commit()
+        # When searching for partial IP Address 2a07:6b43:115
+        result = (
+            Search.query.filter(
+                Search.search_vector.websearch('2a07:6b43:115'),
+            )
+            .order_by(Search.summary)
+            .all()
+        )
+        ip = Ip.query.filter(Ip.ip == record.generated_ip).one()
+        # Then search content should contains our DNS Record
+        self.assertIn((record.id, 'dnsrecord'), [(r.model_id, r.model_name) for r in result])
+        # Then search content should also contain our IP
+        self.assertIn((ip.id, 'ip'), [(r.model_id, r.model_name) for r in result])

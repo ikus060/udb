@@ -29,7 +29,8 @@ class JsonMixin:
 
         data = dict()
         for c in self.__table__.columns:
-            if not c.name.startswith('_'):
+            # Make sure to ignore search_vector.
+            if not c.name.startswith('_') and c.name != 'search_vector':
                 try:
                     data[c.name] = _value(getattr(self, c.name))
                 except InvalidRequestError:

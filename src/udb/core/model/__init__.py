@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
 from sqlalchemy import event
+from sqlalchemy.sql import ddl
 
 from . import _group_concat  # noqa
 from ._deployment import Deployment, Environment  # noqa
@@ -31,6 +32,7 @@ from ._user import User  # noqa
 from ._vrf import Vrf  # noqa
 
 from ._search import Search  # noqa # isort: skip
+
 
 Base = cherrypy.tools.db.get_base()
 
@@ -63,9 +65,10 @@ def db_after_create(target, connection, **kw):
         if exists(column):
             return False
         table_name = column.table.fullname
-        column_name = column.name
-        column_type = column.type.compile(connection.engine.dialect)
-        connection.engine.execute('ALTER TABLE "%s" ADD COLUMN "%s" %s' % (table_name, column_name, column_type))
+        # Compile string representation of the column creation.
+        connection.engine.execute(
+            'ALTER TABLE "%s" ADD COLUMN %s' % (table_name, ddl.CreateColumn(column).compile(connection.engine))
+        )
         return True
 
     if getattr(connection, '_transaction', None):
@@ -87,8 +90,15 @@ def db_after_create(target, connection, **kw):
     # Add 'lang' to user
     add_column(User.__table__.c.lang)
     # Add Search vector to IP and Mac
-    add_column(Mac.__table__.c._search_vector)
-    add_column(Ip.__table__.c._search_vector)
-    add_column(Environment.__table__.c._search_vector)
+    add_column(Mac.__table__.c.search_vector)
+    add_column(Ip.__table__.c.search_vector)
+    add_column(Environment.__table__.c.search_vector)
     # Add rir_status column
     add_column(Subnet.__table__.c.rir_status)
+    # Re-Create search_vector
+    add_column(DhcpRecord.__table__.c.search_vector)
+    add_column(DnsRecord.__table__.c.search_vector)
+    add_column(DnsZone.__table__.c.search_vector)
+    add_column(Message.__table__.c.search_vector)
+    add_column(Subnet.__table__.c.search_vector)
+    add_column(Vrf.__table__.c.search_vector)

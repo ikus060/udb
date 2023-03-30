@@ -90,7 +90,7 @@ class AuditPage:
         search = kwargs.get('search[value]', '')
         if search:
             query = query.filter(
-                Search._search_vector.websearch(search),
+                Search.search_vector.websearch(search),
             )
         filtered = query.count()
         data = query.offset(start).limit(length).all()
