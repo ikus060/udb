@@ -66,10 +66,20 @@ class LoadPage:
                 reader = csv.DictReader(f)
                 for row in reader:
                     vrf = self.get_or_create(Vrf, row.get('VRF'))
-                    zone = self.get_or_create(DnsZone, row.get('TLD'))
-                    ranges = [row.get('IPv6')]
+                    dnszones = []
+                    if row.get('TLD'):
+                        dnszones = [self.get_or_create(DnsZone, row.get('TLD'))]
+                    if row.get('Allowed DNS zone(s)'):
+                        dnszones = [self.get_or_create(DnsZone, z) for z in row.get('Allowed DNS zone(s)').split(', ')]
+                    ranges = []
+                    if row.get('IPv6'):
+                        ranges = [row.get('IPv6')]
                     if row.get('IPv4'):
                         ranges.extend(row.get('IPv4').split(' '))
+                    if row.get('Primary IP Range'):
+                        ranges = [row.get('Primary IP Range')]
+                    if row.get('Secondary IP Range(s)'):
+                        ranges.extend(row.get('Secondary IP Range(s)').split(', '))
                     Subnet(
                         ranges=ranges,
                         name=row.get('Name'),
@@ -77,8 +87,8 @@ class LoadPage:
                         l3vni=self.get_int(row.get('L3VNI')),
                         l2vni=self.get_int(row.get('L2VNI')),
                         vlan=self.get_int(row.get('VLAN')),
-                        notes=row.get('Description'),
-                        dnszones=[zone] if zone else [],
+                        notes=row.get('Description') or row.get('Notes'),
+                        dnszones=dnszones,
                     ).add().flush()
             cherrypy.tools.db.get_session().commit()
         except Exception as e:
