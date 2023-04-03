@@ -26,14 +26,13 @@ from .common_page import CommonPage
 from .form import CherryForm
 
 
-class UserForm(CherryForm):
+class NewUserForm(CherryForm):
 
     object_cls = User
 
     username = StringField(
         _('Username'),
         validators=[DataRequired(), Length(max=256)],
-        render_kw={"readonly": True},
     )
 
     fullname = StringField(_('Fullname'), validators=[Length(max=256)], render_kw={"autofocus": True})
@@ -82,10 +81,25 @@ class UserForm(CherryForm):
             obj.set_password(self.password.data)
 
 
+class EditUserForm(NewUserForm):
+    """
+    Make username field read only when editing user.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.username.render_kw = {"readonly": True, "disabled": True}
+
+
 class UserPage(CommonPage):
     def __init__(self) -> None:
         super().__init__(
-            User, UserForm, list_perm=User.PERM_USER_MGMT, edit_perm=User.PERM_USER_MGMT, new_perm=User.PERM_USER_MGMT
+            User,
+            EditUserForm,
+            NewUserForm,
+            list_perm=User.PERM_USER_MGMT,
+            edit_perm=User.PERM_USER_MGMT,
+            new_perm=User.PERM_USER_MGMT,
         )
 
     def _list_query(self):

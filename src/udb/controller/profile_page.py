@@ -34,7 +34,7 @@ class AccountForm(CherryForm):
             DataRequired(),
             Length(max=256),
         ],
-        render_kw={'readonly': True},
+        render_kw={'readonly': True, 'disabled': True},
     )
 
     fullname = StringField(

@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from parameterized import parameterized
+from selenium.common.exceptions import ElementNotInteractableException
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
@@ -69,6 +70,31 @@ class UserTest(WebCase):
         new_obj = User.query.filter_by(username=self.new_data['username']).first()
         for k, v in self.edit_data.items():
             self.assertEqual(getattr(new_obj, k), v)
+
+    def test_edit_selenium(self):
+        # Given a database with a record
+        obj = User(**self.new_data).add()
+        obj.commit()
+        # Given a webpage
+        with self.selenium() as driver:
+            # When getting web page.
+            driver.get(url_for(obj, 'edit'))
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
+
+    def test_edit_readonly_username_selenium(self):
+        # Given a database with a record
+        obj = User(**self.new_data).add()
+        obj.commit()
+        # Given a webpage
+        with self.selenium() as driver:
+            # When trying to edit the username
+            driver.get(url_for(obj, 'edit'))
+            e = driver.find_element('xpath', "//input[@name='username']")
+            with self.assertRaises(ElementNotInteractableException):
+                e.send_keys('newusername')
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
 
     def test_edit_with_password(self):
         # Given a database with a record
