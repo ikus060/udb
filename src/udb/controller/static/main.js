@@ -423,9 +423,11 @@ jQuery(function () {
         // Update each buttons status
         dt.on('search.dt', function (e, settings) {
             dt.buttons().each(function (data, idx) {
-                let conf = data.inst.s.buttons[idx].conf;
-                if (conf && conf.column) {
-                    dt.button(idx).active(dt.column(conf.column).search() === conf.search);
+                if (data.inst.s.buttons[idx]) {
+                    let conf = data.inst.s.buttons[idx].conf;
+                    if (conf && conf.column) {
+                        dt.button(idx).active(dt.column(conf.column).search() === conf.search);
+                    }
                 }
             });
         });

@@ -96,6 +96,11 @@ th>a {
     }
 }
 
+/* Adjust width of button collections */
+.dataTables_wrapper .dt-buttons .dt-button-collection {
+    width: 200px;
+}
+
 table.dataTable.no-footer {
     border-bottom: 1px solid #dee2e6;
 }

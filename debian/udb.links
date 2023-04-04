@@ -1,13 +1,8 @@
 /usr/share/javascript/jquery-datatables/css/jquery.dataTables.min.css   /usr/lib/python3/dist-packages/udb/static/datatables/css/jquery.dataTables.min.css
-/usr/share/javascript/jquery-datatables-extensions/Buttons/js/buttons.html5.min.js /usr/lib/python3/dist-packages/udb/static/datatables/js/buttons.html5.min.js
-/usr/share/javascript/jquery-datatables-extensions/Buttons/js/dataTables.buttons.min.js /usr/lib/python3/dist-packages/udb/static/datatables/js/dataTables.buttons.min.js
-/usr/share/javascript/jquery-datatables-extensions/JSZip/jszip.min.js /usr/lib/python3/dist-packages/udb/static/datatables/js/jszip.min.js
 /usr/share/javascript/jquery-datatables-extensions/Responsive/css/responsive.dataTables.min.css /usr/lib/python3/dist-packages/udb/static/datatables/css/responsive.dataTables.min.css
-/usr/share/javascript/jquery-datatables-extensions/Responsive/js/dataTables.responsive.min.js   /usr/lib/python3/dist-packages/udb/static/datatables/js/dataTables.responsive.min.js
 /usr/share/javascript/jquery-datatables/images/sort_asc.png /usr/lib/python3/dist-packages/udb/static/datatables/images/sort_asc.png
 /usr/share/javascript/jquery-datatables/images/sort_both.png    /usr/lib/python3/dist-packages/udb/static/datatables/images/sort_both.png
 /usr/share/javascript/jquery-datatables/images/sort_desc.png    /usr/lib/python3/dist-packages/udb/static/datatables/images/sort_desc.png
-/usr/share/javascript/jquery-datatables/jquery.dataTables.min.js    /usr/lib/python3/dist-packages/udb/static/datatables/js/jquery.dataTables.min.js
 /usr/share/javascript/jquery/      /usr/lib/python3/dist-packages/udb/static/jquery
 /usr/share/javascript/bootstrap5/   /usr/lib/python3/dist-packages/udb/static/bootstrap5
 /usr/share/javascript/popper.js/umd/     /usr/lib/python3/dist-packages/udb/static/popper.js

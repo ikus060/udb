@@ -2,7 +2,7 @@
 {% set columns = [
 {'name':'id', 'visible':False},
 {'name':'status', 'visible':False, 'search': '(enabled|disabled)', 'regex':True},
-{'name':'username', 'title':form.username.label.text|string, 'orderable':True, 'render':'summary', 'render_arg':'user'},
-{'name':'fullname', 'title':form.fullname.label.text|string, 'orderable': True},
-{'name':'email', 'title':form.email.label.text|string, 'orderable':True},
-{'name':'role', 'title':form.role.label.text|string, 'orderable':True, 'render':'choices', 'render_arg':form.role.choices}] %}
+{'name':'username', 'title':form.username.label.text|string, 'orderable':True, 'render':'summary', 'render_arg':'user', 'className':'export'},
+{'name':'fullname', 'title':form.fullname.label.text|string, 'orderable': True, 'className':'export'},
+{'name':'email', 'title':form.email.label.text|string, 'orderable':True, 'className':'export'},
+{'name':'role', 'title':form.role.label.text|string, 'orderable':True, 'render':'choices', 'render_arg':form.role.choices, 'className':'export'}] %}
