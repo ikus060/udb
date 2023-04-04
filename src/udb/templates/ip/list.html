@@ -1,7 +1,7 @@
 {% extends 'common/list.html' %}
 {% set columns = [
 {'name':'id', 'visible':False},
-{'name': 'ip', 'title':_('IP Address'), 'orderable':True, 'render':'summary', 'render_arg':'ip'},
-{'name':'count', 'title':_('Referenced'), 'orderable':True},
-{'name':'notes', 'title':form.notes.label.text|string, 'orderable':True},
-{'name':'owner', 'title':form.owner_id.label.text|string, 'orderable':True}] %}
+{'name': 'ip', 'title':_('IP Address'), 'orderable':True, 'render':'summary', 'render_arg':'ip', 'className':'export'},
+{'name':'count', 'title':_('Referenced'), 'orderable':True, 'className':'export'},
+{'name':'notes', 'title':form.notes.label.text|string, 'orderable':True, 'className':'export'},
+{'name':'owner', 'title':form.owner_id.label.text|string, 'orderable':True, 'className':'export'}] %}

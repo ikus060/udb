@@ -8,13 +8,13 @@
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
-            <a href="{{ url_for(model_name, '')}}"
+            <a href="{{ url_for(model_name, '') }}"
                class="stretched-link text-uppercase mb-1 text-{{ color }} fw-bold">
-              {{ macro.display_name(model_name)}}
+              {{ macro.display_name(model_name) }}
             </a>
             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ count }}</div>
           </div>
-          <div class="col-auto">{{ macro.icon(model_name, 'h1 text-secondary')}}</div>
+          <div class="col-auto">{{ macro.icon(model_name, 'h1 text-secondary') }}</div>
         </div>
       </div>
     </div>
@@ -81,7 +81,7 @@
               <span>{{ count }}</span>
             </h4>
             <div class="progress mb-4">
-              <div class="progress-bar bg-{{ loop.cycle('danger', 'warning', 'info', 'success', 'primary')}}"
+              <div class="progress-bar bg-{{ loop.cycle('danger', 'warning', 'info', 'success', 'primary') }}"
                    role="progressbar"
                    style="width: {{ (count / max_count * 100)|int }}%"
                    aria-valuenow="20"

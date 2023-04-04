@@ -6,7 +6,7 @@
       <div class="col-md-8 col-lg-6 col-xl-5 col-xxl-3">
         <div class="card p-3">
           <h2 class="d-flex align-items-center">
-            <img src="{{ url_for('static', 'favicon.svg', v=cache_invalidate)}}"
+            <img src="{{ url_for('static', 'favicon.svg', v=cache_invalidate) }}"
                  class="d-inline-block me-2"
                  height="24"
                  alt="logo"/>
@@ -14,7 +14,7 @@
           </h2>
           {% include "flash.html" %}
           <form method="POST">
-            {{ form(floating=True)}}
+            {{ form(floating=True) }}
             <div class="text-center text-lg-start mt-4 pt-2">
               <button type="submit"
                       class="btn btn-primary btn-lg"

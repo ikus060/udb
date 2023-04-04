@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 {% import "macro.html" as macro %}
 {% block title %}
-  {% trans %}Create a new{% endtrans %} {{ macro.display_name(model_name)}}
+  {% trans %}Create a new{% endtrans %} {{ macro.display_name(model_name) }}
 {% endblock %}
 {% block body %}
   <div class="row">
@@ -17,13 +17,13 @@
           <span class="visually-hidden">{% trans %}Go Back{% endtrans %}</span>
         </a>
         {# Title #}
-        <h2 class="flex-fill mb-0">{% trans %}Create a new{% endtrans %} {{ macro.display_name(model_name)}}</h2>
+        <h2 class="flex-fill mb-0">{% trans %}Create a new{% endtrans %} {{ macro.display_name(model_name) }}</h2>
       </div>
       {% include "flash.html" %}
       <form method="POST" action="{{ url_for(model, 'new') }}">
         <div class="card">
           <div class="card-body">
-            <div class="row">{{ form()}}</div>
+            <div class="row">{{ form() }}</div>
           </div>
           <div class="card-footer">
             <button id="create"
@@ -32,7 +32,7 @@
                     style="padding-left: 2.5rem;
                            padding-right: 2.5rem">
               {% trans %}Create{% endtrans %}
-              {{ macro.display_name(model_name)}}
+              {{ macro.display_name(model_name) }}
             </button>
             <a class="btn btn-secondary" href="{{ url_for(model) }}">{% trans %}Cancel{% endtrans %}</a>
           </div>

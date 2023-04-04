@@ -68,13 +68,27 @@ class CommonTest:
             # Then the deleted record badge are hidden
             with self.assertRaises(Exception):
                 driver.find_element('xpath', "//span[@class='badge bg-danger' and contains(text(), 'Deleted')]")
-
             # When user click on "Show deleted" buttons
-            element = driver.find_element('css selector', 'a.udb-btn-filter')
+            element = driver.find_element('css selector', 'button.udb-btn-filter')
             self.assertEqual("Show Deleted", element.text)
             element.click()
             # Then the list show deleted record.
             driver.find_element('xpath', "//span[@class='badge bg-danger' and contains(text(), 'Deleted')]")
+
+    def test_get_list_download_selenium(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
+        with self.selenium(True) as driver:
+            # When user click on "more" menu & "Download CSV"
+            driver.get(url_for(self.base_url, ''))
+            more_menu = driver.find_element('css selector', '.udb-btn-more-menu')
+            more_menu.click()
+            csv_download = driver.find_element('css selector', '.buttons-csv')
+            csv_download.click()
+            # Then a file get downloaded
+            fn = self.assertSeleniumDownload()
+            self.assertTrue(fn.startswith('export_'))
 
     def test_get_edit_page(self):
         # Given a database with a record

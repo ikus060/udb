@@ -3,7 +3,7 @@
   {# Toggle Button to subscribe or unsubscribe #}
   {% set is_following = obj.is_following(currentuser) %}
   <form method="post"
-        action="{{ url_for(obj, 'unfollow' if is_following else 'follow')}}">
+        action="{{ url_for(obj, 'unfollow' if is_following else 'follow') }}">
     <input type="hidden"
            id="user_id"
            name="user_id"

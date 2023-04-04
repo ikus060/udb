@@ -17,6 +17,7 @@
 
 import json
 import os
+import shutil
 import tempfile
 import time
 import unittest
@@ -89,6 +90,9 @@ class WebCase(BaseClass):
         # Need to wait for task before deleting to avoid dead lock in postgresql.
         self.wait_for_tasks()
         cherrypy.tools.db.drop_all()
+        # Delete selenium download
+        if getattr(self, '_selenium_download_dir', False):
+            shutil.rmtree(self._selenium_download_dir)
         super().tearDown()
 
     def add_records(self):
@@ -224,19 +228,37 @@ class WebCase(BaseClass):
         # Start selenium driver
         options = webdriver.ChromeOptions()
         if headless:
-            options.add_argument('--headless')
+            options.add_argument('--headless=new')
         options.add_argument('--disable-gpu')
         options.add_argument('--window-size=1280,800')
         if os.geteuid() == 0:
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
         driver = webdriver.Chrome(options=options)
-        # If logged in, reuse the same session id.
         try:
+            # If logged in, reuse the same session id.
             if self.session_id:
                 driver.get('http://%s:%s/login/' % (self.HOST, self.PORT))
                 driver.add_cookie({"name": "session_id", "value": self.session_id})
+            # Configure download folder
+            self._selenium_download_dir = tempfile.mkdtemp(prefix='udb-selenium-download-')
+            driver.execute_cdp_cmd(
+                'Page.setDownloadBehavior', {'behavior': 'allow', 'downloadPath': self._selenium_download_dir}
+            )
             yield driver
         finally:
             # Code to release resource, e.g.:
             driver.close()
+            driver = None
+
+    def assertSeleniumDownload(self, timeout=10):
+        """
+        Check number of file in download folder
+        """
+        for unused in range(1, timeout):
+            if len(os.listdir(self._selenium_download_dir)) > 0:
+                break
+            time.sleep(1)
+        files = os.listdir(self._selenium_download_dir)
+        self.assertTrue(files)
+        return files[0]

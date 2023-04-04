@@ -2,7 +2,7 @@
 {% block table_widget_field scoped %}
   {% if 'dnszone' is in subfield.name %}
     {% for subnet in subfield.object_data %}
-      <a href="{{ url_for(subnet, 'edit')}}"><span class="badge rounded-pill bg-secondary">{{ subnet.summary }}</span></a>
+      <a href="{{ url_for(subnet, 'edit') }}"><span class="badge rounded-pill bg-secondary">{{ subnet.summary }}</span></a>
     {% endfor %}
   {% else %}
     {{ subfield.data }}

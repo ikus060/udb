@@ -16,7 +16,7 @@
           {% for subfield in row %}
             <td>
               {% if loop.first %}
-                <a href="{{ url_for(row.object_data, 'edit')}}">{{ subfield.data }}</a>
+                <a href="{{ url_for(row.object_data, 'edit') }}">{{ subfield.data }}</a>
                 {{ _status.badge(row.object_data) }}
               {% elif subfield.data %}
                 {% block table_widget_field scoped %}{{ subfield.data }}{% endblock %}
@@ -27,7 +27,7 @@
           {% endfor %}
           <td>
             <a class="btn btn-primary btn-circle btn-sm btn-hover"
-               href="{{ url_for(row.object_data, 'edit')}}"
+               href="{{ url_for(row.object_data, 'edit') }}"
                data-bs-toggle="tooltip"
                data-bs-placement="top"
                title="{% trans %}Edit detail{% endtrans %}">

@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 {% import "macro.html" as macro %}
 {% import "common/status.html" as _status with context %}
-{% block title %}{{ macro.display_name(model_name)}} {{(form|first).data }}{% endblock %}
+{% block title %}{{ macro.display_name(model_name) }} {{(form|first).data }}{% endblock %}
 {% block body %}
   {# Header #}
   <div class="row">
@@ -17,7 +17,7 @@
           <span class="visually-hidden">{% trans %}Go Back{% endtrans %}</span>
         </a>
         {# Title #}
-        <h2 class="flex-fill mb-0">{{ _('Edit') }} {{ macro.display_name(model_name)}} {{(form|first).data }}</h2>
+        <h2 class="flex-fill mb-0">{{ _('Edit') }} {{ macro.display_name(model_name) }} {{(form|first).data }}</h2>
         {# /Title #}
       </div>
     </div>

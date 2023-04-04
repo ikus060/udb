@@ -5,16 +5,16 @@
 {% block body %}
   <div class="row">
     <div class="col">
-      <h4 id="title">{{ macro.icon(model_name)}} {% trans %}List of{% endtrans %} {{ macro.display_name(model_name)}}</h4>
+      <h4 id="title">{{ macro.icon(model_name) }} {% trans %}List of{% endtrans %} {{ macro.display_name(model_name) }}</h4>
     </div>
     <div class="col text-end mb-2">
       {% if has_new %}
         <a class="btn btn-primary {% if not new_perm %}disabled{% endif %}"
-           href="{{ url_for(model, 'new')}}"
+           href="{{ url_for(model, 'new') }}"
            role="button"
            {% if not new_perm %}aria-disabled="true" title="{% trans %}Permissions required{% endtrans %}"{% endif %}>
           {% trans %}Create{% endtrans %}
-        {{ macro.display_name(model_name)}}</a>
+        {{ macro.display_name(model_name) }}</a>
       {% endif %}
     </div>
   </div>
@@ -29,7 +29,7 @@
   {% endfor %}
   {% set table_columns = columns|d(ns.default_columns) %}
   {# Append Action columns #}
-  {% set table_columns = table_columns + [{'name':'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px', 'className':'all'}] %}
+  {% set table_columns = table_columns + [{'name':'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px'}] %}
   {# Add Status Filter if status column exists #}
   {% if 'status' in (table_columns|map(attribute='name')|list) %}
     {% set buttons = buttons + [{'text': _('Show Deleted'), 'extend': 'filter', 'column': 'status:name', 'search':'(enabled|disabled|deleted)', 'search_off': '(enabled|disabled)', 'regex': True }] %}
@@ -41,9 +41,12 @@
   {% set buttons = buttons + extra_buttons|d([]) %}
   {# Add "Clear" filter #}
   {% set buttons = buttons + [{'text': _('Clear'), 'extend': 'clear'}] %}
-  {# Add "Download" button #}
+  {# Add "More" button collection #}
   {% set download_filename = _('export_') + macro.display_name(model_name)|lower %}
-  {% set buttons = buttons + [{'text': _('Download'), 'extend': 'excel', 'exportOptions': {'columns': ':visible'}, 'className': 'udb-btn-download', 'title': download_filename }] %}
+  {% set csv_button = {'text': _('Download Csv'), 'extend': 'csv', 'exportOptions': {'columns': '.export'}, 'title': download_filename, 'className':'udb-btn-download text-nowrap' } %}
+  {% set xsl_button = {'text': _('Download Excel'), 'extend': 'excel', 'exportOptions': {'columns': '.export'}, 'title': download_filename, 'className':'udb-btn-download text-nowrap' } %}
+  {% set more_button = {'text': '...', 'extend': 'collection', 'align':'button-right', 'autoClose':True, 'background': False, 'popoverTitle': _('More'), 'buttons': [ csv_button, xsl_button], 'className':'udb-btn-more-menu' } %}
+  {% set buttons = buttons + [more_button] %}
   {# Show default table #}
-  {{ _table.table(data="data.json", columns=table_columns, buttons=buttons)}}
+  {{ _table.table(data="data.json", columns=table_columns, buttons=buttons) }}
 {% endblock body %}

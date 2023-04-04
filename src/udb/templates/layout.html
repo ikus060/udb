@@ -44,7 +44,7 @@
     <script src="{{url_for('static/main.js', v=cache_invalidate)}}"></script>
     <link rel="stylesheet"
           type="text/css"
-          href="{{ url_for('static/main.css', v=cache_invalidate)}}"
+          href="{{ url_for('static/main.css', v=cache_invalidate) }}"
           crossorigin="anonymous"/>
     <title>
       {% block title %}{% endblock %}
@@ -52,7 +52,7 @@
     </title>
     <link rel="icon"
           type="image/svg+xml"
-          href="{{ url_for('static/favicon.svg', v=cache_invalidate)}}">
+          href="{{ url_for('static/favicon.svg', v=cache_invalidate) }}">
     {% block head %}{% endblock %}
   </head>
   <body>

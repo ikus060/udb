@@ -18,13 +18,40 @@
   "zeroRecords": empty_message or _('List is empty'),
   } %}
   {% set buttons_cfg = {
+  "buttons": buttons,
   "dom": {
   "button": {
   "className": 'btn btn-sm btn-secondary ms-1 mb-1',
   "active": 'active',
+  },
+  "collection": {
+  "tag": 'div',
+  "button": {
+  "tag": 'a',
+  "className": 'btn btn-sm btn-secondary mb-1 w-100',
+  "active": 'active',
+  "disabled": 'disabled'
   }
   },
-  "buttons": buttons
+  "splitWrapper": {
+  "tag": 'div',
+  "className": 'dt-btn-split-wrapper btn-group',
+  "closeButton": False,
+  },
+  "splitDropdown": {
+  "tag": 'button',
+  "text": '',
+  "className": 'btn btn-sm btn-secondary mb-1',
+  "closeButton": False,
+  "align": 'split-left',
+  "splitAlignClass": 'dt-button-split-left'
+  },
+  "splitDropdownButton": {
+  "tag": 'button',
+  "className": 'dt-btn-split-drop-button btn btn-secondary',
+  "closeButton": False
+  },
+  },
   } %}
   {% set dom_without_header = "<'row'<'col-sm-12'rt>><'row'<'col-sm-12 col-md-7'p>>" %}
   {% set dom_without_length_change = "<'d-sm-flex align-items-center'<'mb-1 flex-grow-1'i><'mb-1'f><B>><'row'<'col-sm-12'rt>><'row'<'col-sm-12 col-md-7'p>>" %}
