@@ -18,6 +18,7 @@
 from unittest.mock import MagicMock
 
 import cherrypy
+from selenium.common.exceptions import ElementNotInteractableException
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
@@ -38,6 +39,17 @@ class ProfileTest(WebCase):
         self.assertInBody('Administrator')
         self.assertInBody('admin@example.com')
         self.assertNotInBody('User profile updated successfully.')
+
+    def test_readonly_username_selenium(self):
+        # Given a webpage
+        with self.selenium() as driver:
+            # When trying to edit the username
+            driver.get(url_for('profile', ''))
+            e = driver.find_element('xpath', "//input[@name='username']")
+            with self.assertRaises(ElementNotInteractableException):
+                e.send_keys('newusername')
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
 
     def test_update_profile(self):
         # Given a user
