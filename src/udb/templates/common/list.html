@@ -5,16 +5,16 @@
 {% block body %}
   <div class="row">
     <div class="col">
-      <h4 id="title">{{ macro.icon(model_name)}} {% trans %}List of{% endtrans %} {{ macro.display_name(model_name)}}</h4>
+      <h4 id="title">{{ macro.icon(model_name) }} {% trans %}List of{% endtrans %} {{ macro.display_name(model_name) }}</h4>
     </div>
     <div class="col text-end mb-2">
       {% if has_new %}
         <a class="btn btn-primary {% if not new_perm %}disabled{% endif %}"
-           href="{{ url_for(model, 'new')}}"
+           href="{{ url_for(model, 'new') }}"
            role="button"
            {% if not new_perm %}aria-disabled="true" title="{% trans %}Permissions required{% endtrans %}"{% endif %}>
           {% trans %}Create{% endtrans %}
-        {{ macro.display_name(model_name)}}</a>
+        {{ macro.display_name(model_name) }}</a>
       {% endif %}
     </div>
   </div>
@@ -45,5 +45,5 @@
   {% set download_filename = _('export_') + macro.display_name(model_name)|lower %}
   {% set buttons = buttons + [{'text': _('Download'), 'extend': 'excel', 'exportOptions': {'columns': ':visible'}, 'className': 'udb-btn-download', 'title': download_filename }] %}
   {# Show default table #}
-  {{ _table.table(data="data.json", columns=table_columns, buttons=buttons)}}
+  {{ _table.table(data="data.json", columns=table_columns, buttons=buttons) }}
 {% endblock body %}

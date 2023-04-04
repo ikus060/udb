@@ -19,10 +19,10 @@
           {% if values[1] is not string and values[1] is sequence %}
             {% for added in values[1] %}
               <br />
-              {{ show_value(added)}}
+              {{ show_value(added) }}
             {% endfor %}
           {% else %}
-            {{ show_value(values[1])}}
+            {{ show_value(values[1]) }}
           {% endif %}
         </li>
       {%- endfor %}
@@ -43,7 +43,7 @@
               {% trans %}Added:{% endtrans %} {{ show_value(added) }}
             {% endfor %}
           {% else %}
-            {{ show_value(values[0])}} → {{ show_value(values[1])}}
+            {{ show_value(values[0]) }} → {{ show_value(values[1]) }}
           {% endif %}
         </li>
       {% endfor %}

@@ -17,7 +17,7 @@
       <button class="btn btn-outline-primary"
               type="button"
               title="{% trans %}Add row{% endtrans %}"
-              onclick="$(this).parent().parent().append('{{ html_widget.__str__()|replace('\n','')}}')">
+              onclick="$(this).parent().parent().append('{{ html_widget.__str__()|replace('\n','') }}')">
         <i class="bi bi-plus" aria-hidden="true"></i>
       </button>
     {% else %}
