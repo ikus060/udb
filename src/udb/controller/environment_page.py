@@ -56,8 +56,6 @@ class EnvironmentForm(CherryForm):
             "placeholder": _('Enter command lines used to deploy in this environment.'),
             "rows": "15",
         },
-        description=_("Your shell script can use some of the predefined environment variables: %s.")
-        % "UDB_USERID, UDB_USERNAME, UDB_DEPLOYMENT_ID, UDB_DEPLOYMENT_TOKEN, UDB_DEPLOYMENT_AUTH, UDB_DEPLOYMENT_MODEL_NAME, UDB_DEPLOYMENT_DATA_URL",
     )
     notes = TextAreaField(
         _('Notes'),
@@ -81,6 +79,10 @@ class EnvironmentForm(CherryForm):
             ('dnsrecord', gettext('DNS Records')),
             ('dhcprecord', gettext('DHCP Reservation')),
         ]
+        self.script.description = (
+            _("Your shell script can use some of the predefined environment variables: %s.")
+            % "UDB_USERID, UDB_USERNAME, UDB_DEPLOYMENT_ID, UDB_DEPLOYMENT_TOKEN, UDB_DEPLOYMENT_AUTH, UDB_DEPLOYMENT_MODEL_NAME, UDB_DEPLOYMENT_DATA_URL"
+        )
 
 
 class DeployForm(CherryForm):

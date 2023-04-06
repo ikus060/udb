@@ -4,7 +4,7 @@
 {% macro show_message(message) %}
   <small>{% trans %}By {% endtrans %} {{ message.author_name }} •
     <time datetime="{{ message.date }}">
-      {{ message.date.astimezone().strftime('%c %Z') }}
+      {{ message.date|format_datetime }}
     </time>
   </small>
   {# Message Comment #}

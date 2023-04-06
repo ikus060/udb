@@ -93,6 +93,7 @@ class WebCase(BaseClass):
         # Delete selenium download
         if getattr(self, '_selenium_download_dir', False):
             shutil.rmtree(self._selenium_download_dir)
+            self._selenium_download_dir = None
         super().tearDown()
 
     def add_records(self):
