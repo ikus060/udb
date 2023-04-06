@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from parameterized import parameterized
 from selenium.webdriver.common.keys import Keys
 
 from udb.controller import url_for
@@ -161,6 +162,37 @@ class SubnetTest(WebCase, CommonTest):
         self.assertStatus(200)
         self.assertInBody('examples.com')
         self.assertInBody('foo.com [deleted]')
+
+    @parameterized.expand(
+        [
+            ('minus', -1, False),
+            ('zero', 0, True),
+            ('max', 2147483647, True),
+            ('overlimit', 2147483648, False),
+        ]
+    )
+    def test_edit_l3vni_l2vni_vlan(self, unused, value, expect_succes):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add().commit()
+        # When updating l3vni, l2vni and vlan to 0
+        self.getPage(
+            url_for(self.base_url, obj.id, 'edit'),
+            method='POST',
+            body={'l3vni': str(value), 'l2vni': str(value), 'vlan': str(value)},
+        )
+        if expect_succes:
+            # Then user is redirected
+            self.assertStatus(303)
+            # Then object is updated
+            obj.expire()
+            self.assertEqual(value, obj.l3vni)
+            self.assertEqual(value, obj.l2vni)
+            self.assertEqual(value, obj.vlan)
+        else:
+            self.assertStatus(200)
+            self.assertInBody('L3VNI must be at least 0.')
+            self.assertInBody('L2VNI must be at least 0.')
+            self.assertInBody('VLAN must be at least 0.')
 
     def test_new_duplicate(self):
         # Given a database with a record
