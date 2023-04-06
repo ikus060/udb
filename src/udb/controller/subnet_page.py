@@ -72,7 +72,7 @@ class SubnetForm(CherryForm):
     )
     l3vni = IntegerField(
         _('L3VNI'),
-        validators=[Optional(), NumberRange(min=1, max=2147483647, message=_('L3VNI must be at least %(min)s.'))],
+        validators=[Optional(), NumberRange(min=0, max=2147483647, message=_('L3VNI must be at least %(min)s.'))],
         render_kw={
             'width': '1/3',
             "pattern": "\\d+",
@@ -81,7 +81,7 @@ class SubnetForm(CherryForm):
     )
     l2vni = IntegerField(
         _('L2VNI'),
-        validators=[Optional(), NumberRange(min=1, max=2147483647, message=_('L2VNI must be at least %(min)s.'))],
+        validators=[Optional(), NumberRange(min=0, max=2147483647, message=_('L2VNI must be at least %(min)s.'))],
         render_kw={
             'width': '1/3',
             "pattern": "\\d+",
@@ -90,7 +90,7 @@ class SubnetForm(CherryForm):
     )
     vlan = IntegerField(
         _('VLAN'),
-        validators=[Optional(), NumberRange(min=1, max=2147483647, message=_('VLAN must be at least %(min)s.'))],
+        validators=[Optional(), NumberRange(min=0, max=2147483647, message=_('VLAN must be at least %(min)s.'))],
         render_kw={
             'width': '1/3',
             "pattern": "\\d+",

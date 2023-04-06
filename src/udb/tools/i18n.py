@@ -95,6 +95,7 @@ import threading
 from contextlib import contextmanager
 
 import cherrypy
+from babel import dates
 from babel.core import Locale, UnknownLocaleError
 from babel.support import LazyProxy, NullTranslations, Translations
 
@@ -102,11 +103,6 @@ from babel.support import LazyProxy, NullTranslations, Translations
 _languages = {}
 
 _override = threading.local()
-
-
-class _LazyProxy(LazyProxy):
-    def __repr__(self) -> str:
-        return 'LazyProxy("%s")' % self.value
 
 
 @contextmanager
@@ -163,7 +159,7 @@ def _search_translation(preferred_langs, dirname, domain):
                     trans.add_fallback(t)
                 else:
                     trans = t
-        except (ValueError, UnknownLocaleError):
+        except (TypeError, ValueError, UnknownLocaleError):
             continue
         # If the translation was found, exit loop
         if isinstance(trans, Translations):
@@ -185,7 +181,7 @@ def get_translation():
     # When override is in use. Let use it.
     #
     if getattr(_override, 'lang', False):
-        default = cherrypy.config.get('tools.i18n.default', 'en')
+        default = cherrypy.config.get('tools.i18n.default')
         mo_dir = cherrypy.config.get('tools.i18n.mo_dir')
         domain = cherrypy.config.get('tools.i18n.domain')
         return _search_translation([_override.lang, default], mo_dir, domain)
@@ -207,7 +203,7 @@ def get_translation():
     #
     # When we are not in a request, get language from default server value.
     #
-    default = cherrypy.config.get('tools.i18n.default', 'en')
+    default = cherrypy.config.get('tools.i18n.default')
     mo_dir = cherrypy.config.get('tools.i18n.mo_dir')
     domain = cherrypy.config.get('tools.i18n.domain')
     return _search_translation(default, mo_dir, domain)
@@ -228,20 +224,6 @@ def list_available_locales():
 
 
 # Public translation functions
-def gettext(message):
-    """Standard translation function. You can use it in all your exposed
-    methods and everywhere where the response object is available.
-
-    :parameters:
-        message : Unicode
-            The message to translate.
-
-    :returns: The translated message.
-    :rtype: Unicode
-    """
-    return get_translation().gettext(message)
-
-
 def ugettext(message):
     """Standard translation function. You can use it in all your exposed
     methods and everywhere where the response object is available.
@@ -256,22 +238,7 @@ def ugettext(message):
     return get_translation().ugettext(message)
 
 
-def ngettext(singular, plural, num):
-    """Like ugettext, but considers plural forms.
-
-    :parameters:
-        singular : Unicode
-            The message to translate in singular form.
-        plural : Unicode
-            The message to translate in plural form.
-        num : Integer
-            Number to apply the plural formula on. If num is 1 or no
-            translation is found, singular is returned.
-
-    :returns: The translated message as singular or plural.
-    :rtype: Unicode
-    """
-    return get_translation().ngettext(singular, plural, num)
+gettext = ugettext
 
 
 def ungettext(singular, plural, num):
@@ -292,6 +259,9 @@ def ungettext(singular, plural, num):
     return get_translation().ungettext(singular, plural, num)
 
 
+ngettext = ungettext
+
+
 def gettext_lazy(message):
     """Like ugettext, but lazy.
 
@@ -302,14 +272,21 @@ def gettext_lazy(message):
     def func():
         return get_translation().ugettext(message)
 
-    return _LazyProxy(func, enable_cache=False)
+    return LazyProxy(func, enable_cache=False)
+
+
+def format_datetime(datetime=None, format='medium'):
+    """
+    Wraper arround babel format_datetime to provide a default locale.
+    """
+    return dates.format_datetime(datetime=datetime, format=format, locale=get_translation().locale)
 
 
 def _load_default_language(mo_dir, domain, default, **kwargs):
     """
     Initialize the language using the default value from the configuration.
     """
-    cherrypy.request.preferred_lang = [default or 'en']
+    cherrypy.request.preferred_lang = [default]
     cherrypy.request._i18n_mo_dir = mo_dir
     cherrypy.request._i18n_domain = domain
     cherrypy.request._i18n_func = kwargs.get('func', False)

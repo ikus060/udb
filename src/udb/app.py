@@ -53,7 +53,7 @@ from udb.controller.subnet_page import SubnetPage
 from udb.controller.user_page import UserPage
 from udb.controller.vrf_page import VrfPage
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User, Vrf
-from udb.tools.i18n import gettext, ngettext
+from udb.tools.i18n import format_datetime, gettext, ngettext
 
 # Define cherrypy development environment
 cherrypy.config.environments['development'] = {
@@ -80,6 +80,7 @@ env = jinja2.Environment(
 )
 env.install_gettext_callables(gettext, ngettext, newstyle=True)
 env.globals['url_for'] = url_for
+env.filters['format_datetime'] = format_datetime
 
 
 def _error_page(**kwargs):
