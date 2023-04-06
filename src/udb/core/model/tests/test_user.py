@@ -35,9 +35,8 @@ class UserTest(WebCase):
         # Given a database with a User
         User(username='user1', email='test@example.com').add().commit()
         # When trying to add another user with the same email
-        # Then an exception is raised
-        with self.assertRaises(IntegrityError):
-            User(username='user2', email='test@example.com').add().commit()
+        # Then user is created without error.
+        User(username='user2', email='test@example.com').add().commit()
 
     def test_duplicate_email_empty(self):
         # Given a database with a User

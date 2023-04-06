@@ -17,6 +17,7 @@
 import cherrypy
 from sqlalchemy import event
 from sqlalchemy.sql import ddl
+from sqlalchemy.sql.schema import Index
 
 from . import _group_concat  # noqa
 from ._deployment import Deployment, Environment  # noqa
@@ -32,7 +33,6 @@ from ._user import User  # noqa
 from ._vrf import Vrf  # noqa
 
 from ._search import Search  # noqa # isort: skip
-
 
 Base = cherrypy.tools.db.get_base()
 
@@ -102,3 +102,5 @@ def db_after_create(target, connection, **kw):
     add_column(Message.__table__.c.search_vector)
     add_column(Subnet.__table__.c.search_vector)
     add_column(Vrf.__table__.c.search_vector)
+    # Delete unique index on user's email
+    connection.engine.execute(ddl.DropIndex(Index('user_email_key'), if_exists=True))

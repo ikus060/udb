@@ -123,13 +123,8 @@ class LoginPlugin(SimplePlugin):
             userobj.fullname = fullname
             userobj.add().commit()
         if email and userobj.email != email:
-            try:
-                userobj.email = email
-                userobj.add().commit()
-            except Exception:
-                # Email as a unique constrains what might be raised in case multiple users as the same mail.
-                logger.warning('duplicate email address: %s' % email, exc_info=1)
-                userobj.rollback()
+            userobj.email = email
+            userobj.add().commit()
 
 
 cherrypy.login = LoginPlugin(cherrypy.engine)

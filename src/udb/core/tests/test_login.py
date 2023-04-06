@@ -251,8 +251,8 @@ class LoginWithLdap(LdapLoginAbstractTest):
         self.assertTrue(login[0])
         # Then user inherit fullname from LDAP Server
         self.assertEqual('MyUsername', login[0].fullname)
-        # Then user email address is undefined
-        self.assertEqual('', login[0].email)
+        # Then user email address is assigned
+        self.assertEqual('myemail@example.com', login[0].email)
 
     def test_login_invalid(self):
         # Given an LDAP server with a user
