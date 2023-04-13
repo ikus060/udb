@@ -1,0 +1,44 @@
+{% macro placeholder(name) -%}
+  {{ '{' + '{' + name + '}' + '}' }}
+{%- endmacro %}
+{% macro typeahead() %}
+  {%set source = {
+  'model': {
+  'ajax': {
+  'url': url_for('search', 'typeahead.json'),
+  'path': 'data',
+  'data': {
+  'q': placeholder('query')
+  }
+  }
+  }
+  }%}
+  <form method="GET" action="{{ url_for('search') }}">
+    <div class="typeahead__container">
+      <div class="typeahead__field">
+        <div class="typeahead__query">
+          <input class="js-typeahead"
+                 name="q"
+                 autocomplete="off"
+                 data-debug="true"
+                 data-order="asc"
+                 data-dynamic="true"
+                 data-hint="true"
+                 data-group="model_name"
+                 data-min-length="2"
+                 data-max-item="0"
+                 data-max-item-per-group="5"
+                 data-display='{{ ["summary"]|tojson }}'
+                 data-href="{{ placeholder('url') }}"
+                 data-cancel-button="false"
+                 data-source='{{ source|tojson }}'>
+        </div>
+        <div class="typeahead__button">
+          <button type="submit">
+            <i class="fbi bi-search" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+{% endmacro %}

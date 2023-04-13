@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
-from sqlalchemy import and_, literal, select, union
+from sqlalchemy import and_, literal, select, union_all
 from sqlalchemy.orm import foreign, relationship, remote
 
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Environment, Ip, Mac, Message, Subnet, User, Vrf
@@ -23,7 +23,7 @@ from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Environment, Ip, Mac,
 Base = cherrypy.tools.db.get_base()
 
 
-search_query = union(
+search_query = union_all(
     *[
         select(
             literal(model.__name__.lower()).label('model_name'),

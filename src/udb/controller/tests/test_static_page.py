@@ -49,6 +49,8 @@ class StaticTest(WebCase):
             '/static/datatables/js/dataTables.responsive.min.js',
             '/static/datatables/js/jquery.dataTables.min.js',
             '/static/datatables/js/jszip.min.js',
+            '/static/typeahead/jquery.typeahead.min.css',
+            '/static/typeahead/jquery.typeahead.min.js',
             '/static/favicon.svg',
             '/static/jquery/jquery.min.js',
             '/static/main.css',

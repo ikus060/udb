@@ -73,7 +73,7 @@ def _render_websearch_of_sqlite(element, compiler, **kw):
     left, right = element.clauses
     percent = compiler._like_percent_literal
     right = percent.__add__(right).__add__(percent)
-    return "lower(%s) LIKE lower(%s)" % (
+    return "%s LIKE lower(%s)" % (
         compiler.process(left, **kw),
         compiler.process(right, **kw),
     )

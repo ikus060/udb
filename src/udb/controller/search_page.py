@@ -133,3 +133,25 @@ class SearchPage:
                 for obj in data
             ],
         }
+
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def typeahead_json(self, q=None, **kwargs):
+        # For typeahead we need less data
+        # Build query
+        query = Search.query.with_entities(Search.model_id, Search.summary, Search.model_name).filter(
+            Search.summary.contains(q)
+        )
+        data = [
+            {
+                'model_id': obj.model_id,
+                'model_name': obj.model_name,
+                'summary': obj.summary,
+                'url': url_for(obj, 'edit', relative='server'),
+            }
+            for obj in query.all()
+        ]
+        return {
+            'status': 200,
+            'data': data,
+        }

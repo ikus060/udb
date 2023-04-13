@@ -114,3 +114,17 @@ class TestSearchPage(WebCase):
             # Then content is filtered and only DNS Zone is shown
             self.assertTrue(driver.find_element('xpath', "//*[contains(text(), 'bfh.ch')]").is_displayed())
             self.assertFalse(driver.find_element('xpath', "//*[contains(text(), 'DMZ')]").is_displayed())
+
+    def test_typeahead_selenium(self):
+        # Given a database with records
+        with self.selenium() as driver:
+            # When typing in search bar
+            driver.implicitly_wait(10)
+            driver.get(url_for('profile'))
+            search_bar = driver.find_element('css selector', 'input.js-typeahead')
+            search_bar.click()
+            search_bar.send_keys('DMZ')
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
+            # Then typeahead displays suggestions
+            driver.find_element('xpath', "//*[contains(text(), 'DMZ')]")
