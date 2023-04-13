@@ -40,6 +40,13 @@
             crossorigin="anonymous"></script>
     <script src="{{ url_for('static/datatables/js/dataTables.responsive.min.js', v=cache_invalidate) }}"
             crossorigin="anonymous"></script>
+    {# Typeahead #}
+    <link rel="stylesheet"
+          type="text/css"
+          href="{{ url_for('static/typeahead/jquery.typeahead.min.css', v=cache_invalidate) }}"
+          crossorigin="anonymous"/>
+    <script src="{{ url_for('static/typeahead/jquery.typeahead.min.js', v=cache_invalidate) }}"
+            crossorigin="anonymous"></script>
     {# Custom #}
     <script src="{{url_for('static/main.js', v=cache_invalidate)}}"></script>
     <link rel="stylesheet"

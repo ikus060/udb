@@ -78,7 +78,7 @@ class CheckLinkTest(WebCase):
             done.add(page)
 
             # Collect all link in the page.
-            for unused, newpage in re.findall("(href|src)=\"([^\"]+)\"", self.body.decode('utf8', 'replace')):
+            for unused, newpage in re.findall("[\\s\\t](href|src)=\"([^\"]+)\"", self.body.decode('utf8', 'replace')):
                 newpage = newpage.replace("&amp;", "&")
                 if newpage.startswith("?"):
                     newpage = re.sub("\\?.*", "", page) + newpage

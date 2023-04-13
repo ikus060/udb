@@ -121,7 +121,6 @@ jQuery(function () {
  */
 $.fn.dataTable.ext.buttons.filter = {
     text: 'Filter',
-    className: 'udb-btn-filter',
     action: function (e, dt, node, config) {
         if (node.hasClass('active')) {
             dt.column(config.column).search(config.search_off || '', config.regex);
@@ -383,12 +382,16 @@ jQuery(function () {
             }
         });
         let searchCols = columns.map(function (item, _index) {
-            if (item.search) {
-                return { "search": item.search, "regex": item.regex || False };
+            if (item.search !== undefined) {
+                return { "search": item.search, "regex": item.regex || false };
             }
             return null;
         });
         let dt = $(this).DataTable({
+            classes: {
+                sPaging: 'd-flex justify-content-center ',
+                sPageButton: 'btn btn-outline-primary ms-1 me-1',
+            },
             columns: columns,
             searchCols: searchCols,
             drawCallback: function (_settings) {
@@ -417,7 +420,6 @@ jQuery(function () {
                 $("div.dataTables_filter input").focus();
             },
             processing: true,
-            stateSave: true,
             deferRender: true,
         });
         // Update each buttons status
@@ -431,5 +433,15 @@ jQuery(function () {
                 }
             });
         });
+    });
+});
+
+/**
+ * Typeahead configured using data-* attributes
+ */
+jQuery(function () {
+    $('.js-typeahead').each(function (_idx) {
+        const cfg = $(this).data();
+        $(this).typeahead(cfg);
     });
 });

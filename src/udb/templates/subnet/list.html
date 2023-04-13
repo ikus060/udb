@@ -16,4 +16,4 @@
 {'name':'rir_status','title': form.rir_status.label.text|string, 'orderable':True, 'className':'export'},
 {'name':'dnszone_names', 'title':form.dnszones.label.text|string, 'orderable':False, 'className':'export'}] %}
 {# Define customer filter for RIR Status #}
-{% set extra_buttons = [{'text': _('RIR Managed'), 'extend': 'filter', 'column': 'rir_status:name', 'search':'.+', 'regex': True }] %}
+{% set extra_buttons = [{'text': _('RIR Managed'), 'extend': 'filter', 'column': 'rir_status:name', 'search':'.+', 'regex': True, 'className': 'udb-btn-filter' }] %}

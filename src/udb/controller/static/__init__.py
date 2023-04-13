@@ -42,6 +42,10 @@ class Static:
     def jquery(*args, **kwargs):
         raise cherrypy.HTTPError(400)
 
+    @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'typeahead'))
+    def typeahead(*args, **kwargs):
+        raise cherrypy.HTTPError(400)
+
     @cherrypy.tools.staticfile(
         filename=pkg_resources.resource_filename(__name__, 'taylor-vick-M5tzZtFCOfs-unsplash.jpg')
     )
