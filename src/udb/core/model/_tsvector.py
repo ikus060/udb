@@ -50,7 +50,13 @@ def _render_to_tsvector_of_sqlite(element, compiler, **kw):
 
 class websearch(GenericFunction):
     name = "websearch"
-    inherit_cache = True
+    inherit_cache = False
+    # True to look in database with wildcard instead of exact matches
+    typeahead = False
+
+    def __init__(self, *args, **kwargs):
+        self.typeahead = kwargs.pop('typeahead', False)
+        super().__init__(*args, **kwargs)
 
 
 @compiles(websearch, "postgresql")
@@ -59,6 +65,12 @@ def _render_websearch_of_pg(element, compiler, **kw):
     On Postgresql, websearch() should use full text search functions `websearch_to_tsquery()`.
     """
     left, right = element.clauses
+    if element.typeahead:
+        # Append wildcard lookup for last word only.
+        return "%s @@ to_tsquery('simple', websearch_to_tsquery('simple', replace(%s, '.', ' '))::text || ':*')" % (
+            compiler.process(left, **kw),
+            compiler.process(right, **kw),
+        )
     return "%s @@ websearch_to_tsquery('simple', replace(%s, '.', ' '))" % (
         compiler.process(left, **kw),
         compiler.process(right, **kw),
@@ -90,8 +102,8 @@ class TSVectorType(TypeDecorator):
     cache_ok = True
 
     class comparator_factory(TSVECTOR.Comparator):
-        def websearch(self, other):
-            return func.websearch(self, other)
+        def websearch(self, other, **kwargs):
+            return func.websearch(self, other, **kwargs)
 
         def match(self, other):
             raise NotImplementedError('use websearch() instead')
