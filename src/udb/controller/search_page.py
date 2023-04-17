@@ -137,10 +137,9 @@ class SearchPage:
     @cherrypy.expose()
     @cherrypy.tools.json_out()
     def typeahead_json(self, q=None, **kwargs):
-        # For typeahead we need less data
-        # Build query
+        # For typeahead search, will search word matching prefix and only display summary.
         query = Search.query.with_entities(Search.model_id, Search.summary, Search.model_name).filter(
-            Search.summary.contains(q)
+            Search.search_vector.websearch(q, typeahead=True)
         )
         data = [
             {
