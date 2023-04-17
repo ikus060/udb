@@ -51,7 +51,7 @@ class SubnetRange(Base):
     version = deferred(Column(SmallInteger, Computed(range.family(), persisted=True), index=True))
     start_ip = deferred(Column(InetType, Computed(func.inet(range.host()), persisted=True), index=True))
     end_ip = deferred(
-        Column(InetType, Computed(func.inet(func.host(func.broadcast(range), persisted=True))), index=True)
+        Column(InetType, Computed(func.inet(func.host(func.broadcast(range))), persisted=True), index=True)
     )
 
     def __init__(self, range=None):
