@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# FIXME Keeping this `setup.py` for babel integration
+# Depending on https://github.com/python-babel/babel/issues/777
 
 import setuptools
 

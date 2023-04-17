@@ -83,9 +83,9 @@ bdist:deb:
     set -e
     apt update
     apt -y --no-install-recommends install devscripts
-    export VERSION=$(curl -L https://gitlab.com/ikus-soft/maven-scm-version/-/raw/master/version.sh 2>/dev/null | bash -s DEB)
     apt build-dep -y .
-    dch -v "$VERSION" "automated build"
+    export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_UDB=$(python3 -m setuptools_scm)
+    dch -v "$SETUPTOOLS_SCM_PRETEND_VERSION_FOR_UDB" "automated build"
     dpkg-buildpackage -b
     mkdir -p ./dist/$DIST
     mv ../udb*.deb ./dist/$DIST/
@@ -113,7 +113,7 @@ test-bdist:deb:
       - DIST: [bookworm]
   script:
     - apt update && apt install -y ./dist/$DIST/udb*.deb
-    - udb --version
+    - udb --version | grep -v '0.0.0'
     - (/usr/bin/udb --database-uri sqlite:///data.db &)
     - sleep 5
     - curl http://localhost:8080
