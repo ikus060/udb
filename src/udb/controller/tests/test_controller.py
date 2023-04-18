@@ -66,13 +66,13 @@ class TestApp(WebCase):
         self.getPage('/dashboard/', headers=[('Host', 'www.example.test')])
         self.assertInBody('http://www.example.test/static/main.css')
         self.assertInBody('http://www.example.test/static/main.js')
-        self.assertInBody('http://www.example.test/static/favicon.svg')
+        self.assertInBody('http://www.example.test/static/favicon')
 
     def test_with_https_proxy(self):
         self.getPage('/dashboard/', headers=[('Host', 'www.example.test'), ('X-Forwarded-Proto', 'https')])
         self.assertInBody('https://www.example.test/static/main.css')
         self.assertInBody('https://www.example.test/static/main.js')
-        self.assertInBody('https://www.example.test/static/favicon.svg')
+        self.assertInBody('https://www.example.test/static/favicon')
 
     def test_with_forwarded_host_ignored(self):
         self.getPage('/dashboard/', headers=[('X-Forwarded-Host', 'https://www.example.test')])

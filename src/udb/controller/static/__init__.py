@@ -34,10 +34,6 @@ class Static:
     def datatables(*args, **kwargs):
         raise cherrypy.HTTPError(400)
 
-    @cherrypy.tools.staticfile(filename=pkg_resources.resource_filename(__name__, 'udb_16.svg'))
-    def favicon_svg(self):
-        raise cherrypy.HTTPError(400)
-
     @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'jquery'))
     def jquery(*args, **kwargs):
         raise cherrypy.HTTPError(400)
