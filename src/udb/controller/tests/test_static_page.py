@@ -32,10 +32,18 @@ class StaticTest(WebCase):
     def test_favicon_ico(self):
         # Given the application is started
         # When making a query to index page
-        self.getPage('/static/favicon.svg')
+        self.getPage('/static/favicon')
         # Then an html page is returned
         self.assertStatus(200)
         self.assertHeaderItemValue('Content-Type', 'image/svg+xml')
+
+    def test_header_logo(self):
+        # Given the application is started
+        # When making a query to index page
+        self.getPage('/static/header_logo')
+        # Then an html page is returned
+        self.assertStatus(200)
+        self.assertHeaderItemValue('Content-Type', 'image/png')
 
     @parameterized.expand(
         [
@@ -51,7 +59,8 @@ class StaticTest(WebCase):
             '/static/datatables/js/jszip.min.js',
             '/static/typeahead/jquery.typeahead.min.css',
             '/static/typeahead/jquery.typeahead.min.js',
-            '/static/favicon.svg',
+            '/static/favicon',
+            '/static/header_logo',
             '/static/jquery/jquery.min.js',
             '/static/main.css',
             '/static/main.js',

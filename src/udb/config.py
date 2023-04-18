@@ -417,6 +417,18 @@ def parse_args(args=None, config_file_contents=None):
         default=None,
     )
 
+    parser.add_argument(
+        '--favicon',
+        dest='favicon',
+        help='location of an icon to be used as a favicon displayed in web browser.',
+    )
+
+    parser.add_argument(
+        '--header-logo',
+        dest='header_logo',
+        help='location of an image (preferably a .png) to be used as a replacement for the UDB header logo displayed in navigation bar.',
+    )
+
     # Branding
     parser.add_argument(
         '--header-name',

@@ -23,7 +23,7 @@ from udb.controller.tests import WebCase
 from udb.core.model import DnsRecord, DnsZone, Follower, Message, Subnet, User, Vrf
 
 
-class NotificationPluginTest(WebCase):
+class AbstractNotificationPluginTest(WebCase):
     def setUp(self):
         cherrypy.config.update({'notification.catch_all_email': None})
         self.listener = mock.MagicMock()
@@ -35,6 +35,8 @@ class NotificationPluginTest(WebCase):
         cherrypy.engine.unsubscribe("send_mail", self.listener.send_mail)
         return super().tearDown()
 
+
+class NotificationPluginTest(AbstractNotificationPluginTest):
     @parameterized.expand(
         [
             ('null', None),
@@ -295,3 +297,23 @@ class NotificationPluginTest(WebCase):
             subject='VRF default created by nobody',
             message=mock.ANY,
         )
+
+
+class ExternalUrlNotificationPluginTest(AbstractNotificationPluginTest):
+
+    default_config = {'debug': False, 'external-url': 'https://test.examples.com'}
+
+    def test_with_external_url(self):
+        # Given a catchall notification email in configuration
+        cherrypy.config.update({'notification.catch_all_email': 'my@email.com'})
+        # When creating a new record
+        DnsZone(name='my.zone.com').add().commit()
+        # Then a notification is sent to catchall email
+        self.wait_for_tasks()
+        self.listener.send_mail.assert_called_once_with(
+            to='my@email.com',
+            subject='DNS Zone my.zone.com created by nobody',
+            message=mock.ANY,
+        )
+        # Then email contains URL to header logo with external-url value
+        self.assertIn('https://test.examples.com/static/header_logo', self.listener.send_mail.call_args[1]['message'])

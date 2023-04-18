@@ -251,6 +251,17 @@ class Root(object):
         self.api.vrf = CommonApi(Vrf)
         self.api.deployment = DeploymentApi()
         self.api.environment = EnvironmentApi()
+        # Configure logos
+        self.static.header_logo = cherrypy.tools.staticfile.handler(
+            filename=cfg.header_logo
+            if cfg.header_logo
+            else pkg_resources.resource_filename('udb.controller.static', 'udb-logo.png')
+        )
+        self.static.favicon = cherrypy.tools.staticfile.handler(
+            filename=cfg.favicon
+            if cfg.favicon
+            else pkg_resources.resource_filename('udb.controller.static', 'udb_16.svg')
+        )
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='index.html')

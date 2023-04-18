@@ -17,11 +17,11 @@
       </button>
       {# Brand #}
       <a class="navbar-brand" href="{{ url_for('') }}">
-        <img src="{{ url_for('static', 'favicon.svg', v=cache_invalidate) }}"
+        <img src="{{ url_for('static', 'header_logo', v=cache_invalidate) }}"
              class="d-inline-block align-text-top"
-             height="24"
-             alt="logo"/>
-        {{ header_name }}
+             alt="{{ header_name }}"
+             title="{{ header_name }}"
+             style="max-width: 217px; max-height: 64px;"/>
       </a>
     </div>
     <div id="sidebarMenu"
