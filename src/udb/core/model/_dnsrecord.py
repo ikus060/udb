@@ -34,7 +34,7 @@ from ._dnszone import DnsZone
 from ._follower import FollowerMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
-from ._search_vector import SearchableMixing
+from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._subnet import Subnet, SubnetRange
 
@@ -154,7 +154,6 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
 
     @classmethod
     def _search_string(cls):
-        # Replace dot(.) by space for PostgreSQL vector search.
         return cls.name + " " + cls.type + " " + cls.value
 
     def _validate(self):

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 
 from udb.controller.tests import WebCase
 from udb.core.model import DnsRecord, DnsZone, Ip, Message, Search, Subnet, Vrf
@@ -34,7 +34,7 @@ class SearchTest(WebCase):
         # Given a database with records
         self.add_records()
         # When searching a term present in summary
-        obj_list = Search.query.filter(Search.search_vector.websearch('DMZ')).order_by(Search.summary).all()
+        obj_list = Search.query.filter(func.udb_websearch(Search.search_string, 'DMZ')).order_by(Search.summary).all()
         # Then records are returned.
         self.assertEqual(2, len(obj_list))
         self.assertEqual(['DMZ', 'bfh.ch'], sorted([obj.summary for obj in obj_list]))
@@ -46,8 +46,8 @@ class SearchTest(WebCase):
         obj_list = (
             Search.query.filter(
                 or_(
-                    Search.search_vector.websearch('message'),
-                    Search.messages.any(Message.search_vector.websearch('message')),
+                    func.udb_websearch(Search.search_string, 'message'),
+                    Search.messages.any(func.udb_websearch(Message.search_string, 'message')),
                 )
             )
             .order_by(Search.summary)
@@ -67,7 +67,7 @@ class SearchTest(WebCase):
         # When searching the first CN
         result = (
             Search.query.filter(
-                Search.search_vector.websearch('lumos'),
+                func.udb_websearch(Search.search_string, 'lumos'),
             )
             .order_by(Search.summary)
             .all()
@@ -85,7 +85,7 @@ class SearchTest(WebCase):
         # When searching for partial IP Address 192.168
         result = (
             Search.query.filter(
-                Search.search_vector.websearch('192.168'),
+                func.udb_websearch(Search.search_string, '192.168'),
             )
             .order_by(Search.summary)
             .all()
@@ -106,7 +106,7 @@ class SearchTest(WebCase):
         # When searching for partial IP Address 2a07:6b43:115
         result = (
             Search.query.filter(
-                Search.search_vector.websearch('2a07:6b43:115'),
+                func.udb_websearch(Search.search_string, '2a07:6b43:115'),
             )
             .order_by(Search.summary)
             .all()

@@ -36,7 +36,7 @@ from ._dhcprecord import DhcpRecord
 from ._dnsrecord import DnsRecord
 from ._json import JsonMixin
 from ._message import MessageMixin
-from ._search_vector import SearchableMixing
+from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._subnet import Subnet, SubnetRange
 from ._vrf import Vrf

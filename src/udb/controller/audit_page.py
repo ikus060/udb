@@ -19,7 +19,7 @@
 from collections import namedtuple
 
 import cherrypy
-from sqlalchemy import and_, desc
+from sqlalchemy import and_, desc, func
 
 from udb.controller import url_for, validate_int
 from udb.core.model import Message, Search, User
@@ -89,9 +89,7 @@ class AuditPage:
         # Apply filtering
         search = kwargs.get('search[value]', '')
         if search:
-            query = query.filter(
-                Search.search_vector.websearch(search),
-            )
+            query = query.filter(func.udb_websearch(Search.search_string, search))
         filtered = query.count()
         data = query.offset(start).limit(length).all()
 

@@ -29,7 +29,7 @@ import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext as _
 
 from ._json import JsonMixin
-from ._search_vector import SearchableMixing
+from ._search_string import SearchableMixing
 from ._timestamp import Timestamp
 
 Base = cherrypy.tools.db.get_base()

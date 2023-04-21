@@ -33,7 +33,7 @@ from ._dnsrecord import DnsRecord
 from ._follower import FollowerMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
-from ._search_vector import SearchableMixing
+from ._search_string import SearchableMixing
 from ._subnet import Subnet, SubnetRange
 
 Base = cherrypy.tools.db.get_base()
