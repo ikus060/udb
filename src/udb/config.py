@@ -439,7 +439,7 @@ def parse_args(args=None, config_file_contents=None):
     parser.add_argument(
         '--footer-name',
         metavar='NAME',
-        default='IKUS Soft UDB',
+        default='UDB',
         help=_('Text displayed in the footer along "power by".'),
     )
     parser.add_argument(

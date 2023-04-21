@@ -23,6 +23,7 @@ import cherrypy
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.inspection import inspect
 
+import udb
 from udb.tools.i18n import gettext as _
 
 logger = logging.getLogger(__name__)
@@ -124,6 +125,7 @@ def template_processor(request):
         'get_flashed_messages': get_flashed_messages,
         'current_url': cherrypy.url(path=cherrypy.request.path_info),
         'cache_invalidate': _cache_invalidate,
+        'version': udb.__version__,
     }
     if hasattr(cherrypy.serving.request, 'login'):
         values['username'] = cherrypy.serving.request.login
