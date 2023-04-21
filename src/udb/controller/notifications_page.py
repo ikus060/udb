@@ -21,8 +21,7 @@ from sqlalchemy import and_
 from wtforms.fields import BooleanField
 
 from udb.controller import flash, handle_exception, url_for
-from udb.core import model
-from udb.core.model import Follower, Search
+from udb.core.model import Follower, Search, followable_model_name
 from udb.tools.i18n import gettext_lazy as _
 
 from .form import CherryForm
@@ -74,13 +73,7 @@ def create_notification_form(obj):
         pass
 
     # Dynamically, create a list of model that could be followed.
-    model_names = [
-        getattr(model, name).__tablename__
-        for name in dir(model)
-        if getattr(model, name, None)
-        if hasattr(getattr(model, name, None), 'followers')
-    ]
-    for model_name in model_names:
+    for model_name in followable_model_name:
         setattr(Form, model_name, BooleanField(label=model_name))
 
     return Form(obj)

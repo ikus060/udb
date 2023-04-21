@@ -55,7 +55,7 @@ class SearchTest(WebCase):
         )
         # Then records are returned.
         self.assertEqual(3, len(obj_list))
-        self.assertEqual(['DMZ', 'bfh.ch', 'foo.bfh.ch = 147.87.250.3(A)'], sorted([o.summary for o in obj_list]))
+        self.assertEqual(['DMZ', 'bfh.ch', 'foo.bfh.ch = 147.87.250.3 (A)'], sorted([o.summary for o in obj_list]))
 
     def test_search_domain_name(self):
         # Given a DNS Record
@@ -74,6 +74,21 @@ class SearchTest(WebCase):
         )
         # Then search content should contains our DNS Record
         self.assertIn((record.id, 'dnsrecord'), [(r.model_id, r.model_name) for r in result])
+
+    def test_search_subnet_ranges(self):
+        # Given a subnet with ranges.
+        vrf = Vrf(name='default').add()
+        subnet = Subnet(ranges=['192.168.1.0/24', '2001:db8:85a3::/64'], vrf=vrf).add().commit()
+        # When searching an ip address matching a ranges
+        result = (
+            Search.query.filter(
+                func.udb_websearch(Search.search_string, '192.168.1'),
+            )
+            .order_by(Search.summary)
+            .all()
+        )
+        # Then subnet is return.
+        self.assertIn((subnet.id, 'subnet'), [(r.model_id, r.model_name) for r in result])
 
     def test_search_ipv4_address(self):
         # Given a DNS Record creating an ip address

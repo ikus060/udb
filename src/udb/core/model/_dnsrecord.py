@@ -297,7 +297,7 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
 
     @hybrid_property
     def summary(self):
-        return self.name + " = " + self.value + "(" + self.type + ")"
+        return self.name + " = " + self.value + " (" + self.type + ")"
 
     @hybrid_property
     def hostname_value(self):
