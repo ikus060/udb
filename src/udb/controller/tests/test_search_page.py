@@ -19,6 +19,8 @@
 import time
 from unittest.mock import ANY
 
+from selenium.common.exceptions import NoSuchElementException
+
 from udb.controller import url_for
 from udb.controller.tests import WebCase
 
@@ -128,3 +130,17 @@ class TestSearchPage(WebCase):
             self.assertFalse(driver.get_log('browser'))
             # Then typeahead displays suggestions
             driver.find_element('xpath', "//*[contains(text(), 'DMZ')]")
+
+    def test_search_with_active_model_name_selenium(self):
+        # Given a database with records
+        # When making a query to the search page with default model_name selected
+        with self.selenium() as driver:
+            driver.implicitly_wait(10)
+            driver.get(url_for('search', q='147', subnet='1'))
+            # Then Subnet Tabs is selected
+            active_btn = driver.find_element('css selector', 'button.nav-link.active')
+            self.assertEqual("Subnet 3", active_btn.text)
+            # Then Matching DNS Record are not shown
+            driver.implicitly_wait(1)
+            with self.assertRaises(NoSuchElementException):
+                driver.find_element('xpath', "//*[contains(text(), 'bar.bfh.ch')]")

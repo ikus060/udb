@@ -1,19 +1,27 @@
-{% macro placeholder(name) -%}
+{% macro p(name) -%}
   {{ '{' + '{' + name + '}' + '}' }}
 {%- endmacro %}
 {% macro typeahead() %}
+  {% set url =  url_for('search')  %}
+  {# djlint:off #}
   {%set source = {
-  'model': {
-  'ajax': {
-  'url': url_for('search', 'typeahead.json'),
-  'path': 'data',
-  'data': {
-  'q': placeholder('query')
-  }
-  }
-  }
-  }%}
-  <form method="GET" action="{{ url_for('search') }}">
+    'model': {
+      'ajax': {
+        'url': url_for('search', 'typeahead.json'),
+        'path': 'data',
+        'data': {
+          'q': p('query')
+        }
+      }
+    }
+  } %}
+  {% set group_show_all = "<input class='btn btn-link btn-sm float-end p-0' type='submit' name='"|safe + p('model_name') +"'value='"|safe + _("Show all") + "'>"|safe %}
+  {% set group = {
+    'key':'model_name',
+    'template': p('model_name') + group_show_all
+  } %}
+  {# djlint:on #}
+  <form method="GET" action="{{ url }}">
     <div class="typeahead__container">
       <div class="typeahead__field">
         <div class="typeahead__query">
@@ -26,12 +34,12 @@
                  data-order="asc"
                  data-dynamic="true"
                  data-hint="true"
-                 data-group="model_name"
+                 data-group='{{ group|tojson }}'
                  data-min-length="2"
                  data-max-item="0"
                  data-max-item-per-group="5"
                  data-display='{{ ["summary"]|tojson }}'
-                 data-href="{{ placeholder('url') }}"
+                 data-href="{{ p('url') }}"
                  data-cancel-button="false"
                  data-source='{{ source|tojson }}'>
         </div>

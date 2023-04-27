@@ -49,6 +49,7 @@ class SearchPage:
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['search.html'])
     def index(self, q=None, **kwargs):
+        # Count items per model
         query = (
             Search.query.with_entities(Search.model_name, func.count(Search.model_id))
             .filter(
@@ -57,8 +58,15 @@ class SearchPage:
             .group_by(Search.model_name)
         )
         counts = {row[0]: row[1] for row in query.all()}
+        # Determine active tab
+        active = None
+        for model_name in counts.keys():
+            if model_name in kwargs:
+                active = model_name
+                break
         form = SearchForm()
         return {
+            'active': active,
             'form': form,
             'counts': counts,
         }
