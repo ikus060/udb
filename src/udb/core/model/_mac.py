@@ -30,7 +30,7 @@ from ._common import CommonMixin
 from ._follower import FollowerMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
-from ._search_vector import SearchableMixing
+from ._search_string import SearchableMixing
 
 Base = cherrypy.tools.db.get_base()
 

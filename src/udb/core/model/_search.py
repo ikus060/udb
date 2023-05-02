@@ -33,7 +33,7 @@ search_query = union_all(
             model.notes,
             model.owner_id,
             model.modified_at,
-            model.search_vector,
+            model.search_string,
         )
         for model in [DhcpRecord, DnsRecord, DnsZone, Subnet, Vrf, Ip, Mac, Environment]
     ]

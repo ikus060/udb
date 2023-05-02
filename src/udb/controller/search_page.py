@@ -49,16 +49,24 @@ class SearchPage:
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['search.html'])
     def index(self, q=None, **kwargs):
+        # Count items per model
         query = (
             Search.query.with_entities(Search.model_name, func.count(Search.model_id))
             .filter(
-                Search.search_vector.websearch(q),
+                func.udb_websearch(Search.search_string, q),
             )
             .group_by(Search.model_name)
         )
         counts = {row[0]: row[1] for row in query.all()}
+        # Determine active tab
+        active = None
+        for model_name in counts.keys():
+            if model_name in kwargs:
+                active = model_name
+                break
         form = SearchForm()
         return {
+            'active': active,
             'form': form,
             'counts': counts,
         }
@@ -89,7 +97,7 @@ class SearchPage:
 
         # Apply query search
         query = query.filter(
-            Search.search_vector.websearch(q),
+            func.udb_websearch(Search.search_string, q),
         )
 
         # Apply sorting - default sort by date
@@ -137,9 +145,10 @@ class SearchPage:
     @cherrypy.expose()
     @cherrypy.tools.json_out()
     def typeahead_json(self, q=None, **kwargs):
-        # For typeahead search, will search word matching prefix and only display summary.
+        # For typeahead search, only list enabled record.
         query = Search.query.with_entities(Search.model_id, Search.summary, Search.model_name).filter(
-            Search.search_vector.websearch(q, typeahead=True)
+            Search.status == 'enabled',
+            func.udb_websearch(Search.search_string, q),
         )
         data = [
             {

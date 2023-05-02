@@ -18,6 +18,7 @@
 from unittest import mock
 
 from parameterized import parameterized
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from udb.controller.tests import WebCase
@@ -218,11 +219,11 @@ class SubnetTest(WebCase):
         )
 
         # When searching for a term in notes
-        records = Subnet.query.filter(Subnet.search_vector.websearch('specific')).all()
+        records = Subnet.query.filter(func.udb_websearch(Subnet.search_string, 'specific')).all()
         # Then a single record is returned
         self.assertEqual(subnet, records[0])
 
         # When searching for a term in name
-        records = Subnet.query.filter(Subnet.search_vector.websearch('test')).all()
+        records = Subnet.query.filter(func.udb_websearch(Subnet.search_string, 'test')).all()
         # Then a single record is returned
         self.assertEqual(subnet, records[0])

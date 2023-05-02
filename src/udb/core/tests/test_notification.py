@@ -221,7 +221,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         # Then the follower get notify
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='DNS Record my.zone.com = 147.87.250.1(A) created by nobody',
+            subject='DNS Record my.zone.com = 147.87.250.1 (A) created by nobody',
             message=mock.ANY,
         )
 
@@ -239,7 +239,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         self.wait_for_tasks()
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='DNS Record my.zone.com = 147.87.250.1(A) created by nobody',
+            subject='DNS Record my.zone.com = 147.87.250.1 (A) created by nobody',
             message=mock.ANY,
         )
         self.listener.send_mail.reset_mock()
@@ -252,7 +252,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         # Then the follower get notify
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='DNS Record 1.250.87.147.in-addr.arpa = my.zone.com(PTR) created by nobody',
+            subject='DNS Record 1.250.87.147.in-addr.arpa = my.zone.com (PTR) created by nobody',
             message=mock.ANY,
         )
 

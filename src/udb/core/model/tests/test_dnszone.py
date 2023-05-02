@@ -14,10 +14,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import datetime
 from unittest import mock
 
+import cherrypy
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from udb.controller.tests import WebCase
@@ -213,10 +214,17 @@ class DnsZoneTest(WebCase):
         science = DnsZone(name='science.example.com', notes='testing').add()
         DnsZone(name='dmz.example.com', notes='Use for DMZ').add().commit()
         # When searching for a term in notes
-        records = DnsZone.query.filter(DnsZone.search_vector.websearch('main')).all()
+        records = DnsZone.query.filter(func.udb_websearch(DnsZone.search_string, 'main')).all()
         # Then a single record is returned
         self.assertEqual(main, records[0])
         # When searching for a term in name
-        records = DnsZone.query.filter(DnsZone.search_vector.websearch('science.example.com')).all()
+        records = DnsZone.query.filter(func.udb_websearch(DnsZone.search_string, 'science.example.com')).all()
         # Then a single record is returned
         self.assertEqual(science, records[0])
+
+        # When searching multiple word with wrong order
+        is_postgresql = 'postgresql' in cherrypy.config.get('tools.db.uri')
+        if is_postgresql:
+            records = DnsZone.query.filter(func.udb_websearch(DnsZone.search_string, 'exampl science co')).all()
+            # Then a single record is returned
+            self.assertEqual(science, records[0])

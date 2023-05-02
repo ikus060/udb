@@ -14,6 +14,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import inspect
+
 import cherrypy
 from sqlalchemy import event, text
 from sqlalchemy.sql import ddl
@@ -36,6 +38,11 @@ from ._search import Search  # noqa # isort: skip
 
 Base = cherrypy.tools.db.get_base()
 
+# Build a dynamic list of followable model
+followable_model_name = [
+    value.__tablename__ for key, value in locals().items() if inspect.isclass(value) and hasattr(value, 'followers')
+]
+
 
 @event.listens_for(Base.metadata, 'after_create')
 def db_after_create(target, connection, **kw):
@@ -43,9 +50,12 @@ def db_after_create(target, connection, **kw):
     Called on database creation to update database schema.
     """
 
-    # SQLAlchmey 1.4 Commit current transaction and open a new one.
-    if getattr(connection, '_transaction', None):
-        connection._transaction.commit()
+    def _commit():
+        # SQLAlchmey 1.4 Commit current transaction and open a new one.
+        if getattr(connection, '_transaction', None):
+            connection._transaction.commit()
+
+    _commit()
 
     with connection.engine.connect() as connection:
 
@@ -84,6 +94,7 @@ def db_after_create(target, connection, **kw):
 
         # Add Message.changes - if created, move data from body to changes.
         if add_column(Message.__table__.c.changes):
+            _commit()
             Message.query.filter(Message.body.startswith('{')).update(
                 {Message.body: '', Message._changes: Message.body}, synchronize_session=False
             )
@@ -94,18 +105,22 @@ def db_after_create(target, connection, **kw):
         add_column(Environment.__table__.c.status)
         # Add 'lang' to user
         add_column(User.__table__.c.lang)
-        # Add Search vector to IP and Mac
-        add_column(Mac.__table__.c.search_vector)
-        add_column(Ip.__table__.c.search_vector)
-        add_column(Environment.__table__.c.search_vector)
         # Add rir_status column
         add_column(Subnet.__table__.c.rir_status)
-        # Re-Create search_vector
-        add_column(DhcpRecord.__table__.c.search_vector)
-        add_column(DnsRecord.__table__.c.search_vector)
-        add_column(DnsZone.__table__.c.search_vector)
-        add_column(Message.__table__.c.search_vector)
-        add_column(Subnet.__table__.c.search_vector)
-        add_column(Vrf.__table__.c.search_vector)
+        # Create column for subnet search and make sure it's populated
+        add_column(Subnet.__table__.c._subnet_string)
+        # UPDATE subnet SET modified_at=now(), _subnet_string=(SELECT string_agg(text(subnetrange.range), ' ') AS group_concat_1 FROM subnetrange WHERE subnetrange.subnet_id = subnet.id)
+        # Create search_string
+        add_column(Mac.__table__.c.search_string)
+        add_column(Ip.__table__.c.search_string)
+        add_column(Environment.__table__.c.search_string)
+        add_column(DhcpRecord.__table__.c.search_string)
+        add_column(DnsRecord.__table__.c.search_string)
+        add_column(DnsZone.__table__.c.search_string)
+        add_column(Message.__table__.c.search_string)
+        add_column(Subnet.__table__.c.search_string)
+        add_column(Vrf.__table__.c.search_string)
         # Delete unique index on user's email
         connection.execute(ddl.DropIndex(Index('user_email_key'), if_exists=True))
+        # Do final commit of changes
+        _commit()

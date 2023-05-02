@@ -32,7 +32,7 @@ from ._common import CommonMixin
 from ._follower import FollowerMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
-from ._search_vector import SearchableMixing
+from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._vrf import Vrf
 
@@ -99,6 +99,12 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
     )
     ranges = association_proxy("subnet_ranges", "range")
     rir_status = Column(String, nullable=True, default=None)
+    _subnet_string = Column(
+        String,
+        nullable=False,
+        server_default='',
+        doc="store string representation of the subnet ranges used for search",
+    )
 
     # Transient fields for ordering
     depth = None
@@ -106,7 +112,14 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
 
     @classmethod
     def _search_string(cls):
-        return cls.name + " " + cls.notes
+        return cls.name + " " + cls.notes + " " + cls._subnet_string
+
+    def _update_subnet_string(self):
+        """
+        Should be called everytime the record get insert or updated
+        to make sure the subnet ranges are index for search.
+        """
+        self._subnet_string = ' '.join(self.ranges)
 
     def __str__(self):
         return "%s (%s)" % (', '.join(self.ranges), self.name)
@@ -136,6 +149,9 @@ def receive_before_insert_or_update(mapper, connection, subnet):
     if not subnet.ranges:
         # you should probably use your own exception class here
         raise ValueError('ranges', _('at least one IPv6 or IPv4 network is required'))
+
+    # Trigger update of subnet search string.
+    subnet._update_subnet_string()
 
 
 # Create a unique index subnet & vrf

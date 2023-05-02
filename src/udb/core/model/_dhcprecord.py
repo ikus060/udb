@@ -32,7 +32,7 @@ from ._common import CommonMixin
 from ._follower import FollowerMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
-from ._search_vector import SearchableMixing
+from ._search_string import SearchableMixing
 from ._status import StatusMixing
 
 Base = cherrypy.tools.db.get_base()
@@ -51,7 +51,7 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
 
     @classmethod
     def _search_string(cls):
-        return " " + cls.mac + " " + cls.notes
+        return cls.mac + " " + cls.notes
 
     @validates('ip')
     def validate_ip(self, key, value):

@@ -14,17 +14,19 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from sqlalchemy import literal
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
 
 class group_concat(GenericFunction):
     name = "group_concat"
-    inherit_cache = True
+    inherit_cache = False
 
-    def __init__(self, *clauses, order_by=None, **kwargs):
+    def __init__(self, expression, separator=None, order_by=None, **kwargs):
         self.order_by = order_by
-        super().__init__(*clauses, **kwargs)
+        self.separator = separator
+        super().__init__(expression, **kwargs)
 
 
 @compiles(group_concat, "postgresql")
@@ -33,11 +35,15 @@ def _render_group_concat_pg(element, compiler, **kw):
     On Postgresql, `group_concat` should be `string_agg`
     """
     if element.order_by is not None:
-        return "string_agg(%s, ',' ORDER BY %s)" % (
+        return "string_agg(%s, %s ORDER BY %s)" % (
             compiler.process(element.clauses, **kw),
+            compiler.process(literal(element.separator or ','), **kw),
             compiler.process(element.order_by, **kw),
         )
-    return "string_agg(%s, ',')" % (compiler.process(element.clauses, **kw),)
+    return "string_agg(%s, %s)" % (
+        compiler.process(element.clauses, **kw),
+        compiler.process(literal(element.separator or ','), **kw),
+    )
 
 
 @compiles(group_concat, "sqlite")
@@ -47,4 +53,9 @@ def _render_group_concat_sqlite(element, compiler, **kw):
     """
     # Ignore order_by, it's not supported by SQLite
     # Avoid defining a separator as it fail parsing when using DISTINCT
+    if element.separator:
+        return "group_concat(%s, %s)" % (
+            compiler.process(element.clauses, **kw),
+            compiler.process(literal(element.separator), **kw),
+        )
     return "group_concat(%s)" % (compiler.process(element.clauses, **kw),)
