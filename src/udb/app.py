@@ -130,7 +130,7 @@ def json_handler(*args, **kwargs):
 @cherrypy.tools.currentuser(userobj=lambda username: User.query.filter_by(username=username).first())
 @cherrypy.tools.i18n(func=lambda: getattr(cherrypy.request, 'currentuser', False) and cherrypy.request.currentuser.lang)
 @cherrypy.tools.secure_headers(
-    csp="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/ https://cdn.datatables.net/; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/ https://cdn.datatables.net/; img-src 'self' data: https://cdn.jsdelivr.net/ https://cdn.datatables.net/;font-src https://cdn.jsdelivr.net/"
+    csp="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/; img-src 'self' data: https://cdn.jsdelivr.net/;font-src https://cdn.jsdelivr.net/"
 )
 class Root(object):
     """
