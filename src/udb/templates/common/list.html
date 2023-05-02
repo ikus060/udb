@@ -45,7 +45,8 @@
   {% set download_filename = _('export_') + macro.display_name(model_name)|lower %}
   {% set csv_button = {'text': _('Download Csv'), 'extend': 'csv', 'exportOptions': {'columns': '.export'}, 'title': download_filename, 'className':'udb-btn-download text-nowrap' } %}
   {% set xsl_button = {'text': _('Download Excel'), 'extend': 'excel', 'exportOptions': {'columns': '.export'}, 'title': download_filename, 'className':'udb-btn-download text-nowrap' } %}
-  {% set more_button = {'text': _('More'), 'extend': 'collection', 'align':'button-right', 'autoClose':True, 'background': False, 'popoverTitle': _('More'), 'buttons': [ csv_button, xsl_button], 'className':'udb-btn-more-menu' } %}
+  {% set pdf_button = {'text': _('Download PDF'), 'extend': 'pdf', 'exportOptions': {'columns': '.export'}, 'title': download_filename, 'className':'udb-btn-download text-nowrap', 'orientation':'landscape' } %}
+  {% set more_button = {'text': _('More'), 'extend': 'collection', 'align':'button-right', 'autoClose':True, 'background': False, 'popoverTitle': _('More'), 'buttons': [ csv_button, xsl_button, pdf_button], 'className':'udb-btn-more-menu' } %}
   {% set buttons = buttons + [more_button] %}
   {# Show default table #}
   {{ _table.table(data="data.json", columns=table_columns, buttons=buttons) }}

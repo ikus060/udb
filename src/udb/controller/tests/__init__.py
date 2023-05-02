@@ -256,8 +256,11 @@ class WebCase(BaseClass):
         """
         Check number of file in download folder
         """
+        # Wait until file get downloaded.
+        # Make sure to ignore '.crdownload'
         for unused in range(1, timeout):
-            if len(os.listdir(self._selenium_download_dir)) > 0:
+            files = [f for f in os.listdir(self._selenium_download_dir) if not f.endswith('.crdownload')]
+            if len(files) > 0:
                 break
             time.sleep(1)
         files = os.listdir(self._selenium_download_dir)

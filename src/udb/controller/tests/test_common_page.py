@@ -75,20 +75,28 @@ class CommonTest:
             # Then the list show deleted record.
             driver.find_element('xpath', "//span[@class='badge bg-danger' and contains(text(), 'Deleted')]")
 
-    def test_get_list_download_selenium(self):
+    @parameterized.expand(
+        [
+            ('.buttons-csv', '.csv'),
+            ('.buttons-excel', '.xlsx'),
+            ('.buttons-pdf', '.pdf'),
+        ]
+    )
+    def test_get_list_download_selenium(self, btn, expected_file_ext):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
-        with self.selenium(True) as driver:
+        with self.selenium() as driver:
             # When user click on "more" menu & "Download CSV"
             driver.get(url_for(self.base_url, ''))
             more_menu = driver.find_element('css selector', '.udb-btn-more-menu')
             more_menu.click()
-            csv_download = driver.find_element('css selector', '.buttons-csv')
-            csv_download.click()
+            download_btn = driver.find_element('css selector', btn)
+            download_btn.click()
             # Then a file get downloaded
             fn = self.assertSeleniumDownload()
             self.assertTrue(fn.startswith('export_'))
+            self.assertTrue(fn.endswith(expected_file_ext))
 
     def test_get_edit_page(self):
         # Given a database with a record
