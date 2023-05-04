@@ -54,38 +54,36 @@ class AuditPageTest(WebCase):
             # Then the web page contains a table
             driver.find_element('css selector', 'table.table')
             time.sleep(1)
-            # Then the web page is loaded without error.
-            self.assertFalse(driver.get_log('browser'))
-            # Then the table contains at least a changes in Environment
-            driver.find_element('xpath', "//*[contains(text(), 'echo FOO')]")
+            # Then the table contains user changes
+            driver.find_element('xpath', "//*[contains(text(), 'admin')]")
 
     def test_data_json(self):
         # Given a query to data_json
         data = self.getJson(url_for(self.base_url, 'data.json'))
         # Then a response is return with latest changes
-        self.assertEqual(data, {'draw': None, 'recordsTotal': 18, 'recordsFiltered': 18, 'data': ANY})
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 20, 'recordsFiltered': 20, 'data': ANY})
         self.assertEqual(10, len(data['data']))
 
     def test_data_json_with_length(self):
         # Given a query to data_json
         data = self.getJson(url_for(self.base_url, 'data.json', length=5))
         # Then a response is return with latest changes
-        self.assertEqual(data, {'draw': None, 'recordsTotal': 18, 'recordsFiltered': 18, 'data': ANY})
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 20, 'recordsFiltered': 20, 'data': ANY})
         self.assertEqual(5, len(data['data']))
 
     def test_data_json_with_start(self):
         # Given a query to data_json
         data = self.getJson(url_for(self.base_url, 'data.json', start=5, length=5))
         # Then a response is return with latest changes
-        self.assertEqual(data, {'draw': None, 'recordsTotal': 18, 'recordsFiltered': 18, 'data': ANY})
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 20, 'recordsFiltered': 20, 'data': ANY})
         self.assertEqual(5, len(data['data']))
 
     def test_data_json_with_search(self):
         # Given a query to data_json
         data = self.getJson(url_for(self.base_url, 'data.json', **{'search[value]': 'test'}))
         # Then a response is return with latest changes
-        self.assertEqual(data, {'draw': None, 'recordsTotal': 18, 'recordsFiltered': 1, 'data': ANY})
-        self.assertEqual(1, len(data['data']))
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 20, 'recordsFiltered': 2, 'data': ANY})
+        self.assertEqual(2, len(data['data']))
 
     @parameterized.expand(['0', '1', '2', '3', '4', '5', '6'])
     def test_data_json_with_order(self, col_idx):

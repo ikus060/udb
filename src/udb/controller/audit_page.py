@@ -19,15 +19,28 @@
 from collections import namedtuple
 
 import cherrypy
-from sqlalchemy import and_, desc, func
+from sqlalchemy import and_, desc, func, literal, select, union_all
 
 from udb.controller import url_for, validate_int
-from udb.core.model import Message, Search, User
+from udb.core.model import Message, User, auditable_models
 from udb.tools.i18n import gettext as _
 
 AuditRow = namedtuple(
     'AuditRow', ['model_id', 'status', 'summary', 'model_name', 'author', 'date', 'type', 'body', 'changes', 'url']
 )
+
+AllModel = union_all(
+    *[
+        select(
+            literal(model.__name__.lower()).label('model_name'),
+            model.id.label('model_id'),
+            getattr(model, 'status', literal('enabled')).label('status'),
+            model.summary,
+            getattr(model, 'search_string', model.summary).label('search_string'),
+        )
+        for model in auditable_models
+    ]
+).alias()
 
 
 class AuditPage:
@@ -49,8 +62,8 @@ class AuditPage:
         query = (
             Message.query.with_entities(
                 Message.model_id,
-                Search.status,
-                Search.summary,
+                AllModel.c.status,
+                AllModel.c.summary,
                 Message.model_name,
                 User.summary.label('author'),
                 Message.date,
@@ -60,10 +73,10 @@ class AuditPage:
             )
             .outerjoin(Message.author)
             .outerjoin(
-                Search,
+                AllModel,
                 and_(
-                    Message.model_name == Search.model_name,
-                    Message.model_id == Search.model_id,
+                    Message.model_name == AllModel.c.model_name,
+                    Message.model_id == AllModel.c.model_id,
                 ),
             )
             .filter(Message.type.in_([Message.TYPE_NEW, Message.TYPE_DIRTY]))
@@ -89,7 +102,7 @@ class AuditPage:
         # Apply filtering
         search = kwargs.get('search[value]', '')
         if search:
-            query = query.filter(func.udb_websearch(Search.search_string, search))
+            query = query.filter(func.udb_websearch(AllModel.c.search_string, search))
         filtered = query.count()
         data = query.offset(start).limit(length).all()
 

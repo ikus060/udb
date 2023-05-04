@@ -49,7 +49,7 @@ class TestApp(WebCase):
         obj = DnsZone(name='bfh.ch').add()
         obj.commit()
         # When creating URL using the message
-        msg = Message.query.first()
+        msg = Message.query.filter(Message.model_name == 'dnszone').first()
         # Then URL is create with object name and object id
         self.assertEqual(url_for(msg), 'http://%s:%s/dnszone/%s' % (self.HOST, self.PORT, obj.id))
 

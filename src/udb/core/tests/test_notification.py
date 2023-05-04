@@ -156,6 +156,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
     def test_with_new_catchall(self):
         # Given a catchall notification email in configuration
         cherrypy.config.update({'notification.catch_all_email': 'my@email.com'})
+        self.listener.send_mail.reset_mock()
         # When creating a new record
         DnsZone(name='my.zone.com').add().commit()
         # Then wait for task to get processed
@@ -306,6 +307,7 @@ class ExternalUrlNotificationPluginTest(AbstractNotificationPluginTest):
     def test_with_external_url(self):
         # Given a catchall notification email in configuration
         cherrypy.config.update({'notification.catch_all_email': 'my@email.com'})
+        self.listener.send_mail.reset_mock()
         # When creating a new record
         DnsZone(name='my.zone.com').add().commit()
         # Then a notification is sent to catchall email
