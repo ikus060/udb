@@ -39,11 +39,12 @@ from ._search import Search  # noqa # isort: skip
 Base = cherrypy.tools.db.get_base()
 
 # Build list of model with 'followers' attributes
-followable_model_name = [
-    value.__tablename__
-    for key, value in locals().items()
+followable_models = [
+    value
+    for unused, value in locals().items()
     if inspect.isclass(value) and hasattr(value, 'followers') and hasattr(value, '__tablename__')
 ]
+followable_model_name = [value.__tablename__ for value in followable_models]
 
 # Build list of model with 'messages' attributes
 auditable_models = [
