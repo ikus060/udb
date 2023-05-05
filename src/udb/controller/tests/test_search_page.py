@@ -23,6 +23,7 @@ from selenium.common.exceptions import NoSuchElementException
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
+from udb.core.model import DnsRecord, DnsZone, Subnet, Vrf
 
 
 class TestSearchPage(WebCase):
@@ -144,3 +145,241 @@ class TestSearchPage(WebCase):
             driver.implicitly_wait(1)
             with self.assertRaises(NoSuchElementException):
                 driver.find_element('xpath', "//*[contains(text(), 'bar.bfh.ch')]")
+
+    def test_data_json_without_term(self):
+        # When making a query without filter
+        data = self.getJson(url_for("search", "data.json", q=""))
+        # Then nothing is returned
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 0, 'recordsFiltered': 0, 'data': []})
+
+    def test_data_json_summary(self):
+        # Given a database with records
+        # When searching a term present in summary
+        data = self.getJson(url_for("search", "data.json", q="DMZ"))
+        # Then records are returned.
+        self.assertEqual(
+            data,
+            {
+                'draw': None,
+                'recordsTotal': 2,
+                'recordsFiltered': 2,
+                'data': [
+                    [
+                        1,
+                        'enabled',
+                        'bfh.ch',
+                        'dnszone',
+                        'test',
+                        'DMZ Zone',
+                        ANY,
+                        '/dnszone/1/edit',
+                    ],
+                    [
+                        1,
+                        'enabled',
+                        'DMZ',
+                        'subnet',
+                        'test',
+                        'public',
+                        ANY,
+                        '/subnet/1/edit',
+                    ],
+                ],
+            },
+        )
+
+    def test_data_json_search_with_model_name(self):
+        # Given a database with records
+        # When searching for a specific model_name
+        data = self.getJson(url_for("search", "data.json", **{"q": "DMZ", "columns[3][search][value]": "dnszone"}))
+        # Then results only contains our model name
+        self.assertEqual(
+            data,
+            {
+                'draw': None,
+                'recordsTotal': 1,
+                'recordsFiltered': 1,
+                'data': [[1, 'enabled', 'bfh.ch', 'dnszone', 'test', 'DMZ Zone', ANY, '/dnszone/1/edit']],
+            },
+        )
+        # When searching for a specific model_name
+        data = self.getJson(url_for("search", "data.json", **{"q": "DMZ", "columns[3][search][value]": "subnet"}))
+        # Then results only contains our model name
+        self.assertEqual(
+            data,
+            {
+                'draw': None,
+                'recordsTotal': 1,
+                'recordsFiltered': 1,
+                'data': [[1, 'enabled', 'DMZ', 'subnet', 'test', 'public', ANY, '/subnet/1/edit']],
+            },
+        )
+
+    def test_data_json_search_domain_name(self):
+        # Given a DNS Record
+        vrf = Vrf(name='default').add()
+        subnet = Subnet(ranges=['192.168.1.0/24', '2001:db8:85a3::/64'], vrf=vrf).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        record = DnsRecord(name='lumos.example.com', type='A', value='192.168.1.14')
+        record.add().commit()
+        # When searching the first CN
+        data = self.getJson(url_for("search", "data.json", q="lumos"))
+        # Then search content should contains our DNS Record
+        self.assertEqual(
+            data,
+            {
+                'draw': None,
+                'recordsTotal': 1,
+                'recordsFiltered': 1,
+                'data': [
+                    [
+                        5,
+                        'enabled',
+                        'lumos.example.com = 192.168.1.14 (A)',
+                        'dnsrecord',
+                        None,
+                        '',
+                        ANY,
+                        '/dnsrecord/5/edit',
+                    ]
+                ],
+            },
+        )
+
+    def test_data_json_search_subnet_ranges(self):
+        # Given a subnet with ranges.
+        vrf = Vrf(name='default').add()
+        Subnet(ranges=['192.168.1.0/24', '2001:db8:85a3::/64'], vrf=vrf).add().commit()
+        # When searching an ip address matching a ranges
+        data = self.getJson(url_for("search", "data.json", q="192.168.1"))
+        # Then subnet is return.
+        self.assertEqual(
+            data,
+            {
+                'draw': None,
+                'recordsTotal': 1,
+                'recordsFiltered': 1,
+                'data': [
+                    [
+                        5,
+                        'enabled',
+                        '',
+                        'subnet',
+                        None,
+                        '',
+                        ANY,
+                        '/subnet/5/edit',
+                    ]
+                ],
+            },
+        )
+
+    def test_data_json_search_ipv4_address(self):
+        # Given a DNS Record creating an ip address
+        vrf = Vrf(name='default').add()
+        subnet = Subnet(ranges=['192.168.1.0/24', '2001:db8:85a3::/64'], vrf=vrf).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        record = DnsRecord(name='lumos.example.com', type='A', value='192.168.1.14')
+        record.add().commit()
+        # When searching for partial IP Address 192.168
+        data = self.getJson(url_for("search", "data.json", q="192.168"))
+        # Then search content should contains our DNS Record
+        # Then search content should also contain our IP
+        self.assertEqual(
+            data,
+            {
+                'draw': None,
+                'recordsTotal': 3,
+                'recordsFiltered': 3,
+                'data': [
+                    [
+                        5,
+                        'enabled',
+                        'lumos.example.com = 192.168.1.14 (A)',
+                        'dnsrecord',
+                        None,
+                        '',
+                        ANY,
+                        '/dnsrecord/5/edit',
+                    ],
+                    [
+                        4,
+                        'enabled',
+                        '192.168.1.14',
+                        'ip',
+                        None,
+                        '',
+                        ANY,
+                        '/ip/4/edit',
+                    ],
+                    [
+                        5,
+                        'enabled',
+                        '',
+                        'subnet',
+                        None,
+                        '',
+                        ANY,
+                        '/subnet/5/edit',
+                    ],
+                ],
+            },
+        )
+
+    def test_data_json_search_ipv6_address(self):
+        # Given a DNS Record creating an ip address
+        vrf = Vrf(name='default').add()
+        subnet = Subnet(ranges=['192.168.1.0/24', '	2a07:6b43::/32'], vrf=vrf).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        record = DnsRecord(name='lumos.example.com', type='AAAA', value='2a07:6b43:115:11::127')
+        record.add().commit()
+        # When searching for partial IP Address 2a07:6b43:115
+        data = self.getJson(url_for("search", "data.json", q="2a07:6b43:115"))
+        # Then search content should contains our DNS Record
+        # Then search content should also contain our IP
+        self.assertEqual(
+            data,
+            {
+                'draw': None,
+                'recordsTotal': 2,
+                'recordsFiltered': 2,
+                'data': [
+                    [
+                        5,
+                        'enabled',
+                        'lumos.example.com = 2a07:6b43:115:11::127 (AAAA)',
+                        'dnsrecord',
+                        None,
+                        '',
+                        ANY,
+                        '/dnsrecord/5/edit',
+                    ],
+                    [
+                        4,
+                        'enabled',
+                        '2a07:6b43:115:11::127',
+                        'ip',
+                        None,
+                        '',
+                        ANY,
+                        '/ip/4/edit',
+                    ],
+                ],
+            },
+        )
+
+    def test_typeahead_json(self):
+        # Given a database with records
+        # When using typeahead
+        data = self.getJson(url_for("search", "typeahead.json", q="DMZ"))
+        # Then is contains results
+        self.assertEqual(
+            data,
+            {
+                'status': 200,
+                'data': [
+                    {'model_id': 1, 'model_name': 'dnszone', 'summary': 'bfh.ch', 'url': '/dnszone/1/edit'},
+                    {'model_id': 1, 'model_name': 'subnet', 'summary': 'DMZ', 'url': '/subnet/1/edit'},
+                ],
+            },
+        )

@@ -29,12 +29,13 @@ from udb.core.passwd import check_password, hash_password
 from udb.tools.i18n import gettext_lazy as _
 
 from ._json import JsonMixin
+from ._message import MessageMixin
 from ._status import StatusMixing
 
 Base = cherrypy.tools.db.get_base()
 
 
-class User(JsonMixin, StatusMixing, Base):
+class User(JsonMixin, StatusMixing, MessageMixin, Base):
     __tablename__ = 'user'
 
     # Define permissions.

@@ -81,7 +81,7 @@ class DeploymentPage:
             'data': [
                 ChangeRow(
                     model_id=obj.model_id,
-                    summary=obj.summary,
+                    summary=obj.get_summary(),
                     model_name=obj.model_name,
                     author=obj.author_name,
                     date=obj.date.isoformat(),

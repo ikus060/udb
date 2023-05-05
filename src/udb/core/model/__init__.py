@@ -34,13 +34,31 @@ from ._subnet import Subnet, SubnetRange  # noqa
 from ._user import User  # noqa
 from ._vrf import Vrf  # noqa
 
-from ._search import Search  # noqa # isort: skip
-
 Base = cherrypy.tools.db.get_base()
 
-# Build a dynamic list of followable model
-followable_model_name = [
-    value.__tablename__ for key, value in locals().items() if inspect.isclass(value) and hasattr(value, 'followers')
+# Build list of model with 'followers' attributes
+followable_models = [
+    value
+    for unused, value in locals().items()
+    if inspect.isclass(value) and hasattr(value, 'followers') and hasattr(value, '__tablename__')
+]
+followable_model_name = [value.__tablename__ for value in followable_models]
+
+# Build list of model with 'messages' attributes
+auditable_models = [
+    value
+    for unused, value in locals().items()
+    if inspect.isclass(value) and hasattr(value, 'messages') and hasattr(value, '__tablename__')
+]
+
+# Build list of searchable model with `search_string` attribute
+searchable_models = [
+    value
+    for unused, value in locals().items()
+    if inspect.isclass(value)
+    and hasattr(value, 'search_string')
+    and hasattr(value, 'summary')
+    and hasattr(value, '__tablename__')
 ]
 
 

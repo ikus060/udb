@@ -53,20 +53,21 @@ class DnsZoneTest(WebCase):
         obj = DnsZone(name='bfh.ch').add()
         obj.commit()
         self.assertEqual(1, DnsZone.query.count())
+        self.assertEqual(1, Message.query.filter(Message.model_name == 'dnszone').count())
         # When trying to delete a given dns zone
         obj.delete()
         obj.commit()
         # Then the entry is removed from database
         self.assertEqual(0, DnsZone.query.count())
         # Then related messages are deleted from database
-        self.assertEqual(0, Message.query.count())
+        self.assertEqual(0, Message.query.filter(Message.model_name == 'dnszone').count())
 
     def test_soft_delete(self):
         # Given a datavase with a DnsZone
         obj = DnsZone(name='bfh.ch').add()
         obj.commit()
         self.assertEqual(1, DnsZone.query.count())
-        self.assertEqual(1, Message.query.count())
+        self.assertEqual(1, Message.query.filter(Message.model_name == 'dnszone').count())
         # When updating it's status to deleted
         obj.status = DnsZone.STATUS_DELETED
         obj.add()
@@ -75,7 +76,7 @@ class DnsZoneTest(WebCase):
         self.assertEqual(1, DnsZone.query.count())
         self.assertEqual(DnsZone.STATUS_DELETED, DnsZone.query.first().status)
         # Then related messages are kept
-        self.assertEqual(2, Message.query.count())
+        self.assertEqual(2, Message.query.filter(Message.model_name == 'dnszone').count())
 
     def test_enabled(self):
         # Given a datavase with a DnsZone

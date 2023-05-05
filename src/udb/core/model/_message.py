@@ -137,8 +137,7 @@ class Message(JsonMixin, SearchableMixing, Base):
             return None
         return getattr(self, "%s_object" % self.model_name)
 
-    @property
-    def summary(self):
+    def get_summary(self):
         """
         Provide a summary to be displayed in table.
         """

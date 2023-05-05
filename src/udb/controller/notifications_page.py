@@ -17,14 +17,26 @@
 
 
 import cherrypy
-from sqlalchemy import and_
+from sqlalchemy import and_, literal, select, union_all
 from wtforms.fields import BooleanField
 
 from udb.controller import flash, handle_exception, url_for
-from udb.core.model import Follower, Search, followable_model_name
+from udb.core.model import Follower, followable_model_name, followable_models
 from udb.tools.i18n import gettext_lazy as _
 
 from .form import CherryForm
+
+AllModel = union_all(
+    *[
+        select(
+            literal(model.__name__.lower()).label('model_name'),
+            model.id.label('model_id'),
+            getattr(model, 'status', literal('enabled')).label('status'),
+            model.summary,
+        )
+        for model in followable_models
+    ]
+).alias()
 
 
 class NotificationFormBase(CherryForm):
@@ -119,17 +131,17 @@ class NotificationsPage:
         # List object followed by current user
         userobj = cherrypy.request.currentuser
         query = (
-            Search.session.query(
-                Search.model_id,
-                Search.status,
-                Search.model_name,
-                Search.summary,
+            Follower.session.query(
+                Follower.model_id,
+                AllModel.c.status,
+                Follower.model_name,
+                AllModel.c.summary,
             )
             .join(
-                Follower,
+                AllModel,
                 and_(
-                    Search.model_name == Follower.model_name,
-                    Search.model_id == Follower.model_id,
+                    Follower.model_name == AllModel.c.model_name,
+                    Follower.model_id == AllModel.c.model_id,
                     Follower.model_id != 0,
                 ),
             )
