@@ -34,8 +34,6 @@ from ._subnet import Subnet, SubnetRange  # noqa
 from ._user import User  # noqa
 from ._vrf import Vrf  # noqa
 
-from ._search import Search  # noqa # isort: skip
-
 Base = cherrypy.tools.db.get_base()
 
 # Build list of model with 'followers' attributes
@@ -51,6 +49,16 @@ auditable_models = [
     value
     for unused, value in locals().items()
     if inspect.isclass(value) and hasattr(value, 'messages') and hasattr(value, '__tablename__')
+]
+
+# Build list of searchable model with `search_string` attribute
+searchable_models = [
+    value
+    for unused, value in locals().items()
+    if inspect.isclass(value)
+    and hasattr(value, 'search_string')
+    and hasattr(value, 'summary')
+    and hasattr(value, '__tablename__')
 ]
 
 

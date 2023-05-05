@@ -17,16 +17,32 @@
 from collections import namedtuple
 
 import cherrypy
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, literal, select, union_all
 from wtforms.fields import StringField
 from wtforms.validators import InputRequired, Length
 
 from udb.controller import url_for, validate_int
 from udb.controller.form import CherryForm
-from udb.core.model import Search, User
+from udb.core.model import User, searchable_models
 from udb.tools.i18n import gettext as _
 
 Base = cherrypy.tools.db.get_base()
+
+SearchableModel = union_all(
+    *[
+        select(
+            literal(model.__name__.lower()).label('model_name'),
+            model.id.label('model_id'),
+            getattr(model, 'status', literal('enabled')).label('status'),
+            model.summary,
+            model.notes,
+            model.owner_id,
+            model.modified_at,
+            model.search_string,
+        )
+        for model in searchable_models
+    ]
+).subquery()
 
 SearchRow = namedtuple(
     'SearchRow', ['model_id', 'status', 'summary', 'model_name', 'owner', 'notes', 'modified_at', 'url']
@@ -51,13 +67,17 @@ class SearchPage:
     def index(self, q=None, **kwargs):
         # Count items per model
         query = (
-            Search.query.with_entities(Search.model_name, func.count(Search.model_id))
-            .filter(
-                func.udb_websearch(Search.search_string, q),
+            select(
+                SearchableModel.c.model_name,
+                func.count(SearchableModel.c.model_id),
             )
-            .group_by(Search.model_name)
+            .filter(
+                func.udb_websearch(SearchableModel.c.search_string, q),
+            )
+            .group_by(SearchableModel.c.model_name)
         )
-        counts = {row[0]: row[1] for row in query.all()}
+        session = cherrypy.tools.db.get_session()
+        counts = {row[0]: row[1] for row in session.execute(query).all()}
         # Determine active tab
         active = None
         for model_name in counts.keys():
@@ -85,19 +105,19 @@ class SearchPage:
             return {'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0, 'data': []}
 
         # Build query
-        query = Search.query.with_entities(
-            Search.model_id,
-            Search.status,
-            Search.summary,
-            Search.model_name,
+        query = select(
+            SearchableModel.c.model_id,
+            SearchableModel.c.status,
+            SearchableModel.c.summary,
+            SearchableModel.c.model_name,
             User.summary.label('owner'),
-            Search.notes,
-            Search.modified_at,
-        ).outerjoin(User, User.id == Search.owner_id)
+            SearchableModel.c.notes,
+            SearchableModel.c.modified_at,
+        ).outerjoin(User, User.id == SearchableModel.c.owner_id)
 
         # Apply query search
         query = query.filter(
-            func.udb_websearch(Search.search_string, q),
+            func.udb_websearch(SearchableModel.c.search_string, q),
         )
 
         # Apply sorting - default sort by date
@@ -117,10 +137,12 @@ class SearchPage:
         # Apply model_name filtering
         model_name = kwargs.get('columns[3][search][value]')
         if model_name:
-            query = query.filter(Search.model_name == model_name)
+            query = query.filter(SearchableModel.c.model_name == model_name)
 
-        filtered = query.count()
-        data = query.offset(start).limit(length).all()
+        # Execute the query
+        session = cherrypy.tools.db.get_session()
+        filtered = session.execute(select(func.count("*")).select_from(query)).first()[0]
+        data = session.execute(query.offset(start).limit(length)).all()
 
         # Return data as Json
         return {
@@ -146,10 +168,11 @@ class SearchPage:
     @cherrypy.tools.json_out()
     def typeahead_json(self, q=None, **kwargs):
         # For typeahead search, only list enabled record.
-        query = Search.query.with_entities(Search.model_id, Search.summary, Search.model_name).filter(
-            Search.status == 'enabled',
-            func.udb_websearch(Search.search_string, q),
+        query = select(SearchableModel.c.model_id, SearchableModel.c.summary, SearchableModel.c.model_name,).filter(
+            SearchableModel.c.status == 'enabled',
+            func.udb_websearch(SearchableModel.c.search_string, q),
         )
+        session = cherrypy.tools.db.get_session()
         data = [
             {
                 'model_id': obj.model_id,
@@ -157,7 +180,7 @@ class SearchPage:
                 'summary': obj.summary,
                 'url': url_for(obj, 'edit', relative='server'),
             }
-            for obj in query.all()
+            for obj in session.execute(query).all()
         ]
         return {
             'status': 200,
