@@ -51,7 +51,7 @@ class NotifiationPlugin(SimplePlugin):
 
     def _after_flush(self, session, flush_context):
         """
-        Keep track if this session has any new messages.
+        Check if this database session created new message objects.
         """
         # Get list of new messages
         new_messages = [msg for msg in session.new if isinstance(msg, Message)]
@@ -134,6 +134,18 @@ class NotifiationPlugin(SimplePlugin):
             .all()
         )
         bcc = [t[0] for t in bcc]
+
+        # Changes made to user object should always be send to the user it-self.
+        if (
+            message.model_name == User.__tablename__
+            and any(attr in message.changes for attr in ['status', 'password', 'email', 'role'])
+            and message.user_object
+            and message.user_object.email
+        ):
+            bcc += [message.user_object.email]
+            # Also send email to previous email value when email get updated.
+            if 'email' in message.changes and message.changes['email'][0]:
+                bcc += [message.changes['email'][0]]
 
         # Send email to catch-all notification email.
         if self.catch_all_email:

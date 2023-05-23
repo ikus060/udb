@@ -141,7 +141,7 @@ class SearchPage:
 
         # Execute the query
         session = cherrypy.tools.db.get_session()
-        filtered = session.execute(select(func.count("*")).select_from(query)).first()[0]
+        filtered = session.execute(select(func.count("*")).select_from(query.subquery())).first()[0]
         data = session.execute(query.offset(start).limit(length)).all()
 
         # Return data as Json

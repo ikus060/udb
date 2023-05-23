@@ -135,9 +135,10 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
 
     def test_with_too_many_changes(self):
         # Given a lister
+        follower1 = User.create(username='follower1', email='follower1@test.com').add().commit()
+        self.wait_for_tasks()
         self.listener.send_mail.reset_mock()
         # When making multiple changes
-        follower1 = User.create(username='follower1', email='follower1@test.com').add()
         vrf = Vrf(name='default')
         for i in range(1, 24):
             subnet = Subnet(ranges=[f'192.168.{i}.0/24'], name=f'subnet {i}', vrf=vrf).add().flush()
@@ -198,10 +199,12 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         )
 
     def test_with_dns_record_notify_dns_zone_followers(self):
-        # Given a DNS Zone follower
         follower = User.create(username='follower', email='follower@test.com').add()
-        vrf = Vrf(name='default')
-        subnet = Subnet(ranges=['147.87.250.0/24'], name='its-main-4', vrf=vrf)
+        vrf = Vrf(name='default').add()
+        subnet = Subnet(ranges=['147.87.250.0/24'], name='its-main-4', vrf=vrf).add().commit()
+        self.wait_for_tasks()
+        self.listener.send_mail.reset_mock()
+        # Given a DNS Zone follower
         record = DnsZone(name='my.zone.com', subnets=[subnet]).add().flush()
         record.add_follower(follower)
         record.commit()
@@ -227,12 +230,14 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         )
 
     def test_with_dns_record_notify_dns_record_followers(self):
-        # Given a DNS Record follower
         follower = User.create(username='follower', email='follower@test.com').add()
         vrf = Vrf(name='default')
         subnet = Subnet(ranges=['147.87.250.0/24'], name='its-main-4', vrf=vrf)
         zone = DnsZone(name='my.zone.com', subnets=[subnet]).add().flush()
         zone.commit()
+        self.wait_for_tasks()
+        self.listener.send_mail.reset_mock()
+        # Given a DNS Record follower
         record = DnsRecord(name='my.zone.com', type='A', value='147.87.250.1').add().flush()
         record.add_follower(follower)
         record.commit()
@@ -286,6 +291,8 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         # Given a follower of all record of a given type Vrf
         follower = User.create(username='afollower', email='follower@test.com', role='user').add()
         Follower(user=follower, model_name='vrf', model_id=0).add().commit()
+        self.wait_for_tasks()
+        self.listener.send_mail.reset_mock()
         # When an object of that type get updated (model_id = 0)
         vrf = Vrf(name='default')
         vrf.add()
@@ -307,6 +314,7 @@ class ExternalUrlNotificationPluginTest(AbstractNotificationPluginTest):
     def test_with_external_url(self):
         # Given a catchall notification email in configuration
         cherrypy.config.update({'notification.catch_all_email': 'my@email.com'})
+        self.wait_for_tasks()
         self.listener.send_mail.reset_mock()
         # When creating a new record
         DnsZone(name='my.zone.com').add().commit()

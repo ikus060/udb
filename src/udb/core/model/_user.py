@@ -160,7 +160,7 @@ Index('user_username_index', func.lower(User.username), unique=True)
 
 
 @event.listens_for(User, "before_update")
-def before_update(mapper, connection, instance):
+def user_before_update(mapper, connection, instance):
     # Check if current instance matches our current user
     currentuser = getattr(cherrypy.serving.request, 'currentuser', None)
     if currentuser and currentuser.id == instance.id:
