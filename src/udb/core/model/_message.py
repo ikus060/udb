@@ -183,11 +183,11 @@ class MessageMixin:
             order_by=Message.date,
             lazy=True,
             cascade="all, delete",
-            overlaps="messages,dnsrecord_object,dnszone_object,subnet_object,dhcprecord_object,ip_object,mac_object,environment_object",
+            overlaps="messages,dnsrecord_object,dnszone_object,subnet_object,dhcprecord_object,ip_object,mac_object,environment_object,vrf_object,user_object",
             backref=backref(
                 '%s_object' % cls.__tablename__,
                 lazy=True,
-                overlaps="messages,dnsrecord_object,dnszone_object,subnet_object,dhcprecord_object,ip_object,mac_object,environment_object",
+                overlaps="messages,dnsrecord_object,dnszone_object,subnet_object,dhcprecord_object,ip_object,mac_object,environment_object,vrf_object,user_object",
             ),
         )
 
@@ -221,7 +221,7 @@ class MessageMixin:
 
     def objects_to_notify(self):
         """
-        Return a list of tutple with model_name and id to get notifyed whenever this object.
+        Return a list of tuple with model_name and id to get notified whenever this object is modified.
 
         Object could return it self or it's parent.
         """

@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from unittest import mock
+
+import cherrypy
 from parameterized import parameterized
 from selenium.common.exceptions import ElementNotInteractableException
 
@@ -28,6 +31,15 @@ class UserTest(WebCase):
     new_data = {'username': 'newuser', 'role': 'guest'}
 
     edit_data = {'fullname': 'My Fullname', 'role': 'guest'}
+
+    def setUp(self):
+        self.listener = mock.MagicMock()
+        cherrypy.engine.subscribe("send_mail", self.listener.send_mail, priority=50)
+        return super().setUp()
+
+    def tearDown(self):
+        cherrypy.engine.unsubscribe("send_mail", self.listener.send_mail)
+        return super().tearDown()
 
     def test_get_list_page(self):
         # Given a database with a record
@@ -193,3 +205,34 @@ class UserTest(WebCase):
         # Then user is redirected to edit page showing an error message
         self.assertStatus(200)
         self.assertInBody('A user cannot update his own role.')
+
+    @parameterized.expand(
+        [
+            ({'status': 'disabled'}, 'myuser@test.com'),
+            ({'role': 'admin'}, 'myuser@test.com'),
+            ({'email': 'newemail@test.com'}, ['myuser@test.com', 'newemail@test.com']),
+        ]
+    )
+    def test_user_changes_notification(self, new_body, expected_email):
+        # Given a user with email
+        userobj = User.create(username='myuser', email='myuser@test.com', role='user').add().commit()
+        self.wait_for_tasks()
+        self.listener.send_mail.reset_mock()
+        # When user is updated
+        self.getPage(url_for('user', userobj.id, 'edit'), method='POST', body=new_body)
+        # Then user get notified
+        self.wait_for_tasks()
+        if isinstance(expected_email, list):
+            self.assertEqual(len(expected_email), self.listener.send_mail.call_count)
+            for mail in expected_email:
+                self.listener.send_mail.assert_any_call(
+                    to=mail,
+                    subject='User myuser modified by admin',
+                    message=mock.ANY,
+                )
+        else:
+            self.listener.send_mail.assert_called_once_with(
+                to=expected_email,
+                subject='User myuser modified by admin',
+                message=mock.ANY,
+            )
