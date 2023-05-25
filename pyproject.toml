@@ -2,6 +2,58 @@
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "udb"
+authors = [
+    {name = "Patrik Dufresne", email = "patrik@ikus-soft.com"},
+]
+description = "Web application used to manage records to configure enterprise network with ansible-playbook."
+readme = "README.md"
+requires-python = ">=3.6, <4"
+license = {text = "GPLv3"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: CherryPy",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+dependencies = [
+    "apscheduler",
+    "babel",
+    "CherryPy>18",
+    "configargparse",
+    "email_validator",
+    "Jinja2",
+    "ldap3",
+    "requests",
+    "ujson",
+    "sqlalchemy>=1.4,<3",
+    "validators",
+    "WTForms>=2.2.1",
+    "zxcvbn>=4.4.27",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = [
+    "html5lib",
+    "parameterized",
+    "pytest",
+    "response",
+    "selenium",
+]
+
+[project.scripts]
+udb = "udb.main:main"
+
+[project.urls]
+Homepage = "https://gitlab.com/ikus-soft/udb"
+
 [tool.black]
 line-length = 120
 skip-string-normalization = "True"

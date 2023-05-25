@@ -18,6 +18,7 @@ Build-Depends:
  python3-ldap3,
  python3-parameterized,
  python3-pip,
+ pybuild-plugin-pyproject,
  python3-pytest,
  python3-requests,
  python3-setuptools,
