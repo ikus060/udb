@@ -207,7 +207,7 @@ $.fn.dataTable.render.datetime = function () {
         },
         sort: function (data, type, row, meta) {
             const date = toDate(data);
-            return date ? toDate(data).getTime() : 0;
+            return date ? date.getTime() : 0;
         }
     };
 }
@@ -283,7 +283,8 @@ $.fn.dataTable.render.message_body = function () {
         sort: function (data, type, row, meta) {
             const api = new $.fn.dataTable.Api(meta.settings);
             const date_idx = api.column('date:name').index();
-            return toDate(row[date_idx]);
+            const value = toDate(row[date_idx]);
+            return value ? value.getTime() : 0;
         },
     };
 }
