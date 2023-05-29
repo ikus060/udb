@@ -39,16 +39,16 @@ how to translate the application. It's not a complete instruction set, it's mere
 
 Extract the strings to be translated:
 
-    python setup.py extract_messages
+    tox -e babel_extract
 
 Create a new translation:
 
-    python setup.py init_catalog --local fr
+    BABEL_LOCALE=fr tox -e babel_init
 
 Update an existing translation:
 
-    python setup.py update_catalog --local fr
+    BABEL_LOCALE=fr tox -e babel_update
 
 Compile catalog
 
-    python setup.py compile_catalog
+    tox -e babel_compile
