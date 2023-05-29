@@ -18,10 +18,17 @@
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, Ip, User
+from udb.core.model import DhcpRecord, Ip, Subnet, User, Vrf
 
 
 class IPTest(WebCase):
+    def setUp(self):
+        super().setUp()
+        # Given a database with a subnet.
+        vrf = Vrf(name='default')
+        Subnet(ranges=['1.2.3.0/24'], vrf=vrf).add()
+        Subnet(ranges=['2.3.4.5/24'], vrf=vrf).add().commit()
+
     def test_no_deleted_filter(self):
         # Given a database with records
         obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()

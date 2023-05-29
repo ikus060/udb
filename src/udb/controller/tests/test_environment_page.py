@@ -18,7 +18,7 @@
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import Deployment, DhcpRecord, Environment, Message
+from udb.core.model import Deployment, DhcpRecord, Environment, Message, Subnet, Vrf
 
 from .test_common_page import CommonTest
 
@@ -34,6 +34,14 @@ class EnvironmentPageTest(WebCase, CommonTest):
     edit_data = {'script': 'echo BAR'}
 
     has_follow = False
+
+    def setUp(self):
+        super().setUp()
+        # Generate a changes
+        vrf = Vrf(name='default')
+        Subnet(ranges=['192.168.45.0/24'], vrf=vrf).add().commit()
+        # Given a database with DHCP Record change
+        DhcpRecord(ip='192.168.45.67', mac='E5:D3:56:7B:22:A3').add().commit()
 
     def test_follow(self):
         "Skip this test"
@@ -52,8 +60,6 @@ class EnvironmentPageTest(WebCase, CommonTest):
         pass
 
     def test_deploy_wrong_method(self):
-        # Given a database with DHCP Record change
-        DhcpRecord(ip='192.168.45.67', mac='E5:D3:56:7B:22:A3').add().commit()
         # Given a new environment
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
@@ -63,8 +69,6 @@ class EnvironmentPageTest(WebCase, CommonTest):
         self.assertStatus(405)
 
     def test_deploy_without_last_change(self):
-        # Given a database with DHCP Record change
-        DhcpRecord(ip='192.168.45.67', mac='E5:D3:56:7B:22:A3').add().commit()
         # Given a new environment
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
@@ -75,8 +79,6 @@ class EnvironmentPageTest(WebCase, CommonTest):
         self.assertHeaderItemValue("Location", self.baseurl + "/environment/%s/edit" % obj.id)
 
     def test_deploy(self):
-        # Given a database with DHCP Record change
-        DhcpRecord(ip='192.168.45.67', mac='E5:D3:56:7B:22:A3').add().commit()
         # Given a new environment
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()

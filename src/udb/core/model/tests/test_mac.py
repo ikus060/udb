@@ -17,10 +17,16 @@
 
 
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, Mac
+from udb.core.model import DhcpRecord, Mac, Subnet, Vrf
 
 
 class MacTest(WebCase):
+    def setUp(self):
+        super().setUp()
+        # Given a database with a subnet.
+        vrf = Vrf(name='default')
+        Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add().commit()
+
     def test_with_dhcp_record(self):
         # Given a empty database
         # When creating multiple DHCP Record with the same IP

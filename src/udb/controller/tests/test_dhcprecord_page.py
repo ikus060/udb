@@ -18,7 +18,7 @@
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, User
+from udb.core.model import DhcpRecord, Subnet, User, Vrf
 
 from .test_common_page import CommonTest
 
@@ -32,6 +32,12 @@ class DhcpRecordTest(WebCase, CommonTest):
     new_data = {'ip': '1.2.3.4', 'mac': '02:42:d7:e4:aa:58'}
 
     edit_data = {'ip': '1.2.3.5', 'mac': '02:42:d7:e4:aa:67'}
+
+    def setUp(self):
+        super().setUp()
+        # Generate a changes
+        vrf = Vrf(name='default')
+        Subnet(ranges=['1.2.3.0/24'], vrf=vrf).add().commit()
 
     def test_new_duplicate(self):
         # Given a database with a record

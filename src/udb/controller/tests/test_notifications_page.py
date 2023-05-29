@@ -18,7 +18,7 @@
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsZone, Follower, User
+from udb.core.model import DhcpRecord, DnsZone, Follower, Subnet, User, Vrf
 
 
 class NotificationsTest(WebCase):
@@ -32,6 +32,8 @@ class NotificationsTest(WebCase):
         # Given a user following multiple record
         user = User.query.first()
         zone = DnsZone(name='boo.com').add().commit()
+        vrf = Vrf(name='default')
+        Subnet(ranges=['10.255.67.0/24'], vrf=vrf).add().commit()
         zone.add_follower(user)
         dhcp = DhcpRecord(mac='00:00:5e:00:53:af', ip='10.255.67.12').add().commit()
         dhcp.add_follower(user)
@@ -59,6 +61,8 @@ class NotificationsTest(WebCase):
         # Given a user following multiple record
         user = User.query.first()
         zone = DnsZone(name='boo.com').add().commit()
+        vrf = Vrf(name='default')
+        Subnet(ranges=['10.255.67.0/24'], vrf=vrf).add().commit()
         zone.add_follower(user)
         dhcp = DhcpRecord(mac='00:00:5e:00:53:af', ip='10.255.67.12').add().commit()
         dhcp.add_follower(user)

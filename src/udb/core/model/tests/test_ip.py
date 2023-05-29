@@ -22,7 +22,9 @@ from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, Vrf
 
 class IpTest(WebCase):
     def test_duplicate_with_dhcp_records(self):
-        # Given a empty database
+        # Given a database with a subnet.
+        vrf = Vrf(name='default')
+        Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add().commit()
         # When creating multiple DHCP Record with the same IP
         dhcp_record1 = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
         dhcp_record2 = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bc').add().commit()
@@ -73,6 +75,9 @@ class IpTest(WebCase):
         self.assertEqual(objs[3].ip, '192.0.2.25')
 
     def test_ip_with_dhcp_deleted_status(self):
+        # Given valid DnsZone with subnet
+        vrf = Vrf(name='default')
+        Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add().commit()
         # Given a deleted DhcpRecord
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', status='deleted').add().commit()
         # When querying list of IPs
@@ -151,6 +156,9 @@ class IpTest(WebCase):
         self.assertEqual(len(obj.related_dns_records), 1)
 
     def test_dhcp_ipv6(self):
+        # Given a valid subnet
+        vrf = Vrf(name='default')
+        Subnet(ranges=['2001:db8:85a3::/64'], vrf=vrf).add().commit()
         # Given a DhcpRecord with ipv6
         DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf').add().commit()
         # When querying list of related DhcpRecord on a Ip.
@@ -220,13 +228,13 @@ class IpTest(WebCase):
 
     def test_related_dns_record_with_deleted(self):
         # Given a DHCP Reservation
+        vrf = Vrf(name='default')
+        subnet = Subnet(ranges=['2001:db8:85a3::/64'], vrf=vrf).add().commit()
         DhcpRecord(
             ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
             mac='00:00:5e:00:53:bf',
         ).add().commit()
         # Given a deleted DNS Record
-        vrf = Vrf(name='default')
-        subnet = Subnet(ranges=['2001:db8:85a3::8a2e:370:7334/126'], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
         DnsRecord(
             name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
@@ -295,6 +303,8 @@ class IpTest(WebCase):
 
     def test_update_dhcp_record_ip(self):
         # Given a DhcpRecord
+        vrf = Vrf(name='default')
+        Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add().commit()
         record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add().commit()
         # When updating the IP value
         record.ip = '192.0.2.24'
@@ -341,6 +351,8 @@ class IpTest(WebCase):
         )
 
     def test_update_dhcp_record_status(self):
+        vrf = Vrf(name='default')
+        Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add().commit()
         # Given a DhcpRecord creating an IP Record
         record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add().commit()
         Ip.query.filter(Ip.ip == '192.0.2.23').one()
