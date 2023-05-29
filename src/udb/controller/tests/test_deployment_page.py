@@ -35,7 +35,9 @@ class DeploymentPageTest(WebCase):
 
     def setUp(self):
         super().setUp()
-        # Generate a dhcprecord change
+        # Generate a changes
+        vrf = Vrf(name='default')
+        Subnet(ranges=['192.168.45.0/24'], vrf=vrf).add().commit()
         DhcpRecord(ip='192.168.45.67', mac='E5:D3:56:7B:22:A3').add().commit()
         # Create a new environment
         self.environment = Environment(name='test-env', script='echo FOO', model_name='dhcprecord').add().commit()
@@ -154,7 +156,7 @@ class DeploymentPageTest(WebCase):
 
     def test_get_deployment_api_zonefile(self):
         # Given a datbase with a DnsRecord
-        vrf = Vrf(name='default')
+        vrf = Vrf(name='test')
         subnet = Subnet(ranges=['192.0.2.0/24'], vrf=vrf)
         DnsZone(name='test.ca', subnets=[subnet]).add().flush()
         DnsRecord(name='test.ca', type='A', value='192.0.2.45').add().commit()

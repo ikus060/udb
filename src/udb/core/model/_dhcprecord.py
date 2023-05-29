@@ -77,6 +77,14 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
     def summary(self):
         return self.ip.host() + " (" + self.mac + ")"
 
+    def _validate(self):
+        """
+        Run other validation on all fields.
+        """
+        # IP should be within a Subnet
+        if not self._ip.related_subnets:
+            raise ValueError('ip', _('IP address must be defined within a Subnet'))
+
 
 Index('dhcprecord_mac_key', DhcpRecord.mac, unique=True)
 
@@ -93,3 +101,13 @@ def dns_reload_mac(self, new_value, old_value, initiator):
     # When the ip address get updated on a record, make sure to load the relatd Ip object to update the history.
     if new_value != old_value:
         self._mac
+
+
+@event.listens_for(DhcpRecord, "before_update")
+def before_update(mapper, connection, instance):
+    instance._validate()
+
+
+@event.listens_for(DhcpRecord, "before_insert")
+def before_insert(mapper, connection, instance):
+    instance._validate()
