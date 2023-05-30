@@ -62,7 +62,7 @@ class SubnetForm(CherryForm):
     ranges = StringFieldSet(
         label=_('IP Ranges'),
         validators=[Length(max=256)],
-        render_kw={"placeholder": _("Enter IPv4 or IPv6 address")},
+        render_kw={"placeholder": _("Enter an IPv4 or IPv6 address")},
     )
     vrf_id = SelectObjectField(
         _('VRF'),

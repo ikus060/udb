@@ -50,7 +50,7 @@ class DhcpRecordForm(CherryForm):
         validators=[
             Length(max=256),
         ],
-        render_kw={"placeholder": _("Enter details information about this DHCP Static Record")},
+        render_kw={"placeholder": _("Enter details information about this DHCP Reservation")},
     )
 
     owner_id = SelectObjectField(

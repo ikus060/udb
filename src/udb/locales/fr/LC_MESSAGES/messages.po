@@ -1,17 +1,18 @@
-# Translations template for PROJECT.
+# French translations for PROJECT.
 # Copyright (C) 2023 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2023-06-01 08:45-0400\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"PO-Revision-Date: 2023-05-30 13:59-0400\n"
+"Last-Translator: \n"
+"Language: fr\n"
+"Language-Team: fr <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -22,36 +23,41 @@ msgid ""
 "enable debug mode - change the log level to DEBUG, print exception stack "
 "trace to the web interface"
 msgstr ""
+"activer le mode débogage - changer le niveau du journal en DEBUG, "
+"imprimer la trace de la pile d'exceptions sur l'interface web"
 
 #: src/udb/config.py:92
 msgid "configuration file path"
-msgstr ""
+msgstr "chemin du fichier de configuration"
 
 #: src/udb/config.py:95
 msgid "Define the IP address to listen to."
-msgstr ""
+msgstr "Défini l'adresse IP à écouter."
 
 #: src/udb/config.py:98
 msgid "Define the port to listen to."
-msgstr ""
+msgstr "Défini le port à écouter."
 
 #: src/udb/config.py:105
 msgid "Define the location of the log file."
-msgstr ""
+msgstr "Défini l'emplacement du fichier journal."
 
 #: src/udb/config.py:107
 msgid "Define the location of the access log file."
-msgstr ""
+msgstr "Défini l'emplacement du fichier journal d'accès."
 
 #: src/udb/config.py:112
 msgid "Define the log level."
-msgstr ""
+msgstr "Définir le niveau du journal."
 
 #: src/udb/config.py:121
 msgid ""
 "location where to store user session information and rate-limit "
 "information. When undefined, the data are kept in memory."
 msgstr ""
+"emplacement où stocker les informations relatives à la session de "
+"l'utilisateur et à la limite de débit. Si cet emplacement n'est pas "
+"défini, les données sont conservées en mémoire."
 
 #: src/udb/config.py:137
 msgid ""
@@ -60,6 +66,11 @@ msgid ""
 "the user or user get logged out. This security measure is used to limit "
 "brute force attacks on the login page and the RESTful API."
 msgstr ""
+"nombre maximal de requêtes par heure pouvant être effectuées sur un point"
+" d'accès sensible. Lorsque cette limite est atteinte, un message HTTP 429"
+" est renvoyé à l'utilisateur ou celui-ci est déconnecté. Cette mesure de "
+"sécurité est utilisée pour limiter les attaques par force brute sur la "
+"page de connexion."
 
 #: src/udb/config.py:146
 msgid ""
@@ -75,12 +86,26 @@ msgid ""
 "            By default, UDB uses a SQLite embedded database located at "
 "./data.db"
 msgstr ""
+"Emplacement de la base de données utilisée pour la persistance. Les bases"
+" de données SQLite et PostgreSQL\n"
+"sont officiellement prises en charge. Pour utiliser une base de données "
+"SQLite, vous pouvez\n"
+"définir l'emplacement à l'aide d'un chemin de fichier ou d'un URI.\n"
+"Par exemple /srv/udb/file.db ou sqlite:///srv/udb/file.db`.\n"
+"Pour utiliser le serveur PostgreSQL, vous devez fournir\n"
+"un URI similaire à postgresql://user:pass@10.255.1.34/dbname et vous "
+"devez\n"
+"devez installer les dépendances nécessaires.\n"
+"Par défaut, UDB utilise une base de données SQLite intégrée située dans "
+"./data.db"
 
 #: src/udb/config.py:164
 msgid ""
 "administrator username. The administrator user get created on startup if "
 "the database is empty."
 msgstr ""
+"le nom d'utilisateur de l'administrateur. L'utilisateur administrateur "
+"est créé au démarrage si la base de données est vide."
 
 #: src/udb/config.py:171
 msgid ""
@@ -95,32 +120,53 @@ msgid ""
 "and\n"
 "            it can be updated using the web interface."
 msgstr ""
+"mot de passe crypté de l'administrateur est SSHA. Lisez la documentation "
+"en ligne\n"
+"en ligne pour en savoir plus sur la façon de crypter votre mot de passe\n"
+"en SSHA ou utiliser "
+"http://projects.marsching.org/weave4j/util/genpassword.php\n"
+"Lorsqu'il est défini, le mot de passe de l'administrateur ne peut pas "
+"être mis à jour à l'aide de l'interface web.\n"
+"Lorsqu'il n'est pas défini, le mot de passe administrateur par défaut est"
+" `admin123` et il peut être mis à jour en utilisant l'interface web.\n"
+"Il peut être mis à jour en utilisant l'interface web."
 
 #: src/udb/config.py:185
 msgid "enable creation of users from LDAP when the credential are valid."
 msgstr ""
+"permet la création d'utilisateurs à partir de LDAP lorsque les "
+"informations d'identification sont valides."
 
 #: src/udb/config.py:191
 msgid ""
 "default role used when creating users from LDAP. This parameter is only "
 "useful when `--add-missing-user` is enabled."
 msgstr ""
+"rôle par défaut utilisé lors de la création d'utilisateurs à partir de "
+"LDAP. Ce paramètre n'est utile que lorsque l'option `--add-missing-user` "
+"est activée."
 
 #: src/udb/config.py:201
 msgid ""
 "URL to the LDAP server used to validate user credentials. e.g.: "
 "ldap://localhost:389"
 msgstr ""
+"URL du serveur LDAP utilisé pour valider les informations "
+"d'identification de l'utilisateur, par exemple : ldap://localhost:389"
 
 #: src/udb/config.py:208
 msgid ""
 "DN of the branch of the directory where all searches should start from. "
 "e.g.: dc=my,dc=domain"
 msgstr ""
+"DN de la branche de l'annuaire à partir de laquelle toutes les recherches"
+" doivent être effectuées, par exemple : dc=my,dc=domain"
 
 #: src/udb/config.py:214
 msgid "scope of the search. Can be either base, onelevel or subtree"
 msgstr ""
+"champ d'application de la recherche. Il peut s'agir de: base, onelevel or"
+" subtree"
 
 #: src/udb/config.py:224
 msgid ""
@@ -128,6 +174,10 @@ msgid ""
 "default is to use `uid`. It's a good idea to choose an attribute that "
 "will be unique across all entries in the subtree you will be using."
 msgstr ""
+"L'attribut à rechercher dans le nom d'utilisateur. Si aucun attribut "
+"n'est fourni, la valeur par défaut est `uid`. Il est conseillé de choisir"
+" un attribut qui sera unique pour toutes les entrées du sous-arbre que "
+"vous utiliserez."
 
 #: src/udb/config.py:232
 msgid ""
@@ -136,36 +186,49 @@ msgid ""
 "improved performance it's recommanded to narrow the search to your user "
 "object class. e.g.: `(objectClass=posixAccount)`"
 msgstr ""
+"search filter pour limiter la recherche LDAP. S'il n'est pas fourni, la "
+"valeur par défaut est `(objectClass=*)`, qui recherche tous les objets de"
+" l'arbre. Pour améliorer les performances, il est recommandé de "
+"restreindre la recherche à la classe d'objet de l'utilisateur, par "
+"exemple : `(objectClass=posixAccount)`"
 
 #: src/udb/config.py:241
 msgid ""
 "list of CN of the group(s) containing administrator. Not cn=groupname or "
 "the full DN."
 msgstr ""
+"liste des CN des groupes contenant l'administrateur. Pas cn=groupname ou "
+"le DN complet."
 
 #: src/udb/config.py:249
 msgid ""
 "list of CN of the group(s) containing Subnet Managers. Not cn=groupname "
 "or the full DN."
 msgstr ""
+"liste des CN du (des) groupe(s) contenant les gestionnaires de sous-"
+"réseau. Pas le DN complet."
 
 #: src/udb/config.py:257
 msgid ""
 "list of CN of the group(s) containing DNS Zone Managers. Not cn=groupname"
 " or the full DN."
 msgstr ""
+"liste des NC du (des) groupe(s) contenant les gestionnaires de zone DNS. "
+"Pas le DN complet."
 
 #: src/udb/config.py:265
 msgid ""
 "list of CN of the group(s) containing Users. Not cn=groupname or the full"
 " DN."
 msgstr ""
+"liste des NC du (des) groupe(s) contenant les utilisateurs. Pas le DN "
+"complet."
 
 #: src/udb/config.py:274
 msgid ""
 "list of CN of the group(s) containing Guests. Not cn=groupname or the "
 "full DN."
-msgstr ""
+msgstr "liste des CN du (des) groupe(s) contenant les Guests. Pas le DN complet."
 
 #: src/udb/config.py:281
 msgid ""
@@ -174,24 +237,35 @@ msgid ""
 "improved performance it's recommanded to narrow the search to your group "
 "object class. e.g.: `(objectClass=posixGroup)`"
 msgstr ""
+"filtre de recherche pour limiter la recherche LDAP des groupes. S'il "
+"n'est pas fourni, la valeur par défaut est `(objectClass=*)`, qui "
+"recherche tous les objets de l'arbre. Pour améliorer les performances, il"
+" est recommandé de restreindre la recherche à la classe d'objet de vos "
+"groupes, par exemple : `(objectClass=posixGroup)`"
 
 #: src/udb/config.py:290
 msgid ""
 "name of the attribute on the Group that hold the list of members. "
 "Default: `member`. Other common value is: `memberUid`"
 msgstr ""
+"nom de l'attribut du groupe qui contient la liste des membres. Valeur par"
+" défaut : `member`. Une autre valeur courante est : `memberUid`"
 
 #: src/udb/config.py:298
 msgid ""
 "True If the group contains list of user defined with DN instead of "
 "username."
 msgstr ""
+"True Si le groupe contient une liste d'utilisateurs définis avec un DN au"
+" lieu d'un nom d'utilisateur."
 
 #: src/udb/config.py:305
 msgid ""
 "optional DN used to bind to the server when searching for entries. If not"
 " provided, will use an anonymous bind."
 msgstr ""
+"DN optionnel utilisé pour se lier au serveur lors de la recherche "
+"d'entrées. S'il n'est pas fourni, un lien anonyme sera utilisé."
 
 #: src/udb/config.py:314
 msgid ""
@@ -200,22 +274,27 @@ msgid ""
 "You should only use the `--ldap-bind-dn` and `--ldap-bind-password` if "
 "you absolutely need them to search the directory."
 msgstr ""
+"mot de passe à utiliser en conjonction avec `--ldap-bind-dn`. Notez que "
+"le mot de passe de liaison est probablement une donnée sensible, et doit "
+"être correctement protégé. Vous ne devriez utiliser les options `--ldap-"
+"bind-dn` et `--ldap-bind-password` que si vous en avez absolument besoin "
+"pour effectuer des recherches dans l'annuaire."
 
 #: src/udb/config.py:322
 msgid "version of LDAP in use either 2 or 3. Default to 3."
-msgstr ""
+msgstr "version de LDAP utilisée, soit 2, soit 3. La valeur par défaut est 3."
 
 #: src/udb/config.py:331
 msgid "timeout in seconds value used for LDAP connection"
-msgstr ""
+msgstr "timeout en secondes valeur utilisée pour la connexion LDAP"
 
 #: src/udb/config.py:339
 msgid "timeout in seconds value used for LDAP request"
-msgstr ""
+msgstr "timeout en secondes valeur utilisée pour la requête LDAP"
 
 #: src/udb/config.py:347
 msgid "encoding used by your LDAP server."
-msgstr ""
+msgstr "encodage utilisé par votre serveur LDAP."
 
 #: src/udb/config.py:353
 msgid ""
@@ -223,72 +302,93 @@ msgid ""
 "fullname is taken from the `firstname` and `lastname`. Attributes 'cn', "
 "or 'displayName' commonly carry full names."
 msgstr ""
+"Attribut LDAP pour le nom d'affichage de l'utilisateur. Si `fullname` est"
+" vide, le nom complet est pris à partir de `firstname` et `lastname`. Les"
+" attributs 'cn' ou 'displayName' contiennent généralement des noms "
+"complets."
 
 #: src/udb/config.py:362
 msgid ""
 "LDAP attribute for user first name. Used when the attribute configured "
 "for name does not exist. e.g.: `givenName`"
 msgstr ""
+"Attribut LDAP pour le prénom de l'utilisateur. Utilisé lorsque l'attribut"
+" configuré pour le nom n'existe pas. ex : `givenName`"
 
 #: src/udb/config.py:371
 msgid ""
 "LDAP attribute for user last name. Used when the attribute configured for"
 " name does not exist. e.g.: `sn`"
 msgstr ""
+"Attribut LDAP pour le nom de famille de l'utilisateur. Utilisé lorsque "
+"l'attribut configuré pour le nom n'existe pas. ex : `sn`"
 
 #: src/udb/config.py:380
 msgid "LDAP attribute for user email. e.g.: mail, email, userPrincipalName"
 msgstr ""
+"Attribut LDAP pour l'email de l'utilisateur. ex : mail, email, "
+"userPrincipalName"
 
 #: src/udb/config.py:386
 msgid "SMTP server used to send email."
-msgstr ""
+msgstr "Serveur SMTP utilisé pour envoyer du courrier électronique."
 
 #: src/udb/config.py:388
 msgid "Username used to authenticated with the SMTP server."
 msgstr ""
+"Le nom d'utilisateur est utilisé pour s'authentifier auprès du serveur "
+"SMTP."
 
 #: src/udb/config.py:391
 msgid "Password used to authenticated with the SMTP server."
-msgstr ""
+msgstr "Mot de passe utilisé pour s'authentifier auprès du serveur SMTP."
 
 #: src/udb/config.py:393
 msgid "Email address used to send email."
-msgstr ""
+msgstr "Adresse électronique utilisée pour envoyer le courrier électronique."
 
 #: src/udb/config.py:398
 msgid ""
 "type of encryption to be used when establishing communication with SMTP "
 "server: none, ssl, starttls"
 msgstr ""
+"type de cryptage à utiliser lors de l'établissement de la communication "
+"avec le serveur SMTP: non, ssl, starttls"
 
 #: src/udb/config.py:404
 msgid "When defined, all notification email will be sent to this email address."
 msgstr ""
+"Lorsque cette option est définie, tous les courriels de notification "
+"seront envoyés à cette adresse électronique."
 
 #: src/udb/config.py:425
 msgid "Name used in the title for this application."
-msgstr ""
+msgstr "Nom utilisé dans le titre de cette application."
 
 #: src/udb/config.py:431
 msgid "Text displayed in the footer along \"power by\"."
-msgstr ""
+msgstr "Texte affiché dans le pied de page à côté de \"power by\"."
 
 #: src/udb/config.py:437
 msgid "URL used in the footer along \"power by\"."
-msgstr ""
+msgstr "URL utilisée dans le pied de page avec \"power by\"."
 
 #: src/udb/config.py:443
 msgid ""
 "Minimum zxcvbn's score for password. Value from 1 to 4. Default value 2. "
 "Read more about it here: https://github.com/dropbox/zxcvbn"
 msgstr ""
+"Note minimale de zxcvbn pour le mot de passe. Valeur de 1 à 4. Valeur par"
+" défaut : 2. Pour en savoir plus : https://github.com/dropbox/zxcvbn"
 
 #: src/udb/config.py:451
 msgid ""
 "Force a specific umask value. Usually expressed in octal format, for "
 "example, ``0022``. Default value is inherit from parent process."
 msgstr ""
+"Forcer une valeur d'umask spécifique. Généralement exprimée au format "
+"octal, par exemple, ``0022``. La valeur par défaut est héritée du "
+"processus parent."
 
 #: src/udb/config.py:460
 msgid ""
@@ -297,70 +397,78 @@ msgid ""
 "server as a non-root user, it will fail to change to the lesser "
 "privileged user, and will instead continue to run as that original user."
 msgstr ""
+"Utilisateur sous lequel le serveur répondra aux requêtes. Pour utiliser "
+"cette directive, le processus doit être lancé initialement en tant que "
+"root. Si vous démarrez le serveur en tant qu'utilisateur non root, il ne "
+"passera pas à l'utilisateur moins privilégié et continuera à fonctionner "
+"en tant qu'utilisateur d'origine."
 
 #: src/udb/config.py:469
 msgid ""
 "Group under which the server will answer requests. In order to use this "
 "directive, the process must be run initially as root."
 msgstr ""
+"Groupe sous lequel le serveur répondra aux demandes. Pour pouvoir "
+"utiliser cette directive, le processus doit être exécuté initialement en "
+"tant qu'utilisateur root."
 
 #: src/udb/controller/__init__.py:146 src/udb/controller/__init__.py:148
 #: src/udb/controller/profile_page.py:140
 #, python-format
 msgid "Invalid value: %s"
-msgstr ""
+msgstr "Valeur invalide : %s"
 
 #: src/udb/controller/__init__.py:153
 msgid "A record already exists in database with the same value."
-msgstr ""
+msgstr "Un enregistrement existe déjà dans la base de données avec la même valeur."
 
 #: src/udb/controller/__init__.py:161
 msgid " Field(s): "
-msgstr ""
+msgstr " Champ(s) : "
 
 #: src/udb/controller/__init__.py:163
 msgid " Index: "
-msgstr ""
+msgstr " Index : "
 
 #: src/udb/controller/__init__.py:165
 #, python-format
 msgid "Database error: %s"
-msgstr ""
+msgstr "Erreur de base de données : %s"
 
 #: src/udb/controller/audit_page.py:93 src/udb/controller/search_page.py:128
 msgid "Invalid column for sorting"
-msgstr ""
+msgstr "Colonne non valide pour le tri"
 
 #: src/udb/controller/common_page.py:40
 msgid "Message"
-msgstr ""
+msgstr "Message"
 
 #: src/udb/controller/common_page.py:45
 msgid "Add a comments"
-msgstr ""
+msgstr "Ajouter un commentaire"
 
 #: src/udb/controller/common_page.py:236
 msgid "Record updated successfully"
-msgstr ""
+msgstr "L'enregistrement a été mis à jour avec succès"
 
 #: src/udb/controller/dhcprecord_page.py:38 src/udb/controller/mac_page.py:33
 #: src/udb/templates/macro.html:14
 msgid "IP"
-msgstr ""
+msgstr "IP"
 
 #: src/udb/controller/dhcprecord_page.py:40
 #: src/udb/controller/subnet_page.py:65
 msgid "Enter an IPv4 or IPv6 address"
-msgstr ""
+msgstr "Saisir une adresse IPv4 ou IPv6"
 
 #: src/udb/controller/dhcprecord_page.py:44 src/udb/controller/ip_page.py:41
 #: src/udb/templates/macro.html:14
 msgid "MAC"
-msgstr ""
+msgstr "MAC"
 
 #: src/udb/controller/dhcprecord_page.py:44
 msgid "Enter a MAC address"
-msgstr ""
+msgstr "Saisir une adresse MAC"
 
 #: src/udb/controller/dhcprecord_page.py:48
 #: src/udb/controller/dnsrecord_page.py:74
@@ -369,11 +477,11 @@ msgstr ""
 #: src/udb/controller/mac_page.py:52 src/udb/controller/subnet_page.py:117
 #: src/udb/controller/vrf_page.py:40 src/udb/templates/search.html:31
 msgid "Notes"
-msgstr ""
+msgstr "Notes"
 
 #: src/udb/controller/dhcprecord_page.py:53
 msgid "Enter details information about this DHCP Reservation"
-msgstr ""
+msgstr "Saisir des informations détaillées sur cette réservation DHCP"
 
 #: src/udb/controller/dhcprecord_page.py:57
 #: src/udb/controller/dnsrecord_page.py:83
@@ -382,106 +490,108 @@ msgstr ""
 #: src/udb/controller/mac_page.py:59 src/udb/controller/subnet_page.py:123
 #: src/udb/controller/vrf_page.py:47 src/udb/templates/search.html:30
 msgid "Owner"
-msgstr ""
+msgstr "Propriétaire"
 
 #: src/udb/controller/dnsrecord_page.py:36
 #: src/udb/controller/dnszone_page.py:57 src/udb/controller/ip_page.py:33
 #: src/udb/controller/ip_page.py:46 src/udb/controller/subnet_page.py:58
 #: src/udb/controller/vrf_page.py:34
 msgid "Name"
-msgstr ""
+msgstr "Nom"
 
 #: src/udb/controller/dnsrecord_page.py:41
 #: src/udb/controller/dnszone_page.py:62
 msgid "Enter a FQDN"
-msgstr ""
+msgstr "Saisir un FQDN"
 
 #: src/udb/controller/dnsrecord_page.py:45 src/udb/controller/ip_page.py:34
 #: src/udb/controller/load_page.py:37 src/udb/templates/audit/list.html:26
 msgid "Type"
-msgstr ""
+msgstr "Type"
 
 #: src/udb/controller/dnsrecord_page.py:55 src/udb/controller/ip_page.py:35
 msgid "TTL"
-msgstr ""
+msgstr "TTL"
 
 #: src/udb/controller/dnsrecord_page.py:56
 #, python-format
 msgid "TTL must be at least %(min)s."
-msgstr ""
+msgstr "Le TTL doit être au moins %(min)s."
 
 #: src/udb/controller/dnsrecord_page.py:59
 msgid "Time-to-live value (default: 3600)"
-msgstr ""
+msgstr "Valeur du temps de vie (par défaut : 3600)"
 
 #: src/udb/controller/dnsrecord_page.py:61
 msgid "Time to live in seconds."
-msgstr ""
+msgstr "Durée de vie en secondes."
 
 #: src/udb/controller/dnsrecord_page.py:66 src/udb/controller/ip_page.py:36
 msgid "Value"
-msgstr ""
+msgstr "Valeur"
 
 #: src/udb/controller/dnsrecord_page.py:79
 #: src/udb/controller/subnet_page.py:120
 msgid "Enter details information about this subnet"
-msgstr ""
+msgstr "Saisir des informations détaillées sur ce sous-réseau"
 
 #: src/udb/controller/dnsrecord_page.py:92
 msgid "Create Reverse DNS Record"
-msgstr ""
+msgstr "Créer un enregistrement DNS inverse"
 
 #: src/udb/controller/dnsrecord_page.py:101
 msgid "Create Forward DNS Record"
-msgstr ""
+msgstr "Création d'un enregistrement DNS direct (Forward DNS Record)"
 
 #: src/udb/controller/dnsrecord_page.py:145
 msgid "Reverse DNS Record created."
-msgstr ""
+msgstr "Enregistrement DNS inversé créé."
 
 #: src/udb/controller/dnsrecord_page.py:147
 msgid "Cannnot create Reverse DNS Record."
-msgstr ""
+msgstr "Impossible de créer un enregistrement DNS inverse."
 
 #: src/udb/controller/dnszone_page.py:66
 msgid "Allowed subnets"
-msgstr ""
+msgstr "Sous-réseaux autorisés"
 
 #: src/udb/controller/dnszone_page.py:77
 msgid "Enter details information about this DNS Zone"
-msgstr ""
+msgstr "Saisir des informations détaillées sur cette zone DNS"
 
 #: src/udb/controller/environment_page.py:42
 msgid "Environment Name"
-msgstr ""
+msgstr "Nom de l'environnement"
 
 #: src/udb/controller/environment_page.py:45
 msgid "Data Type"
-msgstr ""
+msgstr "Type de données"
 
 #: src/udb/controller/environment_page.py:53
 msgid "Script"
-msgstr ""
+msgstr "Script"
 
 #: src/udb/controller/environment_page.py:56
 msgid "Enter command lines used to deploy in this environment."
 msgstr ""
+"Saisir les lignes de commande utilisées pour le déploiement dans cet "
+"environnement."
 
 #: src/udb/controller/environment_page.py:66
 msgid "Enter details information about this environment"
-msgstr ""
+msgstr "Saisir des informations détaillées sur cet environnement"
 
 #: src/udb/controller/environment_page.py:78
 msgid "Subnets"
-msgstr ""
+msgstr "Sous-réseaux"
 
 #: src/udb/controller/environment_page.py:79
 msgid "DNS Records"
-msgstr ""
+msgstr "Enregistrements DNS"
 
 #: src/udb/controller/environment_page.py:80 src/udb/templates/macro.html:14
 msgid "DHCP Reservation"
-msgstr ""
+msgstr "Réservation DHCP"
 
 #: src/udb/controller/environment_page.py:83
 #, python-format
@@ -489,1060 +599,1088 @@ msgid ""
 "Your shell script can use some of the predefined environment variables: "
 "%s."
 msgstr ""
+"Votre script shell peut utiliser certaines des variables d'environnement "
+"prédéfinies : %s."
 
 #: src/udb/controller/environment_page.py:94
 msgid "Deploy pending changes"
-msgstr ""
+msgstr "Déploiement en attente de modifications"
 
 #: src/udb/controller/form.py:241 src/udb/controller/subnet_page.py:103
 msgid "-"
-msgstr ""
+msgstr "-"
 
 #: src/udb/controller/ip_page.py:48 src/udb/controller/subnet_page.py:63
 msgid "IP Ranges"
-msgstr ""
+msgstr "Plages d'IP"
 
 #: src/udb/controller/ip_page.py:50 src/udb/controller/subnet_page.py:68
 #: src/udb/templates/macro.html:14
 msgid "VRF"
-msgstr ""
+msgstr "VRF"
 
 #: src/udb/controller/ip_page.py:51
 msgid "DNS zones"
-msgstr ""
+msgstr "Zones DNS"
 
 #: src/udb/controller/ip_page.py:61 src/udb/templates/ip/list.html:4
 msgid "IP Address"
-msgstr ""
+msgstr "Adresse IP"
 
 #: src/udb/controller/ip_page.py:65
 msgid "Related DNS Records"
-msgstr ""
+msgstr "Enregistrements DNS associés"
 
 #: src/udb/controller/ip_page.py:71 src/udb/controller/mac_page.py:47
 msgid "Related DHCP Reservations"
-msgstr ""
+msgstr "Réservations DHCP associées"
 
 #: src/udb/controller/ip_page.py:77
 msgid "Supernets"
-msgstr ""
+msgstr "Supernets"
 
 #: src/udb/controller/ip_page.py:85
 msgid "Enter details information about this IP Address"
-msgstr ""
+msgstr "Saisir des informations détaillées sur cette adresse IP"
 
 #: src/udb/controller/load_page.py:38
 msgid "Subnet file"
-msgstr ""
+msgstr "Fichier de sous-réseau"
 
 #: src/udb/controller/load_page.py:43
 msgid "CSV File"
-msgstr ""
+msgstr "Fichier CSV"
 
 #: src/udb/controller/load_page.py:95 src/udb/controller/load_page.py:130
 msgid "Fail to process the given file."
-msgstr ""
+msgstr "Échec du traitement du fichier donné."
 
 #: src/udb/controller/load_page.py:97 src/udb/controller/load_page.py:132
 msgid " Line: "
-msgstr ""
+msgstr " Ligne : "
 
 #: src/udb/controller/load_page.py:99 src/udb/controller/load_page.py:134
 msgid " Row: "
-msgstr ""
+msgstr " Rangée : "
 
 #: src/udb/controller/load_page.py:164
 msgid "CSV File imported with success !"
-msgstr ""
+msgstr "Fichier CSV importé avec succès !"
 
 #: src/udb/controller/login_page.py:31 src/udb/controller/profile_page.py:32
 #: src/udb/controller/user_page.py:34
 msgid "Username"
-msgstr ""
+msgstr "Nom d'utilisateur"
 
 #: src/udb/controller/login_page.py:37
 msgid "Enter a valid email address"
-msgstr ""
+msgstr "Entrez une adresse e-mail valide"
 
 #: src/udb/controller/login_page.py:40 src/udb/controller/user_page.py:47
 #: src/udb/templates/profile.html:25
 msgid "Password"
-msgstr ""
+msgstr "Mot de passe"
 
 #: src/udb/controller/login_page.py:45
 msgid "Enter password"
-msgstr ""
+msgstr "Entrez votre mot de passe"
 
 #: src/udb/controller/login_page.py:48 src/udb/controller/tests/test_i18n.py:60
 #: src/udb/controller/tests/test_i18n.py:65
 #: src/udb/controller/tests/test_i18n.py:69
 msgid "Remember me"
-msgstr ""
+msgstr "Se souvenir de moi"
 
 #: src/udb/controller/login_page.py:51
 msgid "invalid redirect url"
-msgstr ""
+msgstr "url de redirection invalide"
 
 #: src/udb/controller/login_page.py:72
 msgid "Invalid credentials"
-msgstr ""
+msgstr "Informations d'identification invalides"
 
 #: src/udb/controller/mac_page.py:43 src/udb/templates/mac/list.html:4
 msgid "MAC Address"
-msgstr ""
+msgstr "Adresse MAC"
 
 #: src/udb/controller/mac_page.py:55
 msgid "Enter details information about this MAC Address"
-msgstr ""
+msgstr "Entrez des informations détaillées sur cette adresse MAC"
 
 #: src/udb/controller/notifications_page.py:108
 msgid "Notification settings updated successfully."
-msgstr ""
+msgstr "Les paramètres de notification ont été mis à jour avec succès."
 
 #: src/udb/controller/profile_page.py:41 src/udb/controller/user_page.py:38
 msgid "Fullname"
-msgstr ""
+msgstr "Nom complet"
 
 #: src/udb/controller/profile_page.py:49 src/udb/controller/user_page.py:40
 msgid "Email"
-msgstr ""
+msgstr "Courriel"
 
 #: src/udb/controller/profile_page.py:57 src/udb/controller/user_page.py:44
 msgid "Preferred Language"
-msgstr ""
+msgstr "Langue préférée"
 
 #: src/udb/controller/profile_page.py:67 src/udb/controller/user_page.py:61
 msgid "(default)"
-msgstr ""
+msgstr "(par défaut)"
 
 #: src/udb/controller/profile_page.py:74
 msgid "Current password"
-msgstr ""
+msgstr "Mot de passe actuel"
 
 #: src/udb/controller/profile_page.py:76
 msgid "Current password is missing."
-msgstr ""
+msgstr "Le mot de passe actuel est manquant."
 
 #: src/udb/controller/profile_page.py:79
 msgid "You must provide your current password in order to change it."
-msgstr ""
+msgstr "Vous devez fournir votre mot de passe actuel pour le modifier."
 
 #: src/udb/controller/profile_page.py:83
 msgid "New password"
-msgstr ""
+msgstr "Nouveau mot de passe"
 
 #: src/udb/controller/profile_page.py:85
 msgid "New password is missing."
-msgstr ""
+msgstr "Le nouveau mot de passe est manquant."
 
 #: src/udb/controller/profile_page.py:86
 msgid "The new password and its confirmation do not match."
-msgstr ""
+msgstr "Le nouveau mot de passe et sa confirmation ne correspondent pas."
 
 #: src/udb/controller/profile_page.py:92
 msgid "Password confirmation"
-msgstr ""
+msgstr "Confirmation du mot de passe"
 
 #: src/udb/controller/profile_page.py:94
 msgid "Confirmation password is missing."
-msgstr ""
+msgstr "Le mot de passe de confirmation est manquant."
 
 #: src/udb/controller/profile_page.py:104
 msgid ""
 "Cannot update password for non-local user. Contact your administrator for"
 " more detail."
 msgstr ""
+"Impossible de mettre à jour le mot de passe d'un utilisateur non local. "
+"Contactez votre administrateur pour plus de détails."
 
 #: src/udb/controller/profile_page.py:109
 msgid "Current password is not valid."
-msgstr ""
+msgstr "Le mot de passe actuel n'est pas valide."
 
 #: src/udb/controller/profile_page.py:142
 msgid "User profile updated successfully."
-msgstr ""
+msgstr "Le profil de l'utilisateur a été mis à jour avec succès."
 
 #: src/udb/controller/subnet_page.py:60
 msgid "Enter a description"
-msgstr ""
+msgstr "Saisir une description"
 
 #: src/udb/controller/subnet_page.py:71
 msgid "Enter a VRF number (optional)"
-msgstr ""
+msgstr "Entrez un numéro VRF (optionnel)"
 
 #: src/udb/controller/subnet_page.py:74
 msgid "L3VNI"
-msgstr ""
+msgstr "L3VNI"
 
 #: src/udb/controller/subnet_page.py:75
 #, python-format
 msgid "L3VNI must be at least %(min)s."
-msgstr ""
+msgstr "L3VNI doit être au moins %(min)s."
 
 #: src/udb/controller/subnet_page.py:79
 msgid "L3VNI number."
-msgstr ""
+msgstr "Numéro L3VNI."
 
 #: src/udb/controller/subnet_page.py:83
 msgid "L2VNI"
-msgstr ""
+msgstr "L2VNI"
 
 #: src/udb/controller/subnet_page.py:84
 #, python-format
 msgid "L2VNI must be at least %(min)s."
-msgstr ""
+msgstr "L2VNI doit être au moins %(min)s."
 
 #: src/udb/controller/subnet_page.py:88
 msgid "L2VNI number."
-msgstr ""
+msgstr "Numéro L2VNI."
 
 #: src/udb/controller/subnet_page.py:92
 msgid "VLAN"
-msgstr ""
+msgstr "VLAN"
 
 #: src/udb/controller/subnet_page.py:93
 #, python-format
 msgid "VLAN must be at least %(min)s."
-msgstr ""
+msgstr "VLAN doit être au moins %(min)s."
 
 #: src/udb/controller/subnet_page.py:97
 msgid "VLAN number."
-msgstr ""
+msgstr "Numéro du VLAN."
 
 #: src/udb/controller/subnet_page.py:101
 msgid "RIR Status"
-msgstr ""
+msgstr "État RIR"
 
 #: src/udb/controller/subnet_page.py:112
 msgid "Allowed DNS zone(s)"
-msgstr ""
+msgstr "Zone(s) DNS autorisée(s)"
 
 #: src/udb/controller/user_page.py:42
 msgid "Role"
-msgstr ""
+msgstr "Rôle"
 
 #: src/udb/controller/user_page.py:49
 msgid ""
 "To create a local user, set a password. To create an external user, "
 "validating the password with LDAP, do not set a password."
 msgstr ""
+"Pour créer un utilisateur local, définir un mot de passe. Pour créer un "
+"utilisateur externe, valider le mot de passe avec LDAP, ne pas définir de"
+" mot de passe."
 
 #: src/udb/controller/user_page.py:54
 msgid "Clear password"
-msgstr ""
+msgstr "Effacer le mot de passe"
 
 #: src/udb/controller/user_page.py:65
 msgid "Guest - Permissions to view the records"
-msgstr ""
+msgstr "Invité - Permissions de voir les enregistrements"
 
 #: src/udb/controller/user_page.py:66
 msgid "User - Permissions to view and edit records"
-msgstr ""
+msgstr "Utilisateur - Permissions de voir et de modifier les enregistrements"
 
 #: src/udb/controller/user_page.py:67
 msgid "DNS Zone Manager - Permissions to create a new DNS zone"
-msgstr ""
+msgstr "Gestionnaire de zone DNS - Permissions de créer une nouvelle zone DNS"
 
 #: src/udb/controller/user_page.py:68
 msgid "Subnet Manager - Permissions to create new Subnet"
-msgstr ""
+msgstr "Gestionnaire de sous-réseau - Permissions de créer un nouveau sous-réseau"
 
 #: src/udb/controller/user_page.py:69
 msgid "Administrator - All permissions including user"
 msgstr ""
+"Administrateur - Toutes les autorisations, y compris celles de "
+"l'utilisateur"
 
 #: src/udb/controller/vrf_page.py:36
 msgid "Enter a VRF name"
-msgstr ""
+msgstr "Saisir un nom de VRF"
 
 #: src/udb/controller/vrf_page.py:43
 msgid "Enter details information about this VRF"
-msgstr ""
+msgstr "Saisir des informations détaillées sur ce VRF"
 
 #: src/udb/core/notification.py:169 src/udb/templates/common/edit.html:136
 msgid "Notification"
-msgstr ""
+msgstr "Notification"
 
 #: src/udb/core/model/_dhcprecord.py:62 src/udb/core/model/_dnsrecord.py:176
 msgid "value must be a valid IP address"
-msgstr ""
+msgstr "la valeur doit être une adresse IP valide"
 
 #: src/udb/core/model/_dhcprecord.py:67 src/udb/core/model/_mac.py:55
 msgid "expected a valid mac"
-msgstr ""
+msgstr "addresse MAC invalide"
 
 #: src/udb/core/model/_dhcprecord.py:87
 msgid "IP address must be defined within a Subnet"
-msgstr ""
+msgstr "L'adresse IP doit être définie dans un sous-réseau"
 
 #: src/udb/core/model/_dnsrecord.py:167
 msgid "invalid record type"
-msgstr ""
+msgstr "type d'enregistrement non valide"
 
 #: src/udb/core/model/_dnsrecord.py:171
 msgid "value must be a valid domain name"
-msgstr ""
+msgstr "la valeur doit être un nom de domaine valide"
 
 #: src/udb/core/model/_dnsrecord.py:179
 msgid "value must not be empty"
-msgstr ""
+msgstr "la valeur ne doit pas être vide"
 
 #: src/udb/core/model/_dnsrecord.py:184
 msgid "FQDN must be defined within a valid DNS Zone."
-msgstr ""
+msgstr "Le FQDN doit être défini dans une zone DNS valide."
 
 #: src/udb/core/model/_dnsrecord.py:190
 msgid ""
 "PTR records must ends with `.in-addr.arpa` or `.ip6.arpa` and define a "
 "valid IPv4 or IPv6 address"
 msgstr ""
+"Les enregistrements PTR doivent se terminer par `.in-addr.arpa` ou "
+"`.ip6.arpa` et définir une adresse IPv4 ou IPv6 valide"
 
 #: src/udb/core/model/_dnsrecord.py:208
 #, python-format
 msgid "IP address must be defined within the DNS Zone: %s"
-msgstr ""
+msgstr "L'adresse IP doit être définie dans la zone DNS : %s"
 
 #: src/udb/core/model/_dnsrecord.py:277 src/udb/core/model/_dnsrecord.py:279
 #: src/udb/core/model/_dnszone.py:80
 msgid "expected a valid FQDN"
-msgstr ""
+msgstr "attend un FQDN valide"
 
 #: src/udb/core/model/_dnsrecord.py:285
 msgid "expected a valid DNS record type"
-msgstr ""
+msgstr "attend un type d'enregistrement DNS valide"
 
 #: src/udb/core/model/_ip.py:67
 msgid "expected a valid ipv4 or ipv6"
-msgstr ""
+msgstr "addresse IPv4 ou IPv6 invalide"
 
 #: src/udb/core/model/_message.py:151
 msgid "nobody"
-msgstr ""
+msgstr "personne"
 
 #: src/udb/core/model/_subnet.py:71
 msgid "does not appear to be a valid IPv6 or IPv4 network"
-msgstr ""
+msgstr "ne semble pas être un réseau IPv6 ou IPv4 valide"
 
 #: src/udb/core/model/_subnet.py:141
 msgid "is not a valid RIR status"
-msgstr ""
+msgstr "n'est pas un statut RIR valide"
 
 #: src/udb/core/model/_subnet.py:151
 msgid "at least one IPv6 or IPv4 network is required"
-msgstr ""
+msgstr "au moins un réseau IPv6 ou IPv4 est requis"
 
 #: src/udb/core/model/_user.py:125
 msgid "New password cannot be empty."
-msgstr ""
+msgstr "Le nouveau mot de passe ne peut pas être vide."
 
 #: src/udb/core/model/_user.py:131
 msgid "Password too weak."
-msgstr ""
+msgstr "Le mot de passe est trop faible."
 
 #: src/udb/core/model/_user.py:170
 msgid "A user cannot update his own status."
-msgstr ""
+msgstr "Un utilisateur ne peut pas mettre à jour son propre statut."
 
 #: src/udb/core/model/_user.py:173
 msgid "A user cannot update his own role."
-msgstr ""
+msgstr "Un utilisateur ne peut pas mettre à jour son propre rôle."
 
 #: src/udb/core/model/_vrf.py:49
 msgid "VRF name cannot be empty."
-msgstr ""
+msgstr "Le nom du VRF ne peut pas être vide."
 
 #: src/udb/templates/dashboard.html:24 src/udb/templates/dashboard.html:27
 msgid "Dashboard"
-msgstr ""
+msgstr "Tableau de bord"
 
 #: src/udb/templates/dashboard.html:50
 msgid "Last activities"
-msgstr ""
+msgstr "Dernières activités"
 
 #: src/udb/templates/dashboard.html:51
 msgid "last 10 modifications"
-msgstr ""
+msgstr "10 dernières modifications"
 
 #: src/udb/templates/audit/list.html:22 src/udb/templates/dashboard.html:58
 #: src/udb/templates/deployment/view.html:34
 #: src/udb/templates/environment/edit.html:16
 msgid "Record"
-msgstr ""
+msgstr "Enregistrement"
 
 #: src/udb/templates/audit/list.html:28 src/udb/templates/dashboard.html:64
 #: src/udb/templates/deployment/view.html:27
 #: src/udb/templates/deployment/view.html:40
 msgid "Changes"
-msgstr ""
+msgstr "Modifications"
 
 #: src/udb/templates/dashboard.html:65
 msgid "No modification"
-msgstr ""
+msgstr "Aucune modification"
 
 #: src/udb/templates/dashboard.html:74
 msgid "Most active users"
-msgstr ""
+msgstr "Utilisateur les plus actif"
 
 #: src/udb/templates/dashboard.html:75
 msgid "last 7 days"
-msgstr ""
+msgstr "7 derniers jours"
 
 #: src/udb/templates/dashboard.html:95
 msgid "No activities"
-msgstr ""
+msgstr "Aucune activité"
 
 #: src/udb/templates/error_page.html:12
 msgid "Oops!"
-msgstr ""
+msgstr "Oups !"
 
 #: src/udb/templates/error_page.html:20
 msgid "Sorry, an error has occured."
-msgstr ""
+msgstr "Désolé, une erreur s'est produite."
 
 #: src/udb/templates/load.html:7
 msgid "Import"
-msgstr ""
+msgstr "Importer"
 
 #: src/udb/templates/load.html:13
 msgid "Load CSV File"
-msgstr ""
+msgstr "Charger un fichier CSV"
 
 #: src/udb/templates/load.html:14
 msgid "You may load data from a compatible CSV File format."
-msgstr ""
+msgstr "Vous pouvez charger des données à partir d'un fichier CSV compatible."
 
 #: src/udb/templates/load.html:15
 msgid ""
 "Supported format uses commat (,) as separator and double-quote (\") for "
 "text delimiter."
 msgstr ""
+"Ce format utilise la virgule (,) comme séparateur et le guillemet double "
+"(\") comme délimiteur de texte."
 
 #: src/udb/templates/load.html:17
 msgid "Supported column name:"
-msgstr ""
+msgstr "Nom de colonne pris en charge :"
 
 #: src/udb/templates/load.html:26
 msgid "Load"
-msgstr ""
+msgstr "Chargement"
 
 #: src/udb/templates/login.html:4 src/udb/templates/login.html:24
 msgid "Login"
-msgstr ""
+msgstr "Connexion"
 
 #: src/udb/templates/macro.html:14
 msgid "DNS Zone"
-msgstr ""
+msgstr "Zone DNS"
 
 #: src/udb/templates/macro.html:14
 msgid "Subnet"
-msgstr ""
+msgstr "Sous-réseau"
 
 #: src/udb/templates/macro.html:14
 msgid "DNS Record"
-msgstr ""
+msgstr "Enregistrement DNS"
 
 #: src/udb/templates/macro.html:14
 msgid "User"
-msgstr ""
+msgstr "Utilisateur"
 
 #: src/udb/templates/deployment/list.html:6
 #: src/udb/templates/deployment/list.html:22 src/udb/templates/macro.html:14
 msgid "Deployment"
-msgstr ""
+msgstr "Déploiement"
 
 #: src/udb/templates/deployment/list.html:24 src/udb/templates/macro.html:14
 msgid "Environment"
-msgstr ""
+msgstr "Environnement"
 
 #: src/udb/templates/audit/list.html:6 src/udb/templates/audit/list.html:10
 #: src/udb/templates/macro.html:14
 msgid "Audit log"
-msgstr ""
+msgstr "Journal d'audit"
 
 #: src/udb/templates/navbar.html:34
 msgid "Network"
-msgstr ""
+msgstr "Réseau"
 
 #: src/udb/templates/navbar.html:50
 msgid "Setup"
-msgstr ""
+msgstr "Configuration"
 
 #: src/udb/templates/navbar.html:66
 msgid "System"
-msgstr ""
+msgstr "Système"
 
 #: src/udb/templates/navbar.html:82
 msgid "Administration"
-msgstr ""
+msgstr "Administration"
 
 #: src/udb/templates/navbar.html:109 src/udb/templates/profile.html:5
 msgid "Edit user profile"
-msgstr ""
+msgstr "Profil de l'utilisateur"
 
 #: src/udb/templates/mail/email_layout.html:362
 #: src/udb/templates/navbar.html:112 src/udb/templates/notifications.html:7
 msgid "Edit notification settings"
-msgstr ""
+msgstr "Paramètres de notification"
 
 #: src/udb/templates/navbar.html:118
 msgid "Sign out"
-msgstr ""
+msgstr "Se déconnecter"
 
 #: src/udb/templates/navbar.html:123
 msgid "Powered by"
-msgstr ""
+msgstr "Soutenu par"
 
 #: src/udb/templates/navbar.html:124
 msgid "version"
-msgstr ""
+msgstr "version"
 
 #: src/udb/templates/notifications.html:12
 msgid "Follow changes made on record type"
-msgstr ""
+msgstr "Suivre les modifications apportées à un type d'enregistrement"
 
 #: src/udb/templates/notifications.html:13
 msgid ""
 "You can select the record type(s) for which you want to receive all "
 "notifications."
 msgstr ""
+"Vous pouvez sélectionner le(s) type(s) d'enregistrement pour lesquels "
+"vous souhaitez recevoir toutes les notifications."
 
 #: src/udb/templates/notifications.html:23
 msgid "Save notification settings"
-msgstr ""
+msgstr "Enregistrer les paramètres de notification"
 
 #: src/udb/templates/notifications.html:30
 msgid "Follow changes made on specific record"
-msgstr ""
+msgstr "Suivre les modifications apportées à un enregistrement spécifique"
 
 #: src/udb/templates/notifications.html:31
 msgid "Provide a complete list of record that you are following."
-msgstr ""
+msgstr "Fournis une liste complète des enregistrements que vous suivez."
 
 #: src/udb/templates/notifications.html:34
 msgid "Are you sure you want to stop following all records ?"
-msgstr ""
+msgstr "Êtes-vous sûr de vouloir arrêter de suivre tous les enregistrements ?"
 
 #: src/udb/templates/notifications.html:38
 msgid "Unfollow all"
-msgstr ""
+msgstr "Annuler le suivi de tous les enregistrements"
 
 #: src/udb/templates/notifications.html:46
 msgid "Subscribed to"
-msgstr ""
+msgstr "Abonnés à"
 
 #: src/udb/templates/notifications.html:48
 msgid "You are not following any record."
-msgstr ""
+msgstr "Vous ne suivez aucun enregistrement."
 
 #: src/udb/templates/common/list.html:43
 #: src/udb/templates/notifications.html:52
 msgid "Reset"
-msgstr ""
+msgstr "Réinitialiser"
 
 #: src/udb/templates/profile.html:11
 msgid "Account settings"
-msgstr ""
+msgstr "Paramètres du compte"
 
 #: src/udb/templates/profile.html:12
 msgid "General information about your account."
-msgstr ""
+msgstr "Informations générales sur votre compte."
 
 #: src/udb/templates/profile.html:17
 msgid "Save account settings"
-msgstr ""
+msgstr "Sauvegarder les paramètres du compte"
 
 #: src/udb/templates/profile.html:26
 msgid "Change your current password"
-msgstr ""
+msgstr "Modifier votre mot de passe actuel"
 
 #: src/udb/templates/profile.html:31
 msgid "Save password"
-msgstr ""
+msgstr "Enregistrer le mot de passe"
 
 #: src/udb/templates/search.html:6 src/udb/templates/search.html:9
 msgid "Result for: "
-msgstr ""
+msgstr "Résultat pour : "
 
 #: src/udb/templates/search.html:21
 msgid "All"
-msgstr ""
+msgstr "Tous"
 
 #: src/udb/templates/search.html:28
 msgid "Summary"
-msgstr ""
+msgstr "Sommaire"
 
 #: src/udb/templates/audit/list.html:23 src/udb/templates/search.html:29
 msgid "Model"
-msgstr ""
+msgstr "Modèle"
 
 #: src/udb/templates/search.html:32
 msgid "Last Modified"
-msgstr ""
+msgstr "Dernière modification"
 
 #: src/udb/templates/search.html:43
 msgid ""
 "Sorry, that filter combination has no result. Please try different "
 "criteria."
 msgstr ""
+"Désolé, cette combinaison de filtres ne donne aucun résultat. Veuillez "
+"essayer d'autres critères."
 
 #: src/udb/templates/audit/list.html:24
 msgid "Author"
-msgstr ""
+msgstr "Auteur"
 
 #: src/udb/templates/audit/list.html:25
 msgid "Date"
-msgstr ""
+msgstr "Date"
 
 #: src/udb/templates/audit/list.html:26
 msgid "Created"
-msgstr ""
+msgstr "Créé"
 
 #: src/udb/templates/audit/list.html:26
 msgid "Modified"
-msgstr ""
+msgstr "Modifié"
 
 #: src/udb/templates/common/edit.html:15 src/udb/templates/common/edit.html:17
 #: src/udb/templates/common/new.html:15 src/udb/templates/common/new.html:17
 msgid "Go Back"
-msgstr ""
+msgstr "Retourner"
 
 #: src/udb/templates/common/edit.html:20
 msgid "Edit"
-msgstr ""
+msgstr "Modifier"
 
 #: src/udb/templates/common/edit.html:58
 msgid "Describe the reason for the changes or leave a message"
-msgstr ""
+msgstr "Décrire la raison des changements ou laisser un message"
 
 #: src/udb/templates/common/edit.html:65 src/udb/templates/common/edit.html:98
 msgid "Save changes"
-msgstr ""
+msgstr "Enregistrer les modifications"
 
 #: src/udb/templates/common/edit.html:70
 msgid "Toggle Dropdown"
-msgstr ""
+msgstr "Basculer le menu déroulant"
 
 #: src/udb/templates/common/edit.html:78
 msgid "Save changes and Delete"
-msgstr ""
+msgstr "Enregistrer les modifications et supprimer"
 
 #: src/udb/templates/common/edit.html:86
 msgid "Save changes and Disable"
-msgstr ""
+msgstr "Enregistrer les modifications et désactiver"
 
 #: src/udb/templates/common/edit.html:91
 msgid "Save changes and Enable"
-msgstr ""
+msgstr "Enregistrer les modifications et activer"
 
 #: src/udb/templates/common/edit.html:100 src/udb/templates/common/new.html:37
 msgid "Cancel"
-msgstr ""
+msgstr "Annuler"
 
 #: src/udb/templates/common/edit.html:116
 msgid "History"
-msgstr ""
+msgstr "Historique"
 
 #: src/udb/templates/common/edit.html:122
 msgid "No history"
-msgstr ""
+msgstr "Pas d'historique"
 
 #: src/udb/templates/common/edit.html:132
 #: src/udb/templates/widgets/TableWidget.html:9
 msgid "Actions"
-msgstr ""
+msgstr "Actions"
 
 #: src/udb/templates/common/followers.html:16
 #: src/udb/templates/common/followers.html:23
 msgid "Stop following"
-msgstr ""
+msgstr "Se désabonner"
 
 #: src/udb/templates/common/followers.html:16
 #: src/udb/templates/common/followers.html:23
 msgid "Start following"
-msgstr ""
+msgstr "S'abbonner"
 
 #: src/udb/templates/common/followers.html:45
 msgid "Followers:"
-msgstr ""
+msgstr "Abonnés :"
 
 #: src/udb/templates/common/followers.html:50
 msgid "No followers"
-msgstr ""
+msgstr "Aucun abonné"
 
 #: src/udb/templates/common/list.html:8
 msgid "List of"
-msgstr ""
+msgstr "Liste de"
 
 #: src/udb/templates/common/list.html:15
 msgid "Permissions required"
-msgstr ""
+msgstr "Permissions requises"
 
 #: src/udb/templates/common/list.html:16 src/udb/templates/common/new.html:34
 msgid "Create"
-msgstr ""
+msgstr "Créer"
 
 #: src/udb/templates/common/list.html:35
 msgid "Show Deleted"
-msgstr ""
+msgstr "Afficher Supprimé"
 
 #: src/udb/templates/common/list.html:39
 msgid "Show only mine"
-msgstr ""
+msgstr "Afficher que les miens"
 
 #: src/udb/templates/common/list.html:45
 msgid "export_"
-msgstr ""
+msgstr "export_"
 
 #: src/udb/templates/common/list.html:46
 msgid "Download Csv"
-msgstr ""
+msgstr "Télécharger Csv"
 
 #: src/udb/templates/common/list.html:47
 msgid "Download Excel"
-msgstr ""
+msgstr "Télécharger Excel"
 
 #: src/udb/templates/common/list.html:48
 msgid "Download PDF"
-msgstr ""
+msgstr "Télécharger PDF"
 
 #: src/udb/templates/common/list.html:49
 msgid "More"
-msgstr ""
+msgstr "Plus"
 
 #: src/udb/templates/common/new.html:4 src/udb/templates/common/new.html:20
 msgid "Create a new"
-msgstr ""
+msgstr "Créer un nouveau"
 
 #: src/udb/templates/common/status.html:1
 msgid "Enabled"
-msgstr ""
+msgstr "Activé"
 
 #: src/udb/templates/common/status.html:1
 #: src/udb/templates/components/table.html:44
 msgid "Disabled"
-msgstr ""
+msgstr "Désactivé"
 
 #: src/udb/templates/common/status.html:1
 #: src/udb/templates/components/table.html:43
 msgid "Deleted"
-msgstr ""
+msgstr "Supprimé"
 
 #: src/udb/templates/components/table.html:25
 msgid "activate to sort column ascending"
-msgstr ""
+msgstr "activer pour trier les colonnes en ordre croissant"
 
 #: src/udb/templates/components/table.html:26
 msgid "activate to sort column descending"
-msgstr ""
+msgstr "activer le tri des colonnes en ordre décroissant"
 
 #: src/udb/templates/components/table.html:29
 msgid "Previous"
-msgstr ""
+msgstr "Précédent"
 
 #: src/udb/templates/components/table.html:30
 msgid "Next"
-msgstr ""
+msgstr "Suivant"
 
 #: src/udb/templates/components/table.html:33
 #, python-format
 msgid "%%d years ago"
-msgstr ""
+msgstr "Il y a %%d ans"
 
 #: src/udb/templates/components/table.html:34
 #, python-format
 msgid "%%d months ago"
-msgstr ""
+msgstr "Il y a %%d mois"
 
 #: src/udb/templates/components/table.html:35
 #, python-format
 msgid "%%d days ago"
-msgstr ""
+msgstr "Il y a %%d jours"
 
 #: src/udb/templates/components/table.html:36
 #, python-format
 msgid "%%d hours ago"
-msgstr ""
+msgstr "Il y a %%d heures"
 
 #: src/udb/templates/components/table.html:37
 #, python-format
 msgid "%%d minutes ago"
-msgstr ""
+msgstr "Il y a %%d minutes"
 
 #: src/udb/templates/components/table.html:38
 #, python-format
 msgid "%%d seconds ago"
-msgstr ""
+msgstr "Il y a %%d secondes"
 
 #: src/udb/templates/components/table.html:40
 msgid "Created by "
-msgstr ""
+msgstr "Créé par "
 
 #: src/udb/templates/components/table.html:41
 msgid "Modified by "
-msgstr ""
+msgstr "Modifié par "
 
 #: src/udb/templates/components/table.html:42
 msgid "Message by "
-msgstr ""
+msgstr "Message par "
 
 #: src/udb/templates/components/table.html:45
 msgid " from _START_ to _END_ of _TOTAL_ total"
-msgstr ""
+msgstr " de _START_ à _END_ sur un total de _TOTAL_"
 
 #: src/udb/templates/components/table.html:45
 msgid "Showing total of _TOTAL_"
-msgstr ""
+msgstr "Affiche un total de _TOTAL_ entrées"
 
 #: src/udb/templates/components/table.html:46
 msgid "(filtered from _MAX_ total entries)"
-msgstr ""
+msgstr "(filtrés à partir de _MAX_ entrées totales)"
 
 #: src/udb/templates/components/table.html:47
 msgid "- No records available"
-msgstr ""
+msgstr "- Aucun enregistrement"
 
 #: src/udb/templates/components/table.html:48
 msgid "Show _MENU_ entries"
-msgstr ""
+msgstr "Affiche _MENU_ entrées"
 
 #: src/udb/templates/components/table.html:49
 msgid "Loading..."
-msgstr ""
+msgstr "Chargement..."
 
 #: src/udb/templates/components/table.html:50
 msgid "Filter: "
-msgstr ""
+msgstr "Filtre : "
 
 #: src/udb/templates/components/table.html:51
 #: src/udb/templates/widgets/TableWidget.html:43
 msgid "List is empty"
-msgstr ""
+msgstr "La liste est vide"
 
 #: src/udb/templates/components/typeahead.html:18
 msgid "Show all"
-msgstr ""
+msgstr "Afficher tout"
 
 #: src/udb/templates/components/typeahead.html:30
 msgid "Search..."
-msgstr ""
+msgstr "Rechercher..."
 
 #: src/udb/templates/deployment/list.html:10
 msgid "Recent Deployment"
-msgstr ""
+msgstr "Déploiement récent"
 
 #: src/udb/templates/deployment/list.html:17
 msgid "Starting"
-msgstr ""
+msgstr "Démarrage"
 
 #: src/udb/templates/deployment/list.html:18
 msgid "Running"
-msgstr ""
+msgstr "En cours"
 
 #: src/udb/templates/deployment/list.html:19
 #: src/udb/templates/deployment/view.html:15
 msgid "Success"
-msgstr ""
+msgstr "Réussite"
 
 #: src/udb/templates/deployment/list.html:20
 #: src/udb/templates/deployment/view.html:16
 msgid "Failed"
-msgstr ""
+msgstr "Échec"
 
 #: src/udb/templates/deployment/list.html:23
 msgid "State"
-msgstr ""
+msgstr "État"
 
 #: src/udb/templates/deployment/list.html:25
 msgid "Started on"
-msgstr ""
+msgstr "Démarré le"
 
 #: src/udb/templates/deployment/list.html:26
 msgid "Number of changes"
-msgstr ""
+msgstr "Nombre de modifications"
 
 #: src/udb/templates/deployment/list.html:27
 msgid "Deployed by"
-msgstr ""
+msgstr "Déployé par"
 
 #: src/udb/templates/deployment/list.html:30
 msgid "Changes never deployed."
-msgstr ""
+msgstr "Changements jamais déployés."
 
 #: src/udb/templates/deployment/view.html:6
 #: src/udb/templates/deployment/view.html:18
 msgid "Deployment #"
-msgstr ""
+msgstr "Déploiement #"
 
 #: src/udb/templates/deployment/view.html:11
 msgid "Starting..."
-msgstr ""
+msgstr "Démarrage..."
 
 #: src/udb/templates/deployment/view.html:14
 msgid "Running..."
-msgstr ""
+msgstr "En cours..."
 
 #: src/udb/templates/deployment/view.html:19
 msgid "to"
-msgstr ""
+msgstr "à"
 
 #: src/udb/templates/deployment/view.html:28
 msgid "List of changes activated by this deployment."
-msgstr ""
+msgstr "Liste des changements activés par ce déploiement."
 
 #: src/udb/templates/deployment/view.html:46
 msgid "No changes activated by this deployment."
-msgstr ""
+msgstr "Aucune modification activée par ce déploiement."
 
 #: src/udb/templates/deployment/view.html:55
 msgid "Log"
-msgstr ""
+msgstr "Journal"
 
 #: src/udb/templates/deployment/view.html:56
 msgid "Output of command line executed by this deployment."
-msgstr ""
+msgstr "Sortie de la ligne de commande exécutée par ce déploiement."
 
 #: src/udb/templates/dhcprecord/edit.html:7
 #: src/udb/templates/dnsrecord/edit.html:25
 msgid "Show Related IP"
-msgstr ""
+msgstr "Afficher l'IP associée"
 
 #: src/udb/templates/dhcprecord/edit.html:14
 msgid "Show Related MAC"
-msgstr ""
+msgstr "Afficher le MAC associé"
 
 #: src/udb/templates/dnsrecord/edit.html:10
 msgid "Show Reverse Record"
-msgstr ""
+msgstr "Afficher l'enregistrement DNS inversé"
 
 #: src/udb/templates/dnsrecord/edit.html:10
 msgid "Show Forward Record"
-msgstr ""
+msgstr "Afficher l'enregistrement DNS"
 
 #: src/udb/templates/dnsrecord/edit.html:16
 msgid "Create Reverse Record"
-msgstr ""
+msgstr "Créer un enregistrement DNS inverse"
 
 #: src/udb/templates/dnsrecord/edit.html:16
 msgid "Create Forward Record"
-msgstr ""
+msgstr "Créer un enregistrement DNS"
 
 #: src/udb/templates/dnszone/edit.html:8
 msgid "Download Zone file"
-msgstr ""
+msgstr "Télécharger le fichier de zone"
 
 #: src/udb/templates/dnszone/list.html:6
 msgid "Subnet count"
-msgstr ""
+msgstr "Nombre de sous-réseaux"
 
 #: src/udb/templates/environment/edit.html:22
 msgid "Pending Changes"
-msgstr ""
+msgstr "Changements en attente"
 
 #: src/udb/templates/environment/edit.html:28
 msgid "No changes since last deployment."
-msgstr ""
+msgstr "Aucune modification depuis le dernier déploiement."
 
 #: src/udb/templates/environment/list.html:7
 msgid "Number of pending changes"
-msgstr ""
+msgstr "Nombre de changements en attente"
 
 #: src/udb/templates/ip/edit.html:10
 msgid "Create Forward"
-msgstr ""
+msgstr "Créer un enregistrement avant"
 
 #: src/udb/templates/ip/edit.html:12
 msgid "Create Reverse"
-msgstr ""
+msgstr "Créer un enregistrement inverse"
 
 #: src/udb/templates/ip/edit.html:24 src/udb/templates/mac/edit.html:10
 msgid "Create new"
-msgstr ""
+msgstr "Créer nouveau"
 
 #: src/udb/templates/ip/list.html:5 src/udb/templates/mac/list.html:5
 msgid "Referenced"
-msgstr ""
+msgstr "Référencement"
 
 #: src/udb/templates/mail/email_layout.html:360
 msgid ""
 "You received this email because you are following changes on these "
 "records."
 msgstr ""
+"Vous avez reçu cet e-mail parce que vous suivez les modifications de ces "
+"enregistrements."
 
 #: src/udb/templates/mail/messages.html:2
 msgid "Undefined"
-msgstr ""
+msgstr "Non défini"
 
 #: src/udb/templates/mail/messages.html:5
 msgid "By "
-msgstr ""
+msgstr "Par "
 
 #: src/udb/templates/mail/messages.html:14
 msgid "Record created"
-msgstr ""
+msgstr "Enregistrement créé"
 
 #: src/udb/templates/mail/messages.html:39
 msgid "Removed:"
-msgstr ""
+msgstr "Supprimé :"
 
 #: src/udb/templates/mail/messages.html:43
 msgid "Added:"
-msgstr ""
+msgstr "Ajouté :"
 
 #: src/udb/templates/mail/notification.html:11
 msgid "modified"
-msgstr ""
+msgstr "modifié"
 
 #: src/udb/templates/mail/notification.html:11
 msgid "created"
-msgstr ""
+msgstr "créé"
 
 #: src/udb/templates/mail/notification.html:15
 #: src/udb/templates/mail/notification.html:32
 #, python-format
 msgid "And %(n)s more changes"
-msgstr ""
+msgstr "Et %(n)s changements supplémentaires"
 
 #: src/udb/templates/mail/notification.html:27
 msgid "View in browser"
-msgstr ""
+msgstr "Voir dans le navigateur"
 
 #: src/udb/templates/subnet/list.html:9
 msgid "Primary IP Range"
-msgstr ""
+msgstr "Plage IP primaire"
 
 #: src/udb/templates/subnet/list.html:10
 msgid "Secondary IP Range(s)"
-msgstr ""
+msgstr "Plage(s) IP secondaire(s)"
 
 #: src/udb/templates/subnet/list.html:19
 msgid "RIR Managed"
-msgstr ""
+msgstr "RIR géré"
 
 #: src/udb/templates/widgets/DualListWidget.html:3
 msgid "Available"
-msgstr ""
+msgstr "Disponible"
 
 #: src/udb/templates/widgets/DualListWidget.html:20
 msgid "Add item"
-msgstr ""
+msgstr "Ajouter un élément"
 
 #: src/udb/templates/widgets/DualListWidget.html:27
 msgid "Remove item"
-msgstr ""
+msgstr "Supprimer un élément"
 
 #: src/udb/templates/widgets/DualListWidget.html:35
 msgid "Selected"
-msgstr ""
+msgstr "Sélectionné"
 
 #: src/udb/templates/widgets/StringFieldSetWidget.html:7
 #: src/udb/templates/widgets/StringFieldSetWidget.html:26
 msgid "Remove row"
-msgstr ""
+msgstr "Supprimer la ligne"
 
 #: src/udb/templates/widgets/StringFieldSetWidget.html:19
 msgid "Add row"
-msgstr ""
+msgstr "Ajouter une ligne"
 
 #: src/udb/templates/widgets/TableWidget.html:33
 msgid "Edit detail"
-msgstr ""
+msgstr "Modifier le détail"
+
+#~ msgid "Enter IPv4 or IPv6 address"
+#~ msgstr "Saisir une adresse IPv4 ou IPv6"
+
+#~ msgid "Clear"
+#~ msgstr "Effacer"
+
+#~ msgid "Owned by me"
+#~ msgstr "Je suis le propriétaire"
 

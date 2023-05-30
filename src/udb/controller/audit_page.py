@@ -47,7 +47,7 @@ class AuditPage:
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['audit/list.html'])
     def index(self):
-        return {}
+        return {'model_names': [model.__name__ for model in auditable_models]}
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()

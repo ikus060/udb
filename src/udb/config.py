@@ -20,7 +20,6 @@ import grp
 import pwd
 import sys
 
-import cherrypy
 import configargparse
 
 from udb.tools.i18n import gettext as _
@@ -384,17 +383,6 @@ def parse_args(args=None, config_file_contents=None):
     )
 
     # Email
-    parser.add_argument('--imap-server', metavar='SERVER', help=_('IMAP server used to reveive email.'))
-    parser.add_argument(
-        '--imap-username', metavar='USERNAME', help=_('Username used to authenticated with the IMAP server.')
-    )
-    parser.add_argument(
-        '--imap-password', metavar='PASSWORD', help=_('Password used to authenticated with the IMAP server.')
-    )
-    parser.add_argument(
-        '--imap-frequency', metavar='FREQUENCY', type=int, default=5, help=_('Delay between each IMAP request')
-    )
-
     parser.add_argument('--smtp-server', metavar='SERVER', help=_('SMTP server used to send email.'))
     parser.add_argument(
         '--smtp-username', metavar='USERNAME', help=_('Username used to authenticated with the SMTP server.')
@@ -407,7 +395,7 @@ def parse_args(args=None, config_file_contents=None):
         '--smtp-encryption',
         default='none',
         choices=['none', 'ssl', 'starttls'],
-        help=_('type of encryption to be used when establishing communication with SMTP server'),
+        help=_('type of encryption to be used when establishing communication with SMTP server: none, ssl, starttls'),
     )
 
     parser.add_argument(
@@ -449,15 +437,6 @@ def parse_args(args=None, config_file_contents=None):
         help=_('URL used in the footer along "power by".'),
     )
 
-    # Here we append a list of arguments for each locale.
-    flags = ['--welcome-msg'] + ['--welcome-msg-' + i for i in ['ca', 'en', 'es', 'fr', 'ru']] + ['--welcomemsg']
-    parser.add_argument(
-        *flags,
-        metavar='HTML',
-        help=_('replace the welcome message displayed in the login page for default locale or for a specific locale'),
-        action=LocaleAction
-    )
-
     parser.add(
         '--password-score',
         type=lambda x: max(1, min(int(x), 4)),
@@ -495,48 +474,3 @@ def parse_args(args=None, config_file_contents=None):
     )
 
     return parser.parse_args(args, config_file_contents=config_file_contents)
-
-
-class LocaleAction(argparse.Action):
-    """
-    Custom Action to support defining arguments with locale.
-    """
-
-    def __init__(self, option_strings, dest, nargs=None, **kwargs):
-        super(LocaleAction, self).__init__(option_strings, dest, **kwargs)
-
-    def __call__(self, parser, namespace, value, option_string=None):
-        if option_string[-3] == '-':
-            # When using arguments, we can extract the locale from the argument key
-            locale = option_string[-2:]
-        elif value[2] == ':':
-            # When using config file, the locale could be extract from the value e.g. fr:message
-            locale = value[0:2]
-            value = value[3:]
-        else:
-            locale = ''
-        # Create a dictionary with locale.
-        items = getattr(namespace, self.dest) or {}
-        items[locale] = value
-        setattr(namespace, self.dest, items)
-
-
-class Option(object):
-    def __init__(self, key):
-        assert key
-        self.key = key
-
-    def __get__(self, instance, owner):
-        """
-        Return a property to wrap the given option.
-        """
-        return self.get(instance)
-
-    def get(self, instance=None):
-        """
-        Return the value of this options.
-        """
-        app = cherrypy.tree.apps[''].root or getattr(instance, 'app', None)
-        assert app, "Option() can't get reference to app"
-        assert app.cfg, "Option() can't get reference to app.cfg"
-        return getattr(app.cfg, self.key)

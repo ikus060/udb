@@ -58,7 +58,7 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
         try:
             return str(ipaddress.ip_address(value))
         except ValueError:
-            raise ValueError('ip', _('expected a valid ipv4 or ipv6'))
+            raise ValueError('ip', _('value must be a valid IP address'))
 
     @validates('mac')
     def validate_mac(self, key, value):
