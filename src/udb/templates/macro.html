@@ -10,8 +10,8 @@
   <i class="bi {{ icon_table.get(model_name, '') }} {{ extra_class or '' }}"
      aria-hidden="true"></i>
 {%- endmacro -%}
-{%- set display_name_table = {'dnszone': _('DNS Zone'), 'subnet':_('Subnet'), 'dnsrecord': _('DNS Record'), 'dhcprecord':_('DHCP Reservation'), 'ip':_('IP'), 'mac':_('MAC'), 'user': _('User'), 'vrf': _('VRF'), 'deployment':_('Deployment'), 'environment':_('Environment'), 'audit':_('Audit log') } -%}
-{%- macro display_name(value) -%}
+{%- macro display_name(value) -%}  
+  {%- set display_name_table = {'dnszone': _('DNS Zone'), 'subnet': _('Subnet'), 'dnsrecord': _('DNS Record'), 'dhcprecord':_('DHCP Reservation'), 'ip':_('IP'), 'mac':_('MAC'), 'user': _('User'), 'vrf': _('VRF'), 'deployment':_('Deployment'), 'environment':_('Environment'), 'audit':_('Audit log') } -%}
   {%- if value.model_name is defined() -%}
     {%- set model_name = value.model_name -%}
   {%- elif value._sa_instance_state is defined() -%}

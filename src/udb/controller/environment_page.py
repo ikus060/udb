@@ -63,7 +63,7 @@ class EnvironmentForm(CherryForm):
         validators=[
             Length(max=256),
         ],
-        render_kw={"placeholder": _("Enter details information about this DHCP Static Record")},
+        render_kw={"placeholder": _("Enter details information about this environment")},
     )
 
     owner_id = SelectObjectField(

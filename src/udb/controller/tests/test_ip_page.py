@@ -37,7 +37,7 @@ class IPTest(WebCase):
         self.getPage('/ip/')
         # Then no deleted filter exists
         self.assertNotInBody('Hide deleted')
-        self.assertNotInBody('Show deleted')
+        self.assertNotInBody('Show Deleted')
 
     def test_no_create_new(self):
         # Given a database with records

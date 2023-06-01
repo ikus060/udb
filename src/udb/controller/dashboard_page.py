@@ -33,7 +33,7 @@ class DashboardPage:
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['dashboard.html'])
     def index(self, **kwargs):
-        # Most active user
+        # Most active users
         week_ago = datetime.now() - timedelta(days=7)
         user_activities = (
             Message.query.with_entities(User, func.count(Message.author_id).label('count'))

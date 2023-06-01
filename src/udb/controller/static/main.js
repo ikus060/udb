@@ -135,8 +135,8 @@ $.fn.dataTable.ext.buttons.filter = {
  * Button to reset the filters of datatable.
  * Default settings are restored using init() API.
  */
-$.fn.dataTable.ext.buttons.clear = {
-    text: 'Clear',
+$.fn.dataTable.ext.buttons.reset = {
+    text: 'Reset',
     action: function (e, dt, node, config) {
         dt.search('');
         if (dt.init().aoSearchCols) {

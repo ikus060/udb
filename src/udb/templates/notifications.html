@@ -43,13 +43,13 @@
       {'name':'id', 'visible':False},
       {'name':'status', 'visible':False},
       {'name':'model_name', 'visible':False},
-      {'name': 'summary', 'title':_('Following'), 'orderable': True, 'render':'summary'}] %}
+      {'name': 'summary', 'title':_('Subscribed to'), 'orderable': True, 'render':'summary'}] %}
       {{ _table.table('data.json',
       empty_message=_('You are not following any record.'),
       page_length=10,
       length_change=False,
       columns = columns,
-      buttons=[{'text': _('Clear'), 'extend': 'clear'}]) }}
+      buttons=[{'text': _('Reset'), 'extend': 'reset'}]) }}
     </div>
   </div>
 {% endblock %}

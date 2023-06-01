@@ -24,6 +24,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.inspection import inspect
 
 import udb
+from udb.tools.i18n import get_translation
 from udb.tools.i18n import gettext as _
 
 logger = logging.getLogger(__name__)
@@ -119,6 +120,7 @@ def verify_perm(perm):
 def template_processor(request):
     app = cherrypy.tree.apps[''].root
     values = {
+        'lang': str(get_translation().locale),
         'header_name': app.cfg.header_name,
         'footer_url': app.cfg.footer_url,
         'footer_name': app.cfg.footer_name,

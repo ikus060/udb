@@ -9,11 +9,18 @@
   {# Title #}
   <h2>{% trans %}Audit log{% endtrans %}</h2>
   {% include "flash.html" %}
+  {# Translate model_names supported #}
+  {% set ns = namespace(display_name_table=[]) %}
+  {% for model_name in model_names %}
+    {% set display_name = macro.display_name(model_name) %}
+    {% set ns.display_name_table = ns.display_name_table + [(model_name, display_name)] %}
+  {% endfor %}
+  {# Define table settings #}
   {% set columns = [
   {'name':'id', 'visible':False},
   {'name':'status', 'visible':False},
   {'name':'summary', 'title':_('Record'), 'orderable':True, 'render':'summary'},
-  {'name':'model_name', 'title':_('Model'), 'orderable':True, 'render':'choices', 'render_arg': macro.display_name_table.items()|list },
+  {'name':'model_name', 'title':_('Model'), 'orderable':True, 'render':'choices', 'render_arg': ns.display_name_table },
   {'name':'author', 'title':_('Author'), 'orderable':True},
   {'name':'date', 'title':_('Date'), 'render':'datetime'},
   {'name':'type', 'title':_('Type'), 'render':'choices', 'render_arg': [ ['new',_('Created')], ['dirty',_('Modified')]] },

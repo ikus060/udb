@@ -10,8 +10,9 @@
     {% endfor -%}
     {{ _('modified') if messages[0].type == 'dirty' else _('created') }} by {{ messages[0].author_name }}
     {%- if messages[5] -%}
+      {{ ' ' }}
       {%- set change_count = (messages|length) - 5  -%}
-      {%- trans n=change_count %} And {{ n }} more changes{% endtrans -%}
+      {%- trans n=change_count %}And {{ n }} more changes{% endtrans -%}
     {%- endif -%}
   {%- endif -%}
 {% endblock title %}

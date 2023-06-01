@@ -43,11 +43,11 @@ Extract the strings to be translated:
 
 Create a new translation:
 
-    BABEL_LOCALE=fr tox -e babel_init
+    tox -e babel_init -- --locale fr
 
 Update an existing translation:
 
-    BABEL_LOCALE=fr tox -e babel_update
+    tox -e babel_update -- --locale fr 
 
 Compile catalog
 

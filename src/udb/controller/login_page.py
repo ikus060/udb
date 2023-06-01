@@ -20,7 +20,6 @@ from wtforms.fields import BooleanField, PasswordField, StringField
 from wtforms.fields.simple import HiddenField
 from wtforms.validators import InputRequired, Length, Regexp
 
-from udb.config import Option
 from udb.controller import flash
 from udb.controller.form import CherryForm
 from udb.tools.auth_form import LOGIN_PERSISTENT, SESSION_KEY
@@ -57,8 +56,6 @@ class LoginPage:
     This page is used by the authentication to display enter a user/pass.
     """
 
-    _welcome_msg = Option("welcome_msg")
-
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='login.html')
     @cherrypy.tools.ratelimit(methods=['POST'])
@@ -78,12 +75,5 @@ class LoginPage:
 
         # Re-encode the redirect for display in HTML
         params = {'form': form}
-
-        # Add welcome message to params. Try to load translated message.
-        if self._welcome_msg:
-            params["welcome_msg"] = self._welcome_msg.get('')
-            if hasattr(cherrypy.response, 'i18n'):
-                locale = cherrypy.response.i18n.locale.language
-                params["welcome_msg"] = self._welcome_msg.get(locale, params["welcome_msg"])
 
         return params
