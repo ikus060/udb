@@ -1,0 +1,27 @@
+<div class="card shadow mb-4">
+    {# Card Header - Dropdown #}
+    <div class="card-header py-3">
+        <span class="h6">{% trans %}Most active users{% endtrans %}</span>
+        <small>- {% trans %}last 7 days{% endtrans %}</small>
+    </div>
+    {# Card Body #}
+    <div class="card-body" style="height: 420px; overflow: clip auto;">
+        {% set max_count = user_activities|map(attribute='count')|sum|int %}
+        {% for user, count in user_activities %}
+            <h4 class="small font-weight-bold d-flex justify-content-between">
+                {{ user.summary }}
+                <span>{{ count }}</span>
+            </h4>
+            <div class="progress mb-4">
+                <div class="progress-bar bg-{{ loop.cycle('danger', 'warning', 'info', 'success', 'primary') }}"
+                     role="progressbar"
+                     style="width: {{ (count / max_count * 100)|int }}%"
+                     aria-valuenow="20"
+                     aria-valuemin="0"
+                     aria-valuemax="100"></div>
+            </div>
+        {% else %}
+            {% trans %}No activities{% endtrans %}
+        {% endfor %}
+    </div>
+</div>

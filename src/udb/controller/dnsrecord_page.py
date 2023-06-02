@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
+from markupsafe import Markup
 from wtforms.fields import BooleanField, IntegerField, SelectField, StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange
@@ -126,6 +127,29 @@ class DnsRecordPage(CommonPage):
     def __init__(self):
         super().__init__(DnsRecord, EditDnsRecordForm, NewDnsRecordForm)
 
+    @cherrypy.expose
+    @cherrypy.tools.jinja2(template=['{model_name}/edit.html', 'common/edit.html'])
+    def edit(self, key, **kwargs):
+        """
+        This implementation also check to report soft rule errors.
+        """
+        result = super().edit(key, **kwargs)
+
+        # Check if PTR Record matches Forward record.
+        obj = result['obj']
+        session = cherrypy.tools.db.get_session()
+        row = session.execute(DnsRecord.dns_record_mismatch_query(obj.id)).first()
+        if row:
+            other_id = row.fwd_id if obj.id == row.ptr_id else row.ptr_id
+            other_summary = row.fwd_summary if obj.id == row.ptr_id else row.ptr_summary
+            flash(
+                Markup(_('This DNS Record mismatch with <a href="%s">%s</a>.'))
+                % (url_for('dnsrecord', other_id, 'edit'), other_summary),
+                level='warning',
+            )
+
+        return result
+
     @cherrypy.expose()
     def reverse_record(self, key, **kwargs):
         """
@@ -168,3 +192,25 @@ class DnsRecordPage(CommonPage):
             DnsRecord.notes,
             User.summary.label('owner'),
         )
+
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def dns_record_mismatch_json(self, **kwargs):
+        query = DnsRecord.dns_record_mismatch_query()
+        session = cherrypy.tools.db.get_session()
+        return {'data': [list(row) + [url_for('dnsrecord', row[0], 'edit')] for row in session.execute(query).all()]}
+
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def related(self, key, **kwargs):
+        obj = self._get_or_404(key)
+        query = obj.related_dns_record_query().with_entities(
+            DnsRecord.id,
+            DnsRecord.status,
+            DnsRecord.name,
+            DnsRecord.type,
+            DnsRecord.ttl,
+            DnsRecord.value,
+        )
+        session = cherrypy.tools.db.get_session()
+        return {'data': [list(row) + [url_for('dnsrecord', row[0], 'edit')] for row in session.execute(query).all()]}

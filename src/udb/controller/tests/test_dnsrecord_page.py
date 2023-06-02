@@ -127,3 +127,78 @@ class DnsRecordTest(WebCase, CommonTest):
         self.assertInBody('FQDN must be defined within a valid DNS Zone.')
         # Then no records get created
         self.assertEqual(0, DnsRecord.query.count())
+
+    def test_edit_dns_record_mismatch(self):
+        # Given a forward DNS Record
+        fwd = DnsRecord(name='foo.example.com', type='A', value='192.168.1.101').add().commit()
+        # When creating a new Reverse DNS Record,
+        data = {'name': '98.1.168.192.in-addr.arpa', 'type': 'PTR', 'value': 'foo.example.com'}
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
+        # Then record get created
+        self.assertStatus(303)
+        ptr = DnsRecord.query.filter(DnsRecord.id != fwd.id).first()
+        self.getPage(url_for('dnsrecord', ptr.id, 'edit'))
+        # Then a warning is displayed
+        self.assertStatus(200)
+        self.assertInBody('This DNS Record mismatch with')
+        # When browsing Forward record
+        self.getPage(url_for('dnsrecord', fwd.id, 'edit'))
+        # Then a warning is displayed
+        self.assertStatus(200)
+        self.assertInBody('This DNS Record mismatch with')
+
+    def test_dns_record_mismatch_json(self):
+        # Give two DNS Record mismatch
+        fwd = DnsRecord(name='foo.example.com', type='A', value='192.168.1.101').add().commit()
+        ptr = DnsRecord(name='98.1.168.192.in-addr.arpa', type='PTR', value='foo.example.com').add().commit()
+        # When querying list of mismatch record.
+        data = self.getJson(url_for('dnsrecord', 'dns-record-mismatch.json'))
+        # Then one result is returned.
+        self.assertEqual(
+            data,
+            {
+                'data': [
+                    [
+                        ptr.id,
+                        '98.1.168.192.in-addr.arpa = foo.example.com (PTR)',
+                        fwd.id,
+                        'foo.example.com = 192.168.1.101 (A)',
+                        'http://127.0.0.1:54583/dnsrecord/%s/edit' % ptr.id,
+                    ]
+                ]
+            },
+        )
+
+    def test_dns_record_related_json(self):
+        # Given two DNS with the same hostname
+        fwd = DnsRecord(name='foo.example.com', type='A', value='192.168.1.101').add().commit()
+        txt = DnsRecord(name='foo.example.com', type='TXT', value='ddzb27gl54spcr60hkpp0zzwqk2ybrwz').add().commit()
+        ptr = DnsRecord(name='101.1.168.192.in-addr.arpa', type='PTR', value='foo.example.com').add().commit()
+        # When querying list of mismatch record.
+        data = self.getJson(url_for('dnsrecord', fwd.id, 'related'))
+        # Then one result is returned.
+        self.assertEqual(
+            data,
+            {
+                'data': [
+                    [
+                        txt.id,
+                        'enabled',
+                        'foo.example.com',
+                        'TXT',
+                        3600,
+                        'ddzb27gl54spcr60hkpp0zzwqk2ybrwz',
+                        'http://127.0.0.1:54583/dnsrecord/2/edit',
+                    ],
+                    [
+                        ptr.id,
+                        'enabled',
+                        '101.1.168.192.in-addr.arpa',
+                        'PTR',
+                        3600,
+                        'foo.example.com',
+                        'http://127.0.0.1:54583/dnsrecord/3/edit',
+                    ],
+                ]
+            },
+        )

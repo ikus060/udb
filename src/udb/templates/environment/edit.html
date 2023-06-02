@@ -10,7 +10,7 @@
 {% endblock %}
 {% block extra_form %}
   {# Display pendings changes #}
-  <div id="changes" class="card mb-2">
+  <div id="changes" class="card mb-2 udb-card-table-wrapper">
     {% set columns = [
     {'name':'id', 'visible':False},
     {'name':'summary', 'title':_('Record'), 'orderable':False, 'render':'summary'},

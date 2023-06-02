@@ -389,14 +389,19 @@ jQuery(function () {
             return null;
         });
         let dt = $(this).DataTable({
-            classes: {
-                sPaging: 'd-flex justify-content-center ',
-                sPageButton: 'btn btn-outline-primary ms-1 me-1',
-            },
             columns: columns,
             searchCols: searchCols,
             drawCallback: function (_settings) {
-                // This call back is responsible to add and remove 'sorting-x-x' class
+                // This callback show or hide the pagination when required
+                if (_settings.aanFeatures.p) {
+                    if (_settings._iDisplayLength > _settings.fnRecordsDisplay()) {
+                        $(_settings.aanFeatures.p[0]).parent().hide();
+                    } else {
+                        $(_settings.aanFeatures.p[0]).parent().show();
+                    }
+                }
+
+                // This callback is responsible to add and remove 'sorting-x-x' class
                 // to allow CSS customization of the table based on the sorted column
                 this.removeClass(function (_index, className) {
                     return className.split(/\s+/).filter(function (c) {

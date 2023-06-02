@@ -19,10 +19,10 @@ import ipaddress
 import re
 
 import cherrypy
-from sqlalchemy import CheckConstraint, Column, Computed, ForeignKey, and_, case, event, func, literal
+from sqlalchemy import CheckConstraint, Column, Computed, ForeignKey, and_, case, event, func, literal, or_, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import declared_attr, relationship, validates
+from sqlalchemy.orm import aliased, declared_attr, relationship, validates
 from sqlalchemy.types import Integer, String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
@@ -221,14 +221,15 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
             .first()
         )
 
-    def _get_related_dns_record(self):
+    def related_dns_record_query(self):
         """
-        Return a list of DNS Record with the same `name`.
+        Return a list of DNS Record with the same `name` excluding our self.
         """
         return DnsRecord.query.filter(
             DnsRecord.hostname_value == literal(self.hostname_value),
             DnsRecord.status != DnsRecord.STATUS_DELETED,
-        ).all()
+            DnsRecord.id != self.id,
+        )
 
     def get_reverse_dns_record(self):
         """
@@ -420,7 +421,8 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
             pass
         # Reference to other DNS Record
         try:
-            objects.extend([(dnsrecord.__tablename__, dnsrecord.id) for dnsrecord in self._get_related_dns_record()])
+            related = self.related_dns_record_query().all()
+            objects.extend([(dnsrecord.__tablename__, dnsrecord.id) for dnsrecord in related])
         except Exception:
             pass
         return objects
@@ -448,6 +450,36 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
             record.get('value', ''),
         )
 
+    @classmethod
+    def dns_record_mismatch_query(cls, id=None):
+        """
+        Return a query with all mismatch DNS Records.
+        """
+        # For each PTR Record, check if the IP ddress matches the IP address of the forward record (A, AAAA).
+        fwd = aliased(DnsRecord)
+        query = (
+            select(
+                DnsRecord.id.label('ptr_id'),
+                DnsRecord.summary.label('ptr_summary'),
+                fwd.id.label('fwd_id'),
+                fwd.summary.label('fwd_summary'),
+            )
+            .join(fwd, DnsRecord.value == fwd.name)
+            .filter(
+                DnsRecord.type == 'PTR',
+                or_(
+                    and_(DnsRecord.name.endswith('.in-addr.arpa'), fwd.type == 'A'),
+                    and_(DnsRecord.name.endswith('.ip6.arpa'), fwd.type == 'AAAA'),
+                ),
+                DnsRecord.generated_ip != fwd.generated_ip,
+                DnsRecord.status == DnsRecord.STATUS_ENABLED,
+                fwd.status == DnsRecord.STATUS_ENABLED,
+            )
+        )
+        if id:
+            query = query.filter(or_(DnsRecord.id == id, fwd.id == id))
+        return query
+
 
 @event.listens_for(DnsRecord, "before_update")
 def before_update(mapper, connection, instance):
@@ -459,6 +491,7 @@ def before_insert(mapper, connection, instance):
     instance._validate()
 
 
+# Make sure `type` only matches suported types.
 CheckConstraint(DnsRecord.type.in_(DnsRecord.TYPES), name="dnsrecord_types")
 
 
