@@ -114,7 +114,7 @@
         {'name':'type', 'visible':False },
         {'name':'body', 'visible':False},
         {'name':'changes', 'title':_('History'), 'render':'message_body' }] %}
-        <div id="messages" class="card">
+        <div id="messages" class="card udb-card-table-wrapper">
           {{ _table.table('messages',
           columns=columns,
           order=[[ 5, 'desc' ]],

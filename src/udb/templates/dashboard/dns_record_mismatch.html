@@ -1,0 +1,14 @@
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <span class="h6">{% trans %}DNS Record mismatch{% endtrans %}</span>
+    </div>
+    <div class="card-body p-0" style="height: 420px; overflow: clip auto;">
+        {% set columns = [
+        {'name':'ptr_id', 'visible':False},
+        {'name':'ptr_summary', 'title':_('Reverse Record'), 'render':'summary', 'render_arg':'dnsrecord'},
+        {'name':'forward_id', 'visible':False},
+        {'name':'forward', 'title':_('Forward Record')}] %}
+        {{ _table.table(url_for('dnsrecord','dns-record-mismatch.json'), columns=columns, empty_message=_('No inconsistencies were discovered in the DNS records.'), dom_cfg=_table.dom_without_header, paging=False) }}
+    </div>
+</div>

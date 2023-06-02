@@ -43,7 +43,7 @@ def flash(message, level='info'):
     assert level in ['info', 'error', 'warning', 'success']
     if 'flash' not in cherrypy.session:  # @UndefinedVariable
         cherrypy.session['flash'] = []  # @UndefinedVariable
-    flash_message = FlashMessage(str(message), level)
+    flash_message = FlashMessage(message, level)
     cherrypy.session['flash'].append(flash_message)
 
 

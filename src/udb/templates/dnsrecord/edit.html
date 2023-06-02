@@ -1,4 +1,5 @@
 {% extends 'common/edit.html' %}
+{% import "components/table.html" as _table %}
 {% block extra_actions %}
   {# Reverse Record #}
   {% if obj.type in ['A', 'AAAA', 'PTR'] %}
@@ -25,4 +26,23 @@
          class="btn btn-outline-primary text-nowrap w-100">{% trans %}Show Related IP{% endtrans %}</a>
     </div>
   {% endif %}
+{% endblock %}
+{% block extra_form %}
+  {# Display related DNS Record #}
+  <div id="related" class="card udb-card-table-wrapper mb-2">
+    {% set columns = [
+      {'name':'id', 'visible':False},
+      {'name':'status', 'visible':False, 'search': '(enabled|disabled)', 'regex':True},
+      {'name':'name', 'title':_('Related DNS Record'), 'orderable':True, 'render':'summary', 'render_arg':'dnsrecord', 'className':'export'},
+      {'name':'type', 'title':form.type.label.text|string, 'orderable':True, 'className':'export'},
+      {'name':'ttl', 'title':form.ttl.label.text|string, 'orderable':True, 'className':'export'},
+      {'name':'value', 'title':form.value.label.text|string, 'orderable':True, 'className':'export'}] %}
+    {{ _table.table('related',
+    columns=columns,
+    order=[[ 3, 'asc' ]],
+    searching=False,
+    dom_cfg=_table.dom_without_header,
+    empty_message=_('No DNS record for the same hostname.'),
+    page_length=5) }}
+  </div>
 {% endblock %}
