@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="{{ lang[0:2] }}">
   <head>
     {# Required meta tags #}
@@ -21,15 +21,15 @@
     <link rel="stylesheet"
           type="text/css"
           href="{{ url_for('static/datatables/css/jquery.dataTables.min.css', v=cache_invalidate) }}"
-          crossorigin="anonymous"/>
+          crossorigin="anonymous" />
     <link rel="stylesheet"
           type="text/css"
           href="{{ url_for('static/datatables/css/buttons.dataTables.min.css', v=cache_invalidate) }}"
-          crossorigin="anonymous"/>
+          crossorigin="anonymous" />
     <link rel="stylesheet"
           type="text/css"
           href="{{ url_for('static/datatables/css/responsive.dataTables.min.css', v=cache_invalidate) }}"
-          crossorigin="anonymous"/>
+          crossorigin="anonymous" />
     <script src="{{ url_for('static/datatables/js/jquery.dataTables.min.js', v=cache_invalidate) }}"
             crossorigin="anonymous"></script>
     <script src="{{ url_for('static/datatables/js/dataTables.responsive.min.js', v=cache_invalidate) }}"
@@ -48,7 +48,7 @@
     <link rel="stylesheet"
           type="text/css"
           href="{{ url_for('static/typeahead/jquery.typeahead.min.css', v=cache_invalidate) }}"
-          crossorigin="anonymous"/>
+          crossorigin="anonymous" />
     <script src="{{ url_for('static/typeahead/jquery.typeahead.min.js', v=cache_invalidate) }}"
             crossorigin="anonymous"></script>
     {# Custom #}
@@ -56,7 +56,7 @@
     <link rel="stylesheet"
           type="text/css"
           href="{{ url_for('static/main.css', v=cache_invalidate) }}"
-          crossorigin="anonymous"/>
+          crossorigin="anonymous" />
     <title>
       {% block title %}{% endblock %}
       | {{ header_name }}

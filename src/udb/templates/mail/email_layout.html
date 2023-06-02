@@ -68,9 +68,7 @@
                      font-size: 16px;
                      margin: 0"
               align="left"
-              bgcolor="{{ bgcolor(cls) }}">
-            {{ caller() }}
-          </td>
+              bgcolor="{{ bgcolor(cls) }}">{{ caller() }}</td>
         </tr>
       </tbody>
     </table>
@@ -140,9 +138,7 @@
                    width: 100%;
                    margin: 0"
             align="left"
-            bgcolor="{{ bgcolor(cls) }}">
-          {{ caller() }}
-        </td>
+            bgcolor="{{ bgcolor(cls) }}">{{ caller() }}</td>
       </tr>
     </tbody>
   </table>
@@ -171,9 +167,7 @@
             align="left"
             bgcolor="{{ bgcolor(cls) }}"
             width="100%"
-            height="64">
-          {{ caller() }}
-        </td>
+            height="64">{{ caller() }}</td>
       </tr>
     </tbody>
   </table>
@@ -207,9 +201,7 @@
                   width: 100%"
            width="100%">
       <tbody>
-        <tr>
-          {{ caller() }}
-        </tr>
+        <tr>{{ caller() }}</tr>
       </tbody>
     </table>
   </div>
@@ -224,9 +216,7 @@
              margin: 0;
              color: {{ fgcolor(cls) }}"
       align="left"
-      valign="top">
-    {{ caller() }}
-  </td>
+      valign="top">{{ caller() }}</td>
 {% endmacro %}
 {% macro mb4() %}
   <!-- mb-4 -->
@@ -246,9 +236,7 @@
                    margin: 0"
             align="left"
             width="100%"
-            height="16">
-          &#160;
-        </td>
+            height="16">&#160;</td>
       </tr>
     </tbody>
   </table>
@@ -350,16 +338,16 @@
                class="h-9"
                alt="{{ header_name }}"
                title="{{ header_name }}"
-               height="36"/>
+               height="36" />
         {% endcall %}
         {% call card_body() %}
           {% block body %}
           {% endblock body %}
-          <hr/>
+          <hr />
           <p class="text-xs" style="font-size: 12px; line-height: 14.4px;">
             {% trans %}You received this email because you are following changes on these records.{% endtrans %}
             <br />
-            <a href="{{ url_for('notifications') }}">{% trans %}Edit notification settings{% endtrans %}</a>
+            <a href="{{ url_for("notifications") }}">{% trans %}Edit notification settings{% endtrans %}</a>
           </p>
         {% endcall %}
       {% endcall %}

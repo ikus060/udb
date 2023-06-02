@@ -1,5 +1,5 @@
 {% set status_label = {'enabled':_('Enabled'), 'disabled': _('Disabled'), 'deleted': _('Deleted')} %}
-{% set status_bs_cls = {'enabled': 'success', 'disabled': 'warning', 'deleted': 'danger'} %}
+{% set status_bs_cls = {"enabled": "success", "disabled": "warning", "deleted": "danger"} %}
 {% macro badge(obj, force=False) %}
   {% if obj.status != 'enabled' or force %}
     <span class="badge rounded-pill bg-{{ status_bs_cls.get(obj.status, 'secondary') }}">

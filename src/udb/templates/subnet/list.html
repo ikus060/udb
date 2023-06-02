@@ -2,18 +2,18 @@
 {# Subnet are sorted a in specific way to mimic the IP CIDR ordering. #}
 {# The `primary_range` render is responsible to define the ordering using the 'order' column and the depth using `depth` column. #}
 {% set columns = [
-{'name':'id', 'visible':False},
-{'name':'status', 'visible':False, 'search': '(enabled|disabled)', 'regex':True},
-{'name':'order', 'visible':False},
-{'name':'depth', 'visible':False},
-{'name':'primary_range', 'title': _('Primary IP Range'), 'orderable':True, 'render':'primary_range', 'type':'number', 'width':250, 'className':'export'},
-{'name':'secondary_ranges', 'title': _('Secondary IP Range(s)'), 'orderable':True, 'width':250, 'className':'export'},
-{'name':'name', 'title':form.name.label.text|string, 'orderable':True, 'className':'export'},
-{'name':'vrf_name', 'title':form.vrf_id.label.text|string, 'orderable':True, 'className':'export'},
-{'name':'l3vni', 'title':form.l3vni.label.text|string, 'orderable':True, 'className':'export'},
-{'name':'l2vni', 'title':form.l2vni.label.text|string, 'orderable':True, 'className':'export'},
-{'name':'vlan','title': form.vlan.label.text|string, 'orderable':True, 'className':'export'},
-{'name':'rir_status','title': form.rir_status.label.text|string, 'orderable':True, 'className':'export'},
+  {'name':'id', 'visible':False},
+  {'name':'status', 'visible':False, 'search': '(enabled|disabled)', 'regex':True},
+  {'name':'order', 'visible':False},
+  {'name':'depth', 'visible':False},
+  {'name':'primary_range', 'title': _('Primary IP Range'), 'orderable':True, 'render':'primary_range', 'type':'number', 'width':250, 'className':'export'},
+  {'name':'secondary_ranges', 'title': _('Secondary IP Range(s)'), 'orderable':True, 'width':250, 'className':'export'},
+  {'name':'name', 'title':form.name.label.text|string, 'orderable':True, 'className':'export'},
+  {'name':'vrf_name', 'title':form.vrf_id.label.text|string, 'orderable':True, 'className':'export'},
+  {'name':'l3vni', 'title':form.l3vni.label.text|string, 'orderable':True, 'className':'export'},
+  {'name':'l2vni', 'title':form.l2vni.label.text|string, 'orderable':True, 'className':'export'},
+  {'name':'vlan','title': form.vlan.label.text|string, 'orderable':True, 'className':'export'},
+  {'name':'rir_status','title': form.rir_status.label.text|string, 'orderable':True, 'className':'export'},
 {'name':'dnszone_names', 'title':form.dnszones.label.text|string, 'orderable':False, 'className':'export'}] %}
 {# Define customer filter for RIR Status #}
 {% set extra_buttons = [{'text': _('RIR Managed'), 'extend': 'filter', 'column': 'rir_status:name', 'search':'.+', 'regex': True, 'className': 'udb-btn-filter' }] %}

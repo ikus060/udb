@@ -5,6 +5,7 @@
 <a href="https://gitlab.com/ikus-soft/udb/pipelines"><img alt="Build" src="https://gitlab.com/ikus-soft/udb/badges/master/pipeline.svg"></a>
 <a href="https://sonar.ikus-soft.com/dashboard?id=udb"><img alt="Quality Gate Minarca Client" src="https://sonar.ikus-soft.com/api/project_badges/measure?project=udb&metric=alert_status"></a>
 <a href="https://sonar.ikus-soft.com/dashboard?id=udb"><img alt="Coverage" src="https://sonar.ikus-soft.com/api/project_badges/measure?project=udb&metric=coverage"></a>
+<a href="https://www.djlint.com"><img alt="djlint" src="https://img.shields.io/badge/html%20style-djlint-blue.svg"></a>
 </p>
 
 A web interface to manage IT network

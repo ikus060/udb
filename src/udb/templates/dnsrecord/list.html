@@ -1,10 +1,10 @@
 {% extends 'common/list.html' %}
 {% set columns = [
-{'name':'id', 'visible':False},
-{'name':'status', 'visible':False, 'search': '(enabled|disabled)', 'regex':True},
-{'name':'name', 'title':form.name.label.text|string, 'orderable':True, 'render':'summary', 'render_arg':'dnsrecord', 'className':'export'},
-{'name':'type', 'title':form.type.label.text|string, 'orderable':True, 'className':'export'},
-{'name':'ttl', 'title':form.ttl.label.text|string, 'orderable':True, 'className':'export'},
-{'name':'value', 'title':form.value.label.text|string, 'orderable':True, 'className':'export'},
-{'name':'notes', 'title':form.notes.label.text|string, 'orderable':True, 'className':'export'},
+  {'name':'id', 'visible':False},
+  {'name':'status', 'visible':False, 'search': '(enabled|disabled)', 'regex':True},
+  {'name':'name', 'title':form.name.label.text|string, 'orderable':True, 'render':'summary', 'render_arg':'dnsrecord', 'className':'export'},
+  {'name':'type', 'title':form.type.label.text|string, 'orderable':True, 'className':'export'},
+  {'name':'ttl', 'title':form.ttl.label.text|string, 'orderable':True, 'className':'export'},
+  {'name':'value', 'title':form.value.label.text|string, 'orderable':True, 'className':'export'},
+  {'name':'notes', 'title':form.notes.label.text|string, 'orderable':True, 'className':'export'},
 {'name':'owner', 'title':form.owner_id.label.text|string, 'orderable':True, 'className':'export'}] %}

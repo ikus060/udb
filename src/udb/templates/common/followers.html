@@ -7,20 +7,20 @@
     <input type="hidden"
            id="user_id"
            name="user_id"
-           value="{{ currentuser.id }}"/>
+           value="{{ currentuser.id }}" />
     {# Desktop #}
     <button class="btn btn-outline-primary d-none d-xl-inline-block w-100"
             type="submit">
       <i class="bi {{ 'bi-bell-slash' if is_following else 'bi-bell' }}"
          aria-hidden="true"></i>
-      {{ _('Stop following') if is_following else _('Start following') }}
+      {{ _("Stop following") if is_following else _('Start following') }}
     </button>
     {# Mobile #}
     <div class="btn-group w-100 d-xl-none" role="group">
       <button class="btn btn-outline-primary dropdown-item" type="submit">
         <i class="bi {{ 'bi-bell-slash' if is_following else 'bi-bell' }}"
            aria-hidden="true"></i>
-        {{ _('Stop following') if is_following else _('Start following') }}
+        {{ _("Stop following") if is_following else _('Start following') }}
       </button>
       <div class="btn-group " role="group">
         <button type="button"
