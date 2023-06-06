@@ -61,6 +61,7 @@ class SubnetTest(WebCase):
                 'vlan': 3,
                 'owner_id': None,
                 'rir_status': 'ASSIGNED',
+                'dhcp': False,
             },
         )
 

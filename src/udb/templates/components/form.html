@@ -11,14 +11,14 @@
         {% for error in field.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
       </div>
     {% elif field.widget.__class__.__name__ == 'CheckboxInput' %}
-      <div class="mb-2">
+      <div class="mb-2 {{ width }}">
         {{ field(id=False, class=extra_class) }}
         {{ field.label(class="form-check-label") }}
         {% if field.description %}<div class="form-text small test-secondary">{{ field.description }}</div>{% endif %}
         {% for error in field.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
       </div>
-    {% elif floating and field.widget.__class__.__name__ != 'SelectMultiCheckbox' %}
-      <div class="form-floating mb-2">
+    {% elif floating %}
+      <div class="form-floating mb-2 {{ width }}">
         {{ field(id=False, class=extra_class) }}
         {{ field.label(class='form-label') }}
         {% if field.description %}<div class="form-text">{{ field.description }}</div>{% endif %}

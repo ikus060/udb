@@ -194,6 +194,25 @@ class SubnetTest(WebCase, CommonTest):
             self.assertInBody('L2VNI must be at least 0.')
             self.assertInBody('VLAN must be at least 0.')
 
+    @parameterized.expand(
+        [
+            ('on', True),
+            ('', False),
+        ]
+    )
+    def test_edit_dhcp_enabled(self, new_value, expected_value):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add().commit()
+        # When updating DHCP
+        self.getPage(
+            url_for(self.base_url, obj.id, 'edit'),
+            method='POST',
+            body={'dhcp': new_value},
+        )
+        # Then object is updated.
+        obj.expire()
+        self.assertEqual(expected_value, obj.dhcp)
+
     def test_new_duplicate(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data)
@@ -207,7 +226,7 @@ class SubnetTest(WebCase, CommonTest):
 
     def test_depth(self):
         # Given a database with an existing record
-        subnet1 = Subnet(ranges=['192.168.1.0/24'], name='foo', vrf=self.vrf).add()
+        subnet1 = Subnet(ranges=['192.168.1.0/24'], name='foo', vrf=self.vrf, dhcp=True).add()
         subnet2 = Subnet(ranges=['192.168.1.128/30'], name='bar', vrf=self.vrf).add().commit()
         self.assertEqual(1, len(subnet1.messages))
         self.assertEqual(1, len(subnet2.messages))
@@ -230,6 +249,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    True,
                     None,
                     '/subnet/1/edit',
                 ],
@@ -246,6 +266,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/2/edit',
                 ],
@@ -278,6 +299,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/1/edit',
                 ],
@@ -294,6 +316,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/2/edit',
                 ],
@@ -310,6 +333,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/3/edit',
                 ],
@@ -326,6 +350,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/4/edit',
                 ],
@@ -342,6 +367,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/5/edit',
                 ],
@@ -374,6 +400,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/1/edit',
                 ],
@@ -390,6 +417,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/2/edit',
                 ],
@@ -406,6 +434,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/3/edit',
                 ],
@@ -422,6 +451,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/4/edit',
                 ],
@@ -438,6 +468,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/5/edit',
                 ],
@@ -481,6 +512,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/3/edit',
                 ],
@@ -497,6 +529,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/4/edit',
                 ],
@@ -513,6 +546,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     'example.com, foo.com',
                     '/subnet/1/edit',
                 ],
@@ -529,6 +563,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/2/edit',
                 ],
@@ -545,6 +580,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/9/edit',
                 ],
@@ -561,6 +597,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/5/edit',
                 ],
@@ -577,6 +614,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/6/edit',
                 ],
@@ -593,6 +631,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     'example.com, foo.com',
                     '/subnet/7/edit',
                 ],
@@ -609,6 +648,7 @@ class SubnetTest(WebCase, CommonTest):
                     None,
                     None,
                     None,
+                    False,
                     None,
                     '/subnet/8/edit',
                 ],
