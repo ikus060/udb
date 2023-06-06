@@ -13,27 +13,36 @@
     {% if model_name in counts %}
       {% set display_name = macro.display_name(model_name) %}
       {% set badge = (' <span class="badge rounded-pill bg-primary">' + counts[model_name]|string + '</span>') | safe %}
-      {% set btn = [ {'text':display_name + badge, 'extend':'filter', 'column':'model_name:name', 'search':model_name, 'className': 'active' if model_name==active else '' } ]  %}
+      {% set btn = [ {'text':display_name + badge, 'extend':'filter', 'column':'model_name:name', 'search':model_name, 'className': 'active' if model_name==active else '' } ] %}
       {% set ns.buttons = ns.buttons + [btn] %}
       {% set ns.display_name_table = ns.display_name_table + [(model_name, display_name)] %}
     {% endif %}
   {% endfor %}
   {% set all_btn = [ {'text':_('All'), 'extend':'filter', 'column':'model_name:name', 'search':'', 'className': '' if active else 'active'} ] %}
   {% set buttons = [all_btn] + ns.buttons %}
-  {% set buttons_cfg = {'dom':{'container':{'className': 'nav nav-tabs flex-grow-1'}, 'button':{'className':'nav-link', 'active': 'active',} } } %}
+  {% set buttons_cfg = {
+    "dom": {
+      "container": {
+        "className": "nav nav-tabs flex-grow-1"
+      },
+      "button": {
+        "className": "nav-link",
+        "active": "active"
+      }
+    }
+  } %}
   {# Configure Table #}
   {% set columns = [
-  {'name':'id', 'visible':False},
-  {'name':'status', 'visible':False},
-  {'name': 'summary', 'title':_('Summary'), 'orderable': True, 'render':'summary'},
-  {'name':'model_name', 'title':_('Model'), 'orderable':True, 'render':'choices', 'render_arg': ns.display_name_table, 'search':active if active else '' },
-  {'name':'owner', 'title':_('Owner'), 'orderable':True},
-  {'name':'notes', 'title':_('Notes'), 'orderable':True},
-  {'name':'modified_at', 'title':_('Last Modified'), 'orderable':True, 'render':'datetime'},
-  ] %}
+      {'name':'id', 'visible':False},
+      {'name':'status', 'visible':False},
+      {'name': 'summary', 'title':_('Summary'), 'orderable': True, 'render':'summary'},
+      {'name':'model_name', 'title':_('Model'), 'orderable':True, 'render':'choices', 'render_arg': ns.display_name_table, 'search':active if active else '' },
+      {'name':'owner', 'title':_('Owner'), 'orderable':True},
+      {'name':'notes', 'title':_('Notes'), 'orderable':True},
+      {'name':'modified_at', 'title':_('Last Modified'), 'orderable':True, 'render':'datetime'},
+    ] %}
   {% set dom_cfg = "<'d-sm-flex'B <'nav nav-tabs'li>><'row'<'col-sm-12'rt>><'row'<'mt-2'p>>" %}
-  {{ _table.table(
-  url_for('search', 'data.json', q=form.q.data),
+  {{ _table.table(url_for('search', 'data.json', q=form.q.data) ,
   server_side=True,
   columns=columns,
   buttons=buttons,

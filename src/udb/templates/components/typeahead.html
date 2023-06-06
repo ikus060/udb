@@ -2,7 +2,7 @@
   {{ '{' + '{' + name + '}' + '}' }}
 {%- endmacro %}
 {% macro typeahead() %}
-  {% set url =  url_for('search')  %}
+  {% set url = url_for('search') %}
   {# djlint:off #}
   {%set source = {
     'model': {
@@ -39,7 +39,7 @@
                  data-max-item="0"
                  data-max-item-per-group="5"
                  data-display='{{ ["summary"]|tojson }}'
-                 data-href="{{ p('url') }}"
+                 data-href="{{ p("url") }}"
                  data-cancel-button="false"
                  data-source='{{ source|tojson }}'>
         </div>

@@ -24,6 +24,9 @@ flake8:
 isort:
   <<: *tox
 
+djlint:
+  <<: *tox
+
 py3:
   <<: *tox
   before_script:

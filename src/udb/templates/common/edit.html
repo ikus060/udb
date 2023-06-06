@@ -17,7 +17,7 @@
           <span class="visually-hidden">{% trans %}Go Back{% endtrans %}</span>
         </a>
         {# Title #}
-        <h2 class="flex-fill mb-0">{{ _('Edit') }} {{ macro.display_name(model_name) }} {{(form|first).data }}</h2>
+        <h2 class="flex-fill mb-0">{{ _("Edit") }} {{ macro.display_name(model_name) }} {{(form|first).data }}</h2>
         {# /Title #}
       </div>
     </div>
@@ -74,17 +74,13 @@
                       <button type="submit"
                               class="dropdown-item text-danger"
                               name="status"
-                              value="deleted">
-                        {% trans %}Save changes and Delete{% endtrans %}
-                      </button>
+                              value="deleted">{% trans %}Save changes and Delete{% endtrans %}</button>
                     </li>
                     <li>
                       <button type="submit"
                               class="dropdown-item text-warning"
                               name="status"
-                              value="disabled">
-                        {% trans %}Save changes and Disable{% endtrans %}
-                      </button>
+                              value="disabled">{% trans %}Save changes and Disable{% endtrans %}</button>
                     </li>
                     <li>
                       <button type="submit" class="dropdown-item" name="status" value="enabled">
@@ -108,18 +104,18 @@
       {% import "components/table.html" as _table with context %}
       {% if has_messages %}
         {% set columns = [
-        {'name':'id', 'visible':False},
-        {'name':'author', 'visible':False},
-        {'name':'date', 'visible':False},
-        {'name':'type', 'visible':False },
-        {'name':'body', 'visible':False},
-        {'name':'changes', 'title':_('History'), 'render':'message_body' }] %}
+                  {'name':'id', 'visible':False},
+                  {'name':'author', 'visible':False},
+                  {'name':'date', 'visible':False},
+                  {'name':'type', 'visible':False },
+                  {'name':'body', 'visible':False},
+                {'name':'changes', 'title':_('History'), 'render':'message_body' }] %}
         <div id="messages" class="card udb-card-table-wrapper">
           {{ _table.table('messages',
-          columns=columns,
-          order=[[ 5, 'desc' ]],
-          searching=False,
-          empty_message=_('No history'),
+                    columns=columns,
+                    order=[[ 5, 'desc' ]],
+                    searching=False,
+                    empty_message=_('No history') ,
           dom_cfg=_table.dom_without_header,
           page_length=10,
           length_change=False) }}

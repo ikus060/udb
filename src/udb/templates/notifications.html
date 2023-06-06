@@ -17,7 +17,7 @@
         {% for field in form %}
           <div class="form-check">
             {{ field(id=False) }}
-            {{ field.label(class="form-check-label", text=macro.display_name(field.label.text)) }}
+            {{ field.label(class="form-check-label", text=macro.display_name(field.label.text) ) }}
           </div>
         {% endfor %}
         <button type="submit" class="btn btn-primary mt-3">{% trans %}Save notification settings{% endtrans %}</button>
@@ -29,9 +29,7 @@
     <div class="col-md">
       <h4>{% trans %}Follow changes made on specific record{% endtrans %}</h4>
       <p>{% trans %}Provide a complete list of record that you are following.{% endtrans %}</p>
-      <form action="{{ url_for('./unfollow') }}"
-            method="post"
-            data-confirm="{% trans %}Are you sure you want to stop following all records ?{% endtrans %}">
+      <form action="{{ url_for("./unfollow") }}" method="post" data-confirm="{% trans %}Are you sure you want to stop following all records ?{% endtrans %}">
         <input class="btn btn-secondary"
                type="submit"
                name="unfollow"
@@ -40,12 +38,12 @@
     </div>
     <div class="col-md-9">
       {% set columns = [
-      {'name':'id', 'visible':False},
-      {'name':'status', 'visible':False},
-      {'name':'model_name', 'visible':False},
-      {'name': 'summary', 'title':_('Subscribed to'), 'orderable': True, 'render':'summary'}] %}
+              {'name':'id', 'visible':False},
+              {'name':'status', 'visible':False},
+              {'name':'model_name', 'visible':False},
+            {'name': 'summary', 'title':_('Subscribed to'), 'orderable': True, 'render':'summary'}] %}
       {{ _table.table('data.json',
-      empty_message=_('You are not following any record.'),
+            empty_message=_('You are not following any record.') ,
       page_length=10,
       length_change=False,
       columns = columns,

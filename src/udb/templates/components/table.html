@@ -5,58 +5,58 @@
 {% set dom_all = "<'d-sm-flex align-items-center'<'mb-1 flex-grow-1'li><'mb-1'f><B>><'row'<'col-sm-12'rt>><'row'<'mt-2'p>>" %}
 {# djlint:on #}
 {% set buttons_cfg_default = {
-"dom": {
-"button": {
-"className": 'btn btn-sm btn-secondary ms-1 mb-1',
-"active": 'active',
-},
-"collection": {
-"tag": 'div',
-"button": {
-"tag": 'a',
-"className": 'btn btn-sm btn-secondary mb-1 w-100',
-"active": 'active',
-"disabled": 'disabled'
-}
-},
-},
-}%}
-{% set classes =  {
-'sPaging': 'd-flex justify-content-center ',
-'sPageButton': 'btn btn-outline-primary ms-1 me-1',
-'sPageButtonActive': 'active',
-}%}
+  "dom": {
+    "button": {
+      "className": "btn btn-sm btn-secondary ms-1 mb-1",
+      "active": "active"
+    },
+    "collection": {
+      "tag": "div",
+      "button": {
+        "tag": "a",
+        "className": "btn btn-sm btn-secondary mb-1 w-100",
+        "active": "active",
+        "disabled": "disabled"
+      }
+    }
+  }
+} %}
+{% set classes = {
+  "sPaging": "d-flex justify-content-center ",
+  "sPageButton": "btn btn-outline-primary ms-1 me-1",
+  "sPageButtonActive": "active"
+} %}
 {% macro table(data, columns=[], order=[], empty_message=None, info_message=None, searching=True, buttons=[], paging=True, page_length=25, length_change=True, buttons_cfg={}, dom_cfg=dom_all, server_side=False, state_save=True) %}
   {% set language = {
-  "aria": {
-  "sortAscending": _('activate to sort column ascending'),
-  "sortDescending": _('activate to sort column descending')
-  },
-  "paginate": {
-  "previous": _('Previous'),
-  "next": _('Next')
-  },
-  "udb": {
-  "years": _('%%d years ago'),
-  "months": _('%%d months ago'),
-  "days": _('%%d days ago'),
-  "hours": _('%%d hours ago'),
-  "minutes": _('%%d minutes ago'),
-  "seconds": _('%%d seconds ago')
-  },
-  "message_new": _('Created by '),
-  "message_dirty": _('Modified by '),
-  "message_comment": _('Message by '),
-  "deleted": _('Deleted'),
-  "disabled": _('Disabled'),
-  "info": info_message or (_(' from _START_ to _END_ of _TOTAL_ total') if paging else _('Showing total of _TOTAL_')),
-  "infoFiltered": _('(filtered from _MAX_ total entries)'),
-  "infoEmpty": _('- No records available'),
-  "lengthMenu": _('Show _MENU_ entries'),
-  "processing": _('Loading...'),
-  "search": _('Filter: '),
-  "zeroRecords": empty_message or _('List is empty'),
-  } %}
+      "aria": {
+        "sortAscending": _('activate to sort column ascending'),
+        "sortDescending": _('activate to sort column descending')
+      },
+      "paginate": {
+        "previous": _('Previous'),
+        "next": _('Next')
+      },
+      "udb": {
+        "years": _('%%d years ago'),
+        "months": _('%%d months ago'),
+        "days": _('%%d days ago'),
+        "hours": _('%%d hours ago'),
+        "minutes": _('%%d minutes ago'),
+        "seconds": _('%%d seconds ago')
+      },
+      "message_new": _('Created by '),
+      "message_dirty": _('Modified by '),
+      "message_comment": _('Message by '),
+      "deleted": _('Deleted'),
+      "disabled": _('Disabled'),
+      "info": info_message or (_(' from _START_ to _END_ of _TOTAL_ total') if paging else _('Showing total of _TOTAL_')),
+      "infoFiltered": _('(filtered from _MAX_ total entries)'),
+      "infoEmpty": _('- No records available'),
+      "lengthMenu": _('Show _MENU_ entries'),
+      "processing": _('Loading...'),
+      "search": _('Filter: '),
+      "zeroRecords": empty_message or _('List is empty'),
+    } %}
   {% set buttons_cfg = buttons_cfg_default.__or__(buttons_cfg).__or__({'buttons':buttons}) %}
   <table class="table table-hover responsive"
          width="100%"

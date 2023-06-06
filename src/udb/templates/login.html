@@ -10,7 +10,7 @@
         <img src="{{ url_for('static', 'header_logo', v=cache_invalidate) }}"
              class="d-inline-block mb-4"
              height="64"
-             alt="{{ header_name }}"/>
+             alt="{{ header_name }}" />
         <div class="card">
           <div class="card-body">
             {% include "flash.html" %}
@@ -20,9 +20,7 @@
                 <button type="submit"
                         class="btn btn-primary btn-lg"
                         style="padding-left: 2.5rem;
-                               padding-right: 2.5rem">
-                  {% trans %}Login{% endtrans %}
-                </button>
+                               padding-right: 2.5rem">{% trans %}Login{% endtrans %}</button>
               </div>
             </form>
           </div>

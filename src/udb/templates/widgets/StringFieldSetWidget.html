@@ -1,33 +1,33 @@
 <div id="{{ field.id }}">
   {% set html_widget %}
-  <div class="input-group mb-1">
-    {{ field.inner_widget(field, class='form-control', value=value, **field.render_kw) }}
-    <button class="btn btn-outline-danger"
-            type="button"
-            title="{% trans %}Remove row{% endtrans %}"
-            onclick="$(this).parent().remove()">
-      <i class="bi bi-trash" aria-hidden="true"></i>
-    </button>
-  </div>
-{% endset %}
-{% for value in field.data + [''] %}
-  <div class="input-group mb-1">
-    {{ field.inner_widget(field, class='form-control', value=value, **field.render_kw) }}
-    {% if loop.first %}
-      <button class="btn btn-outline-primary"
-              type="button"
-              title="{% trans %}Add row{% endtrans %}"
-              onclick="$(this).parent().parent().append('{{ html_widget.__str__()|replace('\n','') }}')">
-        <i class="bi bi-plus" aria-hidden="true"></i>
-      </button>
-    {% else %}
+    <div class="input-group mb-1">
+      {{ field.inner_widget(field, class='form-control', value=value, **field.render_kw) }}
       <button class="btn btn-outline-danger"
               type="button"
               title="{% trans %}Remove row{% endtrans %}"
               onclick="$(this).parent().remove()">
         <i class="bi bi-trash" aria-hidden="true"></i>
       </button>
-    {% endif %}
-  </div>
-{% endfor %}
+    </div>
+  {% endset %}
+  {% for value in field.data + [''] %}
+    <div class="input-group mb-1">
+      {{ field.inner_widget(field, class='form-control', value=value, **field.render_kw) }}
+      {% if loop.first %}
+        <button class="btn btn-outline-primary"
+                type="button"
+                title="{% trans %}Add row{% endtrans %}"
+                onclick="$(this).parent().parent().append('{{ html_widget.__str__() |replace('\n','') }}')">
+          <i class="bi bi-plus" aria-hidden="true"></i>
+        </button>
+      {% else %}
+        <button class="btn btn-outline-danger"
+                type="button"
+                title="{% trans %}Remove row{% endtrans %}"
+                onclick="$(this).parent().remove()">
+          <i class="bi bi-trash" aria-hidden="true"></i>
+        </button>
+      {% endif %}
+    </div>
+  {% endfor %}
 </div>

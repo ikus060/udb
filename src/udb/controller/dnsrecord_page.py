@@ -212,5 +212,4 @@ class DnsRecordPage(CommonPage):
             DnsRecord.ttl,
             DnsRecord.value,
         )
-        session = cherrypy.tools.db.get_session()
-        return {'data': [list(row) + [url_for('dnsrecord', row[0], 'edit')] for row in session.execute(query).all()]}
+        return {'data': [list(row) + [url_for('dnsrecord', row[0], 'edit')] for row in query.all()]}

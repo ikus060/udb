@@ -17,14 +17,14 @@
   {% endfor %}
   {# Define table settings #}
   {% set columns = [
-  {'name':'id', 'visible':False},
-  {'name':'status', 'visible':False},
-  {'name':'summary', 'title':_('Record'), 'orderable':True, 'render':'summary'},
-  {'name':'model_name', 'title':_('Model'), 'orderable':True, 'render':'choices', 'render_arg': ns.display_name_table },
-  {'name':'author', 'title':_('Author'), 'orderable':True},
-  {'name':'date', 'title':_('Date'), 'render':'datetime'},
-  {'name':'type', 'title':_('Type'), 'render':'choices', 'render_arg': [ ['new',_('Created')], ['dirty',_('Modified')]] },
-  {'name':'body', 'visible':False},
-  {'name':'changes', 'title':_('Changes'), 'render':'changes' }] %}
+      {'name':'id', 'visible':False},
+      {'name':'status', 'visible':False},
+      {'name':'summary', 'title':_('Record'), 'orderable':True, 'render':'summary'},
+      {'name':'model_name', 'title':_('Model'), 'orderable':True, 'render':'choices', 'render_arg': ns.display_name_table },
+      {'name':'author', 'title':_('Author'), 'orderable':True},
+      {'name':'date', 'title':_('Date'), 'render':'datetime'},
+      {'name':'type', 'title':_('Type'), 'render':'choices', 'render_arg': [ ['new',_('Created')], ['dirty',_('Modified')]] },
+      {'name':'body', 'visible':False},
+    {'name':'changes', 'title':_('Changes'), 'render':'changes' }] %}
   {{ _table.table('data.json', server_side=True, columns=columns, searching=True) }}
 {% endblock %}

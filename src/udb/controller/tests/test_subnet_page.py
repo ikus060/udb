@@ -81,7 +81,7 @@ class SubnetTest(WebCase, CommonTest):
         # Then the zone is selected
         self.assertStatus(200)
         self.assertInBody(
-            'Selected    <select name="dnszones"\n            id="dnszones"\n            class="form-control"\n            size="8"\n            multiple="multiple">\n          <option value="%s">\n            examples.com\n          </option>\n    </select>'
+            'Selected    <select name="dnszones"\n            id="dnszones"\n            class="form-control"\n            size="8"\n            multiple="multiple">\n<option value="%s">examples.com</option>    </select>'
             % zone.id
         )
 
@@ -96,7 +96,7 @@ class SubnetTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
         self.assertInBody(
-            'Selected    <select name="dnszones"\n            id="dnszones"\n            class="form-control"\n            size="8"\n            multiple="multiple">\n          <option value="%s">\n            examples.com\n          </option>\n    </select>'
+            'Selected    <select name="dnszones"\n            id="dnszones"\n            class="form-control"\n            size="8"\n            multiple="multiple">\n<option value="%s">examples.com</option>    </select>'
             % zone.id
         )
 

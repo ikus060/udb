@@ -16,13 +16,13 @@
         <i class="bi bi-list" aria-hidden="true"></i>
       </button>
       {# Brand #}
-      <a class="navbar-brand" href="{{ url_for('') }}">
+      <a class="navbar-brand" href="{{ url_for("") }}">
         <img src="{{ url_for('static', 'header_logo', v=cache_invalidate) }}"
              class="d-inline-block align-text-top"
              alt="{{ header_name }}"
              title="{{ header_name }}"
              style="max-width: 216px;
-                    max-height: 64px"/>
+                    max-height: 64px" />
       </a>
     </div>
     <div id="sidebarMenu"
@@ -34,7 +34,7 @@
         <strong>{% trans %}Network{% endtrans %}</strong>
       </div>
       <ul class="nav nav-pills flex-column w-100">
-        {% set items = ['vrf', 'subnet', 'ip', 'dnszone', 'dnsrecord', 'dhcprecord', 'mac'] %}
+        {% set items = ["vrf", "subnet", "ip", "dnszone", "dnsrecord", "dhcprecord", "mac"] %}
         {% for model_name in items %}
           <li class="nav-item">
             {% set active = current_url.startswith(url_for(model_name)) %}
@@ -50,7 +50,7 @@
         <strong>{% trans %}Setup{% endtrans %}</strong>
       </div>
       <ul class="nav nav-pills flex-column w-100">
-        {% set items = ['environment', 'deployment'] %}
+        {% set items = ["environment", "deployment"] %}
         {% for model_name in items %}
           <li class="nav-item">
             {% set active = current_url.startswith(url_for(model_name)) %}
@@ -66,7 +66,7 @@
         <strong>{% trans %}System{% endtrans %}</strong>
       </div>
       <ul class="nav nav-pills flex-column w-100">
-        {% set items = ['audit'] %}
+        {% set items = ["audit"] %}
         {% for model_name in items %}
           <li class="nav-item">
             {% set active = current_url.startswith(url_for(model_name)) %}
@@ -82,13 +82,13 @@
           <strong>{% trans %}Administration{% endtrans %}</strong>
         </div>
         <ul class="nav nav-pills flex-column w-100">
-          {% set items = ['user'] %}
+          {% set items = ["user"] %}
           {% for model_name in items %}
             <li class="nav-item">
               {% set active = current_url.startswith(url_for(model_name)) %}
               <a href="{{ url_for(model_name) }}"
                  class="nav-link text-white {% if active %}active{% endif %}">
-                {{ macro.icon(model_name, 'me-3') }}<span>{{  macro.display_name(model_name) }}</span>
+                {{ macro.icon(model_name, 'me-3') }}<span>{{ macro.display_name(model_name) }}</span>
               </a>
             </li>
           {% endfor %}
@@ -106,16 +106,16 @@
         <ul class="dropdown-menu text-small shadow"
             aria-labelledby="dropdownUser1">
           <li>
-            <a class="dropdown-item" href="{{ url_for('profile') }}">{% trans %}Edit user profile{% endtrans %}</a>
+            <a class="dropdown-item" href="{{ url_for("profile") }}">{% trans %}Edit user profile{% endtrans %}</a>
           </li>
           <li>
-            <a class="dropdown-item" href="{{ url_for('notifications') }}">{% trans %}Edit notification settings{% endtrans %}</a>
+            <a class="dropdown-item" href="{{ url_for("notifications") }}">{% trans %}Edit notification settings{% endtrans %}</a>
           </li>
           <li>
             <hr class="dropdown-divider">
           </li>
           <li>
-            <a class="dropdown-item" href="{{ url_for('logout') }}">{% trans %}Sign out{% endtrans %}</a>
+            <a class="dropdown-item" href="{{ url_for("logout") }}">{% trans %}Sign out{% endtrans %}</a>
           </li>
         </ul>
       </div>

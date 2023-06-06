@@ -7,11 +7,7 @@
             size="8"
             multiple="multiple">
       {% for value, label, checked in field.iter_choices() %}
-        {% if not checked %}
-          <option value="{{ value }}">
-            {{ label }}
-          </option>
-        {% endif %}
+        {% if not checked %}<option value="{{ value }}">{{ label }}</option>{% endif %}
       {% endfor %}
     </select>
   </div>
@@ -39,11 +35,7 @@
             size="8"
             multiple="multiple">
       {% for value, label, checked in field.iter_choices() %}
-        {% if checked %}
-          <option value="{{ value }}">
-            {{ label }}
-          </option>
-        {% endif %}
+        {% if checked %}<option value="{{ value }}">{{ label }}</option>{% endif %}
       {% endfor %}
     </select>
   </div>
