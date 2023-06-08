@@ -25,7 +25,7 @@ class DhcpRecordTest(WebCase):
     def test_json(self):
         # Given a database with a Dhcp Reservation
         vrf = Vrf(name='default')
-        Subnet(ranges=['2002:0000:0000:1234::/64'], vrf=vrf).add().commit()
+        Subnet(ranges=['2002:0000:0000:1234::/64'], vrf=vrf, dhcp=True).add().commit()
         obj = DhcpRecord(ip='2002::1234:abcd:ffff:c0a8:101', mac='00:00:5e:00:53:af').add()
         obj.commit()
         # When serializing the object to json
@@ -37,7 +37,7 @@ class DhcpRecordTest(WebCase):
     def test_add_with_ipv4(self):
         # Given a database with subnet
         vrf = Vrf(name='default')
-        Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add().commit()
+        Subnet(ranges=['192.0.2.0/24'], vrf=vrf, dhcp=True).add().commit()
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
@@ -50,7 +50,7 @@ class DhcpRecordTest(WebCase):
     def test_add_with_ipv6(self):
         # Given a database with subnet
         vrf = Vrf(name='default')
-        Subnet(ranges=['2002:0:0:1234::/64'], vrf=vrf).add().commit()
+        Subnet(ranges=['2002:0:0:1234::/64'], vrf=vrf, dhcp=True).add().commit()
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord
         DhcpRecord(ip='2002::1234:abcd:ffff:c0a8:101', mac='00:00:5e:00:53:af').add().commit()
@@ -63,7 +63,7 @@ class DhcpRecordTest(WebCase):
     def test_norm_ipv6(self):
         # Given a database with subnet
         vrf = Vrf(name='default')
-        Subnet(ranges=['2001:db8:85a3::/64'], vrf=vrf).add().commit()
+        Subnet(ranges=['2001:db8:85a3::/64'], vrf=vrf, dhcp=True).add().commit()
         # Given a DHCP Reservation with IPv6
         DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:af').add().commit()
         # When querying the object
@@ -83,7 +83,7 @@ class DhcpRecordTest(WebCase):
     def test_add_with_invalid_subnet(self):
         # Given a database with subnet
         vrf = Vrf(name='default')
-        Subnet(ranges=['192.168.2.0/24'], vrf=vrf).add().commit()
+        Subnet(ranges=['192.168.2.0/24'], vrf=vrf, dhcp=True).add().commit()
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord with invalid data
         # Then an exception is raised
@@ -99,3 +99,13 @@ class DhcpRecordTest(WebCase):
         with self.assertRaises(ValueError) as cm:
             DhcpRecord(ip='192.0.2.23', mac='invalid').add().commit()
         self.assertEqual(cm.exception.args, ('mac', mock.ANY))
+
+    def test_add_with_dhcp_disabled(self):
+        # Given a database with subnet with DHCP disabled
+        vrf = Vrf(name='default')
+        Subnet(ranges=['192.0.2.0/24'], vrf=vrf, dhcp=False).add().commit()
+        self.assertEqual(0, DhcpRecord.query.count())
+        # When adding a DnsRecord to the subnet
+        # Then an error is raised
+        with self.assertRaises(ValueError):
+            DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()

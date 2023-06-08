@@ -39,7 +39,7 @@ class EnvironmentPageTest(WebCase, CommonTest):
         super().setUp()
         # Generate a changes
         vrf = Vrf(name='default')
-        Subnet(ranges=['192.168.45.0/24'], vrf=vrf).add().commit()
+        Subnet(ranges=['192.168.45.0/24'], vrf=vrf, dhcp=True).add().commit()
         # Given a database with DHCP Record change
         DhcpRecord(ip='192.168.45.67', mac='E5:D3:56:7B:22:A3').add().commit()
 

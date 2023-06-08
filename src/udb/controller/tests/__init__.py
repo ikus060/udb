@@ -103,7 +103,7 @@ class WebCase(BaseClass):
         self.user = User(username='test')
         self.vrf = Vrf(name='(default)')
         self.subnet = Subnet(
-            ranges=['147.87.250.0/24'], name='DMZ', vrf=self.vrf, notes='public', owner=self.user
+            ranges=['147.87.250.0/24'], name='DMZ', vrf=self.vrf, notes='public', owner=self.user, dhcp=True
         ).add()
         self.subnet.add_message(Message(body='Message on subnet', author=self.user))
         Subnet(ranges=['147.87.0.0/16'], name='its-main-4', vrf=self.vrf, notes='main', owner=self.user).add()

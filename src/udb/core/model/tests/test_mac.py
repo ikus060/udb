@@ -25,7 +25,7 @@ class MacTest(WebCase):
         super().setUp()
         # Given a database with a subnet.
         vrf = Vrf(name='default')
-        Subnet(ranges=['192.0.2.0/24'], vrf=vrf).add().commit()
+        Subnet(ranges=['192.0.2.0/24'], vrf=vrf, dhcp=True).add().commit()
 
     def test_with_dhcp_record(self):
         # Given a empty database
