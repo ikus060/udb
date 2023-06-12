@@ -32,7 +32,7 @@ AuditRow = namedtuple(
 AllModel = union_all(
     *[
         select(
-            literal(model.__name__.lower()).label('model_name'),
+            literal(model.__tablename__.lower()).label('model_name'),
             model.id.label('model_id'),
             getattr(model, 'status', literal('enabled')).label('status'),
             model.summary,
@@ -47,7 +47,7 @@ class AuditPage:
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['audit/list.html'])
     def index(self):
-        return {'model_names': [model.__name__ for model in auditable_models]}
+        return {'model_names': [model.__tablename__ for model in auditable_models]}
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()

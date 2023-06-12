@@ -66,3 +66,31 @@ class DhcpRecordTest(WebCase, CommonTest):
         )
         # Then a single message is added to the record
         self.assertEqual(2, len(obj.messages))
+
+    def test_dhcprecord_invalid_subnet_rule(self):
+        # Given a DHCP reservation on a subnet.
+        record = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:67').add().commit()
+        # Given DHCP get disable on the subnet
+        subnet = Subnet.query.first()
+        subnet.dhcp = False
+        subnet.add().commit()
+        # When editing the DHCP reservation.
+        self.getPage(url_for(record, 'edit'))
+        self.assertStatus(200)
+        # Then a warning is displayed.
+        self.assertInBody('DHCP has been disabled on this subnet.')
+
+    def test_dhcprecord_unique_ip(self):
+        # Given two (2) dhcp reservation with the same IP.
+        record1 = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:67').add().commit()
+        record2 = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:58').add().commit()
+        # When editing record
+        self.getPage(url_for(record1, 'edit'))
+        self.assertStatus(200)
+        # Then a warning is displayed
+        self.assertInBody('Multiple DHCP Reservation for the same IP address.')
+        # When editing record
+        self.getPage(url_for(record2, 'edit'))
+        self.assertStatus(200)
+        # Then a warning is displayed
+        self.assertInBody('Multiple DHCP Reservation for the same IP address.')

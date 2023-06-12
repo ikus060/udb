@@ -1,0 +1,20 @@
+<div class="card shadow mb-4">
+  <div class="card-header py-3">
+    <span class="h6">{% trans %}Inconsistencies{% endtrans %}</span>
+  </div>
+  <div class="card-body p-0" style="height: 420px; overflow: clip auto;">
+    {% set columns = [
+          {'name':'rule_name', 'visible':False},
+          {'name':'description', 'title':_('Rule')},
+          {'name':'id', 'visible':False},
+          {'name':'model_name', 'visible':False},
+          {'name':'summary', 'title':_('Record'), 'render':'summary'},
+          {'name':'other_id', 'visible':False},
+          {'name':'other_model_name', 'visible':False},
+          {'name':'other_summary', 'title':_('Other Record'), 'render':'summary', 'render_arg':{'model_name_column':'other_model_name:name', 'url_column':'other_url:name'} },
+          {'name':'url', 'visible':False},
+          {'name':'other_url', 'visible':False}
+        ] %}
+    {{ _table.table(url_for('rule','linter.json') , columns=columns, empty_message=_('No inconsistencies were discovered.'), dom_cfg=_table.dom_without_header, paging=False) }}
+  </div>
+</div>

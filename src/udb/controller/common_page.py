@@ -18,13 +18,14 @@ import logging
 from collections import namedtuple
 
 import cherrypy
+from markupsafe import Markup
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.inspection import inspect
 from wtforms.fields import HiddenField, TextAreaField
 from wtforms.validators import InputRequired, Length
 
 from udb.controller import flash, handle_exception, url_for, verify_perm
-from udb.core.model import Message, User
+from udb.core.model import Message, Rule, User
 from udb.tools.i18n import gettext_lazy as _
 
 from .form import CherryForm
@@ -234,7 +235,22 @@ class CommonPage(object):
                 handle_exception(e, form)
             else:
                 flash(_('Record updated successfully'))
-                raise cherrypy.HTTPRedirect(form.referer.data or url_for(obj, 'edit'))
+                rows = Rule.run_linter(obj)
+                if rows or not form.referer.data:
+                    raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
+                raise cherrypy.HTTPRedirect(form.referer.data)
+
+        # Run Soft Rule
+        rows = Rule.run_linter(obj)
+        for row in rows:
+            msg = (
+                row.description
+                if not row.other_id
+                else Markup(_('%s <a href="%s">%s</a>.'))
+                % (row.description, url_for(row.other_model_name, row.other_id, 'edit'), row.other_summary)
+            )
+            flash(msg, level='warning')
+
         # Return object form
         return {
             'has_status': self.has_status,

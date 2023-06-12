@@ -41,7 +41,9 @@
               {'name':'id', 'visible':False},
               {'name':'status', 'visible':False},
               {'name':'model_name', 'visible':False},
-            {'name': 'summary', 'title':_('Subscribed to'), 'orderable': True, 'render':'summary'}] %}
+              {'name':'summary', 'title':_('Subscribed to'), 'orderable': True, 'render':'summary'},
+              {'name':'url', 'visible':False},
+            ] %}
       {{ _table.table('data.json',
             empty_message=_('You are not following any record.') ,
       page_length=10,

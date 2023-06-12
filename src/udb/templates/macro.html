@@ -9,7 +9,8 @@
   "vrf": "bi-layers",
   "deployment": "bi-cloud-upload-fill",
   "environment": "bi-terminal-fill",
-  "audit": "bi-card-text"
+  "audit": "bi-card-text",
+  "rule": "bi-ui-checks"
 } -%}
 {%- macro icon(value, extra_class=None) -%}
   {%- if value.model_name is defined() -%}
@@ -23,7 +24,7 @@
      aria-hidden="true"></i>
 {%- endmacro -%}
 {%- macro display_name(value) -%}
-  {%- set display_name_table = {'dnszone': _('DNS Zone'), 'subnet': _('Subnet'), 'dnsrecord': _('DNS Record'), 'dhcprecord':_('DHCP Reservation'), 'ip':_('IP'), 'mac':_('MAC'), 'user': _('User'), 'vrf': _('VRF'), 'deployment':_('Deployment'), 'environment':_('Environment'), 'audit':_('Audit log') } -%}
+  {%- set display_name_table = {'dnszone': _('DNS Zone'), 'subnet': _('Subnet'), 'dnsrecord': _('DNS Record'), 'dhcprecord':_('DHCP Reservation'), 'ip':_('IP'), 'mac':_('MAC'), 'user': _('User'), 'vrf': _('VRF'), 'deployment':_('Deployment'), 'environment':_('Environment'), 'audit':_('Audit log'), 'rule':_('Rule') } -%}
   {%- if value.model_name is defined() -%}
     {%- set model_name = value.model_name -%}
   {%- elif value._sa_instance_state is defined() -%}

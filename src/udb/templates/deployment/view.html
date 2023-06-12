@@ -37,7 +37,9 @@
                       {'name':'date', 'visible':False},
                       {'name':'type', 'visible':False },
                       {'name':'body', 'visible':False},
-                    {'name':'changes', 'title':_('Changes'), 'orderable':False, 'render':'message_body' }] %}
+                      {'name':'changes', 'title':_('Changes'), 'orderable':False, 'render':'message_body' },
+                      {'name':'url', 'visible':False}
+                    ] %}
           {{ _table.table('changes.json',
                     columns=columns,
                     order=[[ 0, 'desc' ]],

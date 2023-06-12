@@ -312,7 +312,7 @@ $.fn.dataTable.render.primary_range = function () {
         },
     };
 }
-$.fn.dataTable.render.summary = function (model_name = null) {
+$.fn.dataTable.render.summary = function (render_arg) {
     /* FIXME Need to make this list canonical */
     let icon_table = {
         'dnszone': 'bi-collection',
@@ -324,28 +324,43 @@ $.fn.dataTable.render.summary = function (model_name = null) {
         'user': 'bi-person-fill',
         'vrf': 'bi-layers',
         'deployment': 'bi-cloud-upload-fill',
-        'environment': 'bi-terminal-fill'
+        'environment': 'bi-terminal-fill',
+        'rule': 'bi-ui-checks'
     };
+
+    const model_name = typeof render_arg === 'string' ? render_arg : null;
+    const model_name_column = render_arg?.model_name_column || 'model_name:name';
+    const url_column = render_arg?.url_column || 'url:name';
 
     return {
         display: function (data, type, row, meta) {
+            if (!data) return '-';
             const api = new $.fn.dataTable.Api(meta.settings);
             /* Get model_name from arguments or from row data */
             let effective_model_name = model_name;
             if (effective_model_name == null) {
-                const idx = api.column('model_name:name').index();
-                if (idx) {
-                    effective_model_name = row[idx];
+                const model_idx = api.column(model_name_column).index();
+                if (model_idx) {
+                    effective_model_name = row[model_idx];
                 }
             }
-            const url = encodeURI('url' in row ? row.url : row[row.length - 1]);
+
+            /* Define the URL */
+            let url = "#";
+            const url_idx = api.column(url_column).index();
+            if (url_idx) {
+                url = encodeURI(row[url_idx])
+            }
+
             let html = '<a href="' + url + '">' +
                 '<i class="bi ' + icon_table[effective_model_name] + ' me-1" aria-hidden="true"></i>' +
                 '<strong>' + safe(data) + '</strong>' +
                 '</a>';
-            const idx = api.column('status:name').index();
-            if (idx) {
-                if (row[idx] == 'disabled') {
+
+            /* add label with status if available */
+            const status_idx = api.column('status:name').index();
+            if (status_idx) {
+                if (row[status_idx] == 'disabled') {
                     html += ' <span class="badge bg-warning">' + api.settings().i18n('disabled') + '</span>';
                 } else if (row[1] == 'deleted') {
                     html += ' <span class="badge bg-danger">' + api.settings().i18n('deleted') + '</span>';

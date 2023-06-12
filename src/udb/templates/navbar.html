@@ -66,7 +66,7 @@
         <strong>{% trans %}System{% endtrans %}</strong>
       </div>
       <ul class="nav nav-pills flex-column w-100">
-        {% set items = ["audit"] %}
+        {% set items = ["audit", "rule"] %}
         {% for model_name in items %}
           <li class="nav-item">
             {% set active = current_url.startswith(url_for(model_name)) %}
