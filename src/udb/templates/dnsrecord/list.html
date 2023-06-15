@@ -1,4 +1,5 @@
 {% extends 'common/list.html' %}
+{% set auto_width = False %}
 {% set columns = [
   {'name':'id', 'visible':False},
   {'name':'status', 'visible':False, 'search': '(enabled|disabled)', 'regex':True},

@@ -382,11 +382,11 @@ jQuery(function () {
         columns = JSON.parse(columns);
         $.each(columns, function (_index, item) {
             /* process the render attribute as a function. */
-            if (item['render']) {
-                if (item['render_arg']) {
-                    item['render'] = $.fn.dataTable.render[item['render']](item['render_arg']);
+            if (item.render) {
+                if (item.render_arg) {
+                    item.render = $.fn.dataTable.render[item.render](item.render_arg);
                 } else {
-                    item['render'] = $.fn.dataTable.render[item['render']]();
+                    item.render = $.fn.dataTable.render[item.render]();
                 }
             }
             /* 

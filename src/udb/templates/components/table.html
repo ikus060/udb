@@ -26,7 +26,7 @@
   "sPageButton": "btn btn-outline-primary ms-1 me-1",
   "sPageButtonActive": "active"
 } %}
-{% macro table(data, columns=[], order=[], empty_message=None, info_message=None, searching=True, buttons=[], paging=True, page_length=25, length_change=True, buttons_cfg={}, dom_cfg=dom_all, server_side=False, state_save=True) %}
+{% macro table(data, columns=[], order=[], empty_message=None, info_message=None, searching=True, buttons=[], paging=True, page_length=25, length_change=True, buttons_cfg={}, dom_cfg=dom_all, server_side=False, state_save=True, auto_width=True, responsive=True) %}
   {% set language = {
       "aria": {
         "sortAscending": _('activate to sort column ascending'),
@@ -58,7 +58,7 @@
       "zeroRecords": empty_message or _('List is empty'),
     } %}
   {% set buttons_cfg = buttons_cfg_default.__or__(buttons_cfg).__or__({'buttons':buttons}) %}
-  <table class="table table-hover responsive"
+  <table class="table table-hover"
          width="100%"
          data-ajax="{{ data }}"
          data-classes='{{ classes | tojson }}'
@@ -68,11 +68,12 @@
          data-searching='{{ searching | tojson }}'
          data-buttons='{{ buttons_cfg | tojson }}'
          data-dom="{{ dom_cfg }}"
-         data-responsive="true"
+         data-responsive="{{ responsive | tojson }}"
          data-paging="{{ paging | tojson }}"
          data-page-length="{{ page_length | tojson }}"
          data-length-change="{{ length_change | tojson }}"
          data-server-side="{{ server_side | tojson }}"
-         data-state-save="{{ state_save | tojson }}">
+         data-state-save="{{ state_save | tojson }}"
+         data-auto-width="{{ auto_width | tojson }}">
   </table>
 {% endmacro %}

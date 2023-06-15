@@ -42,5 +42,5 @@
   {% set more_button = {'text': _('More') + ' ', 'extend': 'collection', 'align':'button-right', 'autoClose':True, 'background': False, 'popoverTitle': _('More'), 'buttons': [ csv_button, xsl_button, pdf_button], 'className':'udb-btn-more-menu' } %}
   {% set buttons = buttons + [more_button] %}
   {# Show default table #}
-  {{ _table.table(data="data.json", columns=columns, buttons=buttons) }}
+  {{ _table.table(data="data.json", columns=columns, buttons=buttons, auto_width=auto_width|d(True) ) }}
 {% endblock body %}
