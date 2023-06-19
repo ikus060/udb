@@ -128,7 +128,7 @@ def json_handler(*args, **kwargs):
 @cherrypy.tools.proxy(local=None, remote='X-Real-IP')
 @cherrypy.tools.sessions()
 @cherrypy.tools.auth_form()
-@cherrypy.tools.currentuser(userobj=lambda username: User.query.filter_by(username=username).first())
+@cherrypy.tools.currentuser(userobj=User.query_user)
 @cherrypy.tools.i18n(func=lambda: getattr(cherrypy.request, 'currentuser', False) and cherrypy.request.currentuser.lang)
 @cherrypy.tools.secure_headers(
     csp="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/; img-src 'self' data: https://cdn.jsdelivr.net/;font-src https://cdn.jsdelivr.net/"
@@ -200,6 +200,7 @@ class Root(object):
                 'smtp.email_from': cfg.smtp_from and '%s <%s>' % (cfg.header_name, cfg.smtp_from),
                 'smtp.encryption': cfg.smtp_encryption,
                 # Configure login
+                'login.query_user': User.query_user,
                 'login.add_missing_user': cfg.add_missing_user,
                 'login.add_user_default_role': cfg.add_user_default_role,
                 'login.admin_group': cfg.ldap_admin_group,
