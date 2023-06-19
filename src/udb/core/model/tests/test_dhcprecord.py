@@ -18,7 +18,7 @@
 from unittest import mock
 
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, Ip, Subnet, Vrf
+from udb.core.model import DhcpRecord, Ip, Rule, Subnet, Vrf
 
 
 class DhcpRecordTest(WebCase):
@@ -106,6 +106,8 @@ class DhcpRecordTest(WebCase):
         Subnet(ranges=['192.0.2.0/24'], vrf=vrf, dhcp=False).add().commit()
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord to the subnet
-        # Then an error is raised
-        with self.assertRaises(ValueError):
-            DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+        # Then a record is created
+        obj = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+        # Then a soft rule is raised
+        errors = Rule.run_linter(obj)
+        self.assertEqual(1, len(errors))

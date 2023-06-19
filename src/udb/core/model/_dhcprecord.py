@@ -86,9 +86,6 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
         # IP should be within a Subnet
         if not self._ip.related_subnets:
             raise ValueError('ip', _('IP address must be defined within a Subnet'))
-        # Make sure the subnet has DHCP enabled
-        if not any(subnet for subnet in self._ip.related_subnets if subnet.dhcp):
-            raise ValueError('ip', _('DHCP is not enabled on this subnet'))
 
 
 Index('dhcprecord_mac_key', DhcpRecord.mac, unique=True)

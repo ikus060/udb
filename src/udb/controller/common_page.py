@@ -193,6 +193,12 @@ class CommonPage(object):
             except Exception as e:
                 handle_exception(e, form)
             else:
+                flash(_('Record created successfully.'))
+                # Redirect user to same record on soft-rule
+                rows = Rule.run_linter(obj)
+                if rows:
+                    raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
+                # Redirect user to previous page or model page.
                 raise cherrypy.HTTPRedirect(form.referer.data or url_for(self.model))
         elif not form.is_submitted():
             # Apply the default value from params
