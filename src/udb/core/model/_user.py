@@ -121,6 +121,16 @@ class User(JsonMixin, StatusMixing, MessageMixin, Base):
     def check_password(self, password):
         return check_password(password, self.password)
 
+    @classmethod
+    def query_user(cls, username):
+        """
+        Used to query user database for authentication.
+        """
+        return User.query.filter(
+            func.lower(User.username) == username.lower(),
+            User.status == User.STATUS_ENABLED,
+        ).first()
+
     def set_password(self, new_password):
         if not new_password:
             raise ValueError('new_password', _("New password cannot be empty."))

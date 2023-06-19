@@ -21,7 +21,7 @@ import unittest
 import unittest.mock
 
 import cherrypy
-from parameterized import parameterized_class
+from parameterized import parameterized, parameterized_class
 
 from udb.controller.tests import WebCase
 from udb.core.model import User
@@ -56,6 +56,20 @@ class TestLogin(WebCase):
         # Then listeners was called
         self.listener.login.assert_called_once_with(username, password)
         self.listener.authenticate.assert_called_once_with(username, password)
+
+    def test_login_case_insensitive(self):
+        # Given a user
+        # Given a valid username and password
+        username = "aDmiN"
+        password = "admin123"
+        User.create(username=username, password=password).commit()
+        # When login
+        self.getPage("/login/", method="POST", body={"username": "AdMin", "password": password})
+        # Then user is redirect to main page
+        self.assertStatus('303 See Other')
+        # Then listeners was called
+        self.listener.login.assert_called_once_with("AdMin", password)
+        self.listener.authenticate.assert_called_once_with("AdMin", password)
 
     def test_login_with_redirect(self):
         # Given a login form submited with a redirect value.
@@ -190,6 +204,32 @@ class TestLogin(WebCase):
         # Then user is redirect to login page
         self.assertStatus('303 See Other')
         self.assertHeaderItemValue('Location', self.baseurl + '/')
+
+    @parameterized.expand(
+        [
+            (User.STATUS_DELETED,),
+            (User.STATUS_DISABLED,),
+        ]
+    )
+    def test_login_not_enabled_user(self, user_status):
+        # Given an existing user logged in
+        username = "patrik"
+        password = "test123"
+        userobj = User.create(username=username, password=password).commit()
+        self.getPage("/login/", method="POST", body={"username": username, "password": password})
+        self.assertStatus('303 See Other')
+        self.getPage("/dashboard/")
+        self.assertStatus(200)
+        # When user get deleted
+        userobj.status = user_status
+        userobj.add().commit()
+        # Then user cannot get access page
+        self.getPage("/dashboard/")
+        self.assertStatus(403)
+        # Then user cannot loging back.
+        self.getPage("/login/", method="POST", body={"username": username, "password": password})
+        self.assertStatus(200)
+        self.assertInBody("Invalid credentials")
 
 
 @parameterized_class(

@@ -39,6 +39,7 @@ class LoginPlugin(SimplePlugin):
     subnet_mgmt_group = None
     user_group = None
     guest_group = None
+    query_user = None
 
     def start(self):
         self.bus.log('Start Login plugin')
@@ -54,7 +55,7 @@ class LoginPlugin(SimplePlugin):
         """
         Only verify the user's credentials using the database store.
         """
-        user = User.query.filter_by(username=username).first()
+        user = self.query_user(username)
         if user and user.check_password(password):
             return username, {}
         return False
@@ -93,7 +94,7 @@ class LoginPlugin(SimplePlugin):
         member_of = extra_attrs.get('_member_of', None)
         role = self._get_user_role(member_of)
         # When enabled, create missing userobj in database.
-        userobj = User.query.filter_by(username=username).first()
+        userobj = self.query_user(username)
         if userobj is None and self.add_missing_user:
             try:
                 # At this point, we need to create a new user in database.
