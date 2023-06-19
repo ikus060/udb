@@ -20,14 +20,14 @@ from collections import namedtuple
 
 import cherrypy
 from sqlalchemy import case, func
-from wtforms.fields import IntegerField, SelectField, StringField, TextAreaField
+from wtforms.fields import BooleanField, IntegerField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional
 
 from udb.core.model import DnsZone, Subnet, SubnetRange, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, DualListWidget, SelectMultipleObjectField, SelectObjectField, StringFieldSet
+from .form import CherryForm, DualListWidget, SelectMultipleObjectField, SelectObjectField, StringFieldSet, SwitchWidget
 
 unset_value = "UNSET_DATA"
 
@@ -97,6 +97,14 @@ class SubnetForm(CherryForm):
             "title": _('VLAN number.'),
         },
     )
+    dhcp = BooleanField(
+        _('DHCP Enabled'),
+        widget=SwitchWidget(),
+        render_kw={
+            'width': '1/3',
+        },
+    )
+
     rir_status = SelectField(
         _('RIR Status'),
         choices=[
@@ -107,6 +115,9 @@ class SubnetForm(CherryForm):
         validators=[Optional()],
         coerce=lambda value: value if value else None,
         default='',
+        render_kw={
+            'width': '1/3',
+        },
     )
     dnszones = SelectMultipleObjectField(
         _('Allowed DNS zone(s)'),
@@ -141,6 +152,7 @@ SubnetRow = namedtuple(
         'l2vni',
         'vlan',
         'rir_status',
+        'dhcp',
         'dnszone_names',
     ],
 )
@@ -166,6 +178,7 @@ class SubnetPage(CommonPage):
                 Subnet.l2vni,
                 Subnet.vlan,
                 Subnet.rir_status,
+                Subnet.dhcp,
                 func.group_concat(SubnetRange.range.text().distinct()).label('ranges'),
                 func.group_concat(DnsZone.name.distinct()).label('dnszone_names'),
             )
@@ -208,6 +221,7 @@ class SubnetPage(CommonPage):
                 l2vni=row.l2vni,
                 vlan=row.vlan,
                 rir_status=row.rir_status,
+                dhcp=row.dhcp,
                 dnszone_names=dnszone_names,
             )
             # Keep reference of previous row for depth calculation

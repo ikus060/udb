@@ -22,7 +22,7 @@ from sqlalchemy import Column, Computed, ForeignKey, ForeignKeyConstraint, Index
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import deferred, relationship, validates
-from sqlalchemy.types import Integer, SmallInteger, String
+from sqlalchemy.types import Boolean, Integer, SmallInteger, String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
@@ -104,6 +104,13 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
         nullable=False,
         server_default='',
         doc="store string representation of the subnet ranges used for search",
+    )
+    dhcp = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default='FALSE',
+        server_default_sqlite="0",
     )
 
     # Transient fields for ordering

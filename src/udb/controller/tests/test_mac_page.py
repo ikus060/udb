@@ -26,7 +26,7 @@ class MacPageTest(WebCase):
         super().setUp()
         # Given a database with a subnet.
         vrf = Vrf(name='default')
-        Subnet(ranges=['1.2.3.0/24'], vrf=vrf).add().commit()
+        Subnet(ranges=['1.2.3.0/24'], vrf=vrf, dhcp=True).add().commit()
 
     def test_no_deleted_filter(self):
         # Given a database with records

@@ -140,5 +140,7 @@ def db_after_create(target, connection, **kw):
         add_column(Vrf.__table__.c.search_string)
         # Delete unique index on user's email
         connection.execute(ddl.DropIndex(Index('user_email_key'), if_exists=True))
+        # Create DHCP column
+        add_column(Subnet.__table__.c.dhcp)
         # Do final commit of changes
         _commit()

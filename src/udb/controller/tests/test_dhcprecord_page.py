@@ -37,7 +37,7 @@ class DhcpRecordTest(WebCase, CommonTest):
         super().setUp()
         # Generate a changes
         vrf = Vrf(name='default')
-        Subnet(ranges=['1.2.3.0/24'], vrf=vrf).add().commit()
+        Subnet(ranges=['1.2.3.0/24'], vrf=vrf, dhcp=True).add().commit()
 
     def test_new_duplicate(self):
         # Given a database with a record

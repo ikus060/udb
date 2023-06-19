@@ -37,7 +37,7 @@ class DeploymentPageTest(WebCase):
         super().setUp()
         # Generate a changes
         vrf = Vrf(name='default')
-        Subnet(ranges=['192.168.45.0/24'], vrf=vrf).add().commit()
+        Subnet(ranges=['192.168.45.0/24'], vrf=vrf, dhcp=True).add().commit()
         DhcpRecord(ip='192.168.45.67', mac='E5:D3:56:7B:22:A3').add().commit()
         # Create a new environment
         self.environment = Environment(name='test-env', script='echo FOO', model_name='dhcprecord').add().commit()

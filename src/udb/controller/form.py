@@ -140,11 +140,6 @@ class DualListWidget(JinjaWidget):
     filename = 'widgets/DualListWidget.html'
 
 
-# Widget that could be used with SelectMultipleObjectField.
-class SelectMultiCheckbox(JinjaWidget):
-    filename = 'widgets/SelectMultiCheckbox.html'
-
-
 # Widget that could be used with FieldList
 class TableWidget(JinjaWidget):
     filename = 'widgets/TableWidget.html'
@@ -152,6 +147,10 @@ class TableWidget(JinjaWidget):
 
 class SubnetTableWidget(JinjaWidget):
     filename = 'widgets/SubnetTableWidget.html'
+
+
+class SwitchWidget(JinjaWidget):
+    filename = 'widgets/SwitchWidget.html'
 
 
 class SelectMultipleObjectField(SelectMultipleField):
