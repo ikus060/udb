@@ -67,7 +67,25 @@ class DhcpRecordTest(WebCase, CommonTest):
         # Then a single message is added to the record
         self.assertEqual(2, len(obj.messages))
 
-    def test_dhcprecord_invalid_subnet_rule(self):
+    def test_dhcprecord_new_invalid_subnet_rule(self):
+        # Given a subnet with DHCP Disabled.
+        subnet = Subnet.query.first()
+        subnet.dhcp = False
+        subnet.add().commit()
+        # When creating a DHCP Reservation.
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
+        self.assertStatus(303)
+        # Then user is redirect to edit page
+        location = self.assertHeader('Location')
+        self.assertIn('edit', location)
+        # Then record got created
+        self.getPage(location)
+        self.assertStatus(200)
+        self.assertInBody('Record created successfully.')
+        # Then a warning is displayed.
+        self.assertInBody('DHCP has been disabled on this subnet.')
+
+    def test_dhcprecord_edit_invalid_subnet_rule(self):
         # Given a DHCP reservation on a subnet.
         record = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:67').add().commit()
         # Given DHCP get disable on the subnet
