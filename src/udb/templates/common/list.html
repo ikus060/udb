@@ -19,23 +19,16 @@
     </div>
   </div>
   {% include "flash.html" %}
-  {# Define a default columns list from form #}
-  {% set ns = namespace(default_columns=[]) %}
   {% set buttons = [] %}
-  {% for field in form %}
-    {% if field.widget['input_type'] != 'hidden' %}
-      {% set ns.default_columns = ns.default_columns + [{'name': field.name, 'title': field.label.text|string, 'orderable':True, 'render': 'summary' if loop.first else 'text'}] %}
-    {% endif %}
-  {% endfor %}
-  {% set table_columns = columns|d(ns.default_columns) %}
+  {% set columns = columns|d([]) %}
   {# Append Action columns #}
-  {% set table_columns = table_columns + [{'name':'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px'}] %}
+  {% set columns = columns + [{'name':'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px'}] %}
   {# Add Status Filter if status column exists #}
-  {% if 'status' in (table_columns|map(attribute='name')|list) %}
+  {% if 'status' in (columns|map(attribute='name')|list) %}
     {% set buttons = buttons + [{'text': _('Show Deleted'), 'extend': 'filter', 'column': 'status:name', 'search':'(enabled|disabled|deleted)', 'search_off': '(enabled|disabled)', 'regex': True, 'className': 'udb-btn-filter' }] %}
   {% endif %}
   {# Add Owner filter if owner column exists #}
-  {% if 'owner' in (table_columns|map(attribute='name')|list) %}
+  {% if 'owner' in (columns|map(attribute='name')|list) %}
     {% set buttons = buttons + [{'text': _('Show only mine'), 'extend': 'filter', 'column': 'owner:name', 'search': currentuser.summary, 'className': 'udb-btn-filter'}] %}
   {% endif %}
   {% set buttons = buttons + extra_buttons|d([]) %}
@@ -49,5 +42,5 @@
   {% set more_button = {'text': _('More') + ' ', 'extend': 'collection', 'align':'button-right', 'autoClose':True, 'background': False, 'popoverTitle': _('More'), 'buttons': [ csv_button, xsl_button, pdf_button], 'className':'udb-btn-more-menu' } %}
   {% set buttons = buttons + [more_button] %}
   {# Show default table #}
-  {{ _table.table(data="data.json", columns=table_columns, buttons=buttons) }}
+  {{ _table.table(data="data.json", columns=columns, buttons=buttons, auto_width=auto_width|d(True) ) }}
 {% endblock body %}

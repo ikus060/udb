@@ -47,6 +47,7 @@ from udb.controller.login_page import LoginPage
 from udb.controller.mac_page import MacPage
 from udb.controller.notifications_page import NotificationsPage
 from udb.controller.profile_page import ProfilePage
+from udb.controller.rule_page import RuleApi, RulePage
 from udb.controller.search_page import SearchPage
 from udb.controller.static import Static
 from udb.controller.subnet_page import SubnetPage
@@ -234,6 +235,7 @@ class Root(object):
         self.static = Static()
         # Import modules to be added to this app.
         self.vrf = VrfPage()
+        self.rule = RulePage()
         self.dnszone = DnsZonePage()
         self.subnet = SubnetPage()
         self.dnsrecord = DnsRecordPage()
@@ -251,6 +253,7 @@ class Root(object):
         self.api.vrf = CommonApi(Vrf)
         self.api.deployment = DeploymentApi()
         self.api.environment = EnvironmentApi()
+        self.api.rule = RuleApi()
         # Configure logos
         self.static.header_logo = cherrypy.tools.staticfile.handler(
             filename=cfg.header_logo

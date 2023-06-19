@@ -36,7 +36,9 @@
           {'name':'name', 'title':_('Related DNS Record'), 'orderable':True, 'render':'summary', 'render_arg':'dnsrecord', 'className':'export'},
           {'name':'type', 'title':form.type.label.text|string, 'orderable':True, 'className':'export'},
           {'name':'ttl', 'title':form.ttl.label.text|string, 'orderable':True, 'className':'export'},
-        {'name':'value', 'title':form.value.label.text|string, 'orderable':True, 'className':'export'}] %}
+          {'name':'value', 'title':form.value.label.text|string, 'orderable':True, 'className':'export'},
+          {'name': 'url', 'visible':False}
+        ] %}
     {{ _table.table('related',
         columns=columns,
         order=[[ 3, 'asc' ]],

@@ -15,21 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from sqlalchemy import Column, Computed, String, event, func
-from sqlalchemy.engine import Engine
+from sqlalchemy import Column, Computed, String, func
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import declared_attr, deferred
 from sqlalchemy.sql.functions import GenericFunction
-
-
-@event.listens_for(Engine, "connect")
-def _register_pg_trgm(dbapi_con, unused):
-    """
-    On PostgreSQL engine, make sure pg_trgm extension is installed to create index on search_string.
-    """
-    if 'psycopg' in repr(dbapi_con.__class__):
-        with dbapi_con.cursor() as cur:
-            cur.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
 
 
 class udb_websearch(GenericFunction):

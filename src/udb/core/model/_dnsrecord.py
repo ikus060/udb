@@ -34,6 +34,7 @@ from ._dnszone import DnsZone
 from ._follower import FollowerMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
+from ._rule import rule
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._subnet import Subnet, SubnetRange
@@ -450,36 +451,6 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
             record.get('value', ''),
         )
 
-    @classmethod
-    def dns_record_mismatch_query(cls, id=None):
-        """
-        Return a query with all mismatch DNS Records.
-        """
-        # For each PTR Record, check if the IP ddress matches the IP address of the forward record (A, AAAA).
-        fwd = aliased(DnsRecord)
-        query = (
-            select(
-                DnsRecord.id.label('ptr_id'),
-                DnsRecord.summary.label('ptr_summary'),
-                fwd.id.label('fwd_id'),
-                fwd.summary.label('fwd_summary'),
-            )
-            .join(fwd, DnsRecord.value == fwd.name)
-            .filter(
-                DnsRecord.type == 'PTR',
-                or_(
-                    and_(DnsRecord.name.endswith('.in-addr.arpa'), fwd.type == 'A'),
-                    and_(DnsRecord.name.endswith('.ip6.arpa'), fwd.type == 'AAAA'),
-                ),
-                DnsRecord.generated_ip != fwd.generated_ip,
-                DnsRecord.status == DnsRecord.STATUS_ENABLED,
-                fwd.status == DnsRecord.STATUS_ENABLED,
-            )
-        )
-        if id:
-            query = query.filter(or_(DnsRecord.id == id, fwd.id == id))
-        return query
-
 
 @event.listens_for(DnsRecord, "before_update")
 def before_update(mapper, connection, instance):
@@ -500,3 +471,95 @@ def dns_reload_ip(self, new_value, old_value, initiator):
     # When the ip address get updated on a record, make sure to load the relatd Ip object to update the history.
     if new_value != old_value:
         self._ip
+
+
+@rule(DnsRecord, _('PTR record does not match forward record.'))
+def dns_ptr_record_mismatch():
+    """
+    Return record where PTR doesn't matches the corresponding A or AAAA value.
+    """
+    # For each PTR Record, check if the IP address matches the IP address of the forward record (A, AAAA).
+    fwd = aliased(DnsRecord)
+    return (
+        select(
+            DnsRecord.id.label('id'),
+            literal(DnsRecord.__tablename__).label('model_name'),
+            DnsRecord.summary.label('summary'),
+            fwd.id.label('other_id'),
+            literal(DnsRecord.__tablename__).label('other_model_name'),
+            fwd.summary.label('other_summary'),
+        )
+        .join(fwd, DnsRecord.value == fwd.name)
+        .filter(
+            DnsRecord.type == 'PTR',
+            or_(
+                and_(DnsRecord.name.endswith('.in-addr.arpa'), fwd.type == 'A'),
+                and_(DnsRecord.name.endswith('.ip6.arpa'), fwd.type == 'AAAA'),
+            ),
+            DnsRecord.generated_ip != fwd.generated_ip,
+            DnsRecord.status == DnsRecord.STATUS_ENABLED,
+            fwd.status == DnsRecord.STATUS_ENABLED,
+        )
+    )
+
+
+@rule(DnsRecord, _('PTR record must have a corresponding forward record A or AAAA with the same hostname.'))
+def dns_ptr_without_forward():
+    return select(
+        DnsRecord.id.label('id'),
+        literal(DnsRecord.__tablename__).label('model_name'),
+        DnsRecord.summary.label('summary'),
+    ).filter(
+        DnsRecord.type == 'PTR',
+        DnsRecord.value.not_in(select(DnsRecord.name).filter(DnsRecord.type.in_(['A', 'AAAA']))),
+        DnsRecord.status == DnsRecord.STATUS_ENABLED,
+    )
+
+
+@rule(DnsRecord, _('Alias for the canonical name (CNAME) should not be defined on a DNS Zone.'))
+def dns_cname_on_dns_zone():
+    """
+    Return record where an alias is defined for a DNS Zone.
+    """
+    return (
+        select(
+            DnsRecord.id,
+            literal(DnsRecord.__tablename__).label('model_name'),
+            DnsRecord.summary.label('summary'),
+            DnsZone.id.label('other_id'),
+            literal(DnsZone.__tablename__).label('other_model_name'),
+            DnsZone.summary.label('other_summary'),
+        )
+        .join(DnsZone, DnsRecord.name == DnsZone.name)
+        .filter(
+            DnsRecord.type == 'CNAME',
+            DnsRecord.status == DnsRecord.STATUS_ENABLED,
+        )
+    )
+
+
+@rule(DnsRecord, _('You cannot defined other record type when an alias for a canonical name (CNAME) is defined.'))
+def dns_cname_not_unique():
+    """
+    Return all record where a CNAME is not the only record.
+    """
+    a = aliased(DnsRecord)
+    return (
+        select(
+            DnsRecord.id,
+            literal(DnsRecord.__tablename__).label('model_name'),
+            DnsRecord.summary.label('summary'),
+            a.id.label('other_id'),
+            literal(DnsRecord.__tablename__).label('other_model_name'),
+            a.summary.label('other_summary'),
+        )
+        .join(a, DnsRecord.name == a.name)
+        .filter(
+            or_(
+                and_(DnsRecord.type == 'CNAME', a.type != 'CNAME'),
+                and_(DnsRecord.type != 'CNAME', a.type == 'CNAME'),
+            ),
+            DnsRecord.status == DnsRecord.STATUS_ENABLED,
+            a.status == DnsRecord.STATUS_ENABLED,
+        )
+    )

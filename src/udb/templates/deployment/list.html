@@ -25,6 +25,7 @@
                       {'name': 'created_at', 'title':_('Started on'), 'orderable': False, 'render':'datetime'},
                       {'name': 'change_count', 'title':_('Number of changes'), 'orderable': False},
                       {'name': 'owner', 'title':_('Deployed by'), 'orderable': False},
+                      {'name': 'url', 'visible':False}
                     ] %}
           {{ _table.table('deployments.json',
                     empty_message=_('Changes never deployed.') ,

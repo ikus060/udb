@@ -29,7 +29,7 @@ from .form import CherryForm
 AllModel = union_all(
     *[
         select(
-            literal(model.__name__.lower()).label('model_name'),
+            literal(model.__tablename__.lower()).label('model_name'),
             model.id.label('model_id'),
             getattr(model, 'status', literal('enabled')).label('status'),
             model.summary,

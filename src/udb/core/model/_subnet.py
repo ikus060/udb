@@ -109,8 +109,7 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
         Boolean,
         nullable=False,
         default=False,
-        server_default='FALSE',
-        server_default_sqlite="0",
+        server_default='0',
     )
 
     # Transient fields for ordering

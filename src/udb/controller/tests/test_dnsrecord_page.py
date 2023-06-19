@@ -128,46 +128,48 @@ class DnsRecordTest(WebCase, CommonTest):
         # Then no records get created
         self.assertEqual(0, DnsRecord.query.count())
 
-    def test_edit_dns_record_mismatch(self):
-        # Given a forward DNS Record
-        fwd = DnsRecord(name='foo.example.com', type='A', value='192.168.1.101').add().commit()
-        # When creating a new Reverse DNS Record,
-        data = {'name': '98.1.168.192.in-addr.arpa', 'type': 'PTR', 'value': 'foo.example.com'}
-        self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
-        # Then record get created
-        self.assertStatus(303)
-        ptr = DnsRecord.query.filter(DnsRecord.id != fwd.id).first()
-        self.getPage(url_for('dnsrecord', ptr.id, 'edit'))
-        # Then a warning is displayed
-        self.assertStatus(200)
-        self.assertInBody('This DNS Record mismatch with')
-        # When browsing Forward record
-        self.getPage(url_for('dnsrecord', fwd.id, 'edit'))
-        # Then a warning is displayed
-        self.assertStatus(200)
-        self.assertInBody('This DNS Record mismatch with')
-
-    def test_dns_record_mismatch_json(self):
+    def test_dns_record_mismatch_rule(self):
         # Give two DNS Record mismatch
-        fwd = DnsRecord(name='foo.example.com', type='A', value='192.168.1.101').add().commit()
+        DnsRecord(name='foo.example.com', type='A', value='192.168.1.101').add().commit()
         ptr = DnsRecord(name='98.1.168.192.in-addr.arpa', type='PTR', value='foo.example.com').add().commit()
-        # When querying list of mismatch record.
-        data = self.getJson(url_for('dnsrecord', 'dns-record-mismatch.json'))
-        # Then one result is returned.
-        self.assertEqual(
-            data,
-            {
-                'data': [
-                    [
-                        ptr.id,
-                        '98.1.168.192.in-addr.arpa = foo.example.com (PTR)',
-                        fwd.id,
-                        'foo.example.com = 192.168.1.101 (A)',
-                        'http://127.0.0.1:54583/dnsrecord/%s/edit' % ptr.id,
-                    ]
-                ]
-            },
-        )
+        # When editing PTR record
+        self.getPage(url_for(ptr, 'edit'))
+        self.assertStatus(200)
+        # Then a warning is displayed.
+        self.assertInBody('PTR record does not match forward record.')
+
+    def test_dns_record_ptr_without_forward_rule(self):
+        # Given a PTR without forward record.
+        ptr = DnsRecord(name='98.1.168.192.in-addr.arpa', type='PTR', value='foo.example.com').add().commit()
+        # When editing PTR record
+        self.getPage(url_for(ptr, 'edit'))
+        self.assertStatus(200)
+        # Then a warning is displayed.
+        self.assertInBody('PTR record must have a corresponding forward record A or AAAA with the same hostname.')
+
+    def test_dns_cname_on_dns_zone_rule(self):
+        # Given a CNAME record on dns zone
+        cname = DnsRecord(name='example.com', type='CNAME', value='foo.example.com').add().commit()
+        # When editing CNAME record
+        self.getPage(url_for(cname, 'edit'))
+        self.assertStatus(200)
+        # Then a warning is displayed.
+        self.assertInBody('Alias for the canonical name (CNAME) should not be defined on a DNS Zone.')
+
+    def test_dns_cname_not_unique_rule(self):
+        # Given a CNAME and a A record on the same host
+        cname = DnsRecord(name='www.example.com', type='CNAME', value='example.com').add().commit()
+        other = DnsRecord(name='www.example.com', type='A', value='192.168.1.101').add().commit()
+        # When editing CNAME record
+        self.getPage(url_for(cname, 'edit'))
+        self.assertStatus(200)
+        # Then a warning is displayed.
+        self.assertInBody('You cannot defined other record type when an alias for a canonical name (CNAME) is defined.')
+        # When editing other record
+        self.getPage(url_for(other, 'edit'))
+        self.assertStatus(200)
+        # Then a warning is displayed.
+        self.assertInBody('You cannot defined other record type when an alias for a canonical name (CNAME) is defined.')
 
     def test_dns_record_related_json(self):
         # Given two DNS with the same hostname

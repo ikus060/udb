@@ -20,6 +20,7 @@ from wtforms.fields import StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, IPAddress, Length, MacAddress
 
+from udb.controller import url_for
 from udb.core.model import DhcpRecord, User
 from udb.tools.i18n import gettext_lazy as _
 
@@ -73,3 +74,10 @@ class DhcpRecordPage(CommonPage):
             DhcpRecord.notes,
             User.summary.label('owner'),
         )
+
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def dhcp_record_invalid_subnet_json(self, **kwargs):
+        query = DhcpRecord.dhcp_record_invalid_subnet()
+        session = cherrypy.tools.db.get_session()
+        return {'data': [list(row) + [url_for('dhcprecord', row[0], 'edit')] for row in session.execute(query).all()]}

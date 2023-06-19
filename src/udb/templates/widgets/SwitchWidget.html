@@ -3,5 +3,6 @@
          type="checkbox"
          id="{{ field.id }}"
          name="{{ field.id }}"
-         {% if field.data %}checked{% endif %}>
+         {% if field.data %}checked{% endif +%}
+         {% if disabled %}disabled{% endif %}>
 </div>

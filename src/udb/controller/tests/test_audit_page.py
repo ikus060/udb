@@ -61,28 +61,28 @@ class AuditPageTest(WebCase):
         # Given a query to data_json
         data = self.getJson(url_for(self.base_url, 'data.json'))
         # Then a response is return with latest changes
-        self.assertEqual(data, {'draw': None, 'recordsTotal': 20, 'recordsFiltered': 20, 'data': ANY})
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 26, 'recordsFiltered': 26, 'data': ANY})
         self.assertEqual(10, len(data['data']))
 
     def test_data_json_with_length(self):
         # Given a query to data_json
         data = self.getJson(url_for(self.base_url, 'data.json', length=5))
         # Then a response is return with latest changes
-        self.assertEqual(data, {'draw': None, 'recordsTotal': 20, 'recordsFiltered': 20, 'data': ANY})
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 26, 'recordsFiltered': 26, 'data': ANY})
         self.assertEqual(5, len(data['data']))
 
     def test_data_json_with_start(self):
         # Given a query to data_json
         data = self.getJson(url_for(self.base_url, 'data.json', start=5, length=5))
         # Then a response is return with latest changes
-        self.assertEqual(data, {'draw': None, 'recordsTotal': 20, 'recordsFiltered': 20, 'data': ANY})
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 26, 'recordsFiltered': 26, 'data': ANY})
         self.assertEqual(5, len(data['data']))
 
     def test_data_json_with_search(self):
         # Given a query to data_json
         data = self.getJson(url_for(self.base_url, 'data.json', **{'search[value]': 'test'}))
         # Then a response is return with latest changes
-        self.assertEqual(data, {'draw': None, 'recordsTotal': 20, 'recordsFiltered': 2, 'data': ANY})
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 26, 'recordsFiltered': 2, 'data': ANY})
         self.assertEqual(2, len(data['data']))
 
     @parameterized.expand(['0', '1', '2', '3', '4', '5', '6'])

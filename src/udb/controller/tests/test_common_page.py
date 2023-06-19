@@ -161,9 +161,10 @@ class CommonTest:
             self.assertEqual(getattr(new_obj, k), v)
 
     def test_edit_with_comment(self):
-        # Given a database with a record
+        # Given a database with one record
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
+        self.assertEqual(1, self.obj_cls.query.count())
         # When trying to update it's name
         body = dict(self.edit_data)
         body['body'] = 'This is my comment'

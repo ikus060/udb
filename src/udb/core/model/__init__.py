@@ -30,11 +30,15 @@ from ._follower import Follower  # noqa
 from ._ip import Ip  # noqa
 from ._mac import Mac  # noqa
 from ._message import Message  # noqa
+from ._rule import Rule  # noqa
 from ._subnet import Subnet, SubnetRange  # noqa
 from ._user import User  # noqa
 from ._vrf import Vrf  # noqa
 
 Base = cherrypy.tools.db.get_base()
+
+# Build list of model with 'messages' attributes
+all_models = [value for value in locals().values() if inspect.isclass(value) and hasattr(value, '__tablename__')]
 
 # Build list of model with 'followers' attributes
 followable_models = [
@@ -62,8 +66,8 @@ searchable_models = [
 ]
 
 
-@event.listens_for(Base.metadata, 'after_create')
-def db_after_create(target, connection, **kw):
+@event.listens_for(Base.metadata, 'after_create', insert=True)
+def update_database_schema(target, connection, **kw):
     """
     Called on database creation to update database schema.
     """
@@ -142,5 +146,7 @@ def db_after_create(target, connection, **kw):
         connection.execute(ddl.DropIndex(Index('user_email_key'), if_exists=True))
         # Create DHCP column
         add_column(Subnet.__table__.c.dhcp)
+        # Create status column on rule
+        add_column(Rule.__table__.c.status)
         # Do final commit of changes
         _commit()

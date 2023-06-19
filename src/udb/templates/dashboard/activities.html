@@ -15,7 +15,9 @@
           {'name':'date', 'visible':False},
           {'name':'type', 'visible':False },
           {'name':'body', 'visible':False},
-        {'name':'changes', 'title':_('Changes'), 'orderable':False, 'render':'message_body' }] %}
+          {'name':'changes', 'title':_('Changes'), 'orderable':False, 'render':'message_body' },
+          {'name':'url', 'visible':False},
+        ] %}
     {{ _table.table(url_for('audit','data.json') , columns=columns, empty_message=_('No modification'), dom_cfg=_table.dom_without_header, paging=False) }}
   </div>
 </div>
