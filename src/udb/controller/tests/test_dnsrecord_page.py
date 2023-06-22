@@ -136,7 +136,9 @@ class DnsRecordTest(WebCase, CommonTest):
         self.getPage(url_for(ptr, 'edit'))
         self.assertStatus(200)
         # Then a warning is displayed.
-        self.assertInBody('PTR record does not match forward record.')
+        self.assertInBody(
+            'PTR record must have at least one corresponding forward record with the same hostname and same IP address.'
+        )
 
     def test_dns_record_ptr_without_forward_rule(self):
         # Given a PTR without forward record.
@@ -145,7 +147,21 @@ class DnsRecordTest(WebCase, CommonTest):
         self.getPage(url_for(ptr, 'edit'))
         self.assertStatus(200)
         # Then a warning is displayed.
-        self.assertInBody('PTR record must have a corresponding forward record A or AAAA with the same hostname.')
+        self.assertInBody(
+            'PTR record must have at least one corresponding forward record with the same hostname and same IP address.'
+        )
+
+    def test_dns_record_ptr_with_ipv6_forward_rule(self):
+        # Given a PTR without forward record.
+        DnsRecord(name='foo.example.com', type='AAAA', value='2001:db8:85a3::1').add()
+        ptr = DnsRecord(name='98.1.168.192.in-addr.arpa', type='PTR', value='foo.example.com').add().commit()
+        # When editing PTR record
+        self.getPage(url_for(ptr, 'edit'))
+        self.assertStatus(200)
+        # Then a warning is displayed.
+        self.assertInBody(
+            'PTR record must have at least one corresponding forward record with the same hostname and same IP address.'
+        )
 
     def test_dns_cname_on_dns_zone_rule(self):
         # Given a CNAME record on dns zone

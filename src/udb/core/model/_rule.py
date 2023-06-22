@@ -180,14 +180,18 @@ def create_update_rule(target, connection, **kw):
     for rule in _rules:
         obj = Rule.query.filter(Rule.name == rule[0]).first()
         if not obj:
-            obj = Rule(name=rule.name, description=rule.description)
+            obj = Rule(name=rule.name)
         try:
+            obj.description = rule.description
             obj.model_name = rule.model_name
             obj.statement = str(rule.statement().compile(connection.engine, compile_kwargs={"literal_binds": True}))
             obj.builtin = True
             obj.add()
         except Exception:
             logger.exception('fail to load rule in database')
+
+    # Delete obsolete built-in rule
+    Rule.query.filter(Rule.name.in_(['dns_ptr_record_mismatch'])).delete()
 
     # SQLAlchmey 1.4 Commit current transaction and open a new one.
     if getattr(connection, '_transaction', None):
