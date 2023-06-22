@@ -18,6 +18,7 @@
 from unittest import mock
 
 from parameterized import parameterized
+from sqlalchemy.exc import IntegrityError
 
 from udb.controller.tests import WebCase
 from udb.core.model import DnsRecord, DnsZone, Subnet, Vrf
@@ -388,3 +389,32 @@ class DnsRecordTest(WebCase):
         DnsRecord(name=name, value=value, type=type).add().flush()
         # Then record get added
         DnsRecord.query.one()
+
+    def test_add_multiple_soa(self):
+        # Given an existing SOA record on the DNS Zone
+        DnsZone(name='example.com').add().flush()
+        DnsRecord(
+            name='example.com',
+            value='ddns.bfh.info. bfh-linux-sysadmin.lists.bfh.science. 33317735 600 60 36000 3600',
+            type='SOA',
+        ).add().commit()
+        # When trying to create a second SOA record for the same hostname
+        # Then an error is raised
+        with self.assertRaises(IntegrityError):
+            DnsRecord(
+                name='example.com',
+                value='ddns.bfh.info. bfh-linux-sysadmin.lists.bfh.science. 33317735 600 60 36000 3600',
+                type='SOA',
+            ).add().commit()
+
+    def test_add_soa_without_dnszone(self):
+        # Given a DnsZone
+        DnsZone(name='example.com').add().commit()
+        # When creating a SOA on sub-domain
+        # Then an error is raised
+        with self.assertRaises(ValueError):
+            DnsRecord(
+                name='foo.example.com',
+                value='ddns.bfh.info. bfh-linux-sysadmin.lists.bfh.science. 33317735 600 60 36000 3600',
+                type='SOA',
+            ).add().commit()

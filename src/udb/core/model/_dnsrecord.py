@@ -19,7 +19,20 @@ import ipaddress
 import re
 
 import cherrypy
-from sqlalchemy import CheckConstraint, Column, Computed, ForeignKey, and_, case, event, func, literal, or_, select
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    Computed,
+    ForeignKey,
+    Index,
+    and_,
+    case,
+    event,
+    func,
+    literal,
+    or_,
+    select,
+)
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import aliased, declared_attr, relationship, validates
@@ -183,6 +196,10 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
         dnszone = self._get_related_dnszone()
         if not dnszone:
             raise ValueError('value' if is_ptr else 'name', _('FQDN must be defined within a valid DNS Zone.'))
+
+        # For SOA record. it's only possible to define them on dns zone
+        if self.type == 'SOA' and dnszone.name != self.name:
+            raise ValueError('name', _('SOA record must be defined on DNS Zone.'))
 
         # Validate name according to record type
         if is_ptr and not self.ip_value:
@@ -464,6 +481,15 @@ def before_insert(mapper, connection, instance):
 
 # Make sure `type` only matches suported types.
 CheckConstraint(DnsRecord.type.in_(DnsRecord.TYPES), name="dnsrecord_types")
+
+# Make sure only one SOA record exists.
+dnsrecord_soa_uniq_index = Index(
+    'dnsrecord_soa_uniq_index',
+    DnsRecord.name,
+    unique=True,
+    sqlite_where=and_(DnsRecord.type == 'SOA', DnsRecord.status == DnsRecord.STATUS_ENABLED),
+    postgresql_where=and_(DnsRecord.type == 'SOA', DnsRecord.status == DnsRecord.STATUS_ENABLED),
+)
 
 
 @event.listens_for(DnsRecord.ip_value, 'set')
