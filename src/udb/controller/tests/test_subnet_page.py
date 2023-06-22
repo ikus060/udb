@@ -224,6 +224,21 @@ class SubnetTest(WebCase, CommonTest):
         self.assertStatus(200)
         self.assertInBody('A record already exists in database with the same value.')
 
+    def test_new_with_deleted_dnszone(self):
+        # Given a dns zone enabled, disabled and deleted
+        zone1 = DnsZone(name='foo.com').add().commit()
+        zone2 = DnsZone(name='bar.com', status=DnsZone.STATUS_DISABLED).add().commit()
+        zone3 = DnsZone(name='examples.com', status=DnsZone.STATUS_DELETED).add().commit()
+        # When trying to create a new Subnet
+        self.getPage(url_for(self.base_url, 'new'))
+        self.assertStatus(200)
+        # Then enabled zone is displayed
+        self.assertInBody(zone1.name)
+        # Then disabled zone is displayed with a tag
+        self.assertInBody(zone2.name + ' [disabled]')
+        # Then deleted zone is hidden
+        self.assertNotInBody(zone3.name)
+
     def test_depth(self):
         # Given a database with an existing record
         subnet1 = Subnet(ranges=['192.168.1.0/24'], name='foo', vrf=self.vrf, dhcp=True).add()
