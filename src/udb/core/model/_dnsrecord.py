@@ -473,46 +473,28 @@ def dns_reload_ip(self, new_value, old_value, initiator):
         self._ip
 
 
-@rule(DnsRecord, _('PTR record does not match forward record.'))
-def dns_ptr_record_mismatch():
-    """
-    Return record where PTR doesn't matches the corresponding A or AAAA value.
-    """
-    # For each PTR Record, check if the IP address matches the IP address of the forward record (A, AAAA).
-    fwd = aliased(DnsRecord)
-    return (
-        select(
-            DnsRecord.id.label('id'),
-            literal(DnsRecord.__tablename__).label('model_name'),
-            DnsRecord.summary.label('summary'),
-            fwd.id.label('other_id'),
-            literal(DnsRecord.__tablename__).label('other_model_name'),
-            fwd.summary.label('other_summary'),
-        )
-        .join(fwd, DnsRecord.value == fwd.name)
-        .filter(
-            DnsRecord.type == 'PTR',
-            or_(
-                and_(DnsRecord.name.endswith('.in-addr.arpa'), fwd.type == 'A'),
-                and_(DnsRecord.name.endswith('.ip6.arpa'), fwd.type == 'AAAA'),
-            ),
-            DnsRecord.generated_ip != fwd.generated_ip,
-            DnsRecord.status == DnsRecord.STATUS_ENABLED,
-            fwd.status == DnsRecord.STATUS_ENABLED,
-        )
-    )
-
-
-@rule(DnsRecord, _('PTR record must have a corresponding forward record A or AAAA with the same hostname.'))
+@rule(
+    DnsRecord,
+    _('PTR record must have at least one corresponding forward record with the same hostname and same IP address.'),
+)
 def dns_ptr_without_forward():
+    fwd = aliased(DnsRecord)
     return select(
         DnsRecord.id.label('id'),
         literal(DnsRecord.__tablename__).label('model_name'),
         DnsRecord.summary.label('summary'),
     ).filter(
         DnsRecord.type == 'PTR',
-        DnsRecord.value.not_in(select(DnsRecord.name).filter(DnsRecord.type.in_(['A', 'AAAA']))),
         DnsRecord.status == DnsRecord.STATUS_ENABLED,
+        ~(
+            select(fwd.id)
+            .filter(
+                fwd.status == DnsRecord.STATUS_ENABLED,
+                fwd.type.in_(['A', 'AAAA']),
+                fwd.generated_ip == DnsRecord.generated_ip,
+            )
+            .exists()
+        ),
     )
 
 
