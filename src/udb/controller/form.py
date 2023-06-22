@@ -176,7 +176,7 @@ class SelectMultipleObjectField(SelectMultipleField):
                 obj.summary if obj.status == self.object_cls.STATUS_ENABLED else "%s [%s]" % (obj.summary, obj.status),
             )
             for obj in self._query().all()
-            if obj.status != self.object_cls.STATUS_DELETED or obj.id in self.data
+            if obj.status != self.object_cls.STATUS_DELETED or (self.data and obj.id in self.data)
         ]
         return entries
 
