@@ -103,6 +103,13 @@ class AuditPage:
         search = kwargs.get('search[value]', '')
         if search:
             query = query.filter(func.udb_websearch(AllModel.c.search_string, search))
+
+        # Apply model_name filtering
+        model_name = kwargs.get('columns[3][search][value]', '')
+        if model_name:
+            query = query.filter(AllModel.c.model_name == model_name)
+
+        # Count result.
         filtered = query.count()
         data = query.offset(start).limit(length).all()
 

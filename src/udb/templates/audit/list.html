@@ -9,12 +9,18 @@
   {# Title #}
   <h2>{% trans %}Audit log{% endtrans %}</h2>
   {% include "flash.html" %}
-  {# Translate model_names supported #}
-  {% set ns = namespace(display_name_table=[]) %}
+  {# Translate model_names supported and create buttons for filtering #}
+  {% set ns = namespace(display_name_table=[], model_btn=[]) %}
   {% for model_name in model_names %}
     {% set display_name = macro.display_name(model_name) %}
     {% set ns.display_name_table = ns.display_name_table + [(model_name, display_name)] %}
+    {# Create a button to filter #}
+    {% set ns.model_btn = ns.model_btn + [{'text': display_name, 'extend': 'btnfilter', 'column': 'model_name:name', 'search':model_name }] %}
   {% endfor %}
+  {# Define button filters #}
+  {% set model_menu = {'text': _('Model') + ' ', 'extend': 'collectionfilter', 'popoverTitle': _('Model'), 'buttons': ns.model_btn, 'column': 'model_name:name' } %}
+  {% set reset_menu = [{'text': _('Reset'), 'extend': 'reset'}] %}
+  {% set buttons = [reset_menu, model_menu] %}
   {# Define table settings #}
   {% set columns = [
       {'name':'id', 'visible':False},
@@ -28,5 +34,5 @@
       {'name':'changes', 'title':_('Changes'), 'render':'changes' },
       {'name':'url', 'visible':False},
     ] %}
-  {{ _table.table('data.json', server_side=True, columns=columns, searching=True) }}
+  {{ _table.table('data.json', server_side=True, columns=columns, searching=True, buttons=buttons) }}
 {% endblock %}

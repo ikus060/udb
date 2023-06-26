@@ -20,6 +20,7 @@ from base64 import b64encode
 from unittest.mock import ANY
 
 from parameterized import parameterized
+from selenium.common.exceptions import NoSuchElementException
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
@@ -91,3 +92,29 @@ class AuditPageTest(WebCase):
         self.getJson(url_for(self.base_url, 'data.json', **{'order[0][column]': col_idx}))
         self.getJson(url_for(self.base_url, 'data.json', **{'order[0][column]': col_idx, 'order[0][dir]': 'asc'}))
         self.getJson(url_for(self.base_url, 'data.json', **{'order[0][column]': col_idx, 'order[0][dir]': 'desc'}))
+
+    def test_data_json_filter_model_name(self):
+        # Given a query with model_name
+        data = self.getJson(url_for(self.base_url, 'data.json', **{'columns[3][search][value]': 'vrf'}))
+        # Then data only container our type
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 25, 'recordsFiltered': 1, 'data': ANY})
+        self.assertEqual(1, len(data['data']))
+
+    def test_data_json_filter_model_name_selenium(self):
+        # Given a database with changes
+        with self.selenium() as driver:
+            # When making a query to audit log
+            driver.get(url_for(self.base_url, ''))
+            driver.implicitly_wait(3)
+            # Then dnsrecord are displayed
+            driver.find_element('xpath', "//*[contains(text(), 'bar.bfh.ch')]")
+            # When user click on Type Menu
+            type_menu = driver.find_element('css selector', '.udb-btn-collectionfilter')
+            type_menu.click()
+            # When user select VRF in the menu
+            vrf_btn = driver.find_element('xpath', "//*[contains(text(), 'VRF')]")
+            vrf_btn.click()
+            # Then the table get filtered
+            driver.find_element('xpath', "//*[contains(text(), '(default)')]")
+            with self.assertRaises(NoSuchElementException):
+                driver.find_element('xpath', "//*[contains(text(), 'bar.bfh.ch')]")

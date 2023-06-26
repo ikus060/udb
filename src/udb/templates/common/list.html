@@ -19,28 +19,27 @@
     </div>
   </div>
   {% include "flash.html" %}
-  {% set buttons = [] %}
+  {# Add "Reset" filter #}
+  {% set buttons = [{'text': _('Reset'), 'extend': 'reset'}] %}
   {% set columns = columns|d([]) %}
   {# Append Action columns #}
   {% set columns = columns + [{'name':'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px'}] %}
   {# Add Status Filter if status column exists #}
   {% if 'status' in (columns|map(attribute='name')|list) %}
-    {% set buttons = buttons + [{'text': _('Show Deleted'), 'extend': 'filter', 'column': 'status:name', 'search':'(enabled|disabled|deleted)', 'search_off': '(enabled|disabled)', 'regex': True, 'className': 'udb-btn-filter' }] %}
+    {% set buttons = buttons + [{'text': _('Show Deleted'), 'extend': 'btnfilter', 'column': 'status:name', 'search':'(enabled|disabled|deleted)', 'search_off': '(enabled|disabled)', 'regex': True }] %}
   {% endif %}
   {# Add Owner filter if owner column exists #}
   {% if 'owner' in (columns|map(attribute='name')|list) %}
-    {% set buttons = buttons + [{'text': _('Show only mine'), 'extend': 'filter', 'column': 'owner:name', 'search': currentuser.summary, 'className': 'udb-btn-filter'}] %}
+    {% set buttons = buttons + [{'text': _('Show only mine'), 'extend': 'btnfilter', 'column': 'owner:name', 'search': currentuser.summary}] %}
   {% endif %}
   {% set buttons = buttons + extra_buttons|d([]) %}
-  {# Add "Clear" filter #}
-  {% set buttons = buttons + [{'text': _('Reset'), 'extend': 'reset'}] %}
-  {# Add "More" button collection #}
+  {# Add "Export" button collection #}
   {% set download_filename = _('export_') + macro.display_name(model_name)|lower %}
   {% set csv_button = {'text': _('Download Csv'), 'extend': 'csv', 'exportOptions': {'columns': '.export'}, 'title': download_filename, 'className':'udb-btn-download text-nowrap' } %}
   {% set xsl_button = {'text': _('Download Excel'), 'extend': 'excel', 'exportOptions': {'columns': '.export'}, 'title': download_filename, 'className':'udb-btn-download text-nowrap' } %}
   {% set pdf_button = {'text': _('Download PDF'), 'extend': 'pdf', 'exportOptions': {'columns': '.export'}, 'title': download_filename, 'className':'udb-btn-download text-nowrap', 'orientation':'landscape' } %}
-  {% set more_button = {'text': _('More') + ' ', 'extend': 'collection', 'align':'button-right', 'autoClose':True, 'background': False, 'popoverTitle': _('More'), 'buttons': [ csv_button, xsl_button, pdf_button], 'className':'udb-btn-more-menu' } %}
-  {% set buttons = buttons + [more_button] %}
+  {% set export_button = {'text': _('Export') + ' ', 'extend': 'collection', 'align':'button-right', 'autoClose':True, 'background': False, 'popoverTitle': _('Export'), 'buttons': [ csv_button, xsl_button, pdf_button], 'className':'udb-btn-export-menu' } %}
+  {% set buttons = buttons + [export_button] %}
   {# Show default table #}
   {{ _table.table(data="data.json", columns=columns, buttons=buttons, auto_width=auto_width|d(True) ) }}
 {% endblock body %}

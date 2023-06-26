@@ -120,7 +120,13 @@ jQuery(function () {
  * - regex: True to enable regex lookup (optional)
  */
 $.fn.dataTable.ext.buttons.filter = {
-    text: 'Filter',
+    init: function (dt, node, config) {
+        const that = this;
+        dt.on('search.dt', function () {
+            const activate = dt.column(config.column).search() === config.search;
+            that.active(activate);
+        });
+    },
     action: function (e, dt, node, config) {
         if (node.hasClass('active')) {
             dt.column(config.column).search(config.search_off || '', config.regex);
@@ -129,6 +135,24 @@ $.fn.dataTable.ext.buttons.filter = {
         }
         dt.draw(true);
     }
+};
+$.fn.dataTable.ext.buttons.btnfilter = {
+    extend: 'filter',
+    className: 'udb-btn-filter'
+};
+$.fn.dataTable.ext.buttons.collectionfilter = {
+    align: 'button-right',
+    autoClose: true,
+    background: false,
+    extend: 'collection',
+    className: 'udb-btn-collectionfilter',
+    init: function (dt, node, config) {
+        const that = this;
+        dt.on('search.dt', function () {
+            const activate = dt.column(config.column).search() !== '';
+            that.active(activate);
+        });
+    },
 };
 
 /**
@@ -442,17 +466,6 @@ jQuery(function () {
             },
             processing: true,
             deferRender: true,
-        });
-        // Update each buttons status
-        dt.on('search.dt', function (e, settings) {
-            dt.buttons().each(function (data, idx) {
-                if (data.inst.s.buttons[idx]) {
-                    let conf = data.inst.s.buttons[idx].conf;
-                    if (conf && conf.column) {
-                        dt.button(idx).active(dt.column(conf.column).search() === conf.search);
-                    }
-                }
-            });
         });
     });
 });
