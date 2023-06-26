@@ -13,12 +13,12 @@
     {% if model_name in counts %}
       {% set display_name = macro.display_name(model_name) %}
       {% set badge = (' <span class="badge rounded-pill bg-primary">' + counts[model_name]|string + '</span>') | safe %}
-      {% set btn = [ {'text':display_name + badge, 'extend':'filter', 'column':'model_name:name', 'search':model_name, 'className': 'active' if model_name==active else '' } ] %}
+      {% set btn = [ {'text':display_name + badge, 'extend':'filter', 'column':'model_name:name', 'search':model_name} ] %}
       {% set ns.buttons = ns.buttons + [btn] %}
       {% set ns.display_name_table = ns.display_name_table + [(model_name, display_name)] %}
     {% endif %}
   {% endfor %}
-  {% set all_btn = [ {'text':_('All'), 'extend':'filter', 'column':'model_name:name', 'search':'', 'className': '' if active else 'active'} ] %}
+  {% set all_btn = [ {'text':_('All'), 'extend':'filter', 'column':'model_name:name', 'search':'', 'className': ''} ] %}
   {% set buttons = [all_btn] + ns.buttons %}
   {% set buttons_cfg = {
     "dom": {

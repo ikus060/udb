@@ -89,7 +89,7 @@ class CommonTest:
         with self.selenium() as driver:
             # When user click on "more" menu & "Download CSV"
             driver.get(url_for(self.base_url, ''))
-            more_menu = driver.find_element('css selector', '.udb-btn-more-menu')
+            more_menu = driver.find_element('css selector', '.udb-btn-export-menu')
             more_menu.click()
             download_btn = driver.find_element('css selector', btn)
             download_btn.click()

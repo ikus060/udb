@@ -175,12 +175,13 @@ table.dataTable.sorted-primary_range-asc .depth-9 {
 /* Make filter buttons stand out when active*/
 .udb-btn-filter.active {
     color: var(--bs-white);
-    border-color: var(--bs-primary);
-    background-color: var(--bs-primary);
+    border-color: var(--bs-secondary);
+    background-color: var(--bs-secondary);
 }
 
 .udb-btn-filter::before,
-.udb-btn-download::before {
+.udb-btn-download::before,
+.udb-btn-collectionfilter::before {
     /* Apply bootstrap icons */
     padding-right: 5px;
     display: inline-block;
@@ -205,6 +206,11 @@ table.dataTable.sorted-primary_range-asc .depth-9 {
 /* Customize the download button */
 .udb-btn-download::before {
     content: "\F30A";
+}
+
+/* Customize Filter Menu */
+.udb-btn-collectionfilter::before {
+    content: "\F5DA";
 }
 
 /* Fix header of history in edit view */
