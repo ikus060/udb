@@ -252,7 +252,7 @@ class CommonPage(object):
             msg = (
                 row.description
                 if not row.other_id
-                else Markup(_('%s <a href="%s">%s</a>.'))
+                else Markup('%s <a href="%s">%s</a>.')
                 % (row.description, url_for(row.other_model_name, row.other_id, 'edit'), row.other_summary)
             )
             flash(msg, level='warning')
