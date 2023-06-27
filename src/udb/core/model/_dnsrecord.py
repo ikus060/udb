@@ -546,7 +546,7 @@ def dns_cname_on_dns_zone():
     )
 
 
-@rule(DnsRecord, _('You cannot defined other record type when an alias for a canonical name (CNAME) is defined.'))
+@rule(DnsRecord, _('You cannot define other record type when an alias for a canonical name (CNAME) is defined.'))
 def dns_cname_not_unique():
     """
     Return all record where a CNAME is not the only record.

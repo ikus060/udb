@@ -180,12 +180,12 @@ class DnsRecordTest(WebCase, CommonTest):
         self.getPage(url_for(cname, 'edit'))
         self.assertStatus(200)
         # Then a warning is displayed.
-        self.assertInBody('You cannot defined other record type when an alias for a canonical name (CNAME) is defined.')
+        self.assertInBody('You cannot define other record type when an alias for a canonical name (CNAME) is defined.')
         # When editing other record
         self.getPage(url_for(other, 'edit'))
         self.assertStatus(200)
         # Then a warning is displayed.
-        self.assertInBody('You cannot defined other record type when an alias for a canonical name (CNAME) is defined.')
+        self.assertInBody('You cannot define other record type when an alias for a canonical name (CNAME) is defined.')
 
     def test_dns_record_related_json(self):
         # Given two DNS with the same hostname
