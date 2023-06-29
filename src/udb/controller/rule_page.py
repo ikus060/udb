@@ -36,18 +36,30 @@ class RuleForm(CherryForm):
         render_kw={
             "placeholder": _("Rule Identifier"),
             "autofocus": True,
-            'width': '2/3',
+            'width': '1/2',
         },
     )
 
-    builtin = BooleanField(
-        _('Built In'),
+    severity = BooleanField(
+        _('Enforced'),
         widget=SwitchWidget(),
         render_kw={
-            'width': '1/3',
+            'width': '1/4',
+        },
+        description=_('Enforced rule prevent record from being saved.'),
+    )
+
+    builtin = BooleanField(
+        _('Built-in'),
+        widget=SwitchWidget(),
+        render_kw={
+            'width': '1/4',
             'readonly': True,
             'disabled': True,
         },
+        description=_(
+            "Built-in rules are predefined, unmodifiable constraints integral to the application's functionality."
+        ),
     )
 
     description = StringField(
@@ -72,7 +84,7 @@ class RuleForm(CherryForm):
             "rows": 10,
         },
         description=_(
-            'The SQL statement should return a row for each invalid record. The columns should be labeled: id, model_name, summary, other_id, other_model_name, other_summary. '
+            'The SQL statement should return a row for each invalid record. The columns should be labeled: id, name, [other_id, other_model_name, other_name].'
         ),
     )
 
@@ -100,6 +112,11 @@ class RuleForm(CherryForm):
                 field.render_kw['disabled'] = True
                 field.render_kw['readonly'] = True
 
+    def populate_obj(self, obj):
+        super().populate_obj(obj)
+        # convert severity from bool to int for database
+        obj.severity = int(self.severity.data)
+
 
 class RulePage(CommonPage):
     def __init__(self):
@@ -117,6 +134,7 @@ class RulePage(CommonPage):
             Rule.name,
             Rule.model_name,
             Rule.description,
+            Rule.severity,
             Rule.builtin,
             User.summary.label('owner'),
         ).outerjoin(Rule.owner)

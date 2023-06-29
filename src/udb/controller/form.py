@@ -118,6 +118,12 @@ class CherryForm(Form):
         tmpl = env.get_template('components/form.html')
         return Markup(tmpl.render(form=self, **kwargs))
 
+    def populate_obj(self, obj):
+        for name, field in self._fields.items():
+            if field.render_kw and field.render_kw.get('readonly'):
+                continue
+            field.populate_obj(obj, name)
+
 
 class JinjaWidget:
     """

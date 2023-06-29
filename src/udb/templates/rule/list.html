@@ -5,6 +5,7 @@
   {'name':'name', 'title':form.name.label.text|string, 'orderable':True, 'render':'summary', 'render_arg':'rule', 'className':'export'},
   {'name':'model_name', 'title':form.model_name.label.text|string, 'orderable':True, 'className':'export'},
   {'name':'description', 'title':form.description.label.text|string, 'orderable':True, 'className':'export'},
+  {'name':'severity', 'title':form.severity.label.text|string, 'orderable':True, 'className':'export', 'render':'choices', 'render_arg': [(False, _('No')), (True, _('Yes'))]},
   {'name':'builtin', 'title':form.builtin.label.text|string, 'orderable':True, 'className':'export', 'render':'choices', 'render_arg': [(False, _('No')), (True, _('Yes'))]},
   {'name':'owner', 'title':form.owner_id.label.text|string, 'orderable':True, 'className':'export'}
 ] %}

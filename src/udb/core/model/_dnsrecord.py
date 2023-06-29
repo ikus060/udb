@@ -505,11 +505,7 @@ def dns_reload_ip(self, new_value, old_value, initiator):
 )
 def dns_ptr_without_forward():
     fwd = aliased(DnsRecord)
-    return select(
-        DnsRecord.id.label('id'),
-        literal(DnsRecord.__tablename__).label('model_name'),
-        DnsRecord.summary.label('summary'),
-    ).filter(
+    return select(DnsRecord.id.label('id'), DnsRecord.summary.label('name'),).filter(
         DnsRecord.type == 'PTR',
         DnsRecord.status == DnsRecord.STATUS_ENABLED,
         ~(
@@ -532,11 +528,10 @@ def dns_cname_on_dns_zone():
     return (
         select(
             DnsRecord.id,
-            literal(DnsRecord.__tablename__).label('model_name'),
-            DnsRecord.summary.label('summary'),
+            DnsRecord.summary.label('name'),
             DnsZone.id.label('other_id'),
             literal(DnsZone.__tablename__).label('other_model_name'),
-            DnsZone.summary.label('other_summary'),
+            DnsZone.summary.label('other_name'),
         )
         .join(DnsZone, DnsRecord.name == DnsZone.name)
         .filter(
@@ -555,11 +550,10 @@ def dns_cname_not_unique():
     return (
         select(
             DnsRecord.id,
-            literal(DnsRecord.__tablename__).label('model_name'),
-            DnsRecord.summary.label('summary'),
+            DnsRecord.summary.label('name'),
             a.id.label('other_id'),
             literal(DnsRecord.__tablename__).label('other_model_name'),
-            a.summary.label('other_summary'),
+            a.summary.label('other_name'),
         )
         .join(a, DnsRecord.name == a.name)
         .filter(
