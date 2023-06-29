@@ -7,11 +7,12 @@
           {'name':'rule_name', 'visible':False},
           {'name':'description', 'title':_('Rule')},
           {'name':'id', 'visible':False},
+          {'name':'severity', 'visible':False},
           {'name':'model_name', 'visible':False},
-          {'name':'summary', 'title':_('Record'), 'render':'summary'},
+          {'name':'name', 'title':_('Record'), 'render':'summary'},
           {'name':'other_id', 'visible':False},
           {'name':'other_model_name', 'visible':False},
-          {'name':'other_summary', 'title':_('Other Record'), 'render':'summary', 'render_arg':{'model_name_column':'other_model_name:name', 'url_column':'other_url:name'} },
+          {'name':'other_name', 'title':_('Other Record'), 'render':'summary', 'render_arg':{'model_name_column':'other_model_name:name', 'url_column':'other_url:name'} },
           {'name':'url', 'visible':False},
           {'name':'other_url', 'visible':False}
         ] %}

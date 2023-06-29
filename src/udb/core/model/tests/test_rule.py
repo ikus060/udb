@@ -23,16 +23,34 @@ from udb.core.model import Rule
 
 
 class RuleTest(WebCase):
+    def setUp(self):
+        super().setUp()
+        self.add_records()
+
     @parameterized.expand(
         [
-            ('INVALID STATEMENT'),
-            ('SELECT * from subnet'),
-            ('SELECT id from subnet'),
+            # Invalid SQL
+            ('INVALID STATEMENT', True),
+            # All column
+            ('SELECT * from subnet', True),
+            # Only 1 column
+            ('SELECT id from subnet', True),
+            # Wrong column name column name
+            ("SELECT id, notes from subnet", True),
+            # Wrong table
+            ("SELECT id, name from vrf", True),
+            # Valid 2 columns
+            ("SELECT id, name from subnet", False),
         ]
     )
-    def test_with_invalid_statement(self, statement):
-        # Given an invalid statement
+    def test_with_valid_vs_invalid_statement(self, statement, expect_failure):
+        # Given an SQL statement
         # When trying to create the rule
+        rule = Rule(name='test', description='test', statement=statement, model_name='subnet')
         # Then an error is raised
-        with self.assertRaises(ValueError):
-            Rule(name='test', description='test', statement=statement)
+        if expect_failure:
+            with self.assertRaises(ValueError) as context:
+                rule.add().commit()
+            self.assertEqual('statement', context.exception.args[0])
+        else:
+            rule.add().commit()

@@ -188,20 +188,25 @@ class CommonPage(object):
             obj = self.model()
             try:
                 form.populate_obj(obj)
-                obj.add()
+                obj.add().flush()
+                # Check enforced rules
+                errors = Rule.run_linter(obj)
+                for error in errors:
+                    if error.severity == Rule.SEVERITY_ENFORCED:
+                        raise ValueError(error.description)
                 obj.commit()
             except Exception as e:
                 handle_exception(e, form)
             else:
                 flash(_('Record created successfully.'))
                 # Redirect user to same record on soft-rule
-                rows = Rule.run_linter(obj)
-                if rows:
+                if errors:
                     raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
                 # Redirect user to previous page or model page.
                 raise cherrypy.HTTPRedirect(form.referer.data or url_for(self.model))
         elif not form.is_submitted():
             # Apply the default value from params
+            # Every query string starting with "d-" are used to define default value to pre-populate the fields.
             for key, value in kwargs.items():
                 if key.startswith('d-') and hasattr(form, key[2:]):
                     getattr(form, key[2:]).default = value
@@ -235,27 +240,31 @@ class CommonPage(object):
                 status = kwargs.get('status', False)
                 if self.has_status and status:
                     obj.status = status
-                obj.add()
+                obj.add().flush()
+                # Check enforced rules and raise error if required to prevent record from being saved.
+                errors = Rule.run_linter(obj)
+                for error in errors:
+                    if error.severity == Rule.SEVERITY_ENFORCED:
+                        raise ValueError(error.description)
                 obj.commit()
             except Exception as e:
                 handle_exception(e, form)
             else:
                 flash(_('Record updated successfully'))
-                rows = Rule.run_linter(obj)
-                if rows or not form.referer.data:
+                if errors or not form.referer.data:
                     raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
                 raise cherrypy.HTTPRedirect(form.referer.data)
-
-        # Run Soft Rule
-        rows = Rule.run_linter(obj)
-        for row in rows:
-            msg = (
-                row.description
-                if not row.other_id
-                else Markup('%s <a href="%s">%s</a>.')
-                % (row.description, url_for(row.other_model_name, row.other_id, 'edit'), row.other_summary)
-            )
-            flash(msg, level='warning')
+        else:
+            # Run Soft Rules
+            errors = Rule.run_linter(obj)
+            for error in errors:
+                msg = (
+                    error.description
+                    if not error.other_id
+                    else Markup('%s <a href="%s">%s</a>.')
+                    % (error.description, url_for(error.other_model_name, error.other_id, 'edit'), error.other_name)
+                )
+                flash(msg, level='warning')
 
         # Return object form
         return {

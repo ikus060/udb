@@ -121,11 +121,7 @@ def dhcprecord_invalid_subnet():
     Return a query listing all the dhcp record without a valid subnet
     """
     # For each PTR Record, check if the IP ddress matches the IP address of the forward record (A, AAAA).
-    return select(
-        DhcpRecord.id.label('id'),
-        literal(DhcpRecord.__tablename__).label('model_name'),
-        DhcpRecord.summary.label('summary'),
-    ).filter(
+    return select(DhcpRecord.id.label('id'), DhcpRecord.summary.label('name'),).filter(
         ~(
             select(Subnet.id)
             .join(Subnet.subnet_ranges)
@@ -151,11 +147,10 @@ def dhcprecord_unique_ip():
     return (
         select(
             DhcpRecord.id.label('id'),
-            literal(DhcpRecord.__tablename__).label('model_name'),
-            DhcpRecord.summary.label('summary'),
+            DhcpRecord.summary.label('name'),
             a.id.label('other_id'),
             literal(DhcpRecord.__tablename__).label('other_model_name'),
-            a.summary.label('other_summary'),
+            a.summary.label('other_name'),
         )
         .join(a, DhcpRecord.ip == a.ip)
         .filter(

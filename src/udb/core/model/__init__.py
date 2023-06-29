@@ -150,5 +150,7 @@ def update_database_schema(target, connection, **kw):
         add_column(Rule.__table__.c.status)
         # Create new index
         connection.execute(ddl.CreateIndex(dnsrecord_soa_uniq_index, if_not_exists=True))
+        # Add severity column on rule
+        add_column(Rule.__table__.c.severity)
         # Do final commit of changes
         _commit()
