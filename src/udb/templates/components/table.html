@@ -1,6 +1,7 @@
 {% import "macro.html" as macro %}
 {# djlint:off #}
 {% set dom_without_header = "<'row'<'col-sm-12'rt>><'row'<'mt-2'p>>" %}
+{% set dom_without_paging = "<'row'<'col-sm-12'rt>>" %}
 {% set dom_without_length_change = "<'d-sm-flex align-items-center'<'mb-1 flex-grow-1'i><'mb-1'f><B>><'row'<'col-sm-12'rt>><'row'<'mt-2'p>>" %}
 {% set dom_all = "<'d-sm-flex align-items-center'<'mb-1 flex-grow-1'li><'mb-1'f><B>><'row'<'col-sm-12'rt>><'row'<'mt-2'p>>" %}
 {# djlint:on #}
@@ -26,7 +27,7 @@
   "sPageButton": "btn btn-outline-primary ms-1 me-1",
   "sPageButtonActive": "active"
 } %}
-{% macro table(data, columns=[], order=[], empty_message=None, info_message=None, searching=True, buttons=[], paging=True, page_length=25, length_change=True, buttons_cfg={}, dom_cfg=dom_all, server_side=False, state_save=True, auto_width=True, responsive=True) %}
+{% macro table(data, columns=[], order=[], empty_message=None, info_message=None, searching=True, buttons=[], paging=True, page_length=25, length_change=True, buttons_cfg={}, dom_cfg=dom_all, server_side=False, state_save=True, auto_width=False, responsive=True, fixed_header=False, scroll_y=None) %}
   {% set language = {
       "aria": {
         "sortAscending": _('activate to sort column ascending'),
@@ -61,19 +62,21 @@
   <table class="table table-hover"
          width="100%"
          data-ajax="{{ data }}"
+         data-auto-width='{{ auto_width | tojson }}'
+         data-buttons='{{ buttons_cfg | tojson }}'
          data-classes='{{ classes | tojson }}'
          data-columns='{{ columns | tojson }}'
-         data-order='{{ order | tojson | e }}'
-         data-language='{{ language | tojson }}'
-         data-searching='{{ searching | tojson }}'
-         data-buttons='{{ buttons_cfg | tojson }}'
          data-dom="{{ dom_cfg }}"
-         data-responsive="{{ responsive | tojson }}"
-         data-paging="{{ paging | tojson }}"
-         data-page-length="{{ page_length | tojson }}"
+         data-fixed-header="{{ fixed_header | tojson }}"
+         data-language='{{ language | tojson }}'
          data-length-change="{{ length_change | tojson }}"
+         data-order='{{ order | tojson | e }}'
+         data-page-length="{{ page_length | tojson }}"
+         data-paging="{{ paging | tojson }}"
+         data-responsive="{{ responsive | tojson }}"
+         {% if scroll_y %}data-scroll-y='{{ scroll_y }}'{% endif %}
+         data-searching='{{ searching | tojson }}'
          data-server-side="{{ server_side | tojson }}"
-         data-state-save="{{ state_save | tojson }}"
-         data-auto-width="{{ auto_width | tojson }}">
+         data-state-save="{{ state_save | tojson }}">
   </table>
 {% endmacro %}

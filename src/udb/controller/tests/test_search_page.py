@@ -97,15 +97,15 @@ class TestSearchPage(WebCase):
         # When making a query to index page
         with self.selenium() as driver:
             driver.get(url_for('search', q='DMZ'))
-            driver.implicitly_wait(10)
+            driver.implicitly_wait(3)
             # Then the web page contains a table
             driver.find_element('css selector', 'table.table')
             # Then the web page is loaded without error.
             self.assertFalse(driver.get_log('browser'))
             # Then the table contains a Subnet
-            driver.find_element('xpath', "//*[contains(text(), 'DMZ')]")
+            driver.find_element('xpath', "//*[contains(text(), 'public')]")
             # Then the table contains a DNS Zone
-            driver.find_element('xpath', "//*[contains(text(), 'bfh.ch')]")
+            driver.find_element('xpath', "//*[contains(text(), 'DMZ Zone')]")
             # Then tabs exists for subnet
             driver.find_element('xpath', "//button/*[contains(text(), 'All')]")
             dnszone_btn = driver.find_element('xpath', "//button/*[contains(text(), 'DNS Zone')]")
@@ -115,8 +115,9 @@ class TestSearchPage(WebCase):
             time.sleep(0.5)
             self.assertFalse(driver.get_log('browser'))
             # Then content is filtered and only DNS Zone is shown
-            self.assertTrue(driver.find_element('xpath', "//*[contains(text(), 'bfh.ch')]").is_displayed())
-            self.assertFalse(driver.find_element('xpath', "//*[contains(text(), 'DMZ')]").is_displayed())
+            self.assertTrue(driver.find_element('xpath', "//*[contains(text(), 'DMZ Zone')]").is_displayed())
+            with self.assertRaises(NoSuchElementException):
+                driver.find_element('xpath', "//*[contains(text(), 'public')]")
 
     def test_typeahead_selenium(self):
         # Given a database with records

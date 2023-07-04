@@ -5,7 +5,7 @@
     <small>- {% trans %}last 7 days{% endtrans %}</small>
   </div>
   {# Card Body #}
-  <div class="card-body" style="height: 420px; overflow: clip auto;">
+  <div class="card-body" style="height: 400px; overflow: clip auto;">
     {% set max_count = user_activities|map(attribute='count')|sum|int %}
     {% for user, count in user_activities %}
       <h4 class="small font-weight-bold d-flex justify-content-between">

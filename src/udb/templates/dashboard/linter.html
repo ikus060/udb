@@ -2,7 +2,7 @@
   <div class="card-header py-3">
     <span class="h6">{% trans %}Inconsistencies{% endtrans %}</span>
   </div>
-  <div class="card-body p-0" style="height: 420px; overflow: clip auto;">
+  <div class="card-body p-0">
     {% set columns = [
           {'name':'rule_name', 'visible':False},
           {'name':'description', 'title':_('Rule')},
@@ -16,6 +16,6 @@
           {'name':'url', 'visible':False},
           {'name':'other_url', 'visible':False}
         ] %}
-    {{ _table.table(url_for('rule','linter.json') , columns=columns, empty_message=_('No inconsistencies were discovered.'), dom_cfg=_table.dom_without_header, paging=False) }}
+    {{ _table.table(url_for('rule','linter.json') , columns=columns, empty_message=_('No inconsistencies were discovered.'), dom_cfg=_table.dom_without_paging, paging=False, scroll_y='354px') }}
   </div>
 </div>

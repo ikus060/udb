@@ -8,7 +8,7 @@
 
 /* navbar layout */
 main {
-    padding: 72px 1rem 1rem 1rem;
+    padding: 78px 1rem 1rem 1rem;
 }
 
 @media (min-width: 992px) {
@@ -72,7 +72,7 @@ th>a {
     text-decoration: none;
 }
 
-/* Fix datatable filter alignment*/
+/* Fix datatable filter alignment */
 .dataTables_wrapper .dataTables_info {
     padding-top: 0;
 }
@@ -101,8 +101,20 @@ th>a {
     width: 200px;
 }
 
-table.dataTable.no-footer {
-    border-bottom: 1px solid #dee2e6;
+/* Make floating header white */
+div.dtfh-floatingparent {
+    background-color: var(--bs-body-bg);
+}
+
+/* Make row separator gray */
+.dataTables_wrapper.no-footer div.dataTables_scrollHead table.dataTable,
+.dataTables_wrapper.no-footer div.dataTables_scrollBody>table {
+    border-bottom: 1px solid var(--bs-table-border-color);
+}
+
+/* Hide bottom row separator */
+.dataTables_wrapper.no-footer .dataTables_scrollBody {
+    border-bottom: none;
 }
 
 /* Remove floating attribute */
