@@ -34,5 +34,5 @@
       {'name':'changes', 'title':_('Changes'), 'render':'changes' },
       {'name':'url', 'visible':False},
     ] %}
-  {{ _table.table('data.json', server_side=True, columns=columns, searching=True, buttons=buttons) }}
+  {{ _table.table('data.json', server_side=True, columns=columns, searching=True, buttons=buttons, fixed_header=True) }}
 {% endblock %}

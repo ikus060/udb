@@ -41,5 +41,5 @@
   {% set export_button = {'text': _('Export') + ' ', 'extend': 'collection', 'align':'button-right', 'autoClose':True, 'background': False, 'popoverTitle': _('Export'), 'buttons': [ csv_button, xsl_button, pdf_button], 'className':'udb-btn-export-menu' } %}
   {% set buttons = buttons + [export_button] %}
   {# Show default table #}
-  {{ _table.table(data="data.json", columns=columns, buttons=buttons, auto_width=auto_width|d(False) ) }}
+  {{ _table.table(data="data.json", columns=columns, buttons=buttons, fixed_header=True) }}
 {% endblock body %}

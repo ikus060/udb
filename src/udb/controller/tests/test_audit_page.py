@@ -102,12 +102,13 @@ class AuditPageTest(WebCase):
 
     def test_data_json_filter_model_name_selenium(self):
         # Given a database with changes
-        with self.selenium() as driver:
+        with self.selenium(False) as driver:
             # When making a query to audit log
             driver.get(url_for(self.base_url, ''))
             driver.implicitly_wait(3)
-            # Then dnsrecord are displayed
-            driver.find_element('xpath', "//*[contains(text(), 'bar.bfh.ch')]")
+            # Then all record type are displayed
+            driver.find_element('xpath', "//*[contains(text(), '(default)')]")
+            driver.find_element('xpath', "//*[contains(text(), 'DMZ')]")
             # When user click on Type Menu
             type_menu = driver.find_element('css selector', '.udb-btn-collectionfilter')
             type_menu.click()
@@ -117,4 +118,4 @@ class AuditPageTest(WebCase):
             # Then the table get filtered
             driver.find_element('xpath', "//*[contains(text(), '(default)')]")
             with self.assertRaises(NoSuchElementException):
-                driver.find_element('xpath', "//*[contains(text(), 'bar.bfh.ch')]")
+                driver.find_element('xpath', "//*[contains(text(), 'DMZ')]")

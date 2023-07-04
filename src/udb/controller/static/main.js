@@ -378,7 +378,7 @@ $.fn.dataTable.render.summary = function (render_arg) {
 
             let html = '<a href="' + url + '">' +
                 '<i class="bi ' + icon_table[effective_model_name] + ' me-1" aria-hidden="true"></i>' +
-                '<strong>' + safe(data) + '</strong>' +
+                '<strong>' + safe(data).replace(/\./g, '.<wbr>') + '</strong>' +
                 '</a>';
 
             /* add label with status if available */
