@@ -379,8 +379,8 @@ class TestSearchPage(WebCase):
             {
                 'status': 200,
                 'data': [
-                    {'model_id': 1, 'model_name': 'dnszone', 'summary': 'bfh.ch', 'url': '/dnszone/1/edit'},
                     {'model_id': 1, 'model_name': 'subnet', 'summary': 'DMZ', 'url': '/subnet/1/edit'},
+                    {'model_id': 1, 'model_name': 'dnszone', 'summary': 'bfh.ch', 'url': '/dnszone/1/edit'},
                 ],
             },
         )

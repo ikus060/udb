@@ -102,7 +102,7 @@ class AuditPageTest(WebCase):
 
     def test_data_json_filter_model_name_selenium(self):
         # Given a database with changes
-        with self.selenium(False) as driver:
+        with self.selenium() as driver:
             # When making a query to audit log
             driver.get(url_for(self.base_url, ''))
             driver.implicitly_wait(3)
