@@ -168,9 +168,17 @@ class SearchPage:
     @cherrypy.tools.json_out()
     def typeahead_json(self, q=None, **kwargs):
         # For typeahead search, only list enabled record.
-        query = select(SearchableModel.c.model_id, SearchableModel.c.summary, SearchableModel.c.model_name,).filter(
-            SearchableModel.c.status == 'enabled',
-            func.udb_websearch(SearchableModel.c.search_string, q),
+        query = (
+            select(
+                SearchableModel.c.model_id,
+                SearchableModel.c.summary,
+                SearchableModel.c.model_name,
+            )
+            .filter(
+                SearchableModel.c.status == 'enabled',
+                func.udb_websearch(SearchableModel.c.search_string, q),
+            )
+            .order_by(~SearchableModel.c.summary.startswith(q))
         )
         session = cherrypy.tools.db.get_session()
         data = [
