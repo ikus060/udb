@@ -42,9 +42,7 @@ function toDate(n) {
  * Escape string value.
  */
 function safe(data) {
-    return typeof data === 'string' ?
-        data.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') :
-        data;
+    return String(data).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 /**
