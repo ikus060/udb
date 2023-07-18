@@ -118,8 +118,40 @@ class SubnetRange(Base):
             # Repport error on 'ranges' instead of 'range'
             raise ValueError('ranges', "`%s` " % value + _('does not appear to be a valid IPv6 or IPv4 network'))
 
+    def add_change(self, new_message):
+        """
+        When subnet range get modified, add the message to it's parent subnet.
+        """
+        assert new_message.changes, 'only message with changes should be append to subnet range'
+        if not self.parent:
+            # Parent is not defined when record get deleted,
+            return
+        if new_message.type == 'new':
+            # When record get created, a changes is already added to parent subnet.
+            return
+
+        # Format an old representation of the range
+        old_values = {k: v[0] for k, v in new_message.changes.items()}
+        if old_values.get('dhcp', self.dhcp):
+            old = '%s DHCP: %s - %s' % (
+                old_values.get('range', self.range),
+                old_values.get('dhcp_start_ip', self.dhcp_start_ip),
+                old_values.get('dhcp_end_ip', self.dhcp_end_ip),
+            )
+        else:
+            old = str(old_values.get('range', self.range))
+
+        # Update message to be added to the parent.
+        new_message.changes = {'subnet_ranges': [[old], [str(self)]]}
+        self.parent.add_change(new_message)
+
     def __str__(self) -> str:
-        return self.range
+        """
+        String representation used for audi log.
+        """
+        if self.dhcp:
+            return '%s DHCP: %s - %s' % (self.range, self.dhcp_start_ip, self.dhcp_end_ip)
+        return str(self.range)
 
 
 # Create a unique index for username
@@ -144,6 +176,8 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
         lazy=False,
         order_by=(SubnetRange.vrf_id, SubnetRange.version.desc(), SubnetRange.range),
         cascade="all, delete-orphan",
+        backref="parent",
+        active_history=True,
     )
     rir_status = Column(String, nullable=True, default=None)
     _subnet_string = Column(

@@ -26,7 +26,7 @@ from udb.core.model import DnsZone, Subnet, SubnetRange, Vrf
 from .test_common_page import CommonTest
 
 
-class SubnetTest(WebCase, CommonTest):
+class SubnetPageTest(WebCase, CommonTest):
 
     base_url = 'subnet'
 

@@ -102,9 +102,12 @@ class SubnetTest(WebCase):
         subnet = Subnet.query.first()
         self.assertEqual(2, SubnetRange.query.count())
         self.assertEqual(['192.168.1.0/24', '192.168.12.0/24'], [r.range for r in subnet.subnet_ranges])
+        # Then a message is added to subnet
+        self.assertEqual(2, len(subnet.messages))
+        self.assertEqual(subnet.messages[-1].changes, {'subnet_ranges': [[], ['192.168.12.0/24']]})
 
     def test_remove_ranges(self):
-        # Given an empty database
+        # Given a database with a subnet
         vrf = Vrf(name='test').add()
         subnet = (
             Subnet(vrf=vrf, subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('192.168.12.0/24')])
@@ -120,7 +123,43 @@ class SubnetTest(WebCase):
         self.assertEqual(1, SubnetRange.query.count())
         subnet = Subnet.query.first()
         self.assertEqual(['192.168.1.0/24'], [r.range for r in subnet.subnet_ranges])
-        #
+        # Then a message is added to subnet
+        self.assertEqual(2, len(subnet.messages))
+        self.assertEqual(subnet.messages[-1].changes, {'subnet_ranges': [['192.168.12.0/24'], []]})
+
+    def test_update_ranges(self):
+        # Given a database with a subnet
+        vrf = Vrf(name='test').add()
+        subnet = (
+            Subnet(vrf=vrf, subnet_ranges=[SubnetRange('192.168.0.0/24'), SubnetRange('192.168.1.0/24')]).add().commit()
+        )
+        self.assertEqual(2, SubnetRange.query.count())
+        # When updating subnet range
+        subnet.subnet_ranges[0].dhcp = True
+        subnet.subnet_ranges[0].dhcp_start_ip = '192.168.0.100'
+        subnet.subnet_ranges[0].dhcp_end_ip = '192.168.0.200'
+        subnet.subnet_ranges[1].dhcp = True
+        subnet.subnet_ranges[1].dhcp_start_ip = '192.168.1.25'
+        subnet.subnet_ranges[1].dhcp_end_ip = '192.168.1.50'
+        subnet.add()
+        subnet.commit()
+        # Then a message is added to subnet
+        self.assertEqual(2, len(subnet.messages))
+        self.assertEqual(
+            subnet.messages[-1].changes,
+            {
+                'subnet_ranges': [
+                    [
+                        '192.168.0.0/24',
+                        '192.168.1.0/24',
+                    ],
+                    [
+                        '192.168.0.0/24 DHCP: 192.168.0.100 - 192.168.0.200',
+                        '192.168.1.0/24 DHCP: 192.168.1.25 - 192.168.1.50',
+                    ],
+                ]
+            },
+        )
 
     def test_update_vrf(self):
         # Given a subnet record
