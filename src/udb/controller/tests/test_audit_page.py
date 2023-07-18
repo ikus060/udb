@@ -100,6 +100,13 @@ class AuditPageTest(WebCase):
         self.assertEqual(data, {'draw': None, 'recordsTotal': 25, 'recordsFiltered': 1, 'data': ANY})
         self.assertEqual(1, len(data['data']))
 
+    def test_data_json_filter_multi_model_name(self):
+        # Given a query with model_name
+        data = self.getJson(url_for(self.base_url, 'data.json', **{'columns[3][search][value]': '(vrf|user)'}))
+        # Then data only container our type
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 25, 'recordsFiltered': 3, 'data': ANY})
+        self.assertEqual(3, len(data['data']))
+
     def test_data_json_filter_model_name_selenium(self):
         # Given a database with changes
         with self.selenium() as driver:
@@ -119,3 +126,31 @@ class AuditPageTest(WebCase):
             driver.find_element('xpath', "//*[contains(text(), '(default)')]")
             with self.assertRaises(NoSuchElementException):
                 driver.find_element('xpath', "//*[contains(text(), 'DMZ')]")
+
+    def test_data_json_filter_multi_model_name_selenium(self):
+        # Given a database with changes
+        with self.selenium() as driver:
+            # When making a query to audit log
+            driver.get(url_for(self.base_url, ''))
+            driver.implicitly_wait(3)
+            # Then all record type are displayed
+            driver.find_element('xpath', "//*[contains(text(), '(default)')]")
+            driver.find_element('xpath', "//*[contains(text(), 'DMZ')]")
+            # When user select VRF in the menu
+            type_menu = driver.find_element('css selector', '.udb-btn-collectionfilter')
+            type_menu.click()
+            vrf_btn = driver.find_element(
+                'xpath', "//*[contains(@class, 'udb-btn-filter')]/span[contains(text(), 'VRF')]"
+            )
+            vrf_btn.click()
+            # When user select User in the menu
+            time.sleep(1)
+            type_menu = driver.find_element('css selector', '.udb-btn-collectionfilter')
+            type_menu.click()
+            user_btn = driver.find_element(
+                'xpath', "//*[contains(@class, 'udb-btn-filter')]/span[contains(text(), 'User')]"
+            )
+            user_btn.click()
+            # Then the table get filtered
+            driver.find_element('xpath', "//*[contains(text(), '(default)')]")
+            driver.find_element('xpath', "//*[contains(text(), 'test')]")

@@ -118,21 +118,46 @@ jQuery(function () {
  * - search: Define the search criteria when filter is active
  * - search_off: Define the search criteria when filter is not active (optional)
  * - regex: True to enable regex lookup (optional)
+ * - multi: True to enablemultiple selection for the same column.
  */
 $.fn.dataTable.ext.buttons.filter = {
     init: function (dt, node, config) {
+        if (config.search_off && config.multi) {
+            console.error('search_off and multi are not supported together');
+        }
         const that = this;
         dt.on('search.dt', function () {
-            const activate = dt.column(config.column).search() === config.search;
+            let activate;
+            const curSearch = dt.column(config.column).search();
+            if (config.multi) {
+                const terms = curSearch.replace(/^\(/, '').replace(/\)$/, '').split('|');
+                activate = terms.includes(config.search);
+            } else {
+                activate = dt.column(config.column).search() === config.search;
+            }
             that.active(activate);
         });
     },
     action: function (e, dt, node, config) {
+        const curSearch = dt.column(config.column).search();
+        let terms = curSearch.replace(/^\(/, '').replace(/\)$/, '').split('|').filter(item => item !== '');
         if (node.hasClass('active')) {
-            dt.column(config.column).search(config.search_off || '', config.regex);
+            if (config.search_off) {
+                // Disable - replace by our search_off pattern
+                terms = [config.search_off];
+            } else {
+                // Disable - remove from term.
+                terms = terms.filter(item => item != config.search)
+            }
+        } else if (config.multi) {
+            // Enable - add new terms
+            terms.push(config.search)
         } else {
-            dt.column(config.column).search(config.search, config.regex);
+            // Enable - replace all terms
+            terms = [config.search];
         }
+        const search = terms.length == 1 ? terms[0] : '(' + terms.join('|') + ')';
+        dt.column(config.column).search(search, true);
         dt.draw(true);
     }
 };

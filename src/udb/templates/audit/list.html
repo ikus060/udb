@@ -15,7 +15,7 @@
     {% set display_name = macro.display_name(model_name) %}
     {% set ns.display_name_table = ns.display_name_table + [(model_name, display_name)] %}
     {# Create a button to filter #}
-    {% set ns.model_btn = ns.model_btn + [{'text': display_name, 'extend': 'btnfilter', 'column': 'model_name:name', 'search':model_name }] %}
+    {% set ns.model_btn = ns.model_btn + [{'text': display_name, 'extend': 'btnfilter', 'column': 'model_name:name', 'search':model_name, 'multi': True}] %}
   {% endfor %}
   {# Define button filters #}
   {% set model_menu = {'text': _('Model') + ' ', 'extend': 'collectionfilter', 'popoverTitle': _('Model'), 'buttons': ns.model_btn, 'column': 'model_name:name' } %}
