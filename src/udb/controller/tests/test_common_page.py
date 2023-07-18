@@ -31,7 +31,7 @@ class CommonTest:
 
     # Used for POST request
     new_post = None
-
+    new_json = None
     edit_post = None
 
     def test_get_list_page_empty(self):
@@ -234,8 +234,8 @@ class CommonTest:
         self.assertHeaderItemValue('Location', url_for(self.base_url) + '/')
         # Then database is updated
         obj = self.obj_cls.query.first()
-        for k, v in self.new_data.items():
-            self.assertEqual(v, getattr(obj, k))
+        for k, v in (self.new_json or self.new_data).items():
+            self.assertEqual(v, obj.to_json()[k])
         # Then a audit message is created
         message = obj.messages[-1]
         self.assertIsNotNone(message.changes)
@@ -362,7 +362,7 @@ class CommonTest:
         self.assertStatus(200)
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['id'], obj.id)
-        for k, v in self.new_data.items():
+        for k, v in (self.new_json or self.new_data).items():
             self.assertEqual(data[0][k], v)
 
     def test_api_get(self):
@@ -374,12 +374,12 @@ class CommonTest:
         # Then our records is return as json
         self.assertStatus(200)
         self.assertEqual(data['id'], obj.id)
-        for k, v in self.new_data.items():
+        for k, v in (self.new_json or self.new_data).items():
             self.assertEqual(data[k], v)
 
     def test_api_post(self):
         # Given a valid payload
-        payload = json.dumps(self.new_data)
+        payload = json.dumps(self.new_json or self.new_data)
         # When sending a POST request to the API
         data = self.getJson(
             url_for('api', self.base_url),
@@ -389,7 +389,7 @@ class CommonTest:
         )
         # Then a new record is created
         self.assertStatus(200)
-        for k, v in self.new_data.items():
+        for k, v in (self.new_json or self.new_data).items():
             self.assertEqual(data[k], v)
 
     def test_api_put(self):

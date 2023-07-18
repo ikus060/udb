@@ -37,6 +37,7 @@ from .form import (
     SwitchWidget,
 )
 
+
 def _subnet_of(range1, range2):
     if not range1 or not range2:
         return False

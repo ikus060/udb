@@ -173,7 +173,7 @@ class DeploymentPageTest(WebCase):
     def test_get_deployment_api_zonefile(self):
         # Given a datbase with a DnsRecord
         vrf = Vrf(name='test')
-        subnet = Subnet(ranges=['192.0.2.0/24'], vrf=vrf)
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
         DnsZone(name='test.ca', subnets=[subnet]).add().flush()
         DnsRecord(name='test.ca', type='A', value='192.0.2.45').add().commit()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()

@@ -75,6 +75,7 @@ class IPTest(WebCase):
         ip = Ip.query.one()
         # When showing the IP Page
         self.getPage('/ip/%s/edit' % ip.id)
+        self.assertStatus(200)
         # Then Create new button are displayed
         self.assertInBody('Create Forward')
         self.assertInBody('Create Reverse')

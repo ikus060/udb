@@ -32,7 +32,7 @@ class SubnetTest(WebCase):
         obj = (
             Subnet(
                 name='test',
-                ranges=['192.168.1.0/24'],
+                subnet_ranges=[SubnetRange('192.168.1.0/24')],
                 vrf=vrf,
                 l3vni=1,
                 l2vni=2,
@@ -72,7 +72,7 @@ class SubnetTest(WebCase):
         self.assertEqual(0, Subnet.query.count())
         # When adding a Subnet with IPV4
         vrf = Vrf(name='test').add()
-        Subnet(vrf=vrf, ranges=['192.168.1.0/24']).add().commit()
+        Subnet(vrf=vrf, subnet_ranges=[SubnetRange('192.168.1.0/24')]).add().commit()
         # Then a new record is created
         subnet = Subnet.query.first()
         self.assertEqual(1, len(subnet.subnet_ranges))
@@ -83,7 +83,7 @@ class SubnetTest(WebCase):
         self.assertEqual(0, Subnet.query.count())
         # When adding a Subnet with IPV6
         vrf = Vrf(name='test').add()
-        Subnet(vrf=vrf, ranges=['2002::1234:abcd:ffff:c0a8:101/64']).add().commit()
+        Subnet(vrf=vrf, subnet_ranges=[SubnetRange('2002::1234:abcd:ffff:c0a8:101/64')]).add().commit()
         # Then a new record is created
         subnet = Subnet.query.first()
         self.assertEqual(1, len(subnet.subnet_ranges))
@@ -103,24 +103,14 @@ class SubnetTest(WebCase):
         self.assertEqual(2, SubnetRange.query.count())
         self.assertEqual(['192.168.1.0/24', '192.168.12.0/24'], [r.range for r in subnet.subnet_ranges])
 
-    def test_update_vrf(self):
-        # Given a subnet record
-        vrf1 = Vrf(name='default').add()
-        vrf2 = Vrf(name='test').add()
-        subnet = Subnet(vrf=vrf1, ranges=['192.168.1.0/24']).add().commit()
-        self.assertEqual(1, SubnetRange.query.count())
-        # When updating the VRF
-        subnet.vrf = vrf2
-        subnet.add()
-        subnet.commit()
-        # Then SubnetRange get updated too
-        subnet = Subnet.query.first()
-        self.assertEqual(['192.168.1.0/24'], [r.range for r in subnet.subnet_ranges])
-
     def test_remove_ranges(self):
         # Given an empty database
         vrf = Vrf(name='test').add()
-        subnet = Subnet(vrf=vrf, ranges=['192.168.1.0/24', '192.168.12.0/24']).add().commit()
+        subnet = (
+            Subnet(vrf=vrf, subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('192.168.12.0/24')])
+            .add()
+            .commit()
+        )
         self.assertEqual(2, SubnetRange.query.count())
         # When adding a Subnet with IPV6
         subnet.subnet_ranges.pop()
@@ -128,6 +118,21 @@ class SubnetTest(WebCase):
         subnet.commit()
         # Then a new record is created
         self.assertEqual(1, SubnetRange.query.count())
+        subnet = Subnet.query.first()
+        self.assertEqual(['192.168.1.0/24'], [r.range for r in subnet.subnet_ranges])
+        #
+
+    def test_update_vrf(self):
+        # Given a subnet record
+        vrf1 = Vrf(name='default').add()
+        vrf2 = Vrf(name='test').add()
+        subnet = Subnet(vrf=vrf1, subnet_ranges=[SubnetRange('192.168.1.0/24')]).add().commit()
+        self.assertEqual(1, SubnetRange.query.count())
+        # When updating the VRF
+        subnet.vrf = vrf2
+        subnet.add()
+        subnet.commit()
+        # Then SubnetRange get updated too
         subnet = Subnet.query.first()
         self.assertEqual(['192.168.1.0/24'], [r.range for r in subnet.subnet_ranges])
 
@@ -138,7 +143,7 @@ class SubnetTest(WebCase):
         # When adding a Subnet with an invalid IP
         vrf = Vrf(name='test').add().commit()
         with self.assertRaises(ValueError) as cm:
-            Subnet(vrf=vrf, ranges=[value]).add().commit()
+            Subnet(vrf=vrf, subnet_ranges=[SubnetRange(value)]).add().commit()
         self.assertEqual(cm.exception.args, ('ranges', mock.ANY))
         # Then a record is not created
         self.assertEqual(0, Subnet.query.count())
@@ -160,7 +165,7 @@ class SubnetTest(WebCase):
         self.assertEqual(0, Subnet.query.count())
         # When adding a Subnet with a name
         vrf = Vrf(name='test').add()
-        Subnet(vrf=vrf, ranges=['192.168.1.0/24'], name='foo').add().commit()
+        Subnet(vrf=vrf, subnet_ranges=[SubnetRange('192.168.1.0/24')], name='foo').add().commit()
         # Then a new record is created
         self.assertEqual(1, Subnet.query.count())
 
@@ -168,33 +173,33 @@ class SubnetTest(WebCase):
     def test_duplicate_ip_range(self, value):
         # Given a database with an existing record
         vrf = Vrf(name='test').add()
-        Subnet(ranges=[value], name='foo', vrf=vrf).add().commit()
+        Subnet(subnet_ranges=[SubnetRange(value)], name='foo', vrf=vrf).add().commit()
         self.assertEqual(1, Subnet.query.count())
         # When trying to add a Subnet with an existing ipv6_cidr
         # Then an exception is raised
         with self.assertRaises(IntegrityError):
-            Subnet(ranges=[value], name='bar', vrf=vrf).add().commit()
+            Subnet(subnet_ranges=[SubnetRange(value)], name='bar', vrf=vrf).add().commit()
 
     @parameterized.expand(['192.168.1.0/24', '2002:0:0:1234::/64'])
     def test_duplicate_cidr_with_vrf(self, value):
         # Given a database with an existing record
         vrf = Vrf(name='default')
-        Subnet(name='foo', vrf=vrf, ranges=[value]).add().commit()
+        Subnet(name='foo', vrf=vrf, subnet_ranges=[SubnetRange(value)]).add().commit()
         self.assertEqual(1, Subnet.query.count())
         # When trying to add a Subnet with an existing IP CIDR in a different VRF
         new_vrf = Vrf(name='new vrf')
-        subnet = Subnet(name='bar', vrf=new_vrf, ranges=[value]).add().commit()
+        subnet = Subnet(name='bar', vrf=new_vrf, subnet_ranges=[SubnetRange(value)]).add().commit()
         # Then subnet is created without error
         self.assertIsNotNone(subnet)
         # When trying to add a Subnet with an existing IP CIDR in same VRF
         # Then an exception is raised
         with self.assertRaises(IntegrityError):
-            Subnet(name='bar', vrf=vrf, ranges=[value]).add().commit()
+            Subnet(name='bar', vrf=vrf, subnet_ranges=[SubnetRange(value)]).add().commit()
 
     def test_add_dnszonesubnet(self):
         # Given a database with an existing record
         vrf = Vrf(name='default')
-        subnet = Subnet(ranges=['192.168.1.0/24'], name='foo', vrf=vrf).add().commit()
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.168.1.0/24')], name='foo', vrf=vrf).add().commit()
         # When trying to add an allowed subnet to the dns zone
         zone = DnsZone(name='bfh.ch').add().commit()
         subnet.dnszones.append(zone)
@@ -215,10 +220,14 @@ class SubnetTest(WebCase):
     def test_search(self):
         # Given a database with records
         vrf = Vrf(name='default')
-        Subnet(ranges=['192.168.1.0/24'], name='foo', notes='This is a foo subnet', vrf=vrf).add()
-        Subnet(ranges=['192.168.1.128/30'], name='bar', notes='This is a bar subnet', vrf=vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.1.0/24')], name='foo', notes='This is a foo subnet', vrf=vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.1.128/30')], name='bar', notes='This is a bar subnet', vrf=vrf).add()
         subnet = (
-            Subnet(ranges=['10.0.255.0/24'], name='test', notes='This a specific test subnet', vrf=vrf).add().commit()
+            Subnet(
+                subnet_ranges=[SubnetRange('10.0.255.0/24')], name='test', notes='This a specific test subnet', vrf=vrf
+            )
+            .add()
+            .commit()
         )
 
         # When searching for a term in notes

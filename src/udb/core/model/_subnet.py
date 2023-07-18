@@ -19,7 +19,6 @@ import ipaddress
 
 import cherrypy
 from sqlalchemy import CheckConstraint, Column, Computed, ForeignKey, ForeignKeyConstraint, Index, event, func
-from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import deferred, relationship, validates
 from sqlalchemy.types import Boolean, Integer, SmallInteger, String
@@ -146,7 +145,6 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
         order_by=(SubnetRange.vrf_id, SubnetRange.version.desc(), SubnetRange.range),
         cascade="all, delete-orphan",
     )
-    ranges = association_proxy("subnet_ranges", "range")
     rir_status = Column(String, nullable=True, default=None)
     _subnet_string = Column(
         String,
@@ -190,6 +188,12 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
             for r in self.subnet_ranges
         ]
         return data
+
+    def from_json(self, data):
+        subnet_ranges = data.pop('subnet_ranges', None)
+        super().from_json(data)
+        if subnet_ranges is not None:
+            self.subnet_ranges = [SubnetRange(**r) for r in subnet_ranges]
 
     @validates('rir_status')
     def validate_rir_status(self, key, value):

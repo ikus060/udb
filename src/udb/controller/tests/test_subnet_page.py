@@ -32,17 +32,17 @@ class SubnetTest(WebCase, CommonTest):
 
     obj_cls = Subnet
 
-    new_data = {'ranges': ['192.168.0.0/24']}
-
-    new_post = {'subnet_ranges-0-range': '192.168.0.0/24'}
-
     edit_data = {'notes': 'test', 'vlan': 3}
 
     def setUp(self):
         super().setUp()
         self.vrf = Vrf(name='default').add().commit()
-        self.new_data['vrf_id'] = self.vrf.id
-        self.new_post['vrf_id'] = self.vrf.id
+        self.new_data = {'subnet_ranges': [SubnetRange('192.168.0.0/24')], 'vrf_id': self.vrf.id}
+        self.new_post = {'subnet_ranges-0-range': '192.168.0.0/24', 'vrf_id': self.vrf.id}
+        self.new_json = {
+            'subnet_ranges': [{'dhcp': False, 'dhcp_end_ip': None, 'dhcp_start_ip': None, 'range': '192.168.0.0/24'}],
+            'vrf_id': self.vrf.id,
+        }
 
     def test_edit_dnszone_selenium(self):
         # Given a database with a record
@@ -80,7 +80,7 @@ class SubnetTest(WebCase, CommonTest):
     def test_edit_with_dnszone(self):
         # Given a database with a record
         zone = DnsZone(name='examples.com').add()
-        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[zone], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[zone], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         # Then the zone is selected
@@ -108,7 +108,7 @@ class SubnetTest(WebCase, CommonTest):
     def test_edit_with_deleted_vrf(self):
         # Given a Subnet associated to deleted VRF
         self.vrf.status = Vrf.STATUS_DELETED
-        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
@@ -118,7 +118,7 @@ class SubnetTest(WebCase, CommonTest):
     def test_edit_assign_deleted_vrf(self):
         # Given a Subnet associated to VRF
         deleted_vrf = Vrf(name='MyVrf', status=Vrf.STATUS_DELETED).add()
-        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[], vrf=self.vrf).add().commit()
         # When editing the Subnet
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
@@ -137,7 +137,7 @@ class SubnetTest(WebCase, CommonTest):
     def test_edit_with_deleted_zone(self):
         # Given a Subnet associated to deleted VRF
         zone = DnsZone(name='examples.com', status=DnsZone.STATUS_DELETED).add().flush()
-        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[zone], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[zone], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
@@ -148,7 +148,7 @@ class SubnetTest(WebCase, CommonTest):
         # Given a Subnet associated to VRF
         zone = DnsZone(name='examples.com').add().flush()
         deleted_zone = DnsZone(name='foo.com', status=DnsZone.STATUS_DELETED).add().flush()
-        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[zone], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[zone], vrf=self.vrf).add().commit()
         # When editing the Subnet
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
@@ -469,11 +469,11 @@ class SubnetTest(WebCase, CommonTest):
 
     def test_depth_index_ipv4(self):
         # Given a database with an existing record
-        Subnet(ranges=['192.168.0.0/16'], name='bar1', vrf=self.vrf).add()
-        Subnet(ranges=['192.168.0.0/24'], name='bar2', vrf=self.vrf).add()
-        Subnet(ranges=['192.168.0.0/26'], name='bar3', vrf=self.vrf).add()
-        Subnet(ranges=['192.168.0.64/26'], name='bar4', vrf=self.vrf).add()
-        Subnet(ranges=['192.168.14.0/24'], name='bar5', vrf=self.vrf).add().commit()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/16')], name='bar1', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/24')], name='bar2', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/26')], name='bar3', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.64/26')], name='bar4', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.14.0/24')], name='bar5', vrf=self.vrf).add().commit()
         # When listing subnet with depth
         data = self.getJson(url_for(self.base_url, 'data.json'))
         # Then depth is updated
@@ -570,11 +570,13 @@ class SubnetTest(WebCase, CommonTest):
 
     def test_depth_index_deleted(self):
         # Given a database with an existing record
-        Subnet(ranges=['192.168.0.0/16'], name='bar1', vrf=self.vrf, status=Subnet.STATUS_DELETED).add()
-        Subnet(ranges=['192.168.0.0/24'], name='bar2', vrf=self.vrf).add()
-        Subnet(ranges=['192.168.0.0/26'], name='bar3', vrf=self.vrf).add()
-        Subnet(ranges=['192.168.0.64/26'], name='bar4', vrf=self.vrf).add()
-        Subnet(ranges=['192.168.14.0/24'], name='bar5', vrf=self.vrf).add().commit()
+        Subnet(
+            subnet_ranges=[SubnetRange('192.168.0.0/16')], name='bar1', vrf=self.vrf, status=Subnet.STATUS_DELETED
+        ).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/24')], name='bar2', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/26')], name='bar3', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.64/26')], name='bar4', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.14.0/24')], name='bar5', vrf=self.vrf).add().commit()
         # When listing subnet with depth
         data = self.getJson(url_for(self.base_url, 'data.json'))
         # Then depth is updated
@@ -676,17 +678,24 @@ class SubnetTest(WebCase, CommonTest):
         zone1 = DnsZone(name='example.com')
         zone2 = DnsZone(name='foo.com')
         # Default VRF
-        Subnet(ranges=['192.168.1.0/24', '192.168.2.0/24'], name='foo', vrf=self.vrf, dnszones=[zone1, zone2]).add()
-        Subnet(ranges=['192.168.1.128/30'], name='bar', vrf=self.vrf).add()
-        Subnet(ranges=['10.255.0.0/16'], name='tor', vrf=self.vrf).add()
-        Subnet(ranges=['192.0.2.23'], name='fin', vrf=self.vrf).add()
+        Subnet(
+            subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('192.168.2.0/24')],
+            name='foo',
+            vrf=self.vrf,
+            dnszones=[zone1, zone2],
+        ).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.1.128/30')], name='bar', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('10.255.0.0/16')], name='tor', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.0.2.23')], name='fin', vrf=self.vrf).add()
         # VRF2
-        Subnet(ranges=['2a07:6b40::/32', '10.10.0.0/16'], name='infra', vrf=vrf2).add()
-        Subnet(ranges=['2a07:6b40:0::/48'], name='infra-any-cast', vrf=vrf2).add()
-        Subnet(ranges=['2a07:6b40:0:0::/64'], name='infra-any-cast', vrf=vrf2, dnszones=[zone1, zone2]).add()
-        Subnet(ranges=['2a07:6b40:1::/48'], name='all-anycast-infra-test', vrf=vrf2).add()
+        Subnet(subnet_ranges=[SubnetRange('2a07:6b40::/32'), SubnetRange('10.10.0.0/16')], name='infra', vrf=vrf2).add()
+        Subnet(subnet_ranges=[SubnetRange('2a07:6b40:0::/48')], name='infra-any-cast', vrf=vrf2).add()
+        Subnet(
+            subnet_ranges=[SubnetRange('2a07:6b40:0:0::/64')], name='infra-any-cast', vrf=vrf2, dnszones=[zone1, zone2]
+        ).add()
+        Subnet(subnet_ranges=[SubnetRange('2a07:6b40:1::/48')], name='all-anycast-infra-test', vrf=vrf2).add()
         # VRF1
-        Subnet(ranges=['192.168.1.128/30'], name='bar', vrf=vrf1).add().commit()
+        Subnet(subnet_ranges=[SubnetRange('192.168.1.128/30')], name='bar', vrf=vrf1).add().commit()
         # When listing subnet with depth
         data = self.getJson(url_for(self.base_url, 'data.json'))
         # Then depth is updated
