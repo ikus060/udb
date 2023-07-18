@@ -105,9 +105,11 @@ class AuditPage:
             query = query.filter(func.udb_websearch(AllModel.c.search_string, search))
 
         # Apply model_name filtering
-        model_name = kwargs.get('columns[3][search][value]', '')
-        if model_name:
-            query = query.filter(AllModel.c.model_name == model_name)
+        # With multiple selection, this is a regex pattern similar to (model1|model2|model3)
+        search_model = kwargs.get('columns[3][search][value]', '')
+        if search_model:
+            model_names = search_model.strip('()').split('|')
+            query = query.filter(AllModel.c.model_name.in_(model_names))
 
         # Count result.
         filtered = query.count()
