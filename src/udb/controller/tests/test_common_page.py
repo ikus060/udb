@@ -29,6 +29,11 @@ class CommonTest:
 
     authorization = [('Authorization', 'Basic %s' % b64encode(b'admin:admin').decode('ascii'))]
 
+    # Used for POST request
+    new_post = None
+
+    edit_post = None
+
     def test_get_list_page_empty(self):
         # Given a database without record
         # When making a query to list page
@@ -150,7 +155,7 @@ class CommonTest:
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
         # When trying to update it's name
-        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=self.edit_data)
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=(self.edit_post or self.edit_data))
         obj.expire()
         # Then user is redirected
         self.assertStatus(303)
@@ -185,7 +190,7 @@ class CommonTest:
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
         # When trying to update the owner-
-        payload = dict(self.new_data)
+        payload = dict(self.new_post or self.new_data)
         payload['owner_id'] = User.query.first().id
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=payload)
         obj.expire()
@@ -209,7 +214,7 @@ class CommonTest:
         obj.add()
         obj.commit()
         # When trying unassign
-        payload = dict(self.new_data)
+        payload = dict(self.new_post or self.new_data)
         payload['owner_id'] = 'None'
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=payload)
         obj.expire()
@@ -223,7 +228,7 @@ class CommonTest:
     def test_new(self):
         # Given an empty database
         # When trying to create a new dns zone
-        self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=(self.new_post or self.new_data))
         # Then user is redirected to list page
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(self.base_url) + '/')
@@ -430,7 +435,7 @@ class CommonTest:
         self.assertInBody('<input id="referer" name="referer" type="hidden" value="%s">' % referer)
         # When page is submit
         body = {'referer': referer}
-        body.update(self.new_data)
+        body.update(self.new_post or self.new_data)
         self.getPage(
             url_for(self.base_url, 'new'),
             method='POST',
@@ -498,6 +503,6 @@ class CommonTest:
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
         # When trying to edit a record
-        self.getPage(url_for(obj, 'edit'), method='POST', body=self.edit_data)
+        self.getPage(url_for(obj, 'edit'), method='POST', body=(self.edit_post or self.edit_data))
         # Then a 403 Forbidden is raised
         self.assertStatus(403)

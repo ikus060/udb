@@ -61,7 +61,9 @@ class SubnetTest(WebCase):
                 'vlan': 3,
                 'owner_id': None,
                 'rir_status': 'ASSIGNED',
-                'dhcp': False,
+                'subnet_ranges': [
+                    {'dhcp': False, 'dhcp_end_ip': None, 'dhcp_start_ip': None, 'range': '192.168.1.0/24'}
+                ],
             },
         )
 
@@ -73,8 +75,8 @@ class SubnetTest(WebCase):
         Subnet(vrf=vrf, ranges=['192.168.1.0/24']).add().commit()
         # Then a new record is created
         subnet = Subnet.query.first()
-        self.assertEqual(1, len(subnet.ranges))
-        self.assertEqual('192.168.1.0/24', subnet.ranges[0])
+        self.assertEqual(1, len(subnet.subnet_ranges))
+        self.assertEqual('192.168.1.0/24', subnet.subnet_ranges[0].range)
 
     def test_add_ipv6(self):
         # Given an empty database
@@ -84,22 +86,22 @@ class SubnetTest(WebCase):
         Subnet(vrf=vrf, ranges=['2002::1234:abcd:ffff:c0a8:101/64']).add().commit()
         # Then a new record is created
         subnet = Subnet.query.first()
-        self.assertEqual(1, len(subnet.ranges))
-        self.assertEqual('2002:0:0:1234::/64', subnet.ranges[0])
+        self.assertEqual(1, len(subnet.subnet_ranges))
+        self.assertEqual('2002:0:0:1234::/64', subnet.subnet_ranges[0].range)
 
     def test_add_ranges(self):
         # Given an empty database
         vrf = Vrf(name='test').add()
-        subnet = Subnet(vrf=vrf, ranges=['192.168.1.0/24']).add().commit()
+        subnet = Subnet(vrf=vrf, subnet_ranges=[SubnetRange('192.168.1.0/24')]).add().commit()
         self.assertEqual(1, SubnetRange.query.count())
         # When adding a Subnet with IPV6
-        subnet.ranges.append('192.168.12.0/24')
+        subnet.subnet_ranges.append(SubnetRange('192.168.12.0/24'))
         subnet.add()
         subnet.commit()
         # Then a new record is created
         subnet = Subnet.query.first()
         self.assertEqual(2, SubnetRange.query.count())
-        self.assertEqual(['192.168.1.0/24', '192.168.12.0/24'], subnet.ranges)
+        self.assertEqual(['192.168.1.0/24', '192.168.12.0/24'], [r.range for r in subnet.subnet_ranges])
 
     def test_update_vrf(self):
         # Given a subnet record
@@ -113,7 +115,7 @@ class SubnetTest(WebCase):
         subnet.commit()
         # Then SubnetRange get updated too
         subnet = Subnet.query.first()
-        self.assertEqual(['192.168.1.0/24'], subnet.ranges)
+        self.assertEqual(['192.168.1.0/24'], [r.range for r in subnet.subnet_ranges])
 
     def test_remove_ranges(self):
         # Given an empty database
@@ -121,13 +123,13 @@ class SubnetTest(WebCase):
         subnet = Subnet(vrf=vrf, ranges=['192.168.1.0/24', '192.168.12.0/24']).add().commit()
         self.assertEqual(2, SubnetRange.query.count())
         # When adding a Subnet with IPV6
-        subnet.ranges.remove('192.168.12.0/24')
+        subnet.subnet_ranges.pop()
         subnet.add()
         subnet.commit()
         # Then a new record is created
         self.assertEqual(1, SubnetRange.query.count())
         subnet = Subnet.query.first()
-        self.assertEqual(['192.168.1.0/24'], subnet.ranges)
+        self.assertEqual(['192.168.1.0/24'], [r.range for r in subnet.subnet_ranges])
 
     @parameterized.expand(['a.168.1.0/24', '2002:k:0:1234::/64'])
     def test_invalid_ip(self, value):
@@ -228,3 +230,56 @@ class SubnetTest(WebCase):
         records = Subnet.query.filter(func.udb_websearch(Subnet.search_string, 'test')).all()
         # Then a single record is returned
         self.assertEqual(subnet, records[0])
+
+    @parameterized.expand(
+        [
+            # Valid IPv4
+            ('192.168.14.0/24', False, None, None, True),
+            ('192.168.14.0/24', False, '192.168.14.1', '192.168.14.254', True),
+            ('192.168.14.0/24', False, '192.168.14.1', None, True),
+            ('192.168.14.0/24', False, None, '192.168.14.1', True),
+            ('192.168.14.0/24', True, '192.168.14.1', '192.168.14.254', True),
+            # Invalid out of range
+            ('192.168.14.0/24', True, '192.168.14.0', '192.168.14.254', False),
+            ('192.168.14.0/24', True, '192.168.14.1', '192.168.14.255', False),
+            # Invalid with None
+            ('192.168.14.0/24', True, None, '192.168.14.254', False),
+            ('192.168.14.0/24', True, '192.168.14.1', None, False),
+            # start > end
+            ('192.168.14.0/24', True, '192.168.14.254', '192.168.14.1', False),
+            # wrong subnet
+            ('192.168.14.0/24', True, '192.168.15.1', '192.168.15.254', False),
+            # Valid IPv6
+            ('2a07:6b40::/64', False, None, None, True),
+            ('2a07:6b40::/64', False, '2a07:6b40::1', '2a07:6b40::ffff:ffff:ffff:ffff', True),
+            ('2a07:6b40::/64', False, '2a07:6b40::1', None, True),
+            ('2a07:6b40::/64', False, None, '2a07:6b40::1', True),
+            ('2a07:6b40::/64', True, '2a07:6b40::1', '2a07:6b40::ffff:ffff:ffff:ffff', True),
+            # Invalid out of range
+            ('2a07:6b40::/64', True, '2a07:6b40::0', '2a07:6b40::ffff:ffff:ffff:ffff', False),
+            # Invalid with None
+            ('2a07:6b40::/64', True, None, '2a07:6b40::ffff:ffff:ffff:ffff', False),
+            ('2a07:6b40::/64', True, '2a07:6b40::1', None, False),
+            # start > end
+            ('2a07:6b40::/64', True, '2a07:6b40::ffff:ffff:ffff:ffff', '2a07:6b40::1', False),
+            # wrong subnet
+            ('2a07:6b40::/64', True, '2a07:6b41::1', '2a07:6b40::ffff:ffff:ffff:ffff', False),
+        ]
+    )
+    def test_dhcp_range(self, range, dhcp_enabled, dhcp_start_ip, dhcp_end_ip, expect_success):
+        # Given a database with records
+        vrf = Vrf(name='default')
+        # When creating a SubnetRange with DHCP
+        subnet = Subnet(
+            name='name',
+            vrf=vrf,
+            subnet_ranges=[
+                SubnetRange(range=range, dhcp=dhcp_enabled, dhcp_start_ip=dhcp_start_ip, dhcp_end_ip=dhcp_end_ip)
+            ],
+        )
+        # Then we expect failure or success
+        if expect_success:
+            subnet.add().commit()
+        else:
+            with self.assertRaises(IntegrityError):
+                subnet.add().commit()

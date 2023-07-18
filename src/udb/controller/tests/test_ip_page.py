@@ -18,7 +18,7 @@
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, Ip, Subnet, User, Vrf
+from udb.core.model import DhcpRecord, Ip, Subnet, SubnetRange, User, Vrf
 
 
 class IPTest(WebCase):
@@ -26,8 +26,28 @@ class IPTest(WebCase):
         super().setUp()
         # Given a database with a subnet.
         vrf = Vrf(name='default')
-        Subnet(ranges=['1.2.3.0/24'], vrf=vrf, dhcp=True).add()
-        Subnet(ranges=['2.3.4.5/24'], vrf=vrf, dhcp=True).add().commit()
+        Subnet(
+            subnet_ranges=[
+                SubnetRange(
+                    '1.2.3.0/24',
+                    dhcp=True,
+                    dhcp_start_ip='1.2.3.1',
+                    dhcp_end_ip='1.2.3.254',
+                )
+            ],
+            vrf=vrf,
+        ).add()
+        Subnet(
+            subnet_ranges=[
+                SubnetRange(
+                    '2.3.4.5/24',
+                    dhcp=True,
+                    dhcp_start_ip='2.3.4.1',
+                    dhcp_end_ip='2.3.4.254',
+                )
+            ],
+            vrf=vrf,
+        ).add().commit()
 
     def test_no_deleted_filter(self):
         # Given a database with records

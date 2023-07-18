@@ -20,17 +20,22 @@ from collections import namedtuple
 
 import cherrypy
 from sqlalchemy import case, func
-from wtforms.fields import BooleanField, IntegerField, SelectField, StringField, TextAreaField
-from wtforms.validators import DataRequired, Length, NumberRange, Optional
+from wtforms.fields import BooleanField, FieldList, FormField, IntegerField, SelectField, StringField, TextAreaField
+from wtforms.validators import DataRequired, Length, NumberRange, Optional, StopValidation, ValidationError
 
 from udb.core.model import DnsZone, Subnet, SubnetRange, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, DualListWidget, SelectMultipleObjectField, SelectObjectField, StringFieldSet, SwitchWidget
-
-unset_value = "UNSET_DATA"
-
+from .form import (
+    CherryForm,
+    DualListWidget,
+    EditableTableWidget,
+    SelectMultipleObjectField,
+    SelectObjectField,
+    Strip,
+    SwitchWidget,
+)
 
 def _subnet_of(range1, range2):
     if not range1 or not range2:
@@ -51,6 +56,95 @@ def _sort_ranges(ranges):
     return [r.compressed for r in ranges]
 
 
+class SubnetRangeform(CherryForm):
+    range = StringField(
+        label=_('IP Ranges'),
+        validators=[
+            DataRequired(),
+            Length(max=256),
+        ],
+        filters=[Strip()],
+        render_kw={"placeholder": _("174.95.0.0/16 or 2001:0db8:85a3::/64")},
+    )
+    dhcp = BooleanField(
+        _('DHCP Enabled'),
+        widget=SwitchWidget(),
+    )
+    dhcp_start_ip = StringField(
+        _('DHCP Start'),
+        validators=[Length(max=256)],
+        filters=[Strip()],
+        render_kw={"placeholder": _("Leave blank for default")},
+    )
+    dhcp_end_ip = StringField(
+        _('DHCP Stop'),
+        validators=[Length(max=256)],
+        filters=[Strip()],
+        render_kw={"placeholder": _("Leave blank for default")},
+    )
+
+    def validate_range(self, field):
+        try:
+            ipaddress.ip_network(field.data)
+        except ValueError:
+            raise StopValidation(_('%s is not a valid IPv4 or IPv6 range') % field.data)
+
+    def validate_dhcp_start_ip(self, field):
+        try:
+            network = ipaddress.ip_network(self.range.data)
+        except Exception:
+            # Skip validation if the range is invalid.
+            return
+        # Generate default value when empty.
+        if self.dhcp.data and not field.data:
+            field.data = str(network.network_address + 1)
+        # Validate value
+        if field.data:
+            # Make sure it's a valid ip address
+            try:
+                address = ipaddress.ip_address(field.data)
+            except ValueError:
+                raise ValidationError(_('%s is not a valid IPv4 or IPv6 address') % field.data)
+            # Check if ip within range
+            if not (network.network_address < address and address < network.broadcast_address):
+                raise ValidationError(_('DHCP start must be defined within the subnet range'))
+
+    def validate_dhcp_end_ip(self, field):
+        try:
+            network = ipaddress.ip_network(self.range.data)
+        except Exception:
+            # Skip validation if the range is invalid.
+            return
+        # Generate default value when empty.
+        if self.dhcp.data and not field.data:
+            if network.version == 4:
+                field.data = str(network.broadcast_address - 1)
+            else:
+                field.data = str(network.broadcast_address)
+        # Validate value
+        if field.data:
+            # Make sure it's a valid ip address
+            try:
+                address = ipaddress.ip_address(field.data)
+            except ValueError:
+                raise ValidationError(_('%s is not a valid IPv4 or IPv6 address') % field.data)
+            # Check if ip within range
+            if (
+                network.network_address >= address
+                or (network.version == 4 and address >= network.broadcast_address)
+                or (network.version == 6 and address > network.broadcast_address)
+            ):
+                raise ValidationError(_('DHCP end must be defined within the subnet range'))
+            # Check if end_ip it greather than start_ip
+            try:
+                start_ip = ipaddress.ip_address(self.dhcp_start_ip.data)
+            except Exception:
+                # Skip validation if the start_ip is invalid.
+                return
+            if start_ip >= address:
+                raise ValidationError(_('DHCP end must be greather than DHCP start'))
+
+
 class SubnetForm(CherryForm):
 
     object_cls = Subnet
@@ -59,10 +153,12 @@ class SubnetForm(CherryForm):
         validators=[Length(max=256)],
         render_kw={"placeholder": _("Enter a description"), "autofocus": True},
     )
-    ranges = StringFieldSet(
+    subnet_ranges = FieldList(
+        FormField(SubnetRangeform, default=SubnetRange),
         label=_('IP Ranges'),
-        validators=[Length(max=256)],
-        render_kw={"placeholder": _("Enter an IPv4 or IPv6 address")},
+        widget=EditableTableWidget(),
+        min_entries=1,
+        max_entries=100,
     )
     vrf_id = SelectObjectField(
         _('VRF'),
@@ -74,7 +170,7 @@ class SubnetForm(CherryForm):
         _('L3VNI'),
         validators=[Optional(), NumberRange(min=0, max=2147483647, message=_('L3VNI must be at least %(min)s.'))],
         render_kw={
-            'width': '1/3',
+            'width': '1/4',
             "pattern": "\\d+",
             "title": _('L3VNI number.'),
         },
@@ -83,7 +179,7 @@ class SubnetForm(CherryForm):
         _('L2VNI'),
         validators=[Optional(), NumberRange(min=0, max=2147483647, message=_('L2VNI must be at least %(min)s.'))],
         render_kw={
-            'width': '1/3',
+            'width': '1/4',
             "pattern": "\\d+",
             "title": _('L2VNI number.'),
         },
@@ -92,19 +188,11 @@ class SubnetForm(CherryForm):
         _('VLAN'),
         validators=[Optional(), NumberRange(min=0, max=2147483647, message=_('VLAN must be at least %(min)s.'))],
         render_kw={
-            'width': '1/3',
+            'width': '1/4',
             "pattern": "\\d+",
             "title": _('VLAN number.'),
         },
     )
-    dhcp = BooleanField(
-        _('DHCP Enabled'),
-        widget=SwitchWidget(),
-        render_kw={
-            'width': '1/3',
-        },
-    )
-
     rir_status = SelectField(
         _('RIR Status'),
         choices=[
@@ -116,7 +204,7 @@ class SubnetForm(CherryForm):
         coerce=lambda value: value if value else None,
         default='',
         render_kw={
-            'width': '1/3',
+            'width': '1/4',
         },
     )
     dnszones = SelectMultipleObjectField(
@@ -135,6 +223,18 @@ class SubnetForm(CherryForm):
         object_cls=User,
         default=lambda: cherrypy.serving.request.currentuser.id,
     )
+
+    def process(self, formdata=None, obj=None, data=None, **kwargs):
+        """
+        Custom implementation to take account of subnet-ranges fields.
+        """
+        super().process(formdata, obj, data=data, **kwargs)
+
+        # When subnet ranges are not defined in formdata, let used the value from the object instead of replacing the value with empty array.
+        if formdata:
+            subnet_range_defined = list(self.subnet_ranges._extract_indices(self.subnet_ranges.name, formdata))
+            if not subnet_range_defined:
+                self.subnet_ranges.process(None, obj.subnet_ranges)
 
 
 SubnetRow = namedtuple(
@@ -178,7 +278,7 @@ class SubnetPage(CommonPage):
                 Subnet.l2vni,
                 Subnet.vlan,
                 Subnet.rir_status,
-                Subnet.dhcp,
+                func.bool_or(SubnetRange.dhcp).label('dhcp'),
                 func.group_concat(SubnetRange.range.text().distinct()).label('ranges'),
                 func.group_concat(DnsZone.name.distinct()).label('dnszone_names'),
             )

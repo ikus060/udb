@@ -18,7 +18,7 @@
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import Deployment, DhcpRecord, Environment, Message, Subnet, Vrf
+from udb.core.model import Deployment, DhcpRecord, Environment, Message, Subnet, SubnetRange, Vrf
 
 from .test_common_page import CommonTest
 
@@ -39,7 +39,17 @@ class EnvironmentPageTest(WebCase, CommonTest):
         super().setUp()
         # Generate a changes
         vrf = Vrf(name='default')
-        Subnet(ranges=['192.168.45.0/24'], vrf=vrf, dhcp=True).add().commit()
+        Subnet(
+            subnet_ranges=[
+                SubnetRange(
+                    '192.168.45.0/24',
+                    dhcp=True,
+                    dhcp_start_ip='192.168.45.1',
+                    dhcp_end_ip='192.168.45.254',
+                )
+            ],
+            vrf=vrf,
+        ).add().commit()
         # Given a database with DHCP Record change
         DhcpRecord(ip='192.168.45.67', mac='E5:D3:56:7B:22:A3').add().commit()
 

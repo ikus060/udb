@@ -18,7 +18,7 @@
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, Subnet, User, Vrf
+from udb.core.model import DhcpRecord, Subnet, SubnetRange, User, Vrf
 
 from .test_common_page import CommonTest
 
@@ -37,7 +37,17 @@ class DhcpRecordTest(WebCase, CommonTest):
         super().setUp()
         # Generate a changes
         vrf = Vrf(name='default')
-        Subnet(ranges=['1.2.3.0/24'], vrf=vrf, dhcp=True).add().commit()
+        Subnet(
+            subnet_ranges=[
+                SubnetRange(
+                    '1.2.3.0/24',
+                    dhcp=True,
+                    dhcp_start_ip='1.2.3.1',
+                    dhcp_end_ip='1.2.3.254',
+                )
+            ],
+            vrf=vrf,
+        ).add().commit()
 
     def test_new_duplicate(self):
         # Given a database with a record
@@ -70,7 +80,7 @@ class DhcpRecordTest(WebCase, CommonTest):
     def test_dhcprecord_new_invalid_subnet_rule(self):
         # Given a subnet with DHCP Disabled.
         subnet = Subnet.query.first()
-        subnet.dhcp = False
+        subnet.subnet_ranges[0].dhcp = False
         subnet.add().commit()
         # When creating a DHCP Reservation.
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
@@ -83,20 +93,20 @@ class DhcpRecordTest(WebCase, CommonTest):
         self.assertStatus(200)
         self.assertInBody('Record created successfully.')
         # Then a warning is displayed.
-        self.assertInBody('DHCP has been disabled on this subnet.')
+        self.assertInBody('DHCP Reservation is outside of DHCP range or does not matches a subnet with DHCP enabled.')
 
     def test_dhcprecord_edit_invalid_subnet_rule(self):
         # Given a DHCP reservation on a subnet.
         record = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:67').add().commit()
         # Given DHCP get disable on the subnet
         subnet = Subnet.query.first()
-        subnet.dhcp = False
+        subnet.subnet_ranges[0].dhcp = False
         subnet.add().commit()
         # When editing the DHCP reservation.
         self.getPage(url_for(record, 'edit'))
         self.assertStatus(200)
         # Then a warning is displayed.
-        self.assertInBody('DHCP has been disabled on this subnet.')
+        self.assertInBody('DHCP Reservation is outside of DHCP range or does not matches a subnet with DHCP enabled.')
 
     def test_dhcprecord_unique_ip(self):
         # Given two (2) dhcp reservation with the same IP.

@@ -115,21 +115,20 @@ def before_insert(mapper, connection, instance):
     instance._validate()
 
 
-@rule(DhcpRecord, _('DHCP has been disabled on this subnet.'))
+@rule(DhcpRecord, _("DHCP Reservation is outside of DHCP range or does not matches a subnet with DHCP enabled."))
 def dhcprecord_invalid_subnet():
     """
     Return a query listing all the dhcp record without a valid subnet
     """
-    # For each PTR Record, check if the IP ddress matches the IP address of the forward record (A, AAAA).
     return select(DhcpRecord.id.label('id'), DhcpRecord.summary.label('name'),).filter(
         ~(
             select(Subnet.id)
             .join(Subnet.subnet_ranges)
             .filter(
-                Subnet.dhcp.is_(True),
+                SubnetRange.dhcp.is_(True),
                 SubnetRange.version == func.family(DhcpRecord.ip),
-                SubnetRange.start_ip <= func.inet(DhcpRecord.ip),
-                SubnetRange.end_ip > func.inet(DhcpRecord.ip),
+                SubnetRange.dhcp_start_ip <= func.inet(DhcpRecord.ip),
+                SubnetRange.dhcp_end_ip >= func.inet(DhcpRecord.ip),
                 Subnet.status == Subnet.STATUS_ENABLED,
                 DhcpRecord.status == DhcpRecord.STATUS_ENABLED,
             )

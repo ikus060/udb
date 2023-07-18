@@ -17,7 +17,7 @@
 
 
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, Mac, Subnet, Vrf
+from udb.core.model import DhcpRecord, Mac, Subnet, SubnetRange, Vrf
 
 
 class MacTest(WebCase):
@@ -25,7 +25,12 @@ class MacTest(WebCase):
         super().setUp()
         # Given a database with a subnet.
         vrf = Vrf(name='default')
-        Subnet(ranges=['192.0.2.0/24'], vrf=vrf, dhcp=True).add().commit()
+        Subnet(
+            subnet_ranges=[
+                SubnetRange('192.0.2.0/24', dhcp=True, dhcp_start_ip='192.0.2.1', dhcp_end_ip='192.0.2.254')
+            ],
+            vrf=vrf,
+        ).add().commit()
 
     def test_with_dhcp_record(self):
         # Given a empty database

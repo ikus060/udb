@@ -20,7 +20,18 @@ from unittest.mock import ANY
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import Deployment, DhcpRecord, DnsRecord, DnsZone, Environment, Message, Subnet, User, Vrf
+from udb.core.model import (
+    Deployment,
+    DhcpRecord,
+    DnsRecord,
+    DnsZone,
+    Environment,
+    Message,
+    Subnet,
+    SubnetRange,
+    User,
+    Vrf,
+)
 
 
 class DeploymentPageTest(WebCase):
@@ -37,7 +48,12 @@ class DeploymentPageTest(WebCase):
         super().setUp()
         # Generate a changes
         vrf = Vrf(name='default')
-        Subnet(ranges=['192.168.45.0/24'], vrf=vrf, dhcp=True).add().commit()
+        Subnet(
+            subnet_ranges=[
+                SubnetRange('192.168.45.0/24', dhcp=True, dhcp_start_ip='192.168.45.1', dhcp_end_ip='192.168.45.100')
+            ],
+            vrf=vrf,
+        ).add().commit()
         DhcpRecord(ip='192.168.45.67', mac='E5:D3:56:7B:22:A3').add().commit()
         # Create a new environment
         self.environment = Environment(name='test-env', script='echo FOO', model_name='dhcprecord').add().commit()

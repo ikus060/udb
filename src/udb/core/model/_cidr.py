@@ -133,20 +133,20 @@ class CidrType(TypeDecorator):
         return dialect.type_descriptor(String())
 
     def process_bind_param(self, value, dialect):
+        if value is None or value == '':
+            return None
         if dialect.name == "postgresql":
             return value
         # SQlite convert to bytes
-        if value is None:
-            return None
         n = ipaddress.ip_network(value)
         return _ip_network_to_bytes(n)
 
     def process_result_value(self, value, dialect):
+        if value is None or value == '':
+            return None
         if dialect.name == "postgresql":
             return value
         # SQlite convert from bytes
-        if value is None:
-            return None
         return _bytes_to_ip_network(value).compressed
 
     class comparator_factory(String.Comparator):
@@ -181,20 +181,20 @@ class InetType(TypeDecorator):
         return dialect.type_descriptor(String())
 
     def process_bind_param(self, value, dialect):
+        if value is None or value == '':
+            return None
         if dialect.name == "postgresql":
             return value
         # SQlite convert to bytes
-        if value is None:
-            return None
         n = ipaddress.ip_address(value)
         return _ip_network_to_bytes(n)
 
     def process_result_value(self, value, dialect):
+        if value is None or value == '':
+            return None
         if dialect.name == "postgresql":
             return value
         # SQlite convert from bytes
-        if value is None:
-            return None
         return _bytes_to_ip_network(value).network_address.compressed
 
     class comparator_factory(String.Comparator):
