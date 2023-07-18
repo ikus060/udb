@@ -118,8 +118,7 @@ test-bdist:deb:
     - apt update && apt install -y ./dist/$DIST/udb*.deb
     - udb --version | grep -v '0.0.0'
     - (/usr/bin/udb --database-uri sqlite:///data.db &)
-    - sleep 5
-    - curl http://localhost:8080
+    - timeout 60 bash -c 'until curl --silent http://localhost:8080; do sleep 1; done'
 
 upload:deb:
   image: buildpack-deps:bookworm
