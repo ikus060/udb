@@ -101,9 +101,15 @@ th>a {
     width: 200px;
 }
 
-/* Make floating header white */
+/* Make Affix floating header white and adjust for mobile */
 div.dtfh-floatingparent {
     background-color: var(--bs-body-bg);
+    margin-top: 74px;
+}
+@media (min-width: 992px) {
+    div.dtfh-floatingparent {
+        margin-top: 0;
+    }
 }
 
 /* Make row separator gray */
