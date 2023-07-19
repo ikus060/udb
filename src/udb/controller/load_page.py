@@ -18,6 +18,7 @@
 
 import csv
 import os
+import re
 import shutil
 import tempfile
 
@@ -26,7 +27,7 @@ from wtforms import validators
 from wtforms.fields import FileField, SelectField
 
 from udb.controller import flash, handle_exception
-from udb.core.model import DnsRecord, DnsZone, Subnet, Vrf
+from udb.core.model import DnsRecord, DnsZone, Subnet, SubnetRange, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .form import CherryForm
@@ -75,13 +76,13 @@ class LoadPage:
                     if row.get('IPv6'):
                         ranges = [row.get('IPv6')]
                     if row.get('IPv4'):
-                        ranges.extend(row.get('IPv4').split(' '))
+                        ranges.extend(re.split('[ ,\n]', row.get('IPv4')))
                     if row.get('Primary IP Range'):
                         ranges = [row.get('Primary IP Range')]
                     if row.get('Secondary IP Range(s)'):
                         ranges.extend(row.get('Secondary IP Range(s)').split(', '))
                     Subnet(
-                        ranges=ranges,
+                        subnet_ranges=[SubnetRange(range=r) for r in ranges],
                         name=row.get('Name'),
                         vrf=vrf,
                         l3vni=self.get_int(row.get('L3VNI')),
