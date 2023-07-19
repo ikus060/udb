@@ -149,7 +149,9 @@ def update_database_schema(target, connection, **kw):
             Message.query.filter(Message.body.startswith('{')).update(
                 {Message.body: '', Message._changes: Message.body}, synchronize_session=False
             )
-
+        # TODO Start this from stractch.
+        # TODO Move relevent part to each submodule
+        # Create module for add_column, recreate_table, etc.
         # Add 'token' to deployment
         add_column(Deployment.__table__.c.token)
         # Add 'status' to environment
@@ -178,6 +180,8 @@ def update_database_schema(target, connection, **kw):
                 SubnetRange.__table__,
                 select(SubnetRange.id, SubnetRange.subnet_id, SubnetRange.vrf_id, SubnetRange.range),
             )
+            # TODO Might need to re-create sequence.
+            # ALTER SEQUENCE...
             connection.execute(ddl.CreateIndex(subnetrange_index, if_not_exists=True))
             connection.execute(ddl.CreateIndex(subnetrange_order, if_not_exists=True))
         # Create status column on rule

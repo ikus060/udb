@@ -79,28 +79,19 @@ class Rule(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, StatusMixing, Ba
         return Rule.session.execute(text(sql)).all()
 
     def _wrap_statement(self, obj=None, new_statement=None):
+        name = self.name.replace("'", "''")
+        description = (self.description or '').replace("'", "''")
+        severity = int(self.severity or Rule.SEVERITY_SOFT)
+        model_name = self.model_name
         statement = new_statement or self.statement
-        description = self.description or ''
-
         # Support 2 columns (id, summary) and 5 columns (id, name, other_id, other_model_name, other_name)
-        base_sql = "SELECT '%s' as rule_name, '%s' as description, %s as severity, id, '%s' as model_name, name, other_id, other_model_name, other_name FROM (%s) as a%s"
         if 'as other_id' not in statement.lower():
-            base_sql = "SELECT '%s' as rule_name, '%s' as description, %s as severity, id, '%s' as model_name, name, 0 as other_id, NULL as other_model_name, NULL as other_name FROM (%s) as a%s"
-
-        # Replace placeholders.
-        sql = base_sql % (
-            self.name,
-            description.replace("'", "''"),
-            int(self.severity or Rule.SEVERITY_SOFT),
-            self.model_name,
-            statement,
-            self.id,
-        )
-
+            sql = f"SELECT '{name}' as rule_name, '{description}' as description, {severity} as severity, id, '{model_name}' as model_name, name, 0 as other_id, NULL as other_model_name, NULL as other_name FROM ({statement}) as r{self.id}"
+        else:
+            sql = f"SELECT '{name}' as rule_name, '{description}' as description, {severity} as severity, id, '{model_name}' as model_name, name, other_id, other_model_name, other_name FROM ({statement}) as r{self.id}"
         # Add filter if an object is specified.
         if obj:
-            sql += " WHERE id = %s" % (obj.id)
-
+            sql += f" WHERE id = {obj.id}"
         return sql
 
     def _validate(self):
