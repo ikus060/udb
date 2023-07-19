@@ -24,7 +24,7 @@ import sys
 import tempfile
 
 import cherrypy
-from sqlalchemy import Column, ForeignKey, func
+from sqlalchemy import Column, ForeignKey, func, select
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import JSON, Integer, SmallInteger, String, Text
@@ -176,16 +176,64 @@ class Deployment(CommonMixin, JsonMixin, Base):
             )
             self.data = {'dnsrecord': [s._asdict() for s in dnsrecord]}
         elif model_name == 'dhcprecord':
-            dhcprecord = (
-                DhcpRecord.query.with_entities(
-                    DhcpRecord.id,
-                    DhcpRecord.ip,
-                    DhcpRecord.mac,
+            # TODO Migth be better to move that into DHCP model.
+            # TODO using relationship or similar.
+
+            # Return DHCP member of a Subnet with DHCP enabled.
+            subnet_query = (
+                select(
+                    SubnetRange.id,
+                    Subnet.name,
+                    Subnet.l2vni,
+                    Subnet.l3vni,
+                    Subnet.vlan,
+                    SubnetRange.range,
+                    SubnetRange.start_ip,
+                    SubnetRange.end_ip,
+                    SubnetRange.version,
+                    SubnetRange.dhcp,
+                    SubnetRange.dhcp_start_ip,
+                    SubnetRange.dhcp_end_ip,
                 )
-                .filter(DhcpRecord.status == DhcpRecord.STATUS_ENABLED)
-                .all()
+                .join(Subnet.subnet_ranges)
+                .filter(
+                    SubnetRange.dhcp.is_(True),
+                    Subnet.status == Subnet.STATUS_ENABLED,
+                )
             )
-            self.data = {'dhcprecord': [s._asdict() for s in dhcprecord]}
+            # Identiy the subnet related for each dhcp record.
+            related_subnet_query = (
+                select(SubnetRange.id)
+                .join(Subnet.subnet_ranges)
+                .filter(
+                    SubnetRange.dhcp.is_(True),
+                    Subnet.status == Subnet.STATUS_ENABLED,
+                    SubnetRange.version == func.family(DhcpRecord.ip),
+                    SubnetRange.dhcp_start_ip <= func.inet(DhcpRecord.ip),
+                    SubnetRange.dhcp_end_ip >= func.inet(DhcpRecord.ip),
+                )
+                .scalar_subquery()
+            )
+            # Identiy the hostname for each dhcp record.
+            hostname_query = (
+                select(DnsRecord.value)
+                .filter(DnsRecord.type == 'PTR', DnsRecord.generated_ip == DhcpRecord.ip)
+                .scalar_subquery()
+            )
+            dhcp_query = select(
+                DhcpRecord.id,
+                DhcpRecord.ip,
+                DhcpRecord.mac,
+                related_subnet_query.label('subnet_range_id'),
+                # TODO must be tested
+                hostname_query.label('hostname'),
+            ).filter(
+                DhcpRecord.status == DhcpRecord.STATUS_ENABLED,
+            )
+            self.data = {
+                'dhcprecord': [s._asdict() for s in DhcpRecord.session.execute(dhcp_query).all()],
+                'subnet_range': [s._asdict() for s in Subnet.session.execute(subnet_query).all()],
+            }
         else:
             raise ValueError('unsuported model_name: %s' % model_name)
 

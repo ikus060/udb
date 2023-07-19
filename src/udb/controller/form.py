@@ -78,7 +78,10 @@ class CherryForm(Form):
             return Markup(tmpl.render(field=field, render_kw=render_kw))
 
     def __init__(self, **kwargs):
-        super().__init__(formdata=_AUTO if self.is_submitted() else None, **kwargs)
+        if 'formdata' in kwargs:
+            super().__init__(**kwargs)
+        else:
+            super().__init__(formdata=_AUTO if self.is_submitted() else None, **kwargs)
 
     def is_submitted(self):
         """
@@ -157,6 +160,10 @@ class SubnetTableWidget(JinjaWidget):
 
 class SwitchWidget(JinjaWidget):
     filename = 'widgets/SwitchWidget.html'
+
+
+class EditableTableWidget(JinjaWidget):
+    filename = 'widgets/EditableTableWidget.html'
 
 
 class SelectMultipleObjectField(SelectMultipleField):
@@ -332,3 +339,14 @@ class StringFieldSet(Field):
                     proxy.append(value)
         else:
             setattr(obj, name, self.data)
+
+
+class Strip:
+    """
+    Field filter to remove leading or ending spaces.
+    """
+
+    def __call__(self, value):
+        if not value:
+            return value
+        return str(value).strip()

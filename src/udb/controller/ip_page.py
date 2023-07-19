@@ -44,8 +44,10 @@ class RelatedDhcpRecordForm(Form):
 class RelatedSubnetForm(Form):
 
     name = StringField(_('Name'), render_kw={"readonly": True})
-    ranges = StringField(
-        _('IP Ranges'), render_kw={"readonly": True}, filters=[lambda ranges: ', '.join([str(r) for r in ranges])]
+    subnet_ranges = StringField(
+        _('IP Ranges'),
+        render_kw={"readonly": True},
+        filters=[lambda subnet_ranges: ', '.join([str(r.range) for r in subnet_ranges])],
     )
     vrf = IntegerField(_('VRF'), render_kw={"readonly": True})
     dnszones = SelectMultipleObjectField(_('DNS zones'), object_cls=DnsZone)

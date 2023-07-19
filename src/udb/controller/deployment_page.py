@@ -135,6 +135,7 @@ class DeploymentPage:
     def output_json(self, id, **kwargs):
         """
         Called by Web interface to refresh the ouput view at regular interval.
+        Return the current state and the full console log.
         """
         # Return Not found if object doesn't exists
         deployment = Deployment.query.filter(Deployment.id == id).first()

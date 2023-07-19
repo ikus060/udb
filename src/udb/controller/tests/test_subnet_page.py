@@ -21,25 +21,28 @@ from selenium.webdriver.common.keys import Keys
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DnsZone, Subnet, Vrf
+from udb.core.model import DnsZone, Subnet, SubnetRange, Vrf
 
 from .test_common_page import CommonTest
 
 
-class SubnetTest(WebCase, CommonTest):
+class SubnetPageTest(WebCase, CommonTest):
 
     base_url = 'subnet'
 
     obj_cls = Subnet
 
-    new_data = {'ranges': ['192.168.0.0/24']}
-
-    edit_data = {'ranges': ['192.168.100.0/24'], 'notes': 'test'}
+    edit_data = {'notes': 'test', 'vlan': 3}
 
     def setUp(self):
         super().setUp()
         self.vrf = Vrf(name='default').add().commit()
-        self.new_data['vrf_id'] = self.vrf.id
+        self.new_data = {'subnet_ranges': [SubnetRange('192.168.0.0/24')], 'vrf_id': self.vrf.id}
+        self.new_post = {'subnet_ranges-0-range': '192.168.0.0/24', 'vrf_id': self.vrf.id}
+        self.new_json = {
+            'subnet_ranges': [{'dhcp': False, 'dhcp_end_ip': None, 'dhcp_start_ip': None, 'range': '192.168.0.0/24'}],
+            'vrf_id': self.vrf.id,
+        }
 
     def test_edit_dnszone_selenium(self):
         # Given a database with a record
@@ -67,15 +70,17 @@ class SubnetTest(WebCase, CommonTest):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add().commit()
         # When trying to update it's name
-        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'ranges': ['invalid cidr']})
+        self.getPage(
+            url_for(self.base_url, obj.id, 'edit'), method='POST', body={'subnet_ranges-0-range': ['invalid cidr']}
+        )
         # Then edit page is displayed with an error message
         self.assertStatus(200)
-        self.assertInBody('does not appear to be a valid IPv6 or IPv4 network')
+        self.assertInBody('invalid cidr is not a valid IPv4 or IPv6 range')
 
     def test_edit_with_dnszone(self):
         # Given a database with a record
         zone = DnsZone(name='examples.com').add()
-        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[zone], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[zone], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         # Then the zone is selected
@@ -88,7 +93,7 @@ class SubnetTest(WebCase, CommonTest):
     def test_edit_add_dnszone(self):
         # Given a database with a record
         zone = DnsZone(name='examples.com').add().flush()
-        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'dnszones': zone.id})
         self.assertStatus(303)
@@ -103,7 +108,7 @@ class SubnetTest(WebCase, CommonTest):
     def test_edit_with_deleted_vrf(self):
         # Given a Subnet associated to deleted VRF
         self.vrf.status = Vrf.STATUS_DELETED
-        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
@@ -113,7 +118,7 @@ class SubnetTest(WebCase, CommonTest):
     def test_edit_assign_deleted_vrf(self):
         # Given a Subnet associated to VRF
         deleted_vrf = Vrf(name='MyVrf', status=Vrf.STATUS_DELETED).add()
-        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[], vrf=self.vrf).add().commit()
         # When editing the Subnet
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
@@ -132,7 +137,7 @@ class SubnetTest(WebCase, CommonTest):
     def test_edit_with_deleted_zone(self):
         # Given a Subnet associated to deleted VRF
         zone = DnsZone(name='examples.com', status=DnsZone.STATUS_DELETED).add().flush()
-        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[zone], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[zone], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
@@ -143,7 +148,7 @@ class SubnetTest(WebCase, CommonTest):
         # Given a Subnet associated to VRF
         zone = DnsZone(name='examples.com').add().flush()
         deleted_zone = DnsZone(name='foo.com', status=DnsZone.STATUS_DELETED).add().flush()
-        obj = self.obj_cls(ranges=['192.168.0.1/24'], dnszones=[zone], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[zone], vrf=self.vrf).add().commit()
         # When editing the Subnet
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
@@ -207,11 +212,28 @@ class SubnetTest(WebCase, CommonTest):
         self.getPage(
             url_for(self.base_url, obj.id, 'edit'),
             method='POST',
-            body={'dhcp': new_value},
+            body={
+                'subnet_ranges-0-range': '192.168.0.0/24',
+                'subnet_ranges-0-dhcp': new_value,
+                'subnet_ranges-0-dhcp_start_ip': '192.168.0.1',
+                'subnet_ranges-0-dhcp_end_ip': '192.168.0.100',
+            },
         )
+        self.assertStatus(303)
         # Then object is updated.
         obj.expire()
-        self.assertEqual(expected_value, obj.dhcp)
+        self.assertEqual(expected_value, obj.subnet_ranges[0].dhcp)
+
+    def test_new_ranges(self):
+        # Given a data without records
+        # When creating a subnet for the first time
+        self.getPage(url_for(self.base_url, 'new'))
+        self.assertStatus(200)
+        # The page display an empty IP Ranges to be filled by user
+        self.assertInBody('DHCP Enabled')
+        self.assertInBody('DHCP Start')
+        self.assertInBody('DHCP Stop')
+        self.assertInBody('Add row')
 
     def test_new_duplicate(self):
         # Given a database with a record
@@ -219,7 +241,7 @@ class SubnetTest(WebCase, CommonTest):
         obj.add()
         obj.commit()
         # When trying to create the same record.
-        self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_post)
         # Then error is repported to the user.
         self.assertStatus(200)
         self.assertInBody('A record already exists in database with the same value.')
@@ -239,10 +261,167 @@ class SubnetTest(WebCase, CommonTest):
         # Then deleted zone is hidden
         self.assertNotInBody(zone3.name)
 
+    @parameterized.expand(
+        [
+            # Valid IPv4
+            ('192.168.14.0/24', False, '', '', False),
+            ('192.168.14.0/24', False, '192.168.14.1', '192.168.14.254', False),
+            ('192.168.14.0/24', False, '192.168.14.1', '', False),
+            ('192.168.14.0/24', False, '', '192.168.14.1', False),
+            ('192.168.14.0/24', True, '192.168.14.1', '192.168.14.254', False),
+            # Invalid out of range
+            (
+                '192.168.14.0/24',
+                True,
+                '192.168.14.0',
+                '192.168.14.254',
+                'DHCP start must be defined within the subnet range',
+            ),
+            (
+                '192.168.14.0/24',
+                True,
+                '192.168.14.1',
+                '192.168.14.255',
+                'DHCP end must be defined within the subnet range',
+            ),
+            # Invalid with None
+            (
+                '192.168.14.0/24',
+                True,
+                '',
+                '192.168.14.254',
+                False,
+            ),
+            (
+                '192.168.14.0/24',
+                True,
+                '192.168.14.1',
+                '',
+                False,
+            ),
+            # start > end
+            (
+                '192.168.14.0/24',
+                True,
+                '192.168.14.254',
+                '192.168.14.1',
+                'DHCP end must be greather than DHCP start',
+            ),
+            (
+                '192.168.14.0/24',
+                True,
+                '192.168.14.100',
+                '192.168.14.100',
+                'DHCP end must be greather than DHCP start',
+            ),
+            # wrong subnet
+            (
+                '192.168.14.0/24',
+                True,
+                '192.168.15.1',
+                '192.168.15.254',
+                'DHCP start must be defined within the subnet range',
+            ),
+            # Valid IPv6
+            ('2a07:6b40::/64', False, '', '', False),
+            ('2a07:6b40::/64', False, '2a07:6b40::1', '2a07:6b40::ffff:ffff:ffff:ffff', False),
+            ('2a07:6b40::/64', False, '2a07:6b40::1', '', False),
+            ('2a07:6b40::/64', False, '', '2a07:6b40::1', False),
+            ('2a07:6b40::/64', True, '2a07:6b40::1', '2a07:6b40::ffff:ffff:ffff:ffff', False),
+            # Invalid with None
+            ('2a07:6b40::/64', True, '', '2a07:6b40::ffff:ffff:ffff:ffff', False),
+            ('2a07:6b40::/64', True, '2a07:6b40::1', '', False),
+            # Invalid out of range
+            (
+                '2a07:6b40::/64',
+                True,
+                '2a07:6b40::0',
+                '2a07:6b40::ffff:ffff:ffff:ffff',
+                'DHCP start must be defined within the subnet range',
+            ),
+            # start > end
+            (
+                '2a07:6b40::/64',
+                True,
+                '2a07:6b40::ffff:ffff:ffff:ffff',
+                '2a07:6b40::1',
+                'DHCP end must be greather than DHCP start',
+            ),
+            # wrong subnet
+            (
+                '2a07:6b40::/64',
+                True,
+                '2a07:6b41::1',
+                '2a07:6b40::ffff:ffff:ffff:ffff',
+                'DHCP start must be defined within the subnet range',
+            ),
+        ]
+    )
+    def test_dhcp_range(self, range, dhcp_enabled, dhcp_start_ip, dhcp_end_ip, expect_error_msg):
+        # Given a new subnet
+        payload = {
+            'name': 'My Subnet',
+            'subnet_ranges-0-range': range,
+            'subnet_ranges-0-dhcp': 'on' if dhcp_enabled else '',
+            'subnet_ranges-0-dhcp_start_ip': dhcp_start_ip,
+            'subnet_ranges-0-dhcp_end_ip': dhcp_end_ip,
+            'vrf_id': self.vrf.id,
+        }
+        # When creating the subnet with DHCP ranges
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=payload)
+        # Then we expect success or failure
+        if expect_error_msg:
+            self.assertStatus(200)
+            self.assertInBody(expect_error_msg)
+        else:
+            self.assertStatus(303)
+
+    def test_list_dhcp_enabled(self):
+        # Given a subnet with multiple range with DHCP enabled
+        Subnet(
+            subnet_ranges=[
+                SubnetRange('192.168.1.0/24', dhcp=True, dhcp_start_ip='192.168.1.1', dhcp_end_ip='192.168.1.254'),
+                SubnetRange('192.168.2.0/24', dhcp=True, dhcp_start_ip='192.168.2.1', dhcp_end_ip='192.168.2.254'),
+            ],
+            name='foo',
+            vrf=self.vrf,
+        ).add().commit()
+        # When querying the list of subnet
+        data = self.getJson(url_for(self.base_url, 'data.json'))
+        # Then DHCP valud is '1' for TRUE
+        self.assertEqual(
+            data['data'],
+            [
+                [
+                    1,
+                    'enabled',
+                    1,
+                    0,
+                    '192.168.1.0/24',
+                    '192.168.2.0/24',
+                    'foo',
+                    'default',
+                    None,
+                    None,
+                    None,
+                    None,
+                    True,
+                    None,
+                    '/subnet/1/edit',
+                ]
+            ],
+        )
+
     def test_depth(self):
         # Given a database with an existing record
-        subnet1 = Subnet(ranges=['192.168.1.0/24'], name='foo', vrf=self.vrf, dhcp=True).add()
-        subnet2 = Subnet(ranges=['192.168.1.128/30'], name='bar', vrf=self.vrf).add().commit()
+        subnet1 = Subnet(
+            subnet_ranges=[
+                SubnetRange('192.168.1.0/24', dhcp=True, dhcp_start_ip='192.168.1.1', dhcp_end_ip='192.168.1.254')
+            ],
+            name='foo',
+            vrf=self.vrf,
+        ).add()
+        subnet2 = Subnet(subnet_ranges=[SubnetRange('192.168.1.128/30')], name='bar', vrf=self.vrf).add().commit()
         self.assertEqual(1, len(subnet1.messages))
         self.assertEqual(1, len(subnet2.messages))
         # When querying depth
@@ -290,11 +469,11 @@ class SubnetTest(WebCase, CommonTest):
 
     def test_depth_index_ipv4(self):
         # Given a database with an existing record
-        Subnet(ranges=['192.168.0.0/16'], name='bar1', vrf=self.vrf).add()
-        Subnet(ranges=['192.168.0.0/24'], name='bar2', vrf=self.vrf).add()
-        Subnet(ranges=['192.168.0.0/26'], name='bar3', vrf=self.vrf).add()
-        Subnet(ranges=['192.168.0.64/26'], name='bar4', vrf=self.vrf).add()
-        Subnet(ranges=['192.168.14.0/24'], name='bar5', vrf=self.vrf).add().commit()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/16')], name='bar1', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/24')], name='bar2', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/26')], name='bar3', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.64/26')], name='bar4', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.14.0/24')], name='bar5', vrf=self.vrf).add().commit()
         # When listing subnet with depth
         data = self.getJson(url_for(self.base_url, 'data.json'))
         # Then depth is updated
@@ -391,11 +570,13 @@ class SubnetTest(WebCase, CommonTest):
 
     def test_depth_index_deleted(self):
         # Given a database with an existing record
-        Subnet(ranges=['192.168.0.0/16'], name='bar1', vrf=self.vrf, status=Subnet.STATUS_DELETED).add()
-        Subnet(ranges=['192.168.0.0/24'], name='bar2', vrf=self.vrf).add()
-        Subnet(ranges=['192.168.0.0/26'], name='bar3', vrf=self.vrf).add()
-        Subnet(ranges=['192.168.0.64/26'], name='bar4', vrf=self.vrf).add()
-        Subnet(ranges=['192.168.14.0/24'], name='bar5', vrf=self.vrf).add().commit()
+        Subnet(
+            subnet_ranges=[SubnetRange('192.168.0.0/16')], name='bar1', vrf=self.vrf, status=Subnet.STATUS_DELETED
+        ).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/24')], name='bar2', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/26')], name='bar3', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.64/26')], name='bar4', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.14.0/24')], name='bar5', vrf=self.vrf).add().commit()
         # When listing subnet with depth
         data = self.getJson(url_for(self.base_url, 'data.json'))
         # Then depth is updated
@@ -497,17 +678,24 @@ class SubnetTest(WebCase, CommonTest):
         zone1 = DnsZone(name='example.com')
         zone2 = DnsZone(name='foo.com')
         # Default VRF
-        Subnet(ranges=['192.168.1.0/24', '192.168.2.0/24'], name='foo', vrf=self.vrf, dnszones=[zone1, zone2]).add()
-        Subnet(ranges=['192.168.1.128/30'], name='bar', vrf=self.vrf).add()
-        Subnet(ranges=['10.255.0.0/16'], name='tor', vrf=self.vrf).add()
-        Subnet(ranges=['192.0.2.23'], name='fin', vrf=self.vrf).add()
+        Subnet(
+            subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('192.168.2.0/24')],
+            name='foo',
+            vrf=self.vrf,
+            dnszones=[zone1, zone2],
+        ).add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.1.128/30')], name='bar', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('10.255.0.0/16')], name='tor', vrf=self.vrf).add()
+        Subnet(subnet_ranges=[SubnetRange('192.0.2.23')], name='fin', vrf=self.vrf).add()
         # VRF2
-        Subnet(ranges=['2a07:6b40::/32', '10.10.0.0/16'], name='infra', vrf=vrf2).add()
-        Subnet(ranges=['2a07:6b40:0::/48'], name='infra-any-cast', vrf=vrf2).add()
-        Subnet(ranges=['2a07:6b40:0:0::/64'], name='infra-any-cast', vrf=vrf2, dnszones=[zone1, zone2]).add()
-        Subnet(ranges=['2a07:6b40:1::/48'], name='all-anycast-infra-test', vrf=vrf2).add()
+        Subnet(subnet_ranges=[SubnetRange('2a07:6b40::/32'), SubnetRange('10.10.0.0/16')], name='infra', vrf=vrf2).add()
+        Subnet(subnet_ranges=[SubnetRange('2a07:6b40:0::/48')], name='infra-any-cast', vrf=vrf2).add()
+        Subnet(
+            subnet_ranges=[SubnetRange('2a07:6b40:0:0::/64')], name='infra-any-cast', vrf=vrf2, dnszones=[zone1, zone2]
+        ).add()
+        Subnet(subnet_ranges=[SubnetRange('2a07:6b40:1::/48')], name='all-anycast-infra-test', vrf=vrf2).add()
         # VRF1
-        Subnet(ranges=['192.168.1.128/30'], name='bar', vrf=vrf1).add().commit()
+        Subnet(subnet_ranges=[SubnetRange('192.168.1.128/30')], name='bar', vrf=vrf1).add().commit()
         # When listing subnet with depth
         data = self.getJson(url_for(self.base_url, 'data.json'))
         # Then depth is updated

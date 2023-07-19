@@ -14,7 +14,7 @@
   {'name':'l2vni', 'title':form.l2vni.label.text|string, 'orderable':True, 'className':'export'},
   {'name':'vlan','title': form.vlan.label.text|string, 'orderable':True, 'className':'export'},
   {'name':'rir_status','title': form.rir_status.label.text|string, 'orderable':True, 'className':'export'},
-  {'name':'dhcp','title': form.dhcp.label.text|string, 'orderable':True, 'className':'export', 'render':'choices', 'render_arg': [(False, _('No')), (True, _('Yes'))]},
+  {'name':'dhcp','title': _('DHCP enabled'), 'orderable':True, 'className':'export', 'render':'choices', 'render_arg': [(False, _('No')), (True, _('Yes'))]},
 {'name':'dnszone_names', 'title':form.dnszones.label.text|string, 'orderable':False, 'className':'export'}] %}
 {# Define customer filter for RIR Status #}
 {% set extra_buttons = [{'text': _('RIR Managed'), 'extend': 'btnfilter', 'column': 'rir_status:name', 'search':'.+', 'regex': True }] %}

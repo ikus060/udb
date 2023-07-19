@@ -2,6 +2,9 @@
 {% import "components/table.html" as _table %}
 {% import "common/status.html" as _status %}
 {% import "macro.html" as macro %}
+{% block title %}
+  {% trans %}Import{% endtrans %}
+{% endblock %}
 {% block body %}
   {# Title #}
   <h2>{% trans %}Import{% endtrans %}</h2>

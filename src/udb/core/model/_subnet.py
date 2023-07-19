@@ -18,8 +18,7 @@
 import ipaddress
 
 import cherrypy
-from sqlalchemy import Column, Computed, ForeignKey, ForeignKeyConstraint, Index, event, func
-from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy import CheckConstraint, Column, Computed, ForeignKey, ForeignKeyConstraint, Index, event, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import deferred, relationship, validates
 from sqlalchemy.types import Boolean, Integer, SmallInteger, String
@@ -44,21 +43,70 @@ class SubnetRange(Base):
     id = Column(Integer, primary_key=True)
     subnet_id = Column(Integer, nullable=False)
     vrf_id = Column(Integer, nullable=False)
-    range = Column(CidrType)
+    range = Column(CidrType, nullable=False)
     __table_args__ = (
         ForeignKeyConstraint(["subnet_id", "vrf_id"], ["subnet.id", "subnet.vrf_id"], onupdate="CASCADE"),
+        # Make sure DHCP start/end range is defined when DHCP is enabled
+        CheckConstraint(
+            "dhcp IS FALSE OR (dhcp_start_ip IS NOT NULL AND dhcp_end_ip IS NOT NULL)",
+            name='dhcp_start_end_not_null',
+        ),
+        # Make sure DHCP start/end range are defined within CIDR
+        CheckConstraint(
+            "dhcp_start_ip IS NULL or dhcp_start_ip > start_ip",
+            name='dhcp_start_ip_within_range',
+        ),
+        CheckConstraint(
+            "dhcp_end_ip IS NULL or CASE WHEN version = 4 THEN dhcp_end_ip < end_ip ELSE dhcp_end_ip <= end_ip END",
+            name='dhcp_end_ip_within_range',
+        ),
+        # Make sure DHCP start < end
+        CheckConstraint(
+            "dhcp_start_ip IS NULL or dhcp_end_ip IS NULL or dhcp_start_ip < dhcp_end_ip", name='dhcp_start_end_asc'
+        ),
     )
-    version = deferred(Column(SmallInteger, Computed(range.family(), persisted=True), index=True))
-    start_ip = deferred(Column(InetType, Computed(func.inet(range.host()), persisted=True), index=True))
+    version = deferred(
+        Column(
+            SmallInteger,
+            Computed(range.family(), persisted=True),
+            index=True,
+        )
+    )
+    start_ip = deferred(
+        Column(
+            InetType,
+            Computed(func.inet(range.host()), persisted=True),
+            index=True,
+        )
+    )
     end_ip = deferred(
-        Column(InetType, Computed(func.inet(func.host(func.broadcast(range))), persisted=True), index=True)
+        Column(
+            InetType,
+            Computed(func.inet(func.host(func.broadcast(range))), persisted=True),
+            index=True,
+        )
+    )
+    dhcp = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default='0',
+    )
+    dhcp_start_ip = Column(
+        InetType,
+        nullable=True,
+    )
+    dhcp_end_ip = Column(
+        InetType,
+        nullable=True,
     )
 
-    def __init__(self, range=None):
+    def __init__(self, range=None, **kwargs):
         """
         Special constructor for Association List
         """
         self.range = range
+        super().__init__(range=range, **kwargs)
 
     @validates('range')
     def validate_range(self, key, value):
@@ -70,15 +118,47 @@ class SubnetRange(Base):
             # Repport error on 'ranges' instead of 'range'
             raise ValueError('ranges', "`%s` " % value + _('does not appear to be a valid IPv6 or IPv4 network'))
 
+    def add_change(self, new_message):
+        """
+        When subnet range get modified, add the message to it's parent subnet.
+        """
+        assert new_message.changes, 'only message with changes should be append to subnet range'
+        if not self.parent:
+            # Parent is not defined when record get deleted,
+            return
+        if new_message.type == 'new':
+            # When record get created, a changes is already added to parent subnet.
+            return
+
+        # Format an old representation of the range
+        old_values = {k: v[0] for k, v in new_message.changes.items()}
+        if old_values.get('dhcp', self.dhcp):
+            old = '%s DHCP: %s - %s' % (
+                old_values.get('range', self.range),
+                old_values.get('dhcp_start_ip', self.dhcp_start_ip),
+                old_values.get('dhcp_end_ip', self.dhcp_end_ip),
+            )
+        else:
+            old = str(old_values.get('range', self.range))
+
+        # Update message to be added to the parent.
+        new_message.changes = {'subnet_ranges': [[old], [str(self)]]}
+        self.parent.add_change(new_message)
+
     def __str__(self) -> str:
-        return self.range
+        """
+        String representation used for audi log.
+        """
+        if self.dhcp:
+            return '%s DHCP: %s - %s' % (self.range, self.dhcp_start_ip, self.dhcp_end_ip)
+        return str(self.range)
 
 
 # Create a unique index for username
-Index('subnetrange_index', SubnetRange.vrf_id, SubnetRange.range, unique=True)
+subnetrange_index = Index('subnetrange_index', SubnetRange.vrf_id, SubnetRange.range, unique=True)
 
 # Index for cidr sorting
-Index('subnetrange_order', SubnetRange.vrf_id, SubnetRange.version.desc(), SubnetRange.range)
+subnetrange_order = Index('subnetrange_order', SubnetRange.vrf_id, SubnetRange.version.desc(), SubnetRange.range)
 
 
 class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
@@ -96,20 +176,15 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
         lazy=False,
         order_by=(SubnetRange.vrf_id, SubnetRange.version.desc(), SubnetRange.range),
         cascade="all, delete-orphan",
+        backref="parent",
+        active_history=True,
     )
-    ranges = association_proxy("subnet_ranges", "range")
     rir_status = Column(String, nullable=True, default=None)
     _subnet_string = Column(
         String,
         nullable=False,
         server_default='',
         doc="store string representation of the subnet ranges used for search",
-    )
-    dhcp = Column(
-        Boolean,
-        nullable=False,
-        default=False,
-        server_default='0',
     )
 
     # Transient fields for ordering
@@ -125,10 +200,10 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
         Should be called everytime the record get insert or updated
         to make sure the subnet ranges are index for search.
         """
-        self._subnet_string = ' '.join(self.ranges)
+        self._subnet_string = ' '.join(r.range for r in self.subnet_ranges if r.range)
 
     def __str__(self):
-        return "%s (%s)" % (', '.join(self.ranges), self.name)
+        return "%s (%s)" % (', '.join(r.range for r in self.subnet_ranges if r.range), self.name)
 
     @hybrid_property
     def summary(self):
@@ -136,11 +211,26 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
 
     def to_json(self):
         data = super().to_json()
-        data['ranges'] = list(self.ranges)
+        data['ranges'] = [r.range for r in self.subnet_ranges if r.range]
+        data['subnet_ranges'] = [
+            {
+                'range': r.range,
+                'dhcp': r.dhcp,
+                'dhcp_start_ip': r.dhcp_start_ip,
+                'dhcp_end_ip': r.dhcp_end_ip,
+            }
+            for r in self.subnet_ranges
+        ]
         return data
 
+    def from_json(self, data):
+        subnet_ranges = data.pop('subnet_ranges', None)
+        super().from_json(data)
+        if subnet_ranges is not None:
+            self.subnet_ranges = [SubnetRange(**r) for r in subnet_ranges]
+
     @validates('rir_status')
-    def validate_range(self, key, value):
+    def validate_rir_status(self, key, value):
         if not value:
             return None
         if value not in [Subnet.RIR_STATUS_ASSIGNED, Subnet.RIR_STATUS_ALLOCATED_BY_LIR]:
@@ -152,7 +242,7 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
 @event.listens_for(Subnet, 'before_update')
 def receive_before_insert_or_update(mapper, connection, subnet):
 
-    if not subnet.ranges:
+    if not subnet.subnet_ranges:
         # you should probably use your own exception class here
         raise ValueError('ranges', _('at least one IPv6 or IPv4 network is required'))
 

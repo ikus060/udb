@@ -77,27 +77,14 @@ def create_messages(session, flush_context, instances):
         author_id = currentuser.id
     # Create message if object is created or modified
     for obj in itertools.chain(session.new, session.dirty):
-        if hasattr(obj, 'add_message'):
+        if hasattr(obj, 'add_change'):
             # compute the list of changes base on sqlalchemy history
             change_type, changes = _get_model_changes(obj)
             if not changes:
                 continue
-
-            # Store changes as Json string
-            try:
-                changes = json.dumps(changes, default=str)
-            except Exception:
-                changes = str(changes)
-
             # Append the changes to a new message or a message in the current session flush.
-            message = next((msg for msg in session.new if isinstance(msg, Message) and msg.model_object == obj), False)
-            if not message:
-                message = Message(author_id=author_id, _changes=changes, type=change_type)
-                obj.add_message(message)
-            else:
-                message._changes = changes
-                message.type = change_type
-                message.add()
+            message = Message(author_id=author_id, changes=changes, type=change_type)
+            obj.add_change(message)
 
 
 class Message(JsonMixin, SearchableMixing, Base):
@@ -123,6 +110,13 @@ class Message(JsonMixin, SearchableMixing, Base):
         Return Json changes stored in message.
         """
         return Message.json_changes(self._changes)
+
+    @changes.setter
+    def changes(self, value):
+        try:
+            self._changes = json.dumps(value, default=str)
+        except Exception:
+            self._changes = str(value)
 
     @classmethod
     def _search_string(cls):
@@ -172,6 +166,38 @@ class MessageMixin:
     def add_message(self, message):
         message.model_name = self.__tablename__
         self.messages.append(message)
+
+    def add_change(self, new_message):
+        """
+        Append change to an existing message to be flushed or to a new message.
+        """
+        # Check if the last message is uncommit.
+        if not (self.messages and self.messages[-1].id is None):
+            self.add_message(new_message)
+            return
+
+        # Merge both messages
+        message = self.messages[-1]
+        message.type = new_message.type
+        changes = message.changes
+        if changes:
+            for key, values in new_message.changes.items():
+                if key not in changes:
+                    changes[key] = values
+                elif isinstance(changes[key][0], list) and isinstance(values[0], list):
+                    # Combine both list
+                    changes[key][0].extend(values[0])
+                    changes[key][1].extend(values[1])
+                    # And sort them to make it predictable.
+                    changes[key][0].sort()
+                    changes[key][1].sort()
+                else:
+                    # Replace the new value
+                    changes[key][1] = values[0]
+            message.changes = changes
+        else:
+            message.changes = new_message.changes
+        message.add()
 
     @declared_attr
     def messages(cls):

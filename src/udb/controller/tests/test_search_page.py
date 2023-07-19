@@ -23,7 +23,7 @@ from selenium.common.exceptions import NoSuchElementException
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DnsRecord, DnsZone, Subnet, Vrf
+from udb.core.model import DnsRecord, DnsZone, Subnet, SubnetRange, Vrf
 
 
 class TestSearchPage(WebCase):
@@ -219,7 +219,7 @@ class TestSearchPage(WebCase):
     def test_data_json_search_domain_name(self):
         # Given a DNS Record
         vrf = Vrf(name='default').add()
-        subnet = Subnet(ranges=['192.168.1.0/24', '2001:db8:85a3::/64'], vrf=vrf).add()
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('2001:db8:85a3::/64')], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
         record = DnsRecord(name='lumos.example.com', type='A', value='192.168.1.14')
         record.add().commit()
@@ -250,7 +250,7 @@ class TestSearchPage(WebCase):
     def test_data_json_search_subnet_ranges(self):
         # Given a subnet with ranges.
         vrf = Vrf(name='default').add()
-        Subnet(ranges=['192.168.1.0/24', '2001:db8:85a3::/64'], vrf=vrf).add().commit()
+        Subnet(subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('2001:db8:85a3::/64')], vrf=vrf).add().commit()
         # When searching an ip address matching a ranges
         data = self.getJson(url_for("search", "data.json", q="192.168.1"))
         # Then subnet is return.
@@ -278,7 +278,7 @@ class TestSearchPage(WebCase):
     def test_data_json_search_ipv4_address(self):
         # Given a DNS Record creating an ip address
         vrf = Vrf(name='default').add()
-        subnet = Subnet(ranges=['192.168.1.0/24', '2001:db8:85a3::/64'], vrf=vrf).add()
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('2001:db8:85a3::/64')], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
         record = DnsRecord(name='lumos.example.com', type='A', value='192.168.1.14')
         record.add().commit()
@@ -330,7 +330,7 @@ class TestSearchPage(WebCase):
     def test_data_json_search_ipv6_address(self):
         # Given a DNS Record creating an ip address
         vrf = Vrf(name='default').add()
-        subnet = Subnet(ranges=['192.168.1.0/24', '	2a07:6b43::/32'], vrf=vrf).add()
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('	2a07:6b43::/32')], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
         record = DnsRecord(name='lumos.example.com', type='AAAA', value='2a07:6b43:115:11::127')
         record.add().commit()

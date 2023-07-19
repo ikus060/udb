@@ -20,7 +20,7 @@ from parameterized import parameterized
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DnsRecord, DnsZone, Subnet, Vrf
+from udb.core.model import DnsRecord, DnsZone, Subnet, SubnetRange, Vrf
 
 from .test_common_page import CommonTest
 
@@ -38,7 +38,7 @@ class DnsRecordTest(WebCase, CommonTest):
     def setUp(self):
         super().setUp()
         vrf = Vrf(name='default').add()
-        subnet = Subnet(ranges=['192.168.1.0/24', '2001:db8:85a3::/64'], vrf=vrf).add()
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('2001:db8:85a3::/64')], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
 
     def test_edit_invalid(self):

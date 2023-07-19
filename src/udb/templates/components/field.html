@@ -1,3 +1,4 @@
+{# Define the bootstrap class for our widget #}
 {% set bootstrap_class_table = {
   "CheckboxInput": "form-check-input",
   "EmailInput": "form-control",
@@ -8,7 +9,9 @@
   "TextArea": "form-control",
   "TextInput": "form-control"
 } %}
-{% set field_class = bootstrap_class_table.get(field.widget.__class__.__name__) %}
+{% set field_class = bootstrap_class_table.get(field.widget.__class__.__name__) or '' %}
+{# Define invalid class on validation error #}
+{% set field_class = field_class + (field.errors and ' is-invalid' or '') %}
 {% if field_class or render_kw.get('class') %}
   {% set field_class = (field_class or '') + ' ' + render_kw.pop('class', '') %}
   {{ field.widget(field, class=field_class, **render_kw) }}

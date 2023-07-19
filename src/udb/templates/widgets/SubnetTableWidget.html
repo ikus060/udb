@@ -1,4 +1,5 @@
 {% extends 'widgets/TableWidget.html' %}
+{# Custom TableWidget to display subnet's name instead of subnet id #}
 {% block table_widget_field scoped %}
   {% if 'dnszone' is in subfield.name %}
     {% for subnet in subfield.object_data %}
