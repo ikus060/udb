@@ -88,7 +88,22 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
             raise ValueError('ip', _('IP address must be defined within a Subnet'))
 
 
-Index('dhcprecord_mac_key', DhcpRecord.mac, unique=True)
+Index(
+    'dhcprecord_mac_key',
+    DhcpRecord.mac,
+    unique=True,
+    sqlite_where=DhcpRecord.status == DhcpRecord.STATUS_ENABLED,
+    postgresql_where=DhcpRecord.status == DhcpRecord.STATUS_ENABLED,
+    info={
+        'description': _('A DHCP Reservation already exists for this MAC address.'),
+        'field': 'mac',
+        'other': lambda ctx: DhcpRecord.query.filter(
+            DhcpRecord.status == DhcpRecord.STATUS_ENABLED, DhcpRecord.mac == ctx['mac']
+        ).first()
+        if 'mac' in ctx
+        else None,
+    },
+)
 
 
 @event.listens_for(DhcpRecord.ip, 'set')

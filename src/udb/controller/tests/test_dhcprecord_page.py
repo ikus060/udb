@@ -23,7 +23,7 @@ from udb.core.model import DhcpRecord, Subnet, SubnetRange, User, Vrf
 from .test_common_page import CommonTest
 
 
-class DhcpRecordTest(WebCase, CommonTest):
+class DhcpRecordPageTest(WebCase, CommonTest):
 
     base_url = 'dhcprecord'
 
@@ -58,7 +58,9 @@ class DhcpRecordTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
         # Then error is repported to the user.
         self.assertStatus(200)
-        self.assertInBody('A record already exists in database with the same value.')
+        self.assertInBody('A DHCP Reservation already exists for this MAC address.')
+        # Then a link to duplicate record is provided
+        self.assertInBody(url_for(obj, 'edit'))
 
     def test_edit_owner_and_notes(self):
         # Given a database with a record

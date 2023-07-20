@@ -425,3 +425,11 @@ class DnsRecordTest(WebCase):
                 value='ddns.bfh.info. bfh-linux-sysadmin.lists.bfh.science. 33317735 600 60 36000 3600',
                 type='SOA',
             ).add().commit()
+
+    def test_invalid_record_type(self):
+        # Given a DNSRecord with an invalid type
+        # When flushing the object
+        # Then an error is raised.
+        with self.assertRaises(ValueError):
+            record = DnsRecord(name='bar.example.com', type='INVA', value='testing')
+            record.add().flush()

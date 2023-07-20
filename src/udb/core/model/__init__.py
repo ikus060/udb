@@ -26,7 +26,7 @@ from . import _bool_or  # noqa
 from . import _group_concat  # noqa
 from ._deployment import Deployment, Environment  # noqa
 from ._dhcprecord import DhcpRecord  # noqa
-from ._dnsrecord import DnsRecord, dnsrecord_soa_uniq_index  # noqa
+from ._dnsrecord import DnsRecord  # noqa
 from ._dnszone import DnsZone  # noqa
 from ._follower import Follower  # noqa
 from ._ip import Ip  # noqa
@@ -186,8 +186,6 @@ def update_database_schema(target, connection, **kw):
             connection.execute(ddl.CreateIndex(subnetrange_order, if_not_exists=True))
         # Create status column on rule
         add_column(Rule.__table__.c.status)
-        # Create new index
-        connection.execute(ddl.CreateIndex(dnsrecord_soa_uniq_index, if_not_exists=True))
         # Add severity column on rule
         add_column(Rule.__table__.c.severity)
         # Do final commit of changes
