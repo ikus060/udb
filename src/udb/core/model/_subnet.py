@@ -155,7 +155,21 @@ class SubnetRange(Base):
 
 
 # Create a unique index for username
-subnetrange_index = Index('subnetrange_index', SubnetRange.vrf_id, SubnetRange.range, unique=True)
+subnetrange_index = Index(
+    'subnetrange_index',
+    SubnetRange.vrf_id,
+    SubnetRange.range,
+    unique=True,
+    info={
+        'description': _('This IP Range is already defined in another subnet.'),
+        'field': 'subnet_ranges',
+        'other': lambda ctx: Subnet.query.join(Subnet.subnet_ranges)
+        .filter(SubnetRange.vrf_id == ctx['vrf_id'], SubnetRange.range == ctx['range'])
+        .first()
+        if 'vrf_id' in ctx and 'range' in ctx
+        else None,
+    },
+)
 
 # Index for cidr sorting
 subnetrange_order = Index('subnetrange_order', SubnetRange.vrf_id, SubnetRange.version.desc(), SubnetRange.range)

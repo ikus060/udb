@@ -27,7 +27,10 @@
       <div class="mb-2 {{ width }}">
         {{ field.label(class='form-label') }}
         {{ field(id=False) }}
-        {% for error in field.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+        {# Show only error directly related to this fields. Hide subfield errors. #}
+        {% for error in field.errors %}
+          {% if error|length>1 %}<div class="invalid-feedback">{{ error }}</div>{% endif %}
+        {% endfor %}
         {% if field.description %}<div class="form-text">{{ field.description }}</div>{% endif %}
       </div>
     {% endif %}

@@ -89,4 +89,19 @@ class DnsZone(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin,
 
 
 # Make DNS Zone name (FQDN) unique without case-sensitive
-Index('dnszone_name_index', func.lower(DnsZone.name), unique=True)
+Index(
+    'dnszone_name_index',
+    func.lower(DnsZone.name),
+    unique=True,
+    sqlite_where=DnsZone.status == DnsZone.STATUS_ENABLED,
+    postgresql_where=DnsZone.status == DnsZone.STATUS_ENABLED,
+    info={
+        'description': _('A DNS Zone aready exist for this domain.'),
+        'field': 'name',
+        'other': lambda ctx: DnsZone.query.filter(
+            DnsZone.status == DnsZone.STATUS_ENABLED, func.lower(DnsZone.name) == ctx['name'].lower()
+        ).first()
+        if 'name' in ctx
+        else None,
+    },
+)

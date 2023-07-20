@@ -138,6 +138,8 @@ class CidrType(TypeDecorator):
         if dialect.name == "postgresql":
             return value
         # SQlite convert to bytes
+        if isinstance(value, bytes):
+            return value
         n = ipaddress.ip_network(value)
         return _ip_network_to_bytes(n)
 
@@ -186,6 +188,8 @@ class InetType(TypeDecorator):
         if dialect.name == "postgresql":
             return value
         # SQlite convert to bytes
+        if isinstance(value, bytes):
+            return value
         n = ipaddress.ip_address(value)
         return _ip_network_to_bytes(n)
 

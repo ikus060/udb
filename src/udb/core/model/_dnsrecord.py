@@ -176,10 +176,6 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
         """
         is_ptr = self.type == 'PTR'
 
-        # Validate value according to record type
-        if self.type not in DnsRecord.TYPES:
-            raise ValueError('type', _('invalid record type'))
-
         # Verify domain name
         if self.type in ['CNAME', 'PTR', 'NS'] and not validate_domain(self.value):
             raise ValueError('value', _('value must be a valid domain name'))
@@ -483,12 +479,21 @@ def before_insert(mapper, connection, instance):
 CheckConstraint(DnsRecord.type.in_(DnsRecord.TYPES), name="dnsrecord_types")
 
 # Make sure only one SOA record exists.
-dnsrecord_soa_uniq_index = Index(
+Index(
     'dnsrecord_soa_uniq_index',
     DnsRecord.name,
     unique=True,
     sqlite_where=and_(DnsRecord.type == 'SOA', DnsRecord.status == DnsRecord.STATUS_ENABLED),
     postgresql_where=and_(DnsRecord.type == 'SOA', DnsRecord.status == DnsRecord.STATUS_ENABLED),
+    info={
+        'description': _('An SOA record already exist for this domain.'),
+        'field': 'name',
+        'other': lambda ctx: DnsRecord.query.filter(
+            DnsRecord.type == 'SOA', DnsRecord.status == DnsRecord.STATUS_ENABLED, DnsRecord.name == ctx['name']
+        ).first()
+        if 'name' in ctx
+        else None,
+    },
 )
 
 

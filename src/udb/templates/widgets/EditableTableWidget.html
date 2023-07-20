@@ -34,7 +34,7 @@
 {% set html_widget = html_row(empty_row, False).replace('-%s-' % (field|length-1), '-TOKEN-').replace('\n','').__str__() %}
 {% set unused = field.pop_entry() %}
 {# Create table to hold each row #}
-<div class="card bg-light mb-2 p-2">
+<div class="card bg-light mb-2 p-2 {{ class }}">
   <table class="table table-sm table-hover mb-0" aria-label="{{ field.name }}">
     <thead>
       <tr>

@@ -20,6 +20,7 @@ import time
 from collections import namedtuple
 
 import cherrypy
+from markupsafe import Markup
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.inspection import inspect
 
@@ -143,31 +144,126 @@ def template_processor(request):
 def handle_exception(e, form=None):
     cherrypy.tools.db.get_session().rollback()
     if isinstance(e, ValueError):
-        # For value error, repport the invalidvalue either as flash message or form error.
+        # ValueError are raised by SQLalchemy custom validation
+        # For value error, repport the invalid value either as flash message or form error.
         if form and len(e.args) == 2 and getattr(form, e.args[0], None):
             getattr(form, e.args[0]).errors.append(e.args[1])
         elif len(e.args) == 2:
             flash(_('Invalid value: %s') % e.args[1], level='error')
         else:
             flash(_('Invalid value: %s') % e, level='error')
-    elif isinstance(e, IntegrityError) and 'unique' in str(e.orig).lower():
-        # For Unique constrain violation, we try to identify the field causing the problem to properly
-        # attach the error to the fields. If the fields cannot be found using the constrain
-        # name, we simply show a flash error message.
-        msg = _('A record already exists in database with the same value.')
-        # Postgresql: duplicate key value violates unique constraint "subnet_name_key"\nDETAIL:  Key (name)=() already exists.\n
-        # SQLite: UNIQUE constrain: subnet.name
-        m = re.search(r'Key \((.*?)\)', str(e.orig)) or re.search(r'.*\.(.*)', str(e.orig))
-        if m and form and getattr(form, m[1], None):
-            getattr(form, m[1]).errors.append(msg)
-        elif m:
-            # Or repport error as flash.
-            flash(msg + _(' Field(s): ') + m[1], level='error')
-        else:
-            flash(msg + _(' Index: ') + str(e.orig), level='error')
+    elif isinstance(e, IntegrityError):
+        # Integrity error are raised by Database
+        _handle_integrity_error(e, form)
     else:
         flash(_('Database error: %s') % e, level='error')
         logger.warning('database error', exc_info=1)
+
+
+def _handle_integrity_error(e, form=None):
+    """
+    This implementation lookup the metadata to find the corresponding
+    constraints and retrieve additional information to better help the end-user.
+    """
+    error = str(e.orig)
+    ctx = _get_context(e)
+
+    if 'unique' in error.lower():
+        # For Unique constrain violation, we try to identify the field causing the problem to properly
+        # attach the error to the fields. If the fields cannot be found using the constrain
+        # name, we simply show a flash error message.
+        description = _('A record already exists in database with the same value.')
+        field = None
+        other = None
+
+        # Extract the constraint name for Postgresql and SQLite
+        # Postgresql: duplicate key value violates unique constraint "subnet_name_key"\nDETAIL:  Key (name)=() already exists.\n
+        # SQLite: UNIQUE constrain: subnet.name
+        # SQLite: UNIQUE constraint failed: index "dnszone_name_index"
+        constraint_match = (
+            re.search(r'unique constraint "([^"]+)"', error)
+            or re.search(r': (.+\..+)', error)
+            or re.search(r": index '([^']+)'", error)
+        )
+        if constraint_match:
+            constraint = _find_constraint(constraint_match[1])
+            if constraint:
+                description = constraint.info.get('description', description)
+                field = constraint.info.get('field', None)
+                find_other = constraint.info.get('other', None)
+                if find_other:
+                    try:
+                        other = find_other(ctx)
+                    except Exception:
+                        pass
+        else:
+            field_match = re.search(r'Key \((.+?)\)', error) or re.search(r'.+\.(.+)', error)
+            if field_match:
+                field = field_match[1]
+
+    # From data collected, create an error message for the user.
+    if other:
+        message = Markup('%s <a href="%s">%s</a>') % (
+            description,
+            url_for(other, 'edit'),
+            other.summary,
+        )
+    else:
+        message = description
+
+    if form and field in form:
+        # Add message to form if field exists.
+        getattr(form, field).errors.append(message)
+    elif field:
+        # Otherwise, repport error as flash.
+        flash(message + _(' Field(s): ') + field, level='error')
+    else:
+        flash(message + _(' Index: ') + str(e.orig), level='error')
+
+
+def _find_constraint(name):
+    # Use a lookup cache to simplify the search of index and constraints.
+    if not getattr(_find_constraint, '_cache', False):
+        cache = {}
+        metadata = cherrypy.tools.db.get_base().metadata
+        for table in metadata.tables.values():
+            for item in table.constraints:
+                if item.name:
+                    cache[item.name] = item
+            for item in table.indexes:
+                # Keep reference to unique index only.
+                if item.unique:
+                    if item.name:
+                        cache[item.name] = item
+                    # SQLite return <table>.<column>
+                    key = ', '.join([f'{table.name}.{c.name}' for c in item.columns])
+                    cache[key] = item
+        _find_constraint._cache = cache
+
+    return _find_constraint._cache.get(name, None)
+
+
+def _get_context(e):
+
+    # PostgreSQL : When using named params use it
+    if isinstance(e.params, dict):
+        return e.params
+
+    # Search fields from SQL statement
+    fields = []
+    if e.statement.startswith('INSERT INTO'):
+        match = re.match(r'INSERT INTO [^ ]+ \((.*)\) VALUES', e.statement)
+        if match:
+            fields = match[1].split(', ')
+    elif e.statement.startswith('UPDATE'):
+        fields = re.findall(r' ([^ ]+)\s?=\s?\?', e.statement)
+
+    # Rebuild the context as dictionary
+    values = e.params
+    if len(fields) == len(values):
+        return dict(zip(fields, values))
+
+    return None
 
 
 def validate_int(value, message=None, min=None, max=None):

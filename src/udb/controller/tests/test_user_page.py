@@ -26,7 +26,7 @@ from udb.controller.tests import WebCase
 from udb.core.model import User
 
 
-class UserTest(WebCase):
+class UserPageTest(WebCase):
 
     new_data = {'username': 'newuser', 'role': 'guest'}
 
@@ -236,3 +236,16 @@ class UserTest(WebCase):
                 subject='User myuser modified by admin',
                 message=mock.ANY,
             )
+
+    def test_new_duplicate(self):
+        # Given a database with a record
+        obj = User(**self.new_data)
+        obj.add()
+        obj.commit()
+        # When trying to create the same record.
+        self.getPage(url_for('user', 'new'), method='POST', body=self.new_data)
+        # Then error is repported to the user.
+        self.assertStatus(200)
+        self.assertInBody('This username already exists.')
+        # Then a link to the duplicate subnet ir provided
+        self.assertInBody(url_for(obj, 'edit'))

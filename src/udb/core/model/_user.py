@@ -167,7 +167,18 @@ class User(JsonMixin, StatusMixing, MessageMixin, Base):
 
 
 # Create a unique index for username
-Index('user_username_index', func.lower(User.username), unique=True)
+Index(
+    'user_username_index',
+    func.lower(User.username),
+    unique=True,
+    info={
+        'description': _('This username already exists.'),
+        'field': 'username',
+        'other': lambda ctx: User.query.filter(func.lower(User.username) == ctx['username'].lower()).first()
+        if 'username' in ctx
+        else None,
+    },
+)
 
 
 @event.listens_for(User, "before_update")

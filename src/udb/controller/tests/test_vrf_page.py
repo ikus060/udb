@@ -22,7 +22,7 @@ from udb.core.model import Vrf
 from .test_common_page import CommonTest
 
 
-class VrfTest(WebCase, CommonTest):
+class VrfPageTest(WebCase, CommonTest):
 
     base_url = 'vrf'
 
@@ -41,4 +41,6 @@ class VrfTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
         # Then error is repported to the user.
         self.assertStatus(200)
-        self.assertInBody('A record already exists in database with the same value.')
+        self.assertInBody('A Vrf aready exist with the same name.')
+        # Then a URL to duplicate record is provided.
+        self.assertInBody(url_for(obj, 'edit'))

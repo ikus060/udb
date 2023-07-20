@@ -25,7 +25,7 @@ from udb.core.model import DnsRecord, DnsZone, Subnet, SubnetRange, Vrf
 from .test_common_page import CommonTest
 
 
-class DnsRecordTest(WebCase, CommonTest):
+class DnsRecordPageTest(WebCase, CommonTest):
 
     base_url = 'dnsrecord'
 
@@ -220,3 +220,23 @@ class DnsRecordTest(WebCase, CommonTest):
                 ]
             },
         )
+
+    def test_dns_record_multiple_soa(self):
+        # Given an existing SOA record on the DNS Zone
+        record = (
+            DnsRecord(
+                name='example.com',
+                value='ddns.bfh.info. bfh-linux-sysadmin.lists.bfh.science. 33317735 600 60 36000 3600',
+                type='SOA',
+            )
+            .add()
+            .commit()
+        )
+        # When trying to create a second SOA record for the same hostname
+        data = {'name': 'example.com', 'type': 'SOA', 'value': 'other value'}
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
+        # Then an error is raised
+        self.assertStatus(200)
+        self.assertInBody('An SOA record already exist for this domain.')
+        # Then a link to duplicate record is provided
+        self.assertInBody(url_for(record, 'edit'))

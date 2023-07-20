@@ -57,4 +57,17 @@ class Vrf(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, Sea
         return self.name
 
 
-Index('vrf_name_key', Vrf.name, unique=True)
+Index(
+    'vrf_name_key',
+    Vrf.name,
+    unique=True,
+    sqlite_where=Vrf.status == Vrf.STATUS_ENABLED,
+    postgresql_where=Vrf.status == Vrf.STATUS_ENABLED,
+    info={
+        'description': _('A Vrf aready exist with the same name.'),
+        'field': 'name',
+        'other': lambda ctx: Vrf.query.filter(Vrf.status == Vrf.STATUS_ENABLED, Vrf.name == ctx['name']).first()
+        if 'name' in ctx
+        else None,
+    },
+)
