@@ -272,7 +272,9 @@ class WebCase(BaseClass):
                 driver.get('http://%s:%s/login/' % (self.HOST, self.PORT))
                 driver.add_cookie({"name": "session_id", "value": self.session_id})
             # Configure download folder
-            self._selenium_download_dir = tempfile.mkdtemp(prefix='udb-selenium-download-')
+            download = os.path.join(os.path.expanduser('~'), 'Downloads')
+            os.makedirs(download, exist_ok=True)
+            self._selenium_download_dir = tempfile.mkdtemp(dir=download, prefix='udb-selenium-download-')
             driver.execute_cdp_cmd(
                 'Page.setDownloadBehavior', {'behavior': 'allow', 'downloadPath': self._selenium_download_dir}
             )

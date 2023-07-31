@@ -245,7 +245,7 @@ class SubnetPageTest(WebCase, CommonTest):
         # Then error is repported to the user.
         self.assertStatus(200)
         self.assertInBody('This IP Range is already defined in another subnet.')
-        # Then a link to the duplicate subnet ir provided
+        # Then a link to the duplicate subnet is provided
         self.assertInBody(url_for(obj, 'edit'))
 
     def test_new_with_deleted_dnszone(self):

@@ -20,7 +20,7 @@ import cherrypy
 from sqlalchemy import and_, literal, select, union_all
 from wtforms.fields import BooleanField
 
-from udb.controller import flash, handle_exception, url_for
+from udb.controller import flash, show_exception, url_for
 from udb.core.model import Follower, followable_model_name, followable_models
 from udb.tools.i18n import gettext_lazy as _
 
@@ -103,7 +103,8 @@ class NotificationsPage:
                 obj.add()
                 obj.commit()
             except Exception as e:
-                handle_exception(e, form)
+                cherrypy.tools.db.get_session().rollback()
+                show_exception(e, form)
             else:
                 flash(_('Notification settings updated successfully.'))
                 raise cherrypy.HTTPRedirect(url_for('notifications', ''))

@@ -174,9 +174,7 @@ Index(
     info={
         'description': _('This username already exists.'),
         'field': 'username',
-        'other': lambda ctx: User.query.filter(func.lower(User.username) == ctx['username'].lower()).first()
-        if 'username' in ctx
-        else None,
+        'related': lambda obj: User.query.filter(func.lower(User.username) == func.lower(obj.username)).first(),
     },
 )
 

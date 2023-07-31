@@ -110,6 +110,7 @@ class SubnetRange(Base):
 
     @validates('range')
     def validate_range(self, key, value):
+        # Validated at application level to avoid Postgresql raising exception
         if not value:
             return None
         try:
@@ -163,11 +164,13 @@ subnetrange_index = Index(
     info={
         'description': _('This IP Range is already defined in another subnet.'),
         'field': 'subnet_ranges',
-        'other': lambda ctx: Subnet.query.join(Subnet.subnet_ranges)
-        .filter(SubnetRange.vrf_id == ctx['vrf_id'], SubnetRange.range == ctx['range'])
-        .first()
-        if 'vrf_id' in ctx and 'range' in ctx
-        else None,
+        'related': lambda obj: Subnet.query.join(Subnet.subnet_ranges)
+        .filter(
+            SubnetRange.vrf_id == obj.vrf_id,
+            SubnetRange.range.in_([r.range for r in obj.subnet_ranges]),
+            Subnet.id != obj.id,
+        )
+        .first(),
     },
 )
 

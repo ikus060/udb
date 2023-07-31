@@ -53,8 +53,6 @@ def _deploy(deployment_id, base_url):
     deployment.state = Deployment.STATE_RUNNING
     deployment.commit()
 
-    # TODO Execute script a nobody Maybe using a Jail ?
-
     # Create a temporary folder
     working_dir = tempfile.mkdtemp(prefix='udb-deployment-%s-' % deployment.id)
 
@@ -209,12 +207,12 @@ class Deployment(CommonMixin, JsonMixin, Base):
                     SubnetRange.dhcp.is_(True),
                     Subnet.status == Subnet.STATUS_ENABLED,
                     SubnetRange.version == func.family(DhcpRecord.ip),
-                    SubnetRange.dhcp_start_ip <= func.inet(DhcpRecord.ip),
-                    SubnetRange.dhcp_end_ip >= func.inet(DhcpRecord.ip),
+                    SubnetRange.dhcp_start_ip <= DhcpRecord.ip,
+                    SubnetRange.dhcp_end_ip >= DhcpRecord.ip,
                 )
                 .scalar_subquery()
             )
-            # Identiy the hostname for each dhcp record.
+            # Identify the hostname for each dhcp record.
             hostname_query = (
                 select(DnsRecord.value)
                 .filter(DnsRecord.type == 'PTR', DnsRecord.generated_ip == DhcpRecord.ip)

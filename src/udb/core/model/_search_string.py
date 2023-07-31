@@ -91,11 +91,3 @@ class SearchableMixing(object):
     @classmethod
     def _search_string(cls):
         raise NotImplementedError()
-
-
-# TODO Will need to create GIN trigram index on search_string
-# CREATE INDEX search_string_trgm_idx ON changeme USING GIN (search_string gin_trgm_ops);
-# https://www.postgresql.org/docs/9.5/pgtrgm.html
-
-# TODO Make REGEXP_REPLACE working in SQLite ?
-# Obviously index wont work.

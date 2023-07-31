@@ -19,7 +19,6 @@
 import cherrypy
 from sqlalchemy import Column, Index
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import validates
 from sqlalchemy.types import String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
@@ -42,13 +41,6 @@ class Vrf(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, Sea
     def _search_string(cls):
         return cls.name + " " + cls.notes
 
-    @validates('name')
-    def _validate_name(self, key, value):
-        value = value.strip()
-        if not value:
-            raise ValueError('name', _('VRF name cannot be empty.'))
-        return value
-
     def __str__(self):
         return self.name
 
@@ -66,8 +58,6 @@ Index(
     info={
         'description': _('A Vrf aready exist with the same name.'),
         'field': 'name',
-        'other': lambda ctx: Vrf.query.filter(Vrf.status == Vrf.STATUS_ENABLED, Vrf.name == ctx['name']).first()
-        if 'name' in ctx
-        else None,
+        'related': lambda obj: Vrf.query.filter(Vrf.status == Vrf.STATUS_ENABLED, Vrf.name == obj.name).first(),
     },
 )

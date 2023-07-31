@@ -84,7 +84,7 @@ class RuleForm(CherryForm):
             "rows": 10,
         },
         description=_(
-            'The SQL statement should return a row for each invalid record. The columns should be labeled: id, name, [other_id, other_model_name, other_name].'
+            'The SQL statement should return a row for each invalid record. The columns should be labeled: id, name.'
         ),
     )
 
@@ -147,12 +147,15 @@ class RulePage(CommonPage):
         """
         return {
             'data': [
-                list(row)
-                + [
+                (
+                    row.description,
+                    row.id,
+                    row.severity,
+                    row.model_name,
+                    row.name,
                     url_for(row.model_name, row.id, 'edit'),
-                    row.other_id and url_for(row.other_model_name, row.other_id, 'edit'),
-                ]
-                for row in Rule.run_linter()
+                )
+                for row in Rule.verify()
             ]
         }
 

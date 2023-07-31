@@ -41,7 +41,7 @@ class DnsZonePageTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'name': 'invalid new name'})
         # Then edit page is displayed with an error message
         self.assertStatus(200)
-        self.assertInBody('expected a valid FQDN')
+        self.assertInBody('must be a valid domain name')
 
     def test_edit_with_subnet(self):
         # Given a database with a record

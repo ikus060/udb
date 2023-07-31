@@ -58,8 +58,6 @@ class RuleTest(WebCase, CommonTest):
 
 
 class BuiltinRuleTest(WebCase):
-    default_config = {'debug': True}
-
     def test_edit_builtin_fail(self):
         # Given a builtin rule
         rule = Rule.query.filter(Rule.builtin.is_(True)).first()

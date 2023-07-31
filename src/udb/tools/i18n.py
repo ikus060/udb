@@ -219,7 +219,7 @@ def list_available_locales():
         return
     for lang in os.listdir(mo_dir):
         trans = _search_translation(lang, mo_dir, domain)
-        if type(trans) != NullTranslations:
+        if not isinstance(trans, NullTranslations):
             yield trans.locale
 
 

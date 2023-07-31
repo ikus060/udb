@@ -18,7 +18,7 @@
 from unittest import mock
 
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, Ip, Rule, Subnet, SubnetRange, Vrf
+from udb.core.model import DhcpRecord, Ip, Rule, RuleError, Subnet, SubnetRange, Vrf
 
 
 class DhcpRecordTest(WebCase):
@@ -135,11 +135,12 @@ class DhcpRecordTest(WebCase):
             vrf=vrf,
         ).add().commit()
         self.assertEqual(0, DhcpRecord.query.count())
-        # When adding a DnsRecord with invalid data
-        # Then an exception is raised
-        with self.assertRaises(ValueError) as cm:
-            DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
-        self.assertEqual(cm.exception.args, ('ip', mock.ANY))
+        # When adding a DnsRecord with invalid ip address
+        record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+        # Then an exception is raised by Soft Rule
+        with self.assertRaises(RuleError) as cm:
+            Rule.verify(record, errors='raise')
+        self.assertEqual(cm.exception.field, 'ip')
 
     def test_add_with_invalid_mac(self):
         # Given an empty database
@@ -159,5 +160,5 @@ class DhcpRecordTest(WebCase):
         # Then a record is created
         obj = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
         # Then a soft rule is raised
-        errors = Rule.run_linter(obj)
+        errors = Rule.verify(obj)
         self.assertEqual(1, len(errors))

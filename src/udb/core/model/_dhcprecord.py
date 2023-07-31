@@ -19,7 +19,7 @@ import ipaddress
 
 import cherrypy
 import validators
-from sqlalchemy import Column, ForeignKey, Index, event, func, literal, select
+from sqlalchemy import Column, ForeignKey, Index, event, func, select
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import aliased, relationship, validates
 from sqlalchemy.types import String
@@ -32,14 +32,12 @@ from ._common import CommonMixin
 from ._follower import FollowerMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
-from ._rule import rule
+from ._rule import Rule, RuleConstraint
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._subnet import Subnet, SubnetRange
 
 Base = cherrypy.tools.db.get_base()
-
-Session = cherrypy.tools.db.get_session()
 
 
 class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
@@ -57,6 +55,7 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
 
     @validates('ip')
     def validate_ip(self, key, value):
+        # Validated at application level to avoid Postgresql raising exception
         try:
             return str(ipaddress.ip_address(value))
         except ValueError:
@@ -64,6 +63,7 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
 
     @validates('mac')
     def validate_mac(self, key, value):
+        # Validated at application level to avoid Postgresql raising exception
         if not validators.mac_address(value):
             raise ValueError('mac', _('expected a valid mac'))
         return value
@@ -79,14 +79,6 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
     def summary(self):
         return self.ip.host() + " (" + self.mac + ")"
 
-    def _validate(self):
-        """
-        Run other validation on all fields.
-        """
-        # IP should be within a Subnet
-        if not self._ip.related_subnets:
-            raise ValueError('ip', _('IP address must be defined within a Subnet'))
-
 
 Index(
     'dhcprecord_mac_key',
@@ -97,11 +89,9 @@ Index(
     info={
         'description': _('A DHCP Reservation already exists for this MAC address.'),
         'field': 'mac',
-        'other': lambda ctx: DhcpRecord.query.filter(
-            DhcpRecord.status == DhcpRecord.STATUS_ENABLED, DhcpRecord.mac == ctx['mac']
-        ).first()
-        if 'mac' in ctx
-        else None,
+        'related': lambda obj: DhcpRecord.query.filter(
+            DhcpRecord.status == DhcpRecord.STATUS_ENABLED, DhcpRecord.mac == obj.mac
+        ).first(),
     },
 )
 
@@ -120,56 +110,75 @@ def dns_reload_mac(self, new_value, old_value, initiator):
         self._mac
 
 
-@event.listens_for(DhcpRecord, "before_update")
-def before_update(mapper, connection, instance):
-    instance._validate()
+RuleConstraint(
+    name="dhcprecord_ip_without_subnet",
+    model=DhcpRecord,
+    severity=Rule.SEVERITY_ENFORCED,
+    statement=select(DhcpRecord.id, DhcpRecord.summary.label('name')).filter(
+        DhcpRecord.status == DhcpRecord.STATUS_ENABLED,
+        ~(
+            select(Subnet.id)
+            .join(Subnet.subnet_ranges)
+            .filter(
+                SubnetRange.version == func.family(DhcpRecord.ip),
+                SubnetRange.start_ip <= DhcpRecord.ip,
+                SubnetRange.end_ip >= DhcpRecord.ip,
+                Subnet.status == Subnet.STATUS_ENABLED,
+            )
+            .exists()
+        ),
+    ),
+    info={
+        'description': _("IP address must be defined within a Subnet."),
+        'field': 'ip',
+    },
+)
 
-
-@event.listens_for(DhcpRecord, "before_insert")
-def before_insert(mapper, connection, instance):
-    instance._validate()
-
-
-@rule(DhcpRecord, _("DHCP Reservation is outside of DHCP range or does not matches a subnet with DHCP enabled."))
-def dhcprecord_invalid_subnet():
-    """
-    Return a query listing all the dhcp record without a valid subnet
-    """
-    return select(DhcpRecord.id.label('id'), DhcpRecord.summary.label('name'),).filter(
+RuleConstraint(
+    name="dhcprecord_invalid_subnet",
+    model=DhcpRecord,
+    statement=select(DhcpRecord.id.label('id'), DhcpRecord.summary.label('name'),).filter(
+        DhcpRecord.status == DhcpRecord.STATUS_ENABLED,
         ~(
             select(Subnet.id)
             .join(Subnet.subnet_ranges)
             .filter(
                 SubnetRange.dhcp.is_(True),
                 SubnetRange.version == func.family(DhcpRecord.ip),
-                SubnetRange.dhcp_start_ip <= func.inet(DhcpRecord.ip),
-                SubnetRange.dhcp_end_ip >= func.inet(DhcpRecord.ip),
+                SubnetRange.dhcp_start_ip <= DhcpRecord.ip,
+                SubnetRange.dhcp_end_ip >= DhcpRecord.ip,
                 Subnet.status == Subnet.STATUS_ENABLED,
-                DhcpRecord.status == DhcpRecord.STATUS_ENABLED,
             )
             .exists()
-        )
-    )
+        ),
+    ),
+    info={
+        'description': _("DHCP Reservation is outside of DHCP range or DHCP is disabled."),
+        'field': 'ip',
+    },
+)
 
 
-@rule(DhcpRecord, _('Multiple DHCP Reservation for the same IP address.'))
-def dhcprecord_unique_ip():
-    """
-    Return a list of record with identical IP.
-    """
-    a = aliased(DhcpRecord)
-    return (
-        select(
-            DhcpRecord.id.label('id'),
-            DhcpRecord.summary.label('name'),
-            a.id.label('other_id'),
-            literal(DhcpRecord.__tablename__).label('other_model_name'),
-            a.summary.label('other_name'),
+RuleConstraint(
+    name="dhcprecord_unique_ip",
+    model=DhcpRecord,
+    statement=(
+        lambda: (a := aliased(DhcpRecord))
+        and (
+            select(
+                DhcpRecord.id.label('id'),
+                DhcpRecord.summary.label('name'),
+            )
+            .join(a, DhcpRecord.ip == a.ip)
+            .filter(
+                DhcpRecord.id != a.id,
+                DhcpRecord.status == DhcpRecord.STATUS_ENABLED,
+                a.status == DhcpRecord.STATUS_ENABLED,
+            )
         )
-        .join(a, DhcpRecord.ip == a.ip)
-        .filter(
-            DhcpRecord.id != a.id,
-            DhcpRecord.status == DhcpRecord.STATUS_ENABLED,
-            a.status == DhcpRecord.STATUS_ENABLED,
-        )
-    )
+    ),
+    info={
+        'description': _('Multiple DHCP Reservation for the same IP address.'),
+        'field': 'ip',
+    },
+)

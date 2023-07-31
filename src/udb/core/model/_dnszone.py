@@ -15,11 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
+
 import cherrypy
-import validators
-from sqlalchemy import Column, ForeignKey, Index, Table, and_, func, select
+from sqlalchemy import CheckConstraint, Column, ForeignKey, Index, Table, and_, func, select
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import column_property, declared_attr, relationship, validates
+from sqlalchemy.orm import column_property, declared_attr, relationship
 from sqlalchemy.types import String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
@@ -32,6 +33,15 @@ from ._message import MessageMixin
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._subnet import Subnet
+
+# letters, digits, hyphen (-), underscore (_)
+NAME_PATTERN = re.compile(
+    r'^(?:[a-zA-Z0-9_]'  # First character of the domain
+    r'(?:[a-zA-Z0-9\-_]{0,61}[A-Za-z0-9_])?\.)'  # Sub domain + hostname
+    r'+[a-zA-Z0-9][a-zA-Z0-9\-_]{0,61}'  # First 61 characters of the gTLD
+    r'[A-Za-z]$'  # Last character of the gTLD
+)
+
 
 Base = cherrypy.tools.db.get_base()
 
@@ -74,12 +84,6 @@ class DnsZone(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin,
     def _search_string(cls):
         return cls.name + " " + cls.notes
 
-    @validates('name')
-    def validate_name(self, key, value):
-        if not validators.domain(value):
-            raise ValueError('name', _('expected a valid FQDN'))
-        return value
-
     def __str__(self):
         return self.name
 
@@ -98,10 +102,18 @@ Index(
     info={
         'description': _('A DNS Zone aready exist for this domain.'),
         'field': 'name',
-        'other': lambda ctx: DnsZone.query.filter(
-            DnsZone.status == DnsZone.STATUS_ENABLED, func.lower(DnsZone.name) == ctx['name'].lower()
-        ).first()
-        if 'name' in ctx
-        else None,
+        'related': lambda obj: DnsZone.query.filter(
+            DnsZone.status == DnsZone.STATUS_ENABLED, func.lower(DnsZone.name) == func.lower(obj.name)
+        ).first(),
+    },
+)
+
+
+dnsrecord_value_domain_name = CheckConstraint(
+    DnsZone.name.regexp_match(NAME_PATTERN.pattern),
+    name="dnszone_domain_name",
+    info={
+        'description': _('must be a valid domain name'),
+        'field': 'name',
     },
 )

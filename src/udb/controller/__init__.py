@@ -25,6 +25,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.inspection import inspect
 
 import udb
+from udb.core.model import Rule, RuleError
 from udb.tools.i18n import get_translation
 from udb.tools.i18n import gettext as _
 
@@ -141,84 +142,113 @@ def template_processor(request):
     return values
 
 
-def handle_exception(e, form=None):
-    cherrypy.tools.db.get_session().rollback()
+def show_exception(e, form=None, obj=None):
     if isinstance(e, ValueError):
         # ValueError are raised by SQLalchemy custom validation
         # For value error, repport the invalid value either as flash message or form error.
-        if form and len(e.args) == 2 and getattr(form, e.args[0], None):
-            getattr(form, e.args[0]).errors.append(e.args[1])
-        elif len(e.args) == 2:
-            flash(_('Invalid value: %s') % e.args[1], level='error')
+        if len(e.args) == 2:
+            _show_error(description=_('Invalid value: %s') % e.args[1], field=e.args[0], form=form)
         else:
-            flash(_('Invalid value: %s') % e, level='error')
+            _show_error(description=_('Invalid value: %s') % e, form=form)
     elif isinstance(e, IntegrityError):
         # Integrity error are raised by Database
-        _handle_integrity_error(e, form)
+        _show_integrity_error(e, form=form, obj=obj)
+    elif isinstance(e, RuleError):
+        _show_rule_error(e, form=form, obj=obj)
     else:
-        flash(_('Database error: %s') % e, level='error')
         logger.warning('database error', exc_info=1)
+        _show_error(description=_('Database error: %s') % e, form=form)
 
 
-def _handle_integrity_error(e, form=None):
+def _show_integrity_error(e, form=None, obj=None):
     """
     This implementation lookup the metadata to find the corresponding
     constraints and retrieve additional information to better help the end-user.
     """
     error = str(e.orig)
-    ctx = _get_context(e)
 
-    if 'unique' in error.lower():
-        # For Unique constrain violation, we try to identify the field causing the problem to properly
-        # attach the error to the fields. If the fields cannot be found using the constrain
-        # name, we simply show a flash error message.
-        description = _('A record already exists in database with the same value.')
-        field = None
-        other = None
+    # For Unique constrain violation, we try to identify the field causing the problem to properly
+    # attach the error to the fields. If the fields cannot be found using the constrain
+    # name, we simply show a flash error message.
+    description = _('Database integrity error: %s' % e)
+    field = None
+    related = None
 
-        # Extract the constraint name for Postgresql and SQLite
-        # Postgresql: duplicate key value violates unique constraint "subnet_name_key"\nDETAIL:  Key (name)=() already exists.\n
-        # SQLite: UNIQUE constrain: subnet.name
-        # SQLite: UNIQUE constraint failed: index "dnszone_name_index"
-        constraint_match = (
-            re.search(r'unique constraint "([^"]+)"', error)
-            or re.search(r': (.+\..+)', error)
-            or re.search(r": index '([^']+)'", error)
-        )
-        if constraint_match:
-            constraint = _find_constraint(constraint_match[1])
-            if constraint:
-                description = constraint.info.get('description', description)
-                field = constraint.info.get('field', None)
-                find_other = constraint.info.get('other', None)
-                if find_other:
-                    try:
-                        other = find_other(ctx)
-                    except Exception:
-                        pass
-        else:
-            field_match = re.search(r'Key \((.+?)\)', error) or re.search(r'.+\.(.+)', error)
-            if field_match:
-                field = field_match[1]
+    # Extract the constraint name for Postgresql and SQLite
+    # Postgresql: duplicate key value violates unique constraint "subnet_name_key"\nDETAIL:  Key (name)=() already exists.\n
+    # Postgresql: violates check constraint "dnsrecord_value_domain_name"
+    # SQLite: UNIQUE constrain: subnet.name
+    # SQLite: UNIQUE constraint failed: index 'dnszone_name_index'
+    # SQLite: CHECK constraint failed: dnsrecord_value_domain_name
+    constraint_match = (
+        re.search(r'unique constraint "([^"]+)"', error)
+        or re.search(r'check constraint "([^"]+)"', error)
+        or re.search(r': (.+\..+)', error)
+        or re.search(r"UNIQUE constraint failed: index '([^']+)'", error)
+        or re.search(r"CHECK constraint failed: (.+)", error)
+    )
+    if constraint_match:
+        constraint = _find_constraint(constraint_match[1])
+        if constraint:
+            description = constraint.info.get('description', description)
+            field = constraint.info.get('field', None)
+            related = _fetch_related(constraint.info.get('related', None), obj)
+    else:
+        field_match = re.search(r'Key \((.+?)\)', error) or re.search(r'.+\.(.+)', error)
+        if field_match:
+            field = field_match[1]
+
+    _show_error(description=description, field=field, related=related, form=form)
+
+
+def _show_rule_error(e, form=None, obj=None):
+    """
+    Show Rule error.
+    """
+    # When severity if "enforced", we must attach the message to the field directly so it get displayed as invalid-feedback.
+    # Otherwise, we simply use flash message.
+    field = e.field if e.severity == Rule.SEVERITY_ENFORCED else None
+    level = 'error' if e.severity == Rule.SEVERITY_ENFORCED else 'warning'
+    # If "other" is provided, generate a link accordingly.
+    related = _fetch_related(e.related, obj)
+    _show_error(
+        description=e.description,
+        field=field,
+        level=level,
+        related=related,
+        form=form,
+    )
+
+
+def _show_error(description, field=None, related=None, level='error', form=None):
+    """
+    description: error description
+    field: optional field name
+    related: related object
+    form: optional form to attach the error.
+    """
 
     # From data collected, create an error message for the user.
-    if other:
+    if related:
         message = Markup('%s <a href="%s">%s</a>') % (
             description,
-            url_for(other, 'edit'),
-            other.summary,
+            url_for(related, 'edit'),
+            # From time to time, a record may have no summary. So provide a default value for the label.
+            related.summary or _('Show related record'),
         )
     else:
         message = description
 
     if form and field in form:
         # Add message to form if field exists.
-        getattr(form, field).errors.append(message)
+        form_field = getattr(form, field, None)
+        form_field.errors = list(form_field.errors)
+        form_field.errors.append(message)
     elif field:
         # Otherwise, repport error as flash.
-        flash(message + _(' Field(s): ') + field, level='error')
+        flash(message + _(' Field(s): ') + field, level=level)
     else:
-        flash(message + _(' Index: ') + str(e.orig), level='error')
+        flash(message, level=level)
 
 
 def _find_constraint(name):
@@ -241,6 +271,20 @@ def _find_constraint(name):
         _find_constraint._cache = cache
 
     return _find_constraint._cache.get(name, None)
+
+
+def _fetch_related(func, obj):
+    """
+    Safely fetch related record.
+    """
+    if not func or not obj:
+        return None
+    assert hasattr(func, '__call__')
+    try:
+        return func(obj)
+    except Exception:
+        logger.warning('error retreiving related record', exc_info=1)
+        return None
 
 
 def _get_context(e):

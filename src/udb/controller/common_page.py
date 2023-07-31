@@ -18,14 +18,13 @@ import logging
 from collections import namedtuple
 
 import cherrypy
-from markupsafe import Markup
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.inspection import inspect
 from wtforms.fields import HiddenField, TextAreaField
 from wtforms.validators import InputRequired, Length
 
-from udb.controller import flash, handle_exception, url_for, verify_perm
-from udb.core.model import Message, Rule, User
+from udb.controller import flash, show_exception, url_for, verify_perm
+from udb.core.model import Message, Rule, RuleError, User
 from udb.tools.i18n import gettext_lazy as _
 
 from .form import CherryForm
@@ -116,7 +115,7 @@ class CommonPage(object):
         return self.model.query.filter_by(**{self.primary_key: key})
 
     def _to_list(self, data):
-        if type(data) != list:
+        if not isinstance(data, list):
             data = list(data)
         data.append(url_for(self.model, data[0], 'edit', relative='server'))
         return data
@@ -190,17 +189,15 @@ class CommonPage(object):
                 form.populate_obj(obj)
                 obj.add().flush()
                 # Check enforced rules
-                errors = Rule.run_linter(obj)
-                for error in errors:
-                    if error.severity == Rule.SEVERITY_ENFORCED:
-                        raise ValueError(error.description)
+                Rule.verify(obj, errors='raise', severity=Rule.SEVERITY_ENFORCED)
                 obj.commit()
             except Exception as e:
-                handle_exception(e, form)
+                cherrypy.tools.db.get_session().rollback()
+                show_exception(e, form=form, obj=obj)
             else:
                 flash(_('Record created successfully.'))
                 # Redirect user to same record on soft-rule
-                if errors:
+                for unused in Rule.verify(obj):
                     raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
                 # Redirect user to previous page or model page.
                 raise cherrypy.HTTPRedirect(form.referer.data or url_for(self.model))
@@ -242,29 +239,20 @@ class CommonPage(object):
                     obj.status = status
                 obj.add().flush()
                 # Check enforced rules and raise error if required to prevent record from being saved.
-                errors = Rule.run_linter(obj)
-                for error in errors:
-                    if error.severity == Rule.SEVERITY_ENFORCED:
-                        raise ValueError(error.description)
+                Rule.verify(obj, errors='raise', severity=Rule.SEVERITY_ENFORCED)
                 obj.commit()
             except Exception as e:
-                handle_exception(e, form)
+                cherrypy.tools.db.get_session().rollback()
+                show_exception(e, form=form, obj=obj)
             else:
                 flash(_('Record updated successfully'))
-                if errors or not form.referer.data:
+                for unused in Rule.verify(obj):
                     raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
-                raise cherrypy.HTTPRedirect(form.referer.data)
+                raise cherrypy.HTTPRedirect(form.referer.data or url_for(obj, 'edit'))
         else:
             # Run Soft Rules
-            errors = Rule.run_linter(obj)
-            for error in errors:
-                msg = (
-                    error.description
-                    if not error.other_id
-                    else Markup('%s <a href="%s">%s</a>.')
-                    % (error.description, url_for(error.other_model_name, error.other_id, 'edit'), error.other_name)
-                )
-                flash(msg, level='warning')
+            for row in Rule.verify(obj):
+                show_exception(RuleError(row), form=form, obj=obj)
 
         # Return object form
         return {

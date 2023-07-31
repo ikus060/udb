@@ -21,7 +21,7 @@ from udb.controller.tests import WebCase
 from udb.core.model import DnsZone, Message
 
 
-class TestApp(WebCase):
+class TestController(WebCase):
     def test_url_for_with_relative(self):
         self.assertEqual(
             url_for(DnsZone, relative=True),
