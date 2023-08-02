@@ -138,7 +138,7 @@ class SQLA(cherrypy.Tool):
 
         # Create tables
         base.metadata.create_all(self._engine)
-        self.get_session().commit()
+        self.get_session().remove()
 
     def drop_all(self):
         # Release opened sessions.
@@ -146,7 +146,6 @@ class SQLA(cherrypy.Tool):
         # Drop all
         base = self.get_base()
         base.metadata.drop_all(bind=self._engine)
-        self.get_session().commit()
 
     def get_base(self):
         """

@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from collections import namedtuple
 
 import cherrypy
 from sqlalchemy import Boolean, Column, SmallInteger, String, event, text
@@ -29,14 +28,47 @@ from ._follower import FollowerMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
 from ._status import StatusMixing
+from ._update import column_add
 
 logger = logging.getLogger(__name__)
 
 Base = cherrypy.tools.db.get_base()
 
-RuleDefinition = namedtuple('RuleDefinition', 'name,model_name,statement,description')
 
-_rules = []
+class RuleError(Exception):
+    def __init__(self, row):
+        self.id = row.id
+        self.name = row.name
+        self.rule_name = row.rule_name
+        self.description = row.description
+        self.severity = row.severity
+        self.field = row.field
+        # Get callback function for built-in rule.
+        rule_constraint = RuleConstraint._inventory.get(row.rule_name, None)
+        if rule_constraint:
+            self.related = rule_constraint.info.get('related', None)
+        else:
+            self.related = None
+
+
+class RuleConstraint:
+    """
+    Create a builtin rule constraint.
+    """
+
+    _inventory = {}
+
+    def __init__(self, name, model, statement, severity=None, info=None):
+        assert name
+        self.name = name
+        model_name = getattr(model, '__tablename__', model)
+        assert model_name and isinstance(model_name, str), 'rule required a valid model name'
+        self.model_name = model_name
+        self.statement = statement
+        self.severity = severity or Rule.SEVERITY_SOFT
+        self.info = info or {}
+        # Register rule
+        RuleConstraint._inventory[self.name] = self
 
 
 class Rule(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, StatusMixing, Base):
@@ -49,46 +81,59 @@ class Rule(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, StatusMixing, Ba
     description = Column(String, nullable=False)
     builtin = Column(Boolean, nullable=False, default=False)
     severity = Column(SmallInteger, nullable=False, default=SEVERITY_SOFT, server_default=str(SEVERITY_SOFT))
+    field = Column(String, nullable=True)
 
     @hybrid_property
     def summary(self):
         return self.name
 
     @classmethod
-    def run_linter(cls, obj=None):
+    def verify(cls, obj=None, errors=None, severity=None):
         """
-        Run linter rule for all model.
-
+        Run linter rule.
         When `obj` is defined, return rule related to this specific model
+
+        Handling error
+
+        When `errors` is set to "raise", will raise an exception on first error.
+
+        When `severity` is defined filter rule base of the given severity.
         """
-        assert obj is None or hasattr(obj.__class__, '__tablename__'), 'obj must be None or a model'
-        # Query list of rules
+        assert obj is None or (hasattr(obj.__class__, '__tablename__') and obj.id), 'obj must be None or a model'
+        assert errors is None or errors == 'raise'
+        assert severity in [None, Rule.SEVERITY_SOFT, Rule.SEVERITY_ENFORCED]
+
+        # Query list of rules matching our object type and severity to limit the scope of analysis.
         query_rules = Rule.query.filter(Rule.status == Rule.STATUS_ENABLED)
+        if severity:
+            query_rules = query_rules.filter(Rule.severity == severity)
         if obj:
             model_name = obj.__class__.__tablename__
             query_rules = query_rules.filter(Rule.model_name == model_name)
 
-        # Combine each rules into a single request using UNION ALL
-        sql = ""
-        for rule in query_rules.all():
-            if sql:
-                sql += ' UNION ALL '
-            sql += rule._wrap_statement(obj)
+        # Combine matching rules with UNION ALL to return list of errors.
+        matching_rules = query_rules.all()
+        sql = ' UNION ALL '.join(rule._wrap_statement(obj) for rule in matching_rules)
+        # If the SQL is empty, we don't have anything to execute.
         if not sql:
             return []
+
+        # On error do something for each row.
+        if errors == 'raise':
+            row = Rule.session.execute(text(sql)).first()
+            if row:
+                raise RuleError(row)
         return Rule.session.execute(text(sql)).all()
 
     def _wrap_statement(self, obj=None, new_statement=None):
         name = self.name.replace("'", "''")
         description = (self.description or '').replace("'", "''")
+        field = (self.field or '').replace("'", "''")
         severity = int(self.severity or Rule.SEVERITY_SOFT)
         model_name = self.model_name
         statement = new_statement or self.statement
-        # Support 2 columns (id, summary) and 5 columns (id, name, other_id, other_model_name, other_name)
-        if 'as other_id' not in statement.lower():
-            sql = f"SELECT '{name}' as rule_name, '{description}' as description, {severity} as severity, id, '{model_name}' as model_name, name, 0 as other_id, NULL as other_model_name, NULL as other_name FROM ({statement}) as r{self.id}"
-        else:
-            sql = f"SELECT '{name}' as rule_name, '{description}' as description, {severity} as severity, id, '{model_name}' as model_name, name, other_id, other_model_name, other_name FROM ({statement}) as r{self.id}"
+        # Support 2 columns (id, summary)
+        sql = f"SELECT '{name}' as rule_name, '{description}' as description, id, '{model_name}' as model_name, name, '{field}' as field, {severity} as severity FROM ({statement}) as r{self.id}"
         # Add filter if an object is specified.
         if obj:
             sql += f" WHERE id = {obj.id}"
@@ -114,15 +159,12 @@ class Rule(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, StatusMixing, Ba
             expected_fields = [
                 'id',
                 'name',
-                'other_id',
-                'other_model_name',
-                'other_name',
             ]
-            if fields != expected_fields[0:2] and fields != expected_fields:
+            if fields != expected_fields:
                 raise ValueError(
                     'statement',
                     _(
-                        "your statement returned %s column(s) label as %s, but it's expected to return 2 or 5 columns labeled as: %s"
+                        "your statement returned %s column(s) label as %s, but it's expected to return 2 columns labeled as: %s"
                     )
                     % (len(fields), ', '.join(fields), ', '.join(expected_fields)),
                 )
@@ -139,71 +181,48 @@ class Rule(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, StatusMixing, Ba
 
 @event.listens_for(Rule, "before_update")
 def before_update(mapper, connection, instance):
+    """
+    Validate SQL Statement
+    """
     instance._validate()
 
 
 @event.listens_for(Rule, "before_insert")
 def before_insert(mapper, connection, instance):
+    """
+    Validate SQL Statement
+    """
     instance._validate()
 
 
-def rule(model, description):
-    """
-    Decorator to register linter rule.
-
-    @rule('dnsrecord', 'human description')
-    def name_of_rule():
-        return select()...
-
-    The query should return 3 columns or 6 columns:
-
-    * id
-    * name
-    * other_id (optional)
-    * other_model_name (optional)
-    * other_name (optional)
-
-    """
-
-    def decorate(func):
-        # Get rule name
-        name = func.__name__
-        assert name, 'rule require a valid name'
-        # Get rule model_name
-        model_name = getattr(model, '__tablename__', model)
-        assert model_name and isinstance(model_name, str), 'rule required a valid model name'
-        # Register the rule
-        _rules.append(RuleDefinition(name, model_name, func, str(description)))
-        return func
-
-    return decorate
-
-
 @event.listens_for(Base.metadata, 'after_create')
-def create_update_rule(target, connection, **kw):
+def create_update_rule(target, conn, **kw):
+    """
+    Update builtin rule on application start.
+    """
+    # Create new field "field"
+    column_add(conn, Rule.field)
 
-    # SQLAlchmey 1.4 Commit current transaction and open a new one.
-    if getattr(connection, '_transaction', None):
-        connection._transaction.commit()
-
+    # To allow usage of ORM session within DDL scope, we need to manually assign the connection to our current session.
+    Rule.session.bind = conn
     # For each soft rule register, make sure to create it in database
-    for rule in _rules:
-        obj = Rule.query.filter(Rule.name == rule[0]).first()
+    for rule in RuleConstraint._inventory.values():
+        obj = Rule.query.filter(Rule.name == rule.name).first()
         if not obj:
             obj = Rule(name=rule.name)
         try:
-            obj.description = rule.description
+            # Generate SQL
+            statement = rule.statement
+            if hasattr(statement, '__call__'):
+                statement = statement()
+            sql = str(statement.compile(conn.engine, compile_kwargs={"literal_binds": True}))
+            # Update database
+            obj.description = str(rule.info.get('description', ''))
+            obj.severity = rule.severity
+            obj.field = str(rule.info.get('field', None))
             obj.model_name = rule.model_name
-            obj.statement = str(rule.statement().compile(connection.engine, compile_kwargs={"literal_binds": True}))
+            obj.statement = sql
             obj.builtin = True
-            obj.add()
-            obj.flush()
+            obj.add().flush()
         except Exception:
             logger.exception('fail to load rule in database')
-
-    # Delete obsolete built-in rule
-    Rule.query.filter(Rule.name.in_(['dns_ptr_record_mismatch'])).delete()
-
-    # SQLAlchmey 1.4 Commit current transaction and open a new one.
-    if getattr(connection, '_transaction', None):
-        connection._transaction.commit()

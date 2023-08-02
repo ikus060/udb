@@ -37,9 +37,11 @@ class DnsRecordPageTest(WebCase, CommonTest):
 
     def setUp(self):
         super().setUp()
-        vrf = Vrf(name='default').add()
-        subnet = Subnet(subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('2001:db8:85a3::/64')], vrf=vrf).add()
-        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        self.vrf = Vrf(name='default').add()
+        self.subnet = Subnet(
+            subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('2001:db8:85a3::/64')], vrf=self.vrf
+        ).add()
+        self.zone = DnsZone(name='example.com', subnets=[self.subnet]).add().commit()
 
     def test_edit_invalid(self):
         # Given a database with a record
@@ -124,7 +126,8 @@ class DnsRecordPageTest(WebCase, CommonTest):
         # When creating a new DNS Record with invalid data
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
         # Then error message is displayed to the user attach to the right field !
-        self.assertInBody('FQDN must be defined within a valid DNS Zone.')
+        self.assertStatus(200)
+        self.assertInBody('Hostname must be defined within a valid DNS Zone.')
         # Then no records get created
         self.assertEqual(0, DnsRecord.query.count())
 
@@ -171,6 +174,9 @@ class DnsRecordPageTest(WebCase, CommonTest):
         self.assertStatus(200)
         # Then a warning is displayed.
         self.assertInBody('Alias for the canonical name (CNAME) should not be defined on a DNS Zone.')
+        # Then a list to conflicting DNS Zone is provided.
+        zone = DnsZone.query.filter(DnsZone.name == 'example.com').first()
+        self.assertInBody(url_for(zone, 'edit'))
 
     def test_dns_cname_not_unique_rule(self):
         # Given a CNAME and a A record on the same host
@@ -179,13 +185,15 @@ class DnsRecordPageTest(WebCase, CommonTest):
         # When editing CNAME record
         self.getPage(url_for(cname, 'edit'))
         self.assertStatus(200)
-        # Then a warning is displayed.
+        # Then a warning is displayed with link to other record.
         self.assertInBody('You cannot define other record type when an alias for a canonical name (CNAME) is defined.')
+        self.assertInBody(url_for(other, 'edit'))
         # When editing other record
         self.getPage(url_for(other, 'edit'))
         self.assertStatus(200)
-        # Then a warning is displayed.
+        # Then a warning is displayed with a link to cname record.
         self.assertInBody('You cannot define other record type when an alias for a canonical name (CNAME) is defined.')
+        self.assertInBody(url_for(cname, 'edit'))
 
     def test_dns_record_related_json(self):
         # Given two DNS with the same hostname
@@ -240,3 +248,88 @@ class DnsRecordPageTest(WebCase, CommonTest):
         self.assertInBody('An SOA record already exist for this domain.')
         # Then a link to duplicate record is provided
         self.assertInBody(url_for(record, 'edit'))
+
+    def test_dns_record_soa_without_dnszone(self):
+        # Given a DnsZone
+        # When creating a SOA on sub-domain
+        data = {
+            'name': 'foo.example.com',
+            'type': 'SOA',
+            'value': 'ddns.bfh.info. bfh-linux-sysadmin.lists.bfh.science. 33317735 600 60 36000 3600',
+        }
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
+        # Then an error is raised
+        self.assertStatus(200)
+        self.assertInBody('SOA record must be defined on DNS Zone.')
+
+    def test_add_a_record_without_valid_subnet(self):
+        # Given a database with a Subnet and a DnsZone
+        # When adding a DnsRecord
+        data = {
+            'name': 'foo.example.com',
+            'type': 'A',
+            'value': '192.0.2.23',
+        }
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
+        # Then an error is raised
+        self.assertStatus(200)
+        self.assertInBody('IP address must be defined within the DNS Zone.')
+        # Then a link to DNZ Zone is provided
+        self.assertInBody(url_for(self.zone, 'edit'))
+        # Then a list of subnet is provided matching the familly.
+        self.assertInBody('192.168.1.0/24')
+        self.assertNotInBody('2001:db8:85a3::/64')
+
+    def test_add_aaaa_record_without_valid_subnet(self):
+        # Given a database with a Subnet and a DnsZone
+        # When adding a DnsRecord
+        data = {
+            'name': 'foo.example.com',
+            'type': 'AAAA',
+            'value': '2002::1234:abcd:ffff:c0a6:101',
+        }
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
+        # Then an error is raised
+        self.assertStatus(200)
+        self.assertInBody('IP address must be defined within the DNS Zone.')
+        # Then a link to DNZ Zone is provided
+        self.assertInBody(url_for(self.zone, 'edit'))
+        # Then a list of subnet is provided matching the familly.
+        self.assertNotInBody('192.168.1.0/24')
+        self.assertInBody('2001:db8:85a3::/64')
+
+    def test_add_ipv4_ptr_record_without_valid_dnszone(self):
+        # Given a valid DNS Zone
+        # When adding a DnsRecord with invalid DNS Zone
+        data = {
+            'name': '255.2.0.192.in-addr.arpa',
+            'type': 'PTR',
+            'value': 'bar.example.com',
+        }
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
+        # Then an error is raised
+        self.assertStatus(200)
+        self.assertInBody('IP address must be defined within the DNS Zone.')
+        # Then a link to DNZ Zone is provided
+        self.assertInBody(url_for(self.zone, 'edit'))
+        # Then a list of subnet is provided matching the familly.
+        self.assertInBody('192.168.1.0/24')
+        self.assertNotInBody('2001:db8:85a3::/64')
+
+    def test_add_ipv6_ptr_record_without_valid_dnszone(self):
+        # Given a valid DNS Zone
+        # When adding a DnsRecord
+        data = {
+            'name': 'b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
+            'type': 'PTR',
+            'value': 'bar.example.com',
+        }
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
+        # Then an error is raised
+        self.assertStatus(200)
+        self.assertInBody('IP address must be defined within the DNS Zone.')
+        # Then a link to DNZ Zone is provided
+        self.assertInBody(url_for(self.zone, 'edit'))
+        # Then a list of subnet is provided matching the familly.
+        self.assertNotInBody('192.168.1.0/24')
+        self.assertInBody('2001:db8:85a3::/64')

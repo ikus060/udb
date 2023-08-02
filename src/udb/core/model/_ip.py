@@ -61,6 +61,7 @@ class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, 
 
     @validates('ip')
     def validate_ip(self, key, value):
+        # Validated at application level to avoid Postgresql raising exception
         try:
             ipaddress.ip_address(value)
         except ValueError:
@@ -73,8 +74,8 @@ class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, 
             Subnet.query.join(Subnet.subnet_ranges)
             .filter(
                 SubnetRange.version == func.family(self.ip),
-                SubnetRange.start_ip <= func.inet(self.ip),
-                SubnetRange.end_ip > func.inet(self.ip),
+                SubnetRange.start_ip <= self.ip,
+                SubnetRange.end_ip > self.ip,
                 Subnet.status != Subnet.STATUS_DELETED,
             )
             .all()

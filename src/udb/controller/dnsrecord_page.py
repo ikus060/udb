@@ -20,7 +20,7 @@ from wtforms.fields import BooleanField, IntegerField, SelectField, StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange
 
-from udb.controller import flash, handle_exception, url_for, verify_perm
+from udb.controller import flash, show_exception, url_for, verify_perm
 from udb.core.model import DnsRecord, User
 from udb.tools.i18n import gettext_lazy as _
 
@@ -126,16 +126,6 @@ class DnsRecordPage(CommonPage):
     def __init__(self):
         super().__init__(DnsRecord, EditDnsRecordForm, NewDnsRecordForm)
 
-    @cherrypy.expose
-    @cherrypy.tools.jinja2(template=['{model_name}/edit.html', 'common/edit.html'])
-    def edit(self, key, **kwargs):
-        """
-        This implementation also check to report soft rule errors.
-        """
-        result = super().edit(key, **kwargs)
-
-        return result
-
     @cherrypy.expose()
     def reverse_record(self, key, **kwargs):
         """
@@ -156,7 +146,8 @@ class DnsRecordPage(CommonPage):
                 else:
                     flash(_("Cannnot create Reverse DNS Record."))
             except Exception as e:
-                handle_exception(e)
+                cherrypy.tools.db.get_session().rollback()
+                show_exception(e)
         # Then redirect user
         if reverse_record:
             raise cherrypy.HTTPRedirect(url_for(reverse_record, 'edit'))

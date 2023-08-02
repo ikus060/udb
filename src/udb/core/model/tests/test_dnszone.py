@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import datetime
-from unittest import mock
 
 import cherrypy
 from sqlalchemy import func
@@ -109,9 +108,9 @@ class DnsZoneTest(WebCase):
         self.assertEqual(0, DnsZone.query.count())
         # When trying to create a new DnsZone with an invalid fqdn
         # Then an excpetion is raised
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(IntegrityError) as cm:
             DnsZone(name='invalid/name').add().commit()
-        self.assertEqual(cm.exception.args, ('name', mock.ANY))
+        self.assertIn('dnszone_domain_name', str(cm.exception))
 
     def test_duplicate_name(self):
         # Given a database with an existing record

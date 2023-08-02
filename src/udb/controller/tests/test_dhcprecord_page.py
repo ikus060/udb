@@ -95,7 +95,7 @@ class DhcpRecordPageTest(WebCase, CommonTest):
         self.assertStatus(200)
         self.assertInBody('Record created successfully.')
         # Then a warning is displayed.
-        self.assertInBody('DHCP Reservation is outside of DHCP range or does not matches a subnet with DHCP enabled.')
+        self.assertInBody('DHCP Reservation is outside of DHCP range or DHCP is disabled.')
 
     def test_dhcprecord_edit_invalid_subnet_rule(self):
         # Given a DHCP reservation on a subnet.
@@ -108,7 +108,7 @@ class DhcpRecordPageTest(WebCase, CommonTest):
         self.getPage(url_for(record, 'edit'))
         self.assertStatus(200)
         # Then a warning is displayed.
-        self.assertInBody('DHCP Reservation is outside of DHCP range or does not matches a subnet with DHCP enabled.')
+        self.assertInBody('DHCP Reservation is outside of DHCP range or DHCP is disabled.')
 
     def test_dhcprecord_unique_ip(self):
         # Given two (2) dhcp reservation with the same IP.

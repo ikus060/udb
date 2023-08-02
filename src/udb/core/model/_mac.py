@@ -51,6 +51,7 @@ class Mac(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing,
 
     @validates('mac')
     def validate_mac(self, key, value):
+        # Validated at application level to avoid Postgresql raising exception
         if not validators.mac_address(value):
             raise ValueError('mac', _('expected a valid mac'))
         return value

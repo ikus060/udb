@@ -26,7 +26,7 @@ import cherrypy
 from wtforms import validators
 from wtforms.fields import FileField, SelectField
 
-from udb.controller import flash, handle_exception
+from udb.controller import flash, show_exception
 from udb.core.model import DnsRecord, DnsZone, Subnet, SubnetRange, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
@@ -164,6 +164,7 @@ class LoadPage:
 
                 flash(_('CSV File imported with success !'))
             except Exception as e:
-                handle_exception(e)
+                cherrypy.tools.db.get_session().rollback()
+                show_exception(e)
 
         return {'form': form}

@@ -4,17 +4,12 @@
   </div>
   <div class="card-body p-0">
     {% set columns = [
-          {'name':'rule_name', 'visible':False},
           {'name':'description', 'title':_('Rule')},
           {'name':'id', 'visible':False},
           {'name':'severity', 'visible':False},
           {'name':'model_name', 'visible':False},
           {'name':'name', 'title':_('Record'), 'render':'summary'},
-          {'name':'other_id', 'visible':False},
-          {'name':'other_model_name', 'visible':False},
-          {'name':'other_name', 'title':_('Other Record'), 'render':'summary', 'render_arg':{'model_name_column':'other_model_name:name', 'url_column':'other_url:name'} },
           {'name':'url', 'visible':False},
-          {'name':'other_url', 'visible':False}
         ] %}
     {{ _table.table(url_for('rule','linter.json') , columns=columns, empty_message=_('No inconsistencies were discovered.'), dom_cfg=_table.dom_without_paging, paging=False, scroll_y='354px') }}
   </div>
