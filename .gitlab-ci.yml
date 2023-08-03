@@ -29,8 +29,6 @@ djlint:
 
 py3:
   <<: *tox
-  before_script:
-    - apt update && apt -y --no-install-recommends install xvfb xauth chromium-driver
   artifacts:
     paths:
       - coverage.xml
