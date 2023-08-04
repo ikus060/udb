@@ -47,8 +47,6 @@ def column_add(conn, column):
     """
     Create column if missing.
     """
-    if column_exists(conn, column):
-        return False
     table_name = column.table.fullname
     # Compile string representation of the column creation.
     conn.execute(text('ALTER TABLE "%s" ADD COLUMN %s' % (table_name, ddl.CreateColumn(column).compile(conn.engine))))

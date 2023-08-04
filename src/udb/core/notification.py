@@ -17,6 +17,7 @@
 
 import re
 import threading
+from collections import namedtuple
 
 import cherrypy
 from cherrypy.process.plugins import SimplePlugin
@@ -25,8 +26,11 @@ from sqlalchemy.event import listen, remove
 
 from udb.core.model import Follower, Message, User
 from udb.tools.i18n import gettext_lazy as _
+from udb.tools.i18n import preferred_lang, preferred_timezone
 
 Session = cherrypy.tools.db.get_session()
+
+Recipient = namedtuple('Recipient', 'email,lang,timezone')
 
 
 class NotifiationPlugin(SimplePlugin):
@@ -125,15 +129,15 @@ class NotifiationPlugin(SimplePlugin):
             ]
         )
         criteria = or_(*criteria)
-        bcc = (
-            User.session.query(User.email)
+        followers = (
+            User.session.query(User.email, User.lang, User.timezone)
             .distinct()
             .join(Follower)
             .filter(criteria)
             .filter(User.email.is_not(None), User.email != '', User.status == User.STATUS_ENABLED)
             .all()
         )
-        bcc = [t[0] for t in bcc]
+        bcc = [Recipient(user.email, user.lang, user.timezone) for user in followers]
 
         # Changes made to user object should always be send to the user it-self.
         if (
@@ -142,14 +146,15 @@ class NotifiationPlugin(SimplePlugin):
             and message.user_object
             and message.user_object.email
         ):
-            bcc += [message.user_object.email]
+            user = message.user_object
+            bcc += [Recipient(user.email, user.lang, user.timezone)]
             # Also send email to previous email value when email get updated.
             if 'email' in message.changes and message.changes['email'][0]:
-                bcc += [message.changes['email'][0]]
+                bcc += [Recipient(message.changes['email'][0], user.lang, user.timezone)]
 
         # Send email to catch-all notification email.
         if self.catch_all_email:
-            bcc += [self.catch_all_email]
+            bcc += [Recipient(self.catch_all_email, None, None)]
         return bcc
 
     def _send_notification(self, messages, recipient):
@@ -160,14 +165,17 @@ class NotifiationPlugin(SimplePlugin):
             'header_name': self.header_name,
             'messages': messages,
         }
-        message_body = template.render(**values)
+        # Renger message using user lang and timezone
+        with preferred_lang(recipient.lang):
+            with preferred_timezone(recipient.timezone):
+                message_body = template.render(**values)
         # Extract title and use it as subject
         m = re.search(r'<title>(.*)</title>', message_body, re.DOTALL)
         if m:
             subject = m.group(1).replace('\n', '').strip()
         else:
             subject = _('Notification')
-        self.bus.publish('send_mail', to=recipient, subject=subject, message=message_body)
+        self.bus.publish('send_mail', to=recipient.email, subject=subject, message=message_body)
 
 
 cherrypy.notification = NotifiationPlugin(cherrypy.engine)

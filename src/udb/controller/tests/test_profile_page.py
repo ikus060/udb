@@ -88,6 +88,34 @@ class ProfileTest(WebCase):
         self.assertInBody('Invalid email address.')
         self.assertNotInBody('User profile updated successfully.')
 
+    def test_update_lang(self):
+        # Given a user
+        obj = User.query.filter_by(username=self.username).first()
+        # When trying to update the lang
+        self.getPage(url_for('profile', ''), method='POST', body={'lang': 'fr'})
+        # Then the lang get updated
+        self.assertStatus(303)
+        self.getPage(url_for('profile', ''))
+        self.assertStatus(200)
+        self.assertInBody('User profile updated successfully.')
+        # Then database get updated
+        obj.expire()
+        self.assertEqual(obj.lang, 'fr')
+
+    def test_update_timezone(self):
+        # Given a user
+        obj = User.query.filter_by(username=self.username).first()
+        # When trying to update the lang
+        self.getPage(url_for('profile', ''), method='POST', body={'timezone': 'Europe/Zurich'})
+        # Then the lang get updated
+        self.assertStatus(303)
+        self.getPage(url_for('profile', ''))
+        self.assertStatus(200)
+        self.assertInBody('User profile updated successfully.')
+        # Then database get updated
+        obj.expire()
+        self.assertEqual(obj.timezone, 'Europe/Zurich')
+
     def test_change_password(self):
         # Given a user
         # When updating the password

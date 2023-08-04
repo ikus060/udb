@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from datetime import datetime, timezone
 from unittest import mock
 
 import cherrypy
@@ -306,6 +307,53 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
             subject='VRF default created by nobody',
             message=mock.ANY,
         )
+
+    def test_preferred_lang(self):
+        # Given a user with preferred language as French.
+        user = User.create(username='myuser', email='follower@test.com', role='user', lang='fr').add()
+        Follower(user=user, model_name='vrf', model_id=0).add().commit()
+        self.wait_for_tasks()
+        self.listener.send_mail.reset_mock()
+        # When sending notification to that user
+        Vrf(name='default').add().commit()
+        self.wait_for_tasks()
+        # Then email is send in french
+        self.listener.send_mail.assert_called_once_with(
+            to='follower@test.com',
+            subject='VRF default créé par personne',
+            message=mock.ANY,
+        )
+
+    @parameterized.expand(
+        [
+            ('UTC', 'Coordinated Universal Time'),
+            ('America/Toronto', 'Eastern Daylight Time'),
+            ('Europe/Zurich', 'Central European Summer Time'),
+        ]
+    )
+    def test_preferred_timezone(self, tzname, code1):
+        # Given a user with preferred language as French.
+        user = User.create(username='myuser', email='follower@test.com', role='user', lang='en', timezone=tzname).add()
+        record = Vrf(name='default').add().flush()
+        record.add_follower(user)
+        record.commit()
+        self.wait_for_tasks()
+        self.listener.send_mail.reset_mock()
+        # When a comment is made on that record
+        date = datetime.utcfromtimestamp(1680111611).replace(tzinfo=timezone.utc)
+        record.add_message(Message(body='This is my comment', date=date))
+        record.add()
+        record.commit()
+        self.wait_for_tasks()
+        # Then email is send
+        self.listener.send_mail.assert_called_once_with(
+            to='follower@test.com',
+            subject='Comment on VRF default by nobody',
+            message=mock.ANY,
+        )
+        # Date uses timezone
+        message = self.listener.send_mail.call_args.kwargs['message']
+        self.assertIn(code1, message)
 
 
 class ExternalUrlNotificationPluginTest(AbstractNotificationPluginTest):

@@ -129,6 +129,11 @@ def parse_args(args=None, config_file_contents=None):
         default='en_US',
     )
 
+    parser.add_argument(
+        '--default-timezone',
+        help='default application timezone. e.g.: `America/toronto` uses server timezone by default.',
+    )
+
     parser.add(
         '--rate-limit',
         metavar='LIMIT',
