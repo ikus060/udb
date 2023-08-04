@@ -24,7 +24,7 @@ from udb.core.model import Rule
 from .test_common_page import CommonTest
 
 
-class RuleTest(WebCase, CommonTest):
+class RulePageTest(WebCase, CommonTest):
 
     base_url = 'rule'
 
