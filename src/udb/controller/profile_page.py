@@ -22,8 +22,9 @@ from wtforms.validators import DataRequired, Email, EqualTo, InputRequired, Leng
 
 from udb.controller import flash
 from udb.controller.form import CherryForm
+from udb.tools.i18n import get_timezone_name
 from udb.tools.i18n import gettext_lazy as _
-from udb.tools.i18n import list_available_locales
+from udb.tools.i18n import list_available_locales, list_available_timezones
 
 
 class AccountForm(CherryForm):
@@ -56,6 +57,14 @@ class AccountForm(CherryForm):
 
     lang = SelectField(_('Preferred Language'), default='')
 
+    timezone = SelectField(
+        _('Preferred Time zone'),
+        default='',
+        description=_(
+            "This setting only affects email notifications. For all other dates, your browser's timezone is used for display."
+        ),
+    )
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Make username field read_only
@@ -66,6 +75,12 @@ class AccountForm(CherryForm):
         languages = sorted(languages, key=lambda x: x[1])
         languages.insert(0, ('', _('(default)')))
         self.lang.choices = languages
+        # Load available timezone
+        timezones = [
+            (timezone, '%s (%s)' % (timezone, get_timezone_name(timezone))) for timezone in list_available_timezones()
+        ]
+        timezones.insert(0, ('', _('(default)')))
+        self.timezone.choices = timezones
 
 
 class PasswordForm(CherryForm):

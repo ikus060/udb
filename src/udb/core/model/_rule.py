@@ -28,7 +28,7 @@ from ._follower import FollowerMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
 from ._status import StatusMixing
-from ._update import column_add
+from ._update import column_add, column_exists
 
 logger = logging.getLogger(__name__)
 
@@ -201,7 +201,8 @@ def create_update_rule(target, conn, **kw):
     Update builtin rule on application start.
     """
     # Create new field "field"
-    column_add(conn, Rule.field)
+    if not column_exists(conn, Rule.field):
+        column_add(conn, Rule.field)
 
     # To allow usage of ORM session within DDL scope, we need to manually assign the connection to our current session.
     Rule.session.bind = conn

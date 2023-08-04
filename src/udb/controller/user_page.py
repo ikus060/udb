@@ -18,9 +18,9 @@ from wtforms.fields import PasswordField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, Optional
 
 from udb.core.model import User
-from udb.tools.i18n import gettext
+from udb.tools.i18n import get_timezone_name, gettext
 from udb.tools.i18n import gettext_lazy as _
-from udb.tools.i18n import list_available_locales
+from udb.tools.i18n import list_available_locales, list_available_timezones
 
 from .common_page import CommonPage
 from .form import CherryForm
@@ -39,9 +39,11 @@ class NewUserForm(CherryForm):
 
     email = StringField(_('Email'), validators=[Optional(), Email(), Length(max=256)])
 
-    role = SelectField(_('Role'), default='guest')
-
     lang = SelectField(_('Preferred Language'), default='')
+
+    timezone = SelectField(_('Preferred Time zone'), default='')
+
+    role = SelectField(_('Role'), default='guest')
 
     password = PasswordField(
         _('Password'),
@@ -60,6 +62,12 @@ class NewUserForm(CherryForm):
         languages = sorted(languages, key=lambda x: x[1])
         languages.insert(0, ('', _('(default)')))
         self.lang.choices = languages
+        # Load available timezone
+        timezones = [
+            (timezone, '%s (%s)' % (timezone, get_timezone_name(timezone))) for timezone in list_available_timezones()
+        ]
+        timezones.insert(0, ('', _('(default)')))
+        self.timezone.choices = timezones
         # Define available roles
         self.role.choices = [
             ('guest', gettext('Guest - Permissions to view the records')),

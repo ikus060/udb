@@ -214,6 +214,7 @@ class Root(object):
                 'notification.catch_all_email': cfg.notification_catch_all_email,
                 # Configure locales
                 'tools.i18n.default': cfg.default_lang,
+                'tools.i18n.default_timezone': cfg.default_timezone,
                 'tools.i18n.mo_dir': pkg_resources.resource_filename('udb', 'locales'),
                 'tools.i18n.domain': 'messages',
             }

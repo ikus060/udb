@@ -31,19 +31,19 @@ class TestI18nWebCase(WebCase):
         #  Query the page without login-in
         self.getPage("/login/", headers=[("Accept-Language", "it")])
         self.assertStatus('200 OK')
-        self.assertHeaderItemValue("Content-Language", "en_US")
+        self.assertHeaderItemValue("Content-Language", "en")
         self.assertInBody("Remember me")
 
     def test_language_en(self):
         self.getPage("/login/", headers=[("Accept-Language", "en-US,en;q=0.8")])
         self.assertStatus('200 OK')
-        self.assertHeaderItemValue("Content-Language", "en_US")
+        self.assertHeaderItemValue("Content-Language", "en")
         self.assertInBody("Remember me")
 
     def test_language_en_fr(self):
         self.getPage("/login/", headers=[("Accept-Language", "en-US,en;q=0.8,fr-CA;q=0.8")])
         self.assertStatus('200 OK')
-        self.assertHeaderItemValue("Content-Language", "en_US")
+        self.assertHeaderItemValue("Content-Language", "en")
         self.assertInBody("Remember me")
 
     def test_language_fr(self):
@@ -51,7 +51,7 @@ class TestI18nWebCase(WebCase):
         self.assertInBody("Remember me")
         self.getPage("/login/", headers=[("Accept-Language", "fr-CA;q=0.8,fr;q=0.6")])
         self.assertStatus('200 OK')
-        self.assertHeaderItemValue("Content-Language", "fr_CA")
+        self.assertHeaderItemValue("Content-Language", "fr")
         self.assertInBody("Se souvenir de moi")
 
     def test_with_preferred_lang(self):
@@ -65,9 +65,16 @@ class TestI18nWebCase(WebCase):
             self.assertEqual('Se souvenir de moi', i18n.ugettext("Remember me"))
             # Then date time formating used french locale
             self.assertIn('mars', i18n.format_datetime(date, format='long'))
-        # Then ouside the block, settings goest back to english
+        # Then outside the block, settings goes back to english
         self.assertEqual("Remember me", i18n.ugettext("Remember me"))
         self.assertIn('March', i18n.format_datetime(date, format='long'))
+
+    def test_list_available_locales(self):
+        # Given a list of available language.
+        # When listing availabe language.
+        locales = list(i18n.list_available_locales())
+        # Then the list is not empty.
+        self.assertTrue(locales)
 
 
 class TestI18nDefaultLangWebCase(WebCase):
@@ -107,7 +114,12 @@ class TestI18nDefaultLangWebCase(WebCase):
 
 class TestI18nInvalidDefaultLangWebCase(WebCase):
     login = False
-    default_config = {'default-lang': 'invalid'}
+    default_config = {'default-lang': 'invalid', 'default-timezone': 'invalid'}
+
+    def setUp(self):
+        # Manually clear variables between each test
+        i18n._current.__dict__.clear()
+        return super().setUp()
 
     def test_default_lang_invalid(self):
         # Given an invalid default language
@@ -116,3 +128,66 @@ class TestI18nInvalidDefaultLangWebCase(WebCase):
         self.assertStatus(200)
         # Then page is displayed with fallback to "en"
         self.assertInBody('lang="en"')
+
+    def test_default_timezone_invalid(self):
+        # Given an invalid default timezone
+        print(i18n._current.__dict__)
+        print(cherrypy.config.get('tools.i18n.default_timezone'))
+        # When getting current timezone
+        tzinfo = i18n.get_timezone()
+        # Then timezone is None to force usage of serer timezone
+        self.assertIsNone(tzinfo)
+
+
+class TestI18nTimezone(WebCase):
+
+    default_config = {'default-timezone': 'UTC'}
+
+    def setUp(self):
+        # Manually clear variables between each test
+        i18n._current.__dict__.clear()
+        return super().setUp()
+
+    def test_get_timezone(self):
+        # When getting current timezone
+        tzinfo = i18n.get_timezone()
+        # Then timezone is UTC
+        self.assertEqual('UTC', str(tzinfo))
+
+    def test_with_preferred_timezone(self):
+        with i18n.preferred_lang('en'):
+            # Given a date with timezone 'UTC'
+            date = datetime.utcfromtimestamp(1680111611).replace(tzinfo=timezone.utc)
+            self.assertIn('Coordinated Universal Time', i18n.format_datetime(date, format='full'))
+            # When using preferred_lang with french
+            with i18n.preferred_timezone('America/Toronto'):
+                # Then date time formating used EDT locale
+                self.assertIn('Eastern Daylight Time', i18n.format_datetime(date, format='full'))
+            # When using preferred_lang with french
+            with i18n.preferred_timezone('Europe/Paris'):
+                # Then date time formating used EDT locale
+                self.assertIn('Central European Summer Time', i18n.format_datetime(date, format='full'))
+            # Then outside the block, settings goes back to UTC
+            self.assertIn('Coordinated Universal Time', i18n.format_datetime(date, format='full'))
+
+    def test_timezone(self):
+        # Given english locale
+        date = datetime.utcfromtimestamp(1680111611).replace(tzinfo=timezone.utc)
+        with i18n.preferred_lang('en'):
+            # When getting list of timezone
+            timezones = [
+                i18n.format_datetime(date, format='zzzz', tzinfo=timezone)
+                for timezone in i18n.list_available_timezones()
+            ]
+            # Then Central time is displayed
+            self.assertIn('Central European Summer Time', timezones)
+
+        # Given french locale
+        with i18n.preferred_lang('fr'):
+            # When getting list of timezone
+            timezones = [
+                i18n.format_datetime(date, format='zzzz', tzinfo=timezone)
+                for timezone in i18n.list_available_timezones()
+            ]
+            # Then central time is displayed
+            self.assertIn('heure d’été d’Europe centrale', timezones)

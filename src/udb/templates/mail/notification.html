@@ -2,13 +2,14 @@
 {% import "macro.html" as macro %}
 {% block title %}
   {%- if messages[0].changes is none -%}
-    Comment on {{ macro.display_name(messages[0].model_name) }} {{ messages[0].model_object.summary }} by {{
-    messages[0].author_name }}
+    {% set model_name = macro.display_name(messages[0].model_name) %}
+    {% set summary = messages[0].model_object.summary %}
+    {% set author_name = messages[0].author_name %}
+    {% trans %}Comment on {{ model_name }} {{ summary }} by {{ author_name }}{% endtrans %}
   {%- else -%}
-    {%- for msg in messages[:5] %}{{ macro.display_name(msg.model_name) }} {{ msg.model_object.summary }}{{ ", " if not
-      loop.last else " " }}
+    {%- for msg in messages[:5] %}{{ macro.display_name(msg.model_name) }} {{ msg.model_object.summary }}{{ ", " if not loop.last else " " }}
     {% endfor -%}
-    {{ _("modified") if messages[0].type == 'dirty' else _('created') }} by {{ messages[0].author_name }}
+    {{ _("modified by") if messages[0].type == 'dirty' else _('created by') }} {{ messages[0].author_name }}
     {%- if messages[5] -%}
       {{ ' ' }}
       {%- set change_count = (messages|length) - 5 -%}
