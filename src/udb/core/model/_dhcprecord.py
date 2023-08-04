@@ -175,6 +175,7 @@ RuleConstraint(
                 DhcpRecord.status == DhcpRecord.STATUS_ENABLED,
                 a.status == DhcpRecord.STATUS_ENABLED,
             )
+            .distinct()
         )
     ),
     info={

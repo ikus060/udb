@@ -629,6 +629,7 @@ RuleConstraint(
                 DnsRecord.status == DnsRecord.STATUS_ENABLED,
                 a.status == DnsRecord.STATUS_ENABLED,
             )
+            .distinct()
         )
     ),
     info={
