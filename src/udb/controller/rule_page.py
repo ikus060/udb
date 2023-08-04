@@ -136,6 +136,7 @@ class RulePage(CommonPage):
             Rule.description,
             Rule.severity,
             Rule.builtin,
+            Rule.type,
             User.summary.label('owner'),
         ).outerjoin(Rule.owner)
 

@@ -20,6 +20,7 @@ import logging
 import cherrypy
 from sqlalchemy import Boolean, Column, SmallInteger, String, event, text
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.sql import ddl
 
 from udb.tools.i18n import gettext as _
 
@@ -33,6 +34,21 @@ from ._update import column_add, column_exists
 logger = logging.getLogger(__name__)
 
 Base = cherrypy.tools.db.get_base()
+
+
+def _list_constraints():
+    for table in Base.metadata.tables.values():
+        for item in table.constraints:
+            if item.name:
+                yield item
+
+
+def _list_indexes():
+    for table in Base.metadata.tables.values():
+        for item in table.indexes:
+
+            if item.unique:
+                yield item
 
 
 class RuleError(Exception):
@@ -75,12 +91,17 @@ class Rule(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, StatusMixing, Ba
     SEVERITY_SOFT = 0
     SEVERITY_ENFORCED = 1
 
+    TYPE_SQL = 0
+    TYPE_UNIQUE = 1
+    TYPE_CHECK = 2
+
     name = Column(String, nullable=False, unique=True)
     model_name = Column(String, nullable=False)
     statement = Column(String, nullable=False)
     description = Column(String, nullable=False)
     builtin = Column(Boolean, nullable=False, default=False)
     severity = Column(SmallInteger, nullable=False, default=SEVERITY_SOFT, server_default=str(SEVERITY_SOFT))
+    type = Column(SmallInteger, nullable=False, default=TYPE_SQL, server_default=str(TYPE_SQL))
     field = Column(String, nullable=True)
 
     @hybrid_property
@@ -104,7 +125,7 @@ class Rule(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, StatusMixing, Ba
         assert severity in [None, Rule.SEVERITY_SOFT, Rule.SEVERITY_ENFORCED]
 
         # Query list of rules matching our object type and severity to limit the scope of analysis.
-        query_rules = Rule.query.filter(Rule.status == Rule.STATUS_ENABLED)
+        query_rules = Rule.query.filter(Rule.status == Rule.STATUS_ENABLED, Rule.type == Rule.TYPE_SQL)
         if severity:
             query_rules = query_rules.filter(Rule.severity == severity)
         if obj:
@@ -143,6 +164,10 @@ class Rule(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, StatusMixing, Ba
         """
         Used to validate the SQL statement before saving it into database to make sure it's a "valid" SQL.
         """
+        # Do not validate other type than SQL.
+        if not (self.type is None or self.type == Rule.TYPE_SQL):
+            # Skip validation
+            return
 
         # We need to make sure the statement is valid.
         # The best solution is to execute the statement.
@@ -200,12 +225,19 @@ def create_update_rule(target, conn, **kw):
     """
     Update builtin rule on application start.
     """
-    # Create new field "field"
+    # Create new column "field"
     if not column_exists(conn, Rule.field):
         column_add(conn, Rule.field)
+    # Create new column "type"
+    if not column_exists(conn, Rule.type):
+        column_add(conn, Rule.type)
 
     # To allow usage of ORM session within DDL scope, we need to manually assign the connection to our current session.
     Rule.session.bind = conn
+
+    # Rule to be deleted
+    Rule.query.filter(Rule.name.in_(['dhcprecord_ip_invalid_subnet'])).delete()
+
     # For each soft rule register, make sure to create it in database
     for rule in RuleConstraint._inventory.values():
         obj = Rule.query.filter(Rule.name == rule.name).first()
@@ -224,6 +256,43 @@ def create_update_rule(target, conn, **kw):
             obj.model_name = rule.model_name
             obj.statement = sql
             obj.builtin = True
+            obj.type = Rule.TYPE_SQL
             obj.add().flush()
         except Exception:
-            logger.exception('fail to load rule in database')
+            logger.exception('fail to add rule in database')
+
+    # For each CheckConstraint, create rule to be displayed in UI.
+    for constraint in _list_constraints():
+        obj = Rule.query.filter(Rule.name == constraint.name).first()
+        if not obj:
+            obj = Rule(name=constraint.name)
+        try:
+            # Update database
+            obj.description = str(constraint.info.get('description', ''))
+            obj.severity = Rule.SEVERITY_ENFORCED
+            obj.field = str(constraint.info.get('field', None))
+            obj.model_name = constraint.table.name
+            obj.statement = "CHECK CONSTRAINT %s" % constraint.sqltext
+            obj.builtin = True
+            obj.type = Rule.TYPE_CHECK
+            obj.add().flush()
+        except Exception:
+            logger.exception('fail to load constraint in database')
+
+    # For each unique index, create rule to be displayed in UI.
+    for index in _list_indexes():
+        obj = Rule.query.filter(Rule.name == index.name).first()
+        if not obj:
+            obj = Rule(name=index.name)
+        try:
+            # Update database
+            obj.description = str(index.info.get('description', ''))
+            obj.severity = Rule.SEVERITY_ENFORCED
+            obj.field = str(index.info.get('field', None))
+            obj.model_name = index.table.name
+            obj.statement = str(ddl.CreateIndex(index))
+            obj.builtin = True
+            obj.type = Rule.TYPE_UNIQUE
+            obj.add().flush()
+        except Exception:
+            logger.exception('fail to load unique index in database')
