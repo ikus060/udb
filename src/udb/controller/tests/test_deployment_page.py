@@ -124,7 +124,7 @@ class DeploymentPageTest(WebCase):
                         1,
                         '192.168.45.67 (E5:D3:56:7B:22:A3)',
                         'dhcprecord',
-                        'nobody',
+                        'System',
                         ANY,
                         'new',
                         '',

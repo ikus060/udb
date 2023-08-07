@@ -99,7 +99,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         self.wait_for_tasks()
         # Then notifications are sent to the followers
         self.listener.send_mail.assert_called_once_with(
-            to='follower@test.com', subject='DNS Zone my.zone.com modified by nobody', message=mock.ANY
+            to='follower@test.com', subject='DNS Zone my.zone.com modified by System', message=mock.ANY
         )
 
     def test_with_multiple_changes_merged(self):
@@ -125,12 +125,12 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         # Then a single notification is sent to the followers
         self.listener.send_mail.assert_any_call(
             to='follower1@test.com',
-            subject='DNS Zone my.zone.com, Subnet home modified by nobody',
+            subject='DNS Zone my.zone.com, Subnet home modified by System',
             message=mock.ANY,
         )
         self.listener.send_mail.assert_any_call(
             to='follower2@test.com',
-            subject='DNS Zone my.zone.com modified by nobody',
+            subject='DNS Zone my.zone.com modified by System',
             message=mock.ANY,
         )
 
@@ -150,7 +150,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         # Then a single notification is sent to the followers
         self.listener.send_mail.assert_any_call(
             to='follower1@test.com',
-            subject='Subnet subnet 1, Subnet subnet 2, Subnet subnet 3, Subnet subnet 4, Subnet subnet 5 created by nobody And 18 more changes',
+            subject='Subnet subnet 1, Subnet subnet 2, Subnet subnet 3, Subnet subnet 4, Subnet subnet 5 created by System And 18 more changes',
             message=mock.ANY,
         )
         self.assertIn("And 18 more changes", self.listener.send_mail.call_args[1]['message'])
@@ -167,7 +167,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         # Then a notification is sent to catchall email
         self.listener.send_mail.assert_called_once_with(
             to='my@email.com',
-            subject='DNS Zone my.zone.com created by nobody',
+            subject='DNS Zone my.zone.com created by System',
             message=mock.ANY,
         )
 
@@ -191,12 +191,12 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         # Then a notification is sent to catchall email
         self.listener.send_mail.assert_any_call(
             to='follower@test.com',
-            subject='DNS Zone my.zone.com modified by nobody',
+            subject='DNS Zone my.zone.com modified by System',
             message=mock.ANY,
         )
         self.listener.send_mail.assert_any_call(
             to='my@email.com',
-            subject='DNS Zone my.zone.com modified by nobody',
+            subject='DNS Zone my.zone.com modified by System',
             message=mock.ANY,
         )
 
@@ -214,7 +214,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         self.wait_for_tasks()
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='DNS Zone my.zone.com created by nobody',
+            subject='DNS Zone my.zone.com created by System',
             message=mock.ANY,
         )
         self.listener.send_mail.reset_mock()
@@ -227,7 +227,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         # Then the follower get notify
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='DNS Record my.zone.com = 147.87.250.1 (A) created by nobody',
+            subject='DNS Record my.zone.com = 147.87.250.1 (A) created by System',
             message=mock.ANY,
         )
 
@@ -247,7 +247,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         self.wait_for_tasks()
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='DNS Record my.zone.com = 147.87.250.1 (A) created by nobody',
+            subject='DNS Record my.zone.com = 147.87.250.1 (A) created by System',
             message=mock.ANY,
         )
         self.listener.send_mail.reset_mock()
@@ -260,7 +260,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         # Then the follower get notify
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='DNS Record 1.250.87.147.in-addr.arpa = my.zone.com (PTR) created by nobody',
+            subject='DNS Record 1.250.87.147.in-addr.arpa = my.zone.com (PTR) created by System',
             message=mock.ANY,
         )
 
@@ -285,7 +285,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         # Then the follower1 get notified.
         self.listener.send_mail.assert_called_once_with(
             to='follower1@test.com',
-            subject='VRF vrf1 modified by nobody',
+            subject='VRF vrf1 modified by System',
             message=mock.ANY,
         )
 
@@ -304,7 +304,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         # Then the follower get notified.
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='VRF default created by nobody',
+            subject='VRF default created by System',
             message=mock.ANY,
         )
 
@@ -320,7 +320,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         # Then email is send in french
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='VRF default créé par personne',
+            subject='VRF default créé par Système',
             message=mock.ANY,
         )
 
@@ -348,7 +348,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         # Then email is send
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
-            subject='Comment on VRF default by nobody',
+            subject='Comment on VRF default by System',
             message=mock.ANY,
         )
         # Date uses timezone
@@ -371,7 +371,7 @@ class ExternalUrlNotificationPluginTest(AbstractNotificationPluginTest):
         self.wait_for_tasks()
         self.listener.send_mail.assert_called_once_with(
             to='my@email.com',
-            subject='DNS Zone my.zone.com created by nobody',
+            subject='DNS Zone my.zone.com created by System',
             message=mock.ANY,
         )
         # Then email contains URL to header logo with external-url value

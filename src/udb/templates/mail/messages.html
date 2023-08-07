@@ -1,8 +1,9 @@
 {% macro show_value(value) %}
   {%- if value is none -%}<i>{% trans %}Undefined{% endtrans %}</i>{%- else -%}{{ value }}{%- endif -%}
 {% endmacro %}
+{% set msg_type_table = {'new':_('Created by'),'dirty':_('Created by'), 'comment':_('Comment by') } %}
 {% macro show_message(message) %}
-  <small>{% trans %}By {% endtrans %} {{ message.author_name }} •
+  <small>{{ msg_type_table.get(message.type) }} {{ message.author_name }} •
     <time datetime="{{ message.date }}">
       {{ message.date|format_datetime(format='full') }}
     </time>
@@ -11,7 +12,6 @@
   {% if message.body %}<p>{{ message.body }}</p>{% endif %}
   {% if message.type == 'new' and message.changes %}
     {# New record created #}
-    {% trans %}Record created{% endtrans %}
     <ul class="mb-0">
       {% for key, values in message.changes.items() -%}
         <li>

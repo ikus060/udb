@@ -14,7 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from collections import namedtuple
 from datetime import datetime, timedelta
 
 import cherrypy
@@ -23,10 +22,6 @@ from sqlalchemy import desc, func
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Mac, Message, Subnet, User, Vrf
 
 Base = cherrypy.tools.db.get_base()
-
-ActivityRow = namedtuple(
-    'ActivityRow', ['model_id', 'status', 'summary', 'model_name', 'author', 'date', 'type', 'body', 'changes', 'url']
-)
 
 
 class DashboardPage:
