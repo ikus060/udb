@@ -82,11 +82,49 @@ class EnvironmentPageTest(WebCase, CommonTest):
         # Given a new environment
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
-        # When a deployment is triggered
+        # When a deployment is triggered without a last_changes value
         self.getPage(url_for(self.base_url, obj.id, 'deploy'), method='POST')
         # Then user is redirect to environment page
         self.assertStatus(303)
         self.assertHeaderItemValue("Location", self.baseurl + "/environment/%s/edit" % obj.id)
+        # Then an error is displayed
+        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        self.assertStatus(200)
+        self.assertInBody('last_change: This field is required.')
+
+    def test_deploy_with_obsolete_last_change(self):
+        # Given a new environment
+        obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
+        # When a deployment is triggered with an obsolete last_change value
+        self.getPage(url_for(self.base_url, obj.id, 'deploy'), method='POST', body={'last_change': '1'})
+        # Then user is redirect to environment page
+        self.assertStatus(303)
+        self.assertHeaderItemValue("Location", self.baseurl + "/environment/%s/edit" % obj.id)
+        # Then an error is displayed
+        self.getPage(url_for(self.base_url, obj.id, 'edit'))
+        self.assertStatus(200)
+        self.assertInBody(
+            'A recent changes was submited preventing the deployment. Please, review the latest changes befor deploying again.'
+        )
+
+    def test_deploy_without_changes(self):
+        # Given a new environment that was deployed
+        obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
+        last_change = Message.query.order_by(Message.id.desc()).first().id
+        self.getPage(url_for(self.base_url, obj.id, 'deploy'), method='POST', body={'last_change': last_change})
+        self.assertStatus(303)
+        self.assertEqual(Deployment.query.count(), 1)
+        # When deploying again without changes.
+        self.getPage(url_for(self.base_url, obj.id, 'deploy'), method='POST', body={'last_change': -1})
+        self.assertStatus(303)
+        deployment = Deployment.query.order_by(Deployment.id.desc()).first()
+        self.assertHeaderItemValue("Location", self.baseurl + "/deployment/%s/view" % deployment.id)
+        # Then deployment is success
+        self.wait_for_tasks()
+        deployment.expire()
+        self.assertEqual(deployment.state, Deployment.STATE_SUCCESS)
 
     def test_deploy(self):
         # Given a new environment
@@ -98,9 +136,29 @@ class EnvironmentPageTest(WebCase, CommonTest):
         # Then user is redirect to deployment page
         self.assertStatus(303)
         deployment = Deployment.query.order_by(Deployment.id.desc()).first()
+        self.assertIsNotNone(deployment.owner)
         self.assertHeaderItemValue("Location", self.baseurl + "/deployment/%s/view" % deployment.id)
         # When querying the deployment page
         self.getPage(self.baseurl + "/deployment/%s/view" % deployment.id)
         # Then the deployment is starting or running
         self.assertStatus(200)
         self.assertInBody("Deployment scheduled...")
+        # Then deployment is success
+        self.wait_for_tasks()
+        deployment.expire()
+        self.assertEqual(deployment.state, Deployment.STATE_SUCCESS)
+
+    def test_get_data_json_with_changes(self):
+        # Given an environment
+        Environment(name='subnet_env', model_name='subnet').add().commit()
+        Environment(name='dhcp_env', model_name='dhcprecord').add().commit()
+        # When listing the data
+        data = self.getJson(url_for(self.base_url, 'data.json'))
+        # Then the change_count is defined
+        self.assertEqual(
+            data['data'],
+            [
+                [1, 'enabled', 'subnet_env', 'subnet', 2, '', '/environment/1/edit'],
+                [2, 'enabled', 'dhcp_env', 'dhcprecord', 2, '', '/environment/2/edit'],
+            ],
+        )

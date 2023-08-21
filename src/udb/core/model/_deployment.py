@@ -24,9 +24,9 @@ import sys
 import tempfile
 
 import cherrypy
-from sqlalchemy import Column, ForeignKey, func, select
+from sqlalchemy import Column, ForeignKey, and_, event, func, or_, select
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declared_attr, foreign, relationship, remote
 from sqlalchemy.types import JSON, Integer, SmallInteger, String, Text
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
@@ -35,10 +35,11 @@ from ._common import CommonMixin
 from ._dhcprecord import DhcpRecord
 from ._dnsrecord import DnsRecord
 from ._json import JsonMixin
-from ._message import MessageMixin
+from ._message import Message, MessageMixin
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._subnet import Subnet, SubnetRange
+from ._update import column_add, column_exists
 from ._vrf import Vrf
 
 Base = cherrypy.tools.db.get_base()
@@ -126,6 +127,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
 
     environment_id = Column(Integer, ForeignKey("environment.id"), nullable=False)
     environment = relationship("Environment", back_populates='deployments', lazy=True)
+    model_name = Column(String, nullable=False, server_default='')
     start_id = Column(Integer, nullable=False)
     end_id = Column(Integer, nullable=False)
     change_count = Column(Integer, nullable=False)
@@ -134,16 +136,38 @@ class Deployment(CommonMixin, JsonMixin, Base):
     output = Column(Text, nullable=False, default='')
     token = Column(String, nullable=False, default=lambda: binascii.hexlify(os.urandom(20)).decode('ascii'))
 
+    @declared_attr
+    def changes(cls):
+        """
+        Return a list of changes deployed by this deployment.
+        """
+        return relationship(
+            Message,
+            primaryjoin=and_(
+                Message.type.in_([Message.TYPE_NEW, Message.TYPE_DIRTY]),
+                or_(
+                    # Include any changes made to related model
+                    cls.model_name == remote(foreign(Message.model_name)),
+                    # Include change made to environment it self.
+                    and_(Message.model_name == 'environment', cls.id == remote(foreign(Message.model_id))),
+                ),
+                cls.start_id <= remote(foreign(Message.id)),
+                cls.end_id >= remote(foreign(Message.id)),
+            ),
+            lazy=True,
+            viewonly=True,
+        )
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         # Query the types to persist.
-        model_name = (
+        self.model_name = (
             Environment.query.with_entities(Environment.model_name)
             .filter(Environment.id == self.environment_id)
             .scalar()
         )
         # Take a snapshot of the data within the deployment.
-        if model_name == 'subnet':
+        if self.model_name == 'subnet':
             subnet = (
                 Subnet.query.with_entities(
                     Subnet.id,
@@ -156,11 +180,11 @@ class Deployment(CommonMixin, JsonMixin, Base):
                 .join(Subnet.vrf)
                 .join(Subnet.subnet_ranges)
                 .filter(Subnet.status == Subnet.STATUS_ENABLED)
-                .group_by(Subnet.id)
+                .group_by(Subnet.id, Vrf.name)
                 .all()
             )
             self.data = {'subnet': [s._asdict() for s in subnet]}
-        elif model_name == 'dnsrecord':
+        elif self.model_name == 'dnsrecord':
             dnsrecord = (
                 DnsRecord.query.with_entities(
                     DnsRecord.id,
@@ -173,7 +197,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
                 .all()
             )
             self.data = {'dnsrecord': [s._asdict() for s in dnsrecord]}
-        elif model_name == 'dhcprecord':
+        elif self.model_name == 'dhcprecord':
             # TODO Migth be better to move that into DHCP model.
             # TODO using relationship or similar.
 
@@ -233,7 +257,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
                 'subnet_range': [s._asdict() for s in Subnet.session.execute(subnet_query).all()],
             }
         else:
-            raise ValueError('unsuported model_name: %s' % model_name)
+            raise ValueError('unsuported model_name: %s' % self.model_name)
 
     def schedule_task(self, base_url):
         """
@@ -241,8 +265,8 @@ class Deployment(CommonMixin, JsonMixin, Base):
 
         URL to the deployment data must be provided by the controller.
         """
-        if self.state != Deployment.STATE_STARTING:
-            raise ValueError('Cannot schedule a deployment twice.')
+        assert self.id, 'deployment must be commit'
+        assert self.state == Deployment.STATE_STARTING, 'cannot schedule deployment twice'
         # Detach the object from the session. Otherwise it cause trouble with multi-threading.
         cherrypy.engine.publish('schedule_task', _deploy, self.id, base_url)
 
@@ -271,3 +295,62 @@ class Environment(CommonMixin, JsonMixin, MessageMixin, StatusMixing, Searchable
     @hybrid_property
     def summary(self):
         return self.name
+
+    @declared_attr
+    def pending_changes(cls):
+        """
+        Return a list of changes (new or dirty message) that was not part of a previous deployment.
+        """
+        return relationship(
+            Message,
+            primaryjoin=and_(
+                Message.type.in_([Message.TYPE_NEW, Message.TYPE_DIRTY]),
+                or_(
+                    # Include any changes made to related model
+                    cls.model_name == remote(foreign(Message.model_name)),
+                    # Include change made to environment it self.
+                    and_(Message.model_name == 'environment', cls.id == remote(foreign(Message.model_id))),
+                ),
+                Message.id.__gt__(
+                    func.coalesce(
+                        select(func.max(Deployment.end_id))
+                        .filter(Deployment.environment_id == cls.id, Deployment.model_name == cls.model_name)
+                        .scalar_subquery(),
+                        0,
+                    )
+                ),
+            ),
+            lazy=True,
+            viewonly=True,
+        )
+
+    def create_deployment(self, owner):
+        """
+        Create a new deployment for this environment.
+        """
+        assert owner and owner.id, 'deployment required a owner'
+        # Identify changes
+        row = (
+            Environment.query.with_entities(
+                func.coalesce(func.min(Message.id), -1).label('start_id'),
+                func.coalesce(func.max(Message.id), -1).label('end_id'),
+                func.count(Message.id).label('count'),
+            )
+            .join(Environment.pending_changes)
+            .filter(Environment.id == self.id)
+            .first()
+        )
+        return Deployment(
+            environment_id=self.id,
+            change_count=row.count,
+            start_id=row.start_id,
+            end_id=row.end_id,
+            owner=owner,
+        )
+
+
+@event.listens_for(Base.metadata, 'after_create')
+def update_environment_schema(target, conn, **kw):
+    # Create new column "model_name"
+    if not column_exists(conn, Deployment.model_name):
+        column_add(conn, Deployment.model_name)

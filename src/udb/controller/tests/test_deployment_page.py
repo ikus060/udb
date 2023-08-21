@@ -83,6 +83,42 @@ class DeploymentPageTest(WebCase):
         self.assertStatus(200)
         self.assertInBody('Deployment #%s' % obj.id)
 
+    def test_get_view_page_selenium(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
+        with self.selenium() as driver:
+            # When querying the view page
+            driver.get(url_for(self.base_url, obj.id, 'view'))
+            driver.implicitly_wait(10)
+            # Then the web page contains log
+            driver.find_element('css selector', 'code')
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
+
+    def test_get_changes_page(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
+        # When querying the changes page
+        self.getPage(url_for(self.base_url, obj.id, 'changes'))
+        # Then return not found
+        self.assertStatus(200)
+        self.assertInBody('Deployment #%s' % obj.id)
+
+    def test_get_changes_page_selenium(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
+        with self.selenium() as driver:
+            # When querying the changes page
+            driver.get(url_for(self.base_url, obj.id, 'changes'))
+            driver.implicitly_wait(10)
+            # Then the web page contains a table
+            driver.find_element('css selector', 'table.table')
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
+
     def test_get_deployments_json(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
@@ -108,31 +144,40 @@ class DeploymentPageTest(WebCase):
         )
 
     def test_get_deployment_changes_json(self):
-        # Given a database with a record
+        # Given a new deployment
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
         # When querying changes.json
         data = self.getJson(url_for(self.base_url, obj.id, 'changes.json'))
-        # Then return list of changes
+        # Then return dhcprecord and environment change.
         self.assertStatus(200)
         self.assertHeaderItemValue('Content-Type', 'application/json')
         self.assertEqual(
-            data,
-            {
-                'data': [
-                    [
-                        1,
-                        '192.168.45.67 (E5:D3:56:7B:22:A3)',
-                        'dhcprecord',
-                        'System',
-                        ANY,
-                        'new',
-                        '',
-                        {'ip': [None, '192.168.45.67'], 'mac': [None, 'E5:D3:56:7B:22:A3']},
-                        '/dhcprecord/1/edit',
-                    ]
-                ]
-            },
+            data['data'],
+            [
+                [
+                    1,
+                    '192.168.45.67 (E5:D3:56:7B:22:A3)',
+                    'dhcprecord',
+                    'System',
+                    ANY,
+                    'new',
+                    '',
+                    {'ip': [None, '192.168.45.67'], 'mac': [None, 'E5:D3:56:7B:22:A3']},
+                    '/dhcprecord/1/edit',
+                ],
+                [
+                    1,
+                    'test-env',
+                    'environment',
+                    'System',
+                    ANY,
+                    'new',
+                    '',
+                    {'name': [None, 'test-env'], 'script': [None, 'echo FOO'], 'model_name': [None, 'dhcprecord']},
+                    '/environment/1/edit',
+                ],
+            ],
         )
 
     def test_get_deployment_api_data_json_without_authorization(self):
