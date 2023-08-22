@@ -142,7 +142,7 @@ class Message(JsonMixin, SearchableMixing, Base):
     @property
     def author_name(self):
         if self.author is None:
-            return _('nobody')
+            return _('System')
         return str(self.author)
 
     @classmethod

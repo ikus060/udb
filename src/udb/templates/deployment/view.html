@@ -1,76 +1,31 @@
-{% extends 'layout.html' %}
+{% extends 'deployment/layout.html' %}
 {% import "components/table.html" as _table %}
 {% import "common/status.html" as _status %}
 {% import "macro.html" as macro %}
 {% block title %}
   {% trans %}Deployment #{% endtrans %}{{ deployment.id }}
 {% endblock %}
-{% block body %}
-  {# Title #}
-  {% set choices = dict([
-      (0, '<span class="badge bg-warning">'|safe + _('Starting...') + '</span>'|safe),
-      (1, '<span class="badge bg-info"><span class="spinner-border spinner-border-sm"
-        role="status"
-        aria-hidden="true"></span> '|safe + _('Running...') + '</span>'|safe),
-      (2, '<span class="badge bg-success">'|safe + _('Success') + '</span>'|safe),
-      (3, '<span class="badge bg-danger">'|safe + _('Failed') + '</span>'|safe)]) %}
-    <h3>
-      {{ choices[deployment.state] }} {% trans %}Deployment #{% endtrans %}{{ deployment.id }}
-      {% trans %}to{% endtrans %}
-      {{ deployment.environment.name }}
-    </h3>
-    {% include "flash.html" %}
-    <hr />
-    {# Changes #}
-    <div class="row">
-      <div class="col-md">
-        <h4>{% trans %}Changes{% endtrans %}</h4>
-        <p>{% trans %}List of changes activated by this deployment.{% endtrans %}</p>
-      </div>
-      <div class="col-md-9">
-        <div class="card mb-2">
-          {% set columns = [
-                      {'name':'id', 'visible':False},
-                      {'name':'summary', 'title':_('Record'), 'orderable':False, 'render':'summary'},
-                      {'name':'model_name', 'visible':False },
-                      {'name':'author', 'visible':False},
-                      {'name':'date', 'visible':False},
-                      {'name':'type', 'visible':False },
-                      {'name':'body', 'visible':False},
-                      {'name':'changes', 'title':_('Changes'), 'orderable':False, 'render':'message_body' },
-                      {'name':'url', 'visible':False}
-                    ] %}
-          {{ _table.table('changes.json',
-                    columns=columns,
-                    order=[[ 0, 'desc' ]],
-                    searching=False,
-                    dom_cfg=_table.dom_without_header,
-                    empty_message=_('No changes activated by this deployment.') ,
-          length_change=False) }}
-        </div>
+{% block content %}
+  {# Output #}
+  <div class="row">
+    <div class="col-md">
+      <h4>{% trans %}Log{% endtrans %}</h4>
+      <p>{% trans %}Output of command line executed by this deployment.{% endtrans %}</p>
+    </div>
+    <div class="col-md-9">
+      <div class="card mb-2 bg-dark text-white p-1">
+        <pre><code id="output">{{ deployment.output }}</code></pre>
+        {# Show Spinner when running #}
+        {% if deployment.state < 2 %}
+          <span class="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"></span>
+        {% endif %}
       </div>
     </div>
-    <hr />
-    {# Output #}
-    <div class="row">
-      <div class="col-md">
-        <h4>{% trans %}Log{% endtrans %}</h4>
-        <p>{% trans %}Output of command line executed by this deployment.{% endtrans %}</p>
-      </div>
-      <div class="col-md-9">
-        <div class="card mb-2 bg-dark text-white p-1">
-          <pre><code id="output">{{ deployment.output }}</code></pre>
-          {# Show Spinner when running #}
-          {% if deployment.state < 2 %}
-            <span class="spinner-border spinner-border-sm"
-                  role="status"
-                  aria-hidden="true"></span>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-    {% if deployment.state < 2 %}
-      <script>
+  </div>
+  {% if deployment.state < 2 %}
+    <script>
         myInterval = setInterval(refreshOutput, 1000);
         function refreshOutput() {
             $.ajax({
@@ -85,6 +40,6 @@
                 }
             });
         }
-      </script>
-    {% endif %}
-  {% endblock %}
+    </script>
+  {% endif %}
+{% endblock %}

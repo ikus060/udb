@@ -100,7 +100,6 @@ class WebCase(BaseClass):
     def tearDown(self):
         # Need to wait for task before deleting to avoid dead lock in postgresql.
         self.wait_for_tasks()
-        cherrypy.tools.db.drop_all()
         # Delete selenium download
         if getattr(self, '_selenium_download_dir', False):
             shutil.rmtree(self._selenium_download_dir)

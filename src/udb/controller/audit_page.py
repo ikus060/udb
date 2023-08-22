@@ -26,7 +26,7 @@ from udb.core.model import Message, User, auditable_models
 from udb.tools.i18n import gettext as _
 
 AuditRow = namedtuple(
-    'AuditRow', ['model_id', 'status', 'summary', 'model_name', 'author', 'date', 'type', 'body', 'changes', 'url']
+    'AuditRow', ['model_id', 'status', 'summary', 'model_name', 'author_name', 'date', 'type', 'body', 'changes', 'url']
 )
 
 AllModel = union_all(
@@ -65,7 +65,7 @@ class AuditPage:
                 AllModel.c.status,
                 AllModel.c.summary,
                 Message.model_name,
-                User.summary.label('author'),
+                User.summary.label('author_name'),
                 Message.date,
                 Message.type,
                 Message.body,
@@ -122,17 +122,17 @@ class AuditPage:
             'recordsFiltered': filtered,
             'data': [
                 AuditRow(
-                    model_id=obj.model_id,
-                    status=obj.status,
-                    summary=obj.summary,
-                    model_name=obj.model_name,
-                    author=obj.author,
-                    date=obj.date.isoformat(),
-                    type=obj.type,
-                    body=obj.body,
-                    changes=Message.json_changes(obj.changes),
-                    url=url_for(obj.model_name, obj.model_id, 'edit', relative='server'),
+                    model_id=row.model_id,
+                    status=row.status,
+                    summary=row.summary,
+                    model_name=row.model_name,
+                    author_name=row.author_name or str(_('System')),
+                    date=row.date.isoformat(),
+                    type=row.type,
+                    body=row.body,
+                    changes=Message.json_changes(row.changes),
+                    url=url_for(row.model_name, row.model_id, 'edit', relative='server'),
                 )
-                for obj in data
+                for row in data
             ],
         }

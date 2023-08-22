@@ -23,7 +23,7 @@ import cherrypy
 from udb.controller import url_for, verify_perm
 from udb.controller.api import checkpassword
 from udb.controller.common_page import CommonApi
-from udb.core.model import Deployment, DnsRecord, DnsZone, Environment, Message, User
+from udb.core.model import Deployment, DnsRecord, DnsZone, Environment, User
 
 TOKEN_USERNAME = 'token'
 
@@ -55,28 +55,22 @@ class DeploymentPage:
     def index(self):
         return {}
 
+    def _get_or_404(self, id):
+        """
+        Get object with the given key or raise a 404 error.
+        """
+        deployment = Deployment.query.filter(Deployment.id == id).first()
+        if not deployment:
+            raise cherrypy.HTTPError(404)
+        return deployment
+
     @cherrypy.expose()
     @cherrypy.tools.json_out()
     def changes_json(self, id, **kwargs):
         """
-        Return list of changes since last deployment.
+        Return list of changes for this deployment.
         """
-        # List all activities by dates
-        deployment = Deployment.query.filter(Deployment.id == id).first()
-        if not deployment:
-            raise cherrypy.HTTPError(404)
-
-        # Query list of changes
-        q = Message.query.filter(
-            Message.model_name == deployment.environment.model_name,
-            Message.type.in_([Message.TYPE_NEW, Message.TYPE_DIRTY]),
-        )
-        if deployment.start_id:
-            q = q.filter(Message.id >= deployment.start_id)
-        if deployment.end_id:
-            q = q.filter(Message.id < deployment.end_id)
-        obj_list = q.order_by(Message.id.desc()).limit(100).all()
-
+        deployment = self._get_or_404(id)
         return {
             'data': [
                 ChangeRow(
@@ -90,7 +84,7 @@ class DeploymentPage:
                     changes=obj.changes,
                     url=url_for(obj.model_name, obj.model_id, 'edit', relative='server'),
                 )
-                for obj in obj_list
+                for obj in deployment.changes
             ]
         }
 
@@ -137,10 +131,7 @@ class DeploymentPage:
         Called by Web interface to refresh the ouput view at regular interval.
         Return the current state and the full console log.
         """
-        # Return Not found if object doesn't exists
-        deployment = Deployment.query.filter(Deployment.id == id).first()
-        if not deployment:
-            raise cherrypy.HTTPError(404)
+        deployment = self._get_or_404(id)
         return {
             'state': deployment.state,
             'output': deployment.output,
@@ -149,11 +140,15 @@ class DeploymentPage:
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='deployment/view.html')
     def view(self, id, **kwargs):
-        # Return Not found if object doesn't exists
-        deployment = Deployment.query.filter(Deployment.id == id).first()
-        if not deployment:
-            raise cherrypy.HTTPError(404)
-        # Return object form
+        deployment = self._get_or_404(id)
+        return {
+            'deployment': deployment,
+        }
+
+    @cherrypy.expose
+    @cherrypy.tools.jinja2(template='deployment/changes.html')
+    def changes(self, id, **kwargs):
+        deployment = self._get_or_404(id)
         return {
             'deployment': deployment,
         }

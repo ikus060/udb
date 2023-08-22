@@ -15,17 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import inspect
 from collections import namedtuple
 
 import cherrypy
-from sqlalchemy import and_, func, or_
+from sqlalchemy import func
 from wtforms.fields import HiddenField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, ValidationError
 
 from udb.controller import flash, url_for, verify_perm
 from udb.controller.common_page import CommonApi
-from udb.core.model import Deployment, Environment, Message, User
+from udb.core.model import Environment, Message, User
 from udb.tools.i18n import gettext
 from udb.tools.i18n import gettext_lazy as _
 
@@ -116,36 +115,17 @@ class EnvironmentPage(CommonPage):
         """
         Return a list of environment with number of changes to be deployed.
         """
-        return Environment.query.with_entities(
-            Environment.id,
-            Environment.status,
-            Environment.name,
-            Environment.model_name,
-            self._pending_changes_query(Environment)
-            .with_entities(func.count(Message.id))
-            .scalar_subquery()
-            .label('changes_count'),
-            Environment.notes,
-        )
-
-    def _pending_changes_query(self, environment):
-        """
-        Create a base query to list changes for a specific environment or all environment.
-        """
-        return Message.query.filter(
-            Message.type.in_([Message.TYPE_NEW, Message.TYPE_DIRTY]),
-            or_(
-                Message.model_name == environment.model_name,
-                and_(Message.model_name == 'environment', Message.model_id == environment.id),
-            ),
-            Message.id
-            > func.coalesce(
-                Deployment.query.with_entities(func.max(Deployment.end_id))
-                .filter(Deployment.environment_id == environment.id)
-                .correlate(inspect.isclass(environment) and environment)
-                .scalar_subquery(),
-                0,
-            ),
+        return (
+            Environment.query.with_entities(
+                Environment.id,
+                Environment.status,
+                Environment.name,
+                Environment.model_name,
+                func.count(Environment.pending_changes).label('changes_count'),
+                Environment.notes,
+            )
+            .outerjoin(Environment.pending_changes)
+            .group_by(Environment.id)
         )
 
     @cherrypy.expose
@@ -155,9 +135,14 @@ class EnvironmentPage(CommonPage):
         # Find environment or return Not Found
         environment = self._get_or_404(key)
         # Query last change id to verify if new changes was commited
-        end_change = self._pending_changes_query(environment).order_by(Message.id.desc()).first()
+        end_id = (
+            Environment.query.with_entities(func.coalesce(func.max(Message.id), -1))
+            .join(Environment.pending_changes)
+            .filter(Environment.id == environment.id)
+            .scalar()
+        )
         form = DeployForm()
-        form.last_change.data = end_change.id if end_change else -1
+        form.last_change.data = end_id
         param['deploy_form'] = form
         return param
 
@@ -169,29 +154,17 @@ class EnvironmentPage(CommonPage):
         verify_perm(User.PERM_NETWORK_LIST)
         # Find environment or return Not Found
         environment = self._get_or_404(key)
-        # Identity last change
-        end_change = self._pending_changes_query(environment).order_by(Message.id.desc()).first()
-        form = DeployForm()
+        # Identity last change by creating a new deployment without commiting.
+        currentuser = cherrypy.serving.request.currentuser
+        deployment = environment.create_deployment(owner=currentuser)
         # Store the last change ID as a reference
-        form.last_change.default = end_change.id if end_change else -1
+        form = DeployForm()
+        form.last_change.default = deployment.end_id
         if not form.is_submitted():
             # Expect POST
             raise cherrypy.HTTPError(405)
         if form.validate():
-            currentuser = cherrypy.serving.request.currentuser
-            count = self._pending_changes_query(environment).count()
-            start_change = self._pending_changes_query(environment).order_by(Message.id.asc()).first()
-            deployment = (
-                Deployment(
-                    environment_id=environment.id,
-                    owner=currentuser,
-                    change_count=count,
-                    start_id=start_change.id if start_change else -1,
-                    end_id=end_change.id if end_change else -1,
-                )
-                .add()
-                .commit()
-            )
+            deployment.add().commit()
             deployment.schedule_task(base_url=url_for('/'))
             flash('Deployment scheduled...')
             raise cherrypy.HTTPRedirect(url_for('deployment', deployment.id, 'view'))
@@ -208,7 +181,6 @@ class EnvironmentPage(CommonPage):
         # Find environment or return Not Found
         environment = self._get_or_404(key)
         # List all activities by dates
-        obj_list = self._pending_changes_query(environment).order_by(Message.id.desc()).limit(100).all()
         return {
             'data': [
                 ChangeRow(
@@ -222,7 +194,7 @@ class EnvironmentPage(CommonPage):
                     changes=obj.changes,
                     url=url_for(obj.model_name, obj.model_id, 'edit', relative='server'),
                 )
-                for obj in obj_list
+                for obj in environment.pending_changes
             ]
         }
 

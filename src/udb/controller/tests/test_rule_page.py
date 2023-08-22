@@ -58,6 +58,18 @@ class RulePageTest(WebCase, CommonTest):
 
 
 class BuiltinRuleTest(WebCase):
+    def test_edit_check_constraint(self):
+        # Given a database with check constraint rule
+        rule = Rule.query.filter(Rule.name == 'dhcp_start_end_not_null').one()
+        # When editing the rule
+        self.getPage(url_for(rule, 'edit'))
+        self.assertStatus(200)
+        # Then the rule status cannot be updated.
+        self.assertNotInBody('Save changes and Delete')
+        self.assertNotInBody('Save changes and Disable')
+        self.assertNotInBody('Save changes and Enable')
+        self.assertInBody('Save changes')
+
     def test_edit_builtin_fail(self):
         # Given a builtin rule
         rule = Rule.query.filter(Rule.builtin.is_(True)).first()

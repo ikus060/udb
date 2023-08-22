@@ -1,0 +1,35 @@
+{% extends 'layout.html' %}
+{% import "components/table.html" as _table %}
+{% import "common/status.html" as _status %}
+{% import "macro.html" as macro %}
+{% block title %}
+  {% trans %}Deployment #{% endtrans %}{{ deployment.id }}
+{% endblock %}
+{% block body %}
+  {# Title #}
+  {% set choices = dict([
+      (0, '<span class="badge bg-warning">'|safe + _('Starting...') + '</span>'|safe),
+      (1, '<span class="badge bg-info"><span class="spinner-border spinner-border-sm"
+        role="status"
+        aria-hidden="true"></span> '|safe + _('Running...') + '</span>'|safe),
+      (2, '<span class="badge bg-success">'|safe + _('Success') + '</span>'|safe),
+      (3, '<span class="badge bg-danger">'|safe + _('Failed') + '</span>'|safe)]) %}
+    <h3>
+      {{ choices[deployment.state] }} {% trans %}Deployment #{% endtrans %}{{ deployment.id }}
+      {% trans %}to{% endtrans %}
+      {{ deployment.environment.name }}
+    </h3>
+    {% include "flash.html" %}
+    {# Nav Tab#}
+    <ul class="nav nav-tabs mb-2">
+      <li class="nav-item">
+        <a class="nav-link {% if current_url.endswith('view') %}active{% endif %}"
+           href="{{ url_for('deployment', deployment.id, 'view') }}">{% trans %}Logs{% endtrans %}</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if current_url.endswith('changes') %}active{% endif %}"
+           href="{{ url_for('deployment', deployment.id, 'changes') }}">{% trans %}Changes{% endtrans %}</a>
+      </li>
+    </ul>
+    {% block content %}{% endblock %}
+  {% endblock %}

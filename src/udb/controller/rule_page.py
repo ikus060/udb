@@ -127,6 +127,18 @@ class RulePage(CommonPage):
             new_perm=User.PERM_RULE_EDIT,
         )
 
+    @cherrypy.expose
+    @cherrypy.tools.jinja2(template=['{model_name}/edit.html', 'common/edit.html'])
+    def edit(self, key, **kwargs):
+        """
+        Remove "status" on unique and check constraints.
+        """
+        values = super().edit(key, **kwargs)
+        obj = values['obj']
+        if obj.type in [Rule.TYPE_CHECK, Rule.TYPE_UNIQUE]:
+            values['has_status'] = False
+        return values
+
     def _list_query(self):
         return Rule.session.query(
             Rule.id,

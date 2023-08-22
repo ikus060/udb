@@ -152,7 +152,7 @@ class CommonPage(object):
         query = (
             Message.query.with_entities(
                 Message.id,
-                User.summary.label('author'),
+                User.summary.label('author_name'),
                 Message.date,
                 Message.type,
                 Message.body,
@@ -167,7 +167,7 @@ class CommonPage(object):
             'data': [
                 HistoryRow(
                     id=obj.id,
-                    author=obj.author,
+                    author=obj.author_name or str(_('System')),
                     date=obj.date.isoformat(),
                     type=obj.type,
                     body=obj.body,
