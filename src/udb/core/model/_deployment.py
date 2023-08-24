@@ -223,7 +223,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
                     Subnet.status == Subnet.STATUS_ENABLED,
                 )
             )
-            # Identiy the subnet related for each dhcp record.
+            # Identify the subnet related for each dhcp record.
             related_subnet_query = (
                 select(SubnetRange.id)
                 .join(Subnet.subnet_ranges)
@@ -239,7 +239,11 @@ class Deployment(CommonMixin, JsonMixin, Base):
             # Identify the hostname for each dhcp record.
             hostname_query = (
                 select(DnsRecord.value)
-                .filter(DnsRecord.type == 'PTR', DnsRecord.generated_ip == DhcpRecord.ip)
+                .filter(
+                    DnsRecord.type == 'PTR',
+                    DnsRecord.generated_ip == DhcpRecord.ip,
+                    DnsRecord.status == DnsRecord.STATUS_ENABLED,
+                )
                 .scalar_subquery()
             )
             dhcp_query = select(

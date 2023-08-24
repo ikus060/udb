@@ -14,4 +14,11 @@
          class="btn btn-outline-primary text-nowrap w-100">{% trans %}Show Related MAC{% endtrans %}</a>
     </div>
   {% endif %}
+  {# Related PTR #}
+  {% for record in obj.related_ptr_dnsrecord %}
+    <div class="col mb-2">
+      <a href="{{ url_for(record, 'edit') }}"
+         class="btn btn-outline-primary text-nowrap w-100">{% trans %}Show {% endtrans %} {{ record.hostname_value }} ({{ record.type }})</a>
+    </div>
+  {% endfor %}
 {% endblock %}
