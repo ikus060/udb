@@ -348,6 +348,10 @@ class Environment(CommonMixin, JsonMixin, MessageMixin, StatusMixing, Searchable
             owner=owner,
         )
 
+    @classmethod
+    def count_pending_changes(cls, limit=10):
+        return Environment.query.with_entities(func.count(Message.id)).join(Environment.pending_changes).scalar()
+
 
 @event.listens_for(Base.metadata, 'after_create')
 def update_environment_schema(target, conn, **kw):

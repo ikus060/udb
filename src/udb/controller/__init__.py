@@ -25,7 +25,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.inspection import inspect
 
 import udb
-from udb.core.model import Rule, RuleError
+from udb.core.model import Environment, Rule, RuleError
 from udb.tools.i18n import get_translation
 from udb.tools.i18n import gettext as _
 
@@ -139,6 +139,7 @@ def template_processor(request):
         values['username'] = cherrypy.serving.request.login
     if hasattr(cherrypy.serving.request, 'currentuser'):
         values['currentuser'] = cherrypy.serving.request.currentuser
+        values['pending_changes'] = Environment.count_pending_changes()
     return values
 
 

@@ -120,8 +120,6 @@ class SQLA(cherrypy.Tool):
         cherrypy.request.hooks.attach('on_end_resource', self.on_end_resource)
 
     def create_all(self):
-        # Release opened sessions.
-        self.on_end_resource()
         base = self.get_base()
         # Create a new engine to connect to database
         if self._engine is None:
@@ -141,8 +139,6 @@ class SQLA(cherrypy.Tool):
         self.get_session().remove()
 
     def drop_all(self):
-        # Release opened sessions.
-        self.on_end_resource()
         # Drop all
         base = self.get_base()
         base.metadata.drop_all(bind=self._engine)
@@ -166,6 +162,9 @@ class SQLA(cherrypy.Tool):
         return self._session
 
     def on_end_resource(self):
+        """
+        Called when HTTP session is completed.
+        """
         if self._session is None:
             return
         try:
