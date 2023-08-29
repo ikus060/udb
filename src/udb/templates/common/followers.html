@@ -17,7 +17,7 @@
     </button>
     {# Mobile #}
     <div class="btn-group w-100 d-xl-none" role="group">
-      <button class="btn btn-outline-primary dropdown-item" type="submit">
+      <button class="btn btn-outline-primary" type="submit">
         <i class="bi {{ 'bi-bell-slash' if is_following else 'bi-bell' }}"
            aria-hidden="true"></i>
         {{ _("Stop following") if is_following else _('Start following') }}
@@ -33,6 +33,10 @@
           {% for userobj in obj.followers %}
             <li>
               <a class="dropdown-item">{{ userobj.fullname or userobj.username }}</a>
+            </li>
+          {% else %}
+            <li>
+              <a class="dropdown-item">{% trans %}List is empty{% endtrans %}</a>
             </li>
           {% endfor %}
         </ul>
