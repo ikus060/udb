@@ -28,6 +28,7 @@ import cherrypy
 import cherrypy.test.helper
 import html5lib
 from selenium import webdriver
+from sqlalchemy.orm import close_all_sessions
 
 from udb.app import Root
 from udb.config import parse_args
@@ -76,6 +77,9 @@ class WebCase(BaseClass):
         time.sleep(0.25)
         while count < 20 and len(cherrypy.scheduler.list_tasks()) or cherrypy.scheduler.is_job_running():
             time.sleep(0.5)
+            count += 1
+        self.assertFalse(cherrypy.scheduler.list_tasks())
+        self.assertFalse(cherrypy.scheduler.is_job_running())
 
     @classmethod
     def setup_server(cls):
@@ -92,7 +96,11 @@ class WebCase(BaseClass):
 
     def setUp(self):
         super().setUp()
+        # Close all session
+        close_all_sessions()
+        # Drop previous tables
         cherrypy.tools.db.drop_all()
+        # Create new tables.
         cherrypy.tools.db.create_all()
         if self.login:
             self._login()
@@ -100,6 +108,10 @@ class WebCase(BaseClass):
     def tearDown(self):
         # Need to wait for task before deleting to avoid dead lock in postgresql.
         self.wait_for_tasks()
+        # Close all session
+        close_all_sessions()
+        # Drop tables
+        cherrypy.tools.db.drop_all()
         # Delete selenium download
         if getattr(self, '_selenium_download_dir', False):
             shutil.rmtree(self._selenium_download_dir)

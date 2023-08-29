@@ -19,9 +19,9 @@ import ipaddress
 
 import cherrypy
 import validators
-from sqlalchemy import Column, ForeignKey, Index, event, func, select
+from sqlalchemy import Column, ForeignKey, Index, and_, event, func, select
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import aliased, relationship, validates
+from sqlalchemy.orm import aliased, declared_attr, foreign, relationship, remote, validates
 from sqlalchemy.types import String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
@@ -29,6 +29,7 @@ from udb.tools.i18n import gettext_lazy as _
 
 from ._cidr import InetType
 from ._common import CommonMixin
+from ._dnsrecord import DnsRecord
 from ._follower import FollowerMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
@@ -78,6 +79,19 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
     @summary.expression
     def summary(self):
         return self.ip.host() + " (" + self.mac + ")"
+
+    @declared_attr
+    def related_ptr_dnsrecord(cls):
+        return relationship(
+            DnsRecord,
+            primaryjoin=and_(
+                remote(foreign(DnsRecord.generated_ip)) == cls.ip,
+                DnsRecord.type.in_(['PTR', 'A', 'AAAA']),
+                DnsRecord.status == DnsRecord.STATUS_ENABLED,
+            ),
+            lazy=True,
+            viewonly=True,
+        )
 
 
 Index(

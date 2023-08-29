@@ -70,6 +70,7 @@ class SecureHeadersTest(WebCase):
         # Given an https request made to rdiffweb
         self.getPage('/dashboard/')
         # When receiving the response
+        self.assertStatus(200)
         # Then the header contains Set-Cookie with Secure
         cookie = self.assertHeader('Set-Cookie')
         self.assertNotIn('Secure', cookie)

@@ -48,6 +48,12 @@
       {# Deployment #}
       <div class="navbar-text mt-2 text-white">
         <strong>{% trans %}Setup{% endtrans %}</strong>
+        {% if pending_changes %}
+          <span class="badge rounded-pill bg-info"
+                title="{% trans %}Number of pending changes{% endtrans %}">
+            {{ '9+' if pending_changes>10 else pending_changes }}
+          </span>
+        {% endif %}
       </div>
       <ul class="nav nav-pills flex-column w-100">
         {% set items = ["environment", "deployment"] %}

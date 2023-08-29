@@ -20,8 +20,6 @@
                 {{ _status.badge(row.object_data) }}
               {% elif subfield.data %}
                 {% block table_widget_field scoped %}{{ subfield.data }}{% endblock %}
-              {% else %}
-                -
               {% endif %}
             </td>
           {% endfor %}

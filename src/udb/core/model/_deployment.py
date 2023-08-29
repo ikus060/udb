@@ -223,7 +223,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
                     Subnet.status == Subnet.STATUS_ENABLED,
                 )
             )
-            # Identiy the subnet related for each dhcp record.
+            # Identify the subnet related for each dhcp record.
             related_subnet_query = (
                 select(SubnetRange.id)
                 .join(Subnet.subnet_ranges)
@@ -239,7 +239,11 @@ class Deployment(CommonMixin, JsonMixin, Base):
             # Identify the hostname for each dhcp record.
             hostname_query = (
                 select(DnsRecord.value)
-                .filter(DnsRecord.type == 'PTR', DnsRecord.generated_ip == DhcpRecord.ip)
+                .filter(
+                    DnsRecord.type == 'PTR',
+                    DnsRecord.generated_ip == DhcpRecord.ip,
+                    DnsRecord.status == DnsRecord.STATUS_ENABLED,
+                )
                 .scalar_subquery()
             )
             dhcp_query = select(
@@ -347,6 +351,10 @@ class Environment(CommonMixin, JsonMixin, MessageMixin, StatusMixing, Searchable
             end_id=row.end_id,
             owner=owner,
         )
+
+    @classmethod
+    def count_pending_changes(cls, limit=10):
+        return Environment.query.with_entities(func.count(Message.id)).join(Environment.pending_changes).scalar()
 
 
 @event.listens_for(Base.metadata, 'after_create')

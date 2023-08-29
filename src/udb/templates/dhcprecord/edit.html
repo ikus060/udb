@@ -1,4 +1,5 @@
 {% extends 'common/edit.html' %}
+{% import "macro.html" as macro %}
 {% block extra_actions %}
   {# Related IP #}
   {% if obj._ip %}
@@ -14,4 +15,36 @@
          class="btn btn-outline-primary text-nowrap w-100">{% trans %}Show Related MAC{% endtrans %}</a>
     </div>
   {% endif %}
+  {# Related PTR desktop #}
+  <div class="col mb-2 d-none d-xl-block">
+    <h5>{% trans %}Related DNS Record{% endtrans %}</h5>
+    <div class="list-group">
+      {% for record in obj.related_ptr_dnsrecord %}
+        <a href="{{ url_for(record, 'edit') }}"
+           class="list-group-item list-group-item-action text-nowrap w-100">{{ macro.icon(record) }} {{ record.summary }}</a>
+      {% else %}
+        <a class="list-group-item list-group-item-action" aria-current="true">{% trans %}List is empty{% endtrans %}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {# Related PTR mobile #}
+  <div class="col mb-2 d-block d-xl-none">
+    <div class="btn-group">
+      <button type="button"
+              class="btn btn-outline-primary dropdown-toggle"
+              data-bs-toggle="dropdown"
+              aria-expanded="false">{% trans %}Related DNS Record{% endtrans %}</button>
+      <ul class="dropdown-menu">
+        {% for record in obj.related_ptr_dnsrecord %}
+          <li>
+            <a href="{{ url_for(record, 'edit') }}" class="dropdown-item">{{ macro.icon(record) }} {{ record.summary }}</a>
+          </li>
+        {% else %}
+          <li>
+            <a class="dropdown-item">{% trans %}List is empty{% endtrans %}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
 {% endblock %}

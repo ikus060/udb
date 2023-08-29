@@ -21,11 +21,11 @@ from wtforms.fields.simple import TextAreaField
 from wtforms.form import Form
 from wtforms.validators import DataRequired, Length
 
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, User
+from udb.core.model import DhcpRecord, DnsRecord, Ip, User
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, SelectMultipleObjectField, SelectObjectField, SubnetTableWidget, TableWidget
+from .form import CherryForm, SelectObjectField, TableWidget
 
 
 class RelatedDnsRecordFrom(Form):
@@ -42,7 +42,6 @@ class RelatedDhcpRecordForm(Form):
 
 
 class RelatedSubnetForm(Form):
-
     name = StringField(_('Name'), render_kw={"readonly": True})
     subnet_ranges = StringField(
         _('IP Ranges'),
@@ -50,7 +49,22 @@ class RelatedSubnetForm(Form):
         filters=[lambda subnet_ranges: ', '.join([str(r.range) for r in subnet_ranges])],
     )
     vrf = IntegerField(_('VRF'), render_kw={"readonly": True})
-    dnszones = SelectMultipleObjectField(_('DNS zones'), object_cls=DnsZone)
+    dhcp = StringField(
+        _('DHCP enabled'),
+        render_kw={"readonly": True},
+        filters=[lambda value: '✓' if value else ''],
+    )
+    dnszones = StringField(
+        _('DNS zones'),
+        render_kw={"readonly": True},
+        filters=[lambda dnszones: ', '.join([str(z.name) for z in dnszones])],
+    )
+
+    def process(self, formdata=None, obj=None, data=None, **kwargs):
+        super().process(formdata=formdata, obj=obj, data=data, **kwargs)
+        # Populate dhcp field from subnet range
+        if obj:
+            self.dhcp.process(formdata, data=any(r.dhcp for r in obj.subnet_ranges))
 
 
 class IpForm(CherryForm):
@@ -77,7 +91,7 @@ class IpForm(CherryForm):
     related_subnets = FieldList(
         FormField(RelatedSubnetForm),
         label=_('Supernets'),
-        widget=SubnetTableWidget(),
+        widget=TableWidget(),
     )
 
     notes = TextAreaField(

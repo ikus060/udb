@@ -24,7 +24,6 @@ import logging
 from datetime import datetime
 
 import cherrypy
-from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED, EVENT_JOB_SUBMITTED
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -33,12 +32,21 @@ from cherrypy.process.plugins import SimplePlugin
 logger = logging.getLogger(__name__)
 
 
-def catch_exception(func):
+def catch_exception(scheduler, func):
+    """
+    Wrapper function to execute job.
+    Primarly to handle database connection rollback and also to keep track
+    if any job are still running.
+    """
+
     def wrapper(*args, **kwargs):
+        ident = object()
+        scheduler._running.append(ident)
         try:
             func(*args, **kwargs)
         finally:
             cherrypy.tools.db.on_end_resource()
+            scheduler._running.remove(ident)
 
     wrapper._func = func
     return wrapper
@@ -53,16 +61,7 @@ class Scheduler(SimplePlugin):
         super().__init__(bus)
         self._scheduler = self._create_scheduler()
         self._scheduler.start(paused=True)
-        self._scheduler.add_listener(self._job_submitted, EVENT_JOB_SUBMITTED)
-        self._scheduler.add_listener(self._job_finish, (EVENT_JOB_EXECUTED | EVENT_JOB_ERROR))
         self._running = []
-
-    def _job_submitted(self, event):
-        self._running.append(event.job_id)
-
-    def _job_finish(self, event):
-        if event.job_id in self._running:
-            self._running.remove(event.job_id)
 
     def _create_scheduler(self):
         return BackgroundScheduler(
@@ -71,8 +70,14 @@ class Scheduler(SimplePlugin):
                 'scheduled': MemoryJobStore(),
             },
             executors={
-                'default': ThreadPoolExecutor(max_workers=10),
-                'scheduled': ThreadPoolExecutor(max_workers=1),
+                'default': ThreadPoolExecutor(
+                    max_workers=1,
+                    pool_kwargs={'thread_name_prefix': 'scheduler-default'},
+                ),
+                'scheduled': ThreadPoolExecutor(
+                    max_workers=1,
+                    pool_kwargs={'thread_name_prefix': 'scheduler-scheduled'},
+                ),
             },
         )
 
@@ -118,7 +123,7 @@ class Scheduler(SimplePlugin):
         assert hasattr(job, '__call__'), 'job must be callable'
         hour, minute = execution_time.split(':', 2)
         self._scheduler.add_job(
-            func=catch_exception(job),
+            func=catch_exception(self, job),
             name=job.__name__,
             args=args,
             kwargs=kwargs,
@@ -135,7 +140,7 @@ class Scheduler(SimplePlugin):
         """
         assert hasattr(task, '__call__'), 'task must be callable'
         self._scheduler.add_job(
-            func=catch_exception(task),
+            func=catch_exception(self, task),
             name=task.__name__,
             args=args,
             kwargs=kwargs,
