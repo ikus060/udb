@@ -130,13 +130,11 @@ class TestI18nInvalidDefaultLangWebCase(WebCase):
         self.assertInBody('lang="en"')
 
     def test_default_timezone_invalid(self):
-        # Given an invalid default timezone
-        print(i18n._current.__dict__)
-        print(cherrypy.config.get('tools.i18n.default_timezone'))
-        # When getting current timezone
-        tzinfo = i18n.get_timezone()
-        # Then timezone is None to force usage of serer timezone
-        self.assertIsNone(tzinfo)
+        # Given an invalid timezone
+        # When defining the effective timezone
+        tzname = i18n.format_datetime(None, format='zzz')
+        # Then server time is used
+        self.assertEqual(datetime.now().astimezone().tzname(), tzname)
 
 
 class TestI18nTimezone(WebCase):

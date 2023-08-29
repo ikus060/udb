@@ -144,6 +144,18 @@ class UserPageTest(WebCase):
         new_obj = User.query.filter_by(username=self.new_data['username']).first()
         self.assertEqual(None, new_obj.password)
 
+    def test_edit_timezone(self):
+        # Given a database with a record
+        obj = User(**self.new_data).add()
+        obj.commit()
+        # Whend editing the user's timezone.
+        self.getPage(url_for(obj, 'edit'), method='POST', body={'timezone': 'America/Toronto'})
+        self.assertStatus(303)
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
+        # Then the timezone get updated.
+        obj.expire()
+        self.assertEqual('America/Toronto', obj.timezone)
+
     def test_new(self):
         # Given an empty database
         # When trying to create a new dns zone

@@ -194,6 +194,9 @@ def get_timezone():
             break
         except Exception:
             pass
+    # If we can't find a valid timezone using the default and preferred value, fall back to server timezone.
+    if tzinfo is None:
+        tzinfo = dates.get_timezone(None)
     _current.tzinfo = tzinfo
     return _current.tzinfo
 
@@ -300,16 +303,23 @@ def gettext_lazy(message):
 def format_datetime(datetime=None, format='medium', tzinfo=None):
     """
     Wraper arround babel format_datetime to provide a default locale.
+    The timezone used to format the date is determine with the following priorities:
+    * value of tzinfo
+    * value of get_timezone()
+    * default server time.
     """
     # When formating date or english, let use en_GB as it's to most complete translation.
     return dates.format_datetime(
-        datetime=datetime, format=format, locale=get_translation().locale, tzinfo=tzinfo or get_timezone()
+        datetime=datetime,
+        format=format,
+        locale=get_translation().locale,
+        tzinfo=tzinfo or get_timezone(),
     )
 
 
-def get_timezone_name(tzinfo=None):
+def get_timezone_name(tzinfo):
     locale = Locale(get_translation().locale.language)
-    return dates.get_timezone_name(tzinfo or get_timezone(), width='long', locale=locale)
+    return dates.get_timezone_name(tzinfo, width='long', locale=locale)
 
 
 def _load_default(mo_dir, domain, default, **kwargs):

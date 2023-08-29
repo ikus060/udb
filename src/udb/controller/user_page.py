@@ -83,6 +83,7 @@ class NewUserForm(CherryForm):
         obj.email = self.email.data
         obj.role = self.role.data
         obj.lang = self.lang.data
+        obj.timezone = self.timezone.data
         if self.clear_password.data:
             obj.password = None
         elif self.password.data:
