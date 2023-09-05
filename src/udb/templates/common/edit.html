@@ -17,7 +17,9 @@
           <span class="visually-hidden">{% trans %}Go Back{% endtrans %}</span>
         </a>
         {# Title #}
-        <h2 class="flex-fill mb-0">{{ _("Edit") }} {{ macro.display_name(model_name) }} {{(form|first).data }}</h2>
+        <h2 class="flex-fill mb-0">
+          {% block edit_title %}{{ _("Edit") }} {{ macro.display_name(model_name) }} {{(form|first).data }}{% endblock %}
+        </h2>
         {# /Title #}
       </div>
     </div>

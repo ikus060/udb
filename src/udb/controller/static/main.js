@@ -154,7 +154,14 @@ $.fn.dataTable.ext.buttons.filter = {
             // Enable - replace all terms
             terms = [config.search];
         }
-        const search = terms.length == 1 ? terms[0] : '(' + terms.join('|') + ')';
+        let search;
+        if (terms.length == 0) {
+            search = '';
+        } else if (terms.length == 1) {
+            search = terms[0];
+        } else {
+            search = '(' + terms.join('|') + ')';
+        }
         dt.column(config.column).search(search, true);
         dt.draw(true);
     }

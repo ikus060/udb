@@ -15,11 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from sqlalchemy import Column, String
+from sqlalchemy import Column, ForeignKey, Integer, String, func
 from sqlalchemy.orm import declarative_mixin, declared_attr, relationship
-from sqlalchemy.sql.functions import func
-from sqlalchemy.sql.schema import ForeignKey
-from sqlalchemy.sql.sqltypes import Integer
 
 from ._timestamp import Timestamp
 from ._user import User

@@ -24,6 +24,7 @@ from sqlalchemy import (
     Column,
     Computed,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     and_,
     case,
@@ -51,7 +52,7 @@ from ._rule import Rule, RuleConstraint
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._subnet import Subnet, SubnetRange
-from ._update import constraint_add, constraint_exists
+from ._vrf import Vrf
 
 Base = cherrypy.tools.db.get_base()
 
@@ -165,15 +166,23 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
     type = Column(String, nullable=False)
     ttl = Column(Integer, nullable=False, default=3600)
     value = Column(String, nullable=False)
+    vrf_id = Column(Integer, ForeignKey("vrf.id"), nullable=True)
+    vrf = relationship(Vrf)
+    __table_args__ = (ForeignKeyConstraint(["generated_ip", "vrf_id"], ["ip.ip", "ip.vrf_id"]),)
 
     # Relation to Ip record uses GENERATE ALWAYS
     @declared_attr
     def generated_ip(cls):
-        return Column(InetType, ForeignKey("ip.ip"), Computed(cls.ip_value, persisted=True))
+        return Column(InetType, Computed(cls.ip_value, persisted=True))
 
     @declared_attr
     def _ip(cls):
-        return relationship("Ip", back_populates='related_dns_records', lazy=True)
+        return relationship(
+            "Ip",
+            back_populates='related_dns_records',
+            lazy=True,
+            foreign_keys="[DnsRecord.generated_ip]",
+        )
 
     @classmethod
     def _search_string(cls):
@@ -233,10 +242,10 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
         """
         if self.type == 'PTR':
             newtype = 'AAAA' if self.value.endswith('.ip6.arpa') else 'A'
-            return DnsRecord(name=self.value, type=newtype, value=self.ip_value, ttl=self.ttl, **kwargs)
+            return DnsRecord(name=self.value, type=newtype, value=self.ip_value, ttl=self.ttl, vrf=self.vrf, **kwargs)
         elif self.type in ['A', 'AAAA']:
             value = ipaddress.ip_address(self.value).reverse_pointer
-            return DnsRecord(name=value, type='PTR', value=self.name, ttl=self.ttl, **kwargs)
+            return DnsRecord(name=value, type='PTR', value=self.name, ttl=self.ttl, vrf=self.vrf, **kwargs)
         return None
 
     @validates('name')
@@ -420,6 +429,25 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
                 _('PTR records must ends with `.in-addr.arpa` or `.ip6.arpa` and define a valid IPv4 or IPv6 address'),
             )
 
+    def find_vrf(self):
+        """
+        Lookup database to find the best matching VRF for this record.
+        """
+        q = (
+            Vrf.query.join(Subnet.vrf)
+            .join(Subnet.subnet_ranges)
+            .join(Subnet.dnszones)
+            .filter(
+                literal(self.name).endswith(DnsZone.name),
+                SubnetRange.version == func.family(literal(self.ip_value)),
+                SubnetRange.start_ip <= func.inet(literal(self.ip_value)),
+                SubnetRange.end_ip >= func.inet(literal(self.ip_value)),
+                DnsZone.status == DnsZone.STATUS_ENABLED,
+                Subnet.status == Subnet.STATUS_ENABLED,
+            )
+        )
+        return q.all()
+
 
 @event.listens_for(DnsRecord, "before_update")
 def before_update(mapper, connection, instance):
@@ -500,6 +528,18 @@ dnsrecord_ptr_invalid_ip = CheckConstraint(
     },
 )
 
+dnsrecord_a_aaaa_ptr_without_vrf = CheckConstraint(
+    or_(
+        DnsRecord.vrf_id.is_not(None),
+        DnsRecord.type.not_in(['A', 'AAAA', 'PTR']),
+    ),
+    name="dnsrecord_a_aaaa_ptr_without_vrf",
+    info={
+        'description': _('A VRF is required for this type of DNS Record.'),
+        'field': 'vrf_id',
+    },
+)
+
 # Make sure only one SOA record exists.
 Index(
     'dnsrecord_soa_uniq_index',
@@ -575,6 +615,7 @@ RuleConstraint(
                 .filter(
                     fwd.status == DnsRecord.STATUS_ENABLED,
                     fwd.type.in_(['A', 'AAAA']),
+                    fwd.vrf_id == DnsRecord.vrf_id,
                     fwd.generated_ip == DnsRecord.generated_ip,
                 )
                 .exists()
@@ -680,6 +721,7 @@ RuleConstraint(
                 SubnetRange.version == func.family(DnsRecord.generated_ip),
                 SubnetRange.start_ip <= DnsRecord.generated_ip,
                 SubnetRange.end_ip >= DnsRecord.generated_ip,
+                Subnet.vrf_id == DnsRecord.vrf_id,
                 DnsZone.status == DnsZone.STATUS_ENABLED,
                 Subnet.status == Subnet.STATUS_ENABLED,
             )
@@ -725,6 +767,7 @@ RuleConstraint(
                 SubnetRange.version == func.family(DnsRecord.generated_ip),
                 SubnetRange.start_ip <= DnsRecord.generated_ip,
                 SubnetRange.end_ip >= DnsRecord.generated_ip,
+                Subnet.vrf_id == DnsRecord.vrf_id,
                 DnsZone.status == DnsZone.STATUS_ENABLED,
                 Subnet.status == Subnet.STATUS_ENABLED,
             )
@@ -753,22 +796,3 @@ RuleConstraint(
         ),
     },
 )
-
-
-@event.listens_for(Base.metadata, 'after_create')
-def update_schema_dnsrecord(target, conn, **kw):
-    """
-    Update dnsrecord table.
-    """
-    # Create missing constraints
-    for constraint in [
-        dnsrecord_value_not_empty,
-        dnsrecord_value_domain_name,
-        dnsrecord_a_invalid_ip,
-        dnsrecord_aaaa_invalid_ip,
-        dnsrecord_ptr_invalid_ip,
-    ]:
-        # Check if dnsrecord_value_domain_name exists.
-        if not constraint_exists(conn, constraint):
-            # If not, we need to recreated the table.
-            constraint_add(conn, constraint)

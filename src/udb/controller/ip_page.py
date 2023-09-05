@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import cherrypy
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 from wtforms.fields import FieldList, FormField, IntegerField, StringField
@@ -21,7 +22,7 @@ from wtforms.fields.simple import TextAreaField
 from wtforms.form import Form
 from wtforms.validators import DataRequired, Length
 
-from udb.core.model import DhcpRecord, DnsRecord, Ip, User
+from udb.core.model import DhcpRecord, DnsRecord, Ip, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
@@ -94,6 +95,8 @@ class IpForm(CherryForm):
         widget=TableWidget(),
     )
 
+    vrf_id = SelectObjectField(_('VRF'), object_cls=Vrf, render_kw={"readonly": True})
+
     notes = TextAreaField(
         _('Notes'),
         default='',
@@ -135,12 +138,32 @@ class IpPage(CommonPage):
             Ip.query.outerjoin(Ip.owner)
             .outerjoin(Ip.related_dhcp_records)
             .outerjoin(Ip.related_dns_records)
-            .group_by(Ip.id)
+            .outerjoin(Ip.vrf)
+            .group_by(Ip.id, Vrf.id)
             .with_entities(
                 Ip.id,
                 Ip.ip,
                 (func.count(DhcpRecord.id) + func.count(DnsRecord.id)).label('count'),
+                Vrf.id,
+                Vrf.name,
                 Ip.notes,
                 func.min(User.summary).label('owner'),
             )
         )
+
+    @cherrypy.expose
+    @cherrypy.tools.jinja2(template=['{model_name}/list.html', 'common/list.html'])
+    def index(self):
+        """
+        This implementation return a list of VRF
+        """
+        values = super().index()
+        # Query VRF with number of assigned IP.
+        values['vrf_list'] = [
+            (row.id, row.name, row.count)
+            for row in Vrf.query.with_entities(Vrf.id, Vrf.name, func.count(Ip.id).label('count'))
+            .outerjoin(Ip)
+            .group_by(Vrf.id)
+            .all()
+        ]
+        return values

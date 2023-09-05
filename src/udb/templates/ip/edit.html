@@ -1,4 +1,7 @@
 {% extends 'common/edit.html' %}
+{% block edit_title %}
+  {{ super() }} - {% trans %}VRF{% endtrans %} {{ obj.vrf.name }}
+{% endblock %}
 {% block edit_form %}
   <div class="mb-2">
     {{ form.related_dns_records.label(class='form-label') }}

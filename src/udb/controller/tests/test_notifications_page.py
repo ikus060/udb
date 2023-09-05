@@ -45,7 +45,7 @@ class NotificationsTest(WebCase):
             vrf=vrf,
         ).add().commit()
         zone.add_follower(user)
-        dhcp = DhcpRecord(mac='00:00:5e:00:53:af', ip='10.255.67.12').add().commit()
+        dhcp = DhcpRecord(mac='00:00:5e:00:53:af', ip='10.255.67.12', vrf=vrf).add().commit()
         dhcp.add_follower(user)
         dhcp.commit()
         # When browser the notifications page
@@ -79,7 +79,7 @@ class NotificationsTest(WebCase):
             vrf=vrf,
         ).add().commit()
         zone.add_follower(user)
-        dhcp = DhcpRecord(mac='00:00:5e:00:53:af', ip='10.255.67.12').add().commit()
+        dhcp = DhcpRecord(mac='00:00:5e:00:53:af', ip='10.255.67.12', vrf=vrf).add().commit()
         dhcp.add_follower(user)
         dhcp.commit()
         # When trying to unfollow

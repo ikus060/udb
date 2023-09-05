@@ -219,7 +219,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         )
         self.listener.send_mail.reset_mock()
         # When a DNS Record within that zone get created
-        obj = DnsRecord(name='my.zone.com', type='A', value='147.87.250.1')
+        obj = DnsRecord(name='my.zone.com', type='A', value='147.87.250.1', vrf=vrf)
         obj.add()
         obj.commit()
         # Then wait for task to get processed
@@ -240,7 +240,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         self.wait_for_tasks()
         self.listener.send_mail.reset_mock()
         # Given a DNS Record follower
-        record = DnsRecord(name='my.zone.com', type='A', value='147.87.250.1').add().flush()
+        record = DnsRecord(name='my.zone.com', type='A', value='147.87.250.1', vrf=vrf).add().flush()
         record.add_follower(follower)
         record.commit()
         # Then wait for task to get processed
@@ -252,7 +252,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         )
         self.listener.send_mail.reset_mock()
         # When a DNS Record within that zone get created
-        obj = DnsRecord(name='1.250.87.147.in-addr.arpa', type='PTR', value='my.zone.com')
+        obj = DnsRecord(name='1.250.87.147.in-addr.arpa', type='PTR', value='my.zone.com', vrf=vrf)
         obj.add()
         obj.commit()
         # Then wait for task to get processed

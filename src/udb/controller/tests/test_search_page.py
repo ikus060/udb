@@ -221,7 +221,7 @@ class TestSearchPage(WebCase):
         vrf = Vrf(name='default').add()
         subnet = Subnet(subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('2001:db8:85a3::/64')], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
-        record = DnsRecord(name='lumos.example.com', type='A', value='192.168.1.14')
+        record = DnsRecord(name='lumos.example.com', type='A', value='192.168.1.14', vrf=vrf)
         record.add().commit()
         # When searching the first CN
         data = self.getJson(url_for("search", "data.json", q="lumos"))
@@ -280,7 +280,7 @@ class TestSearchPage(WebCase):
         vrf = Vrf(name='default').add()
         subnet = Subnet(subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('2001:db8:85a3::/64')], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
-        record = DnsRecord(name='lumos.example.com', type='A', value='192.168.1.14')
+        record = DnsRecord(name='lumos.example.com', type='A', value='192.168.1.14', vrf=vrf)
         record.add().commit()
         # When searching for partial IP Address 192.168
         data = self.getJson(url_for("search", "data.json", q="192.168"))
@@ -332,7 +332,7 @@ class TestSearchPage(WebCase):
         vrf = Vrf(name='default').add()
         subnet = Subnet(subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('	2a07:6b43::/32')], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
-        record = DnsRecord(name='lumos.example.com', type='AAAA', value='2a07:6b43:115:11::127')
+        record = DnsRecord(name='lumos.example.com', type='AAAA', value='2a07:6b43:115:11::127', vrf=vrf)
         record.add().commit()
         # When searching for partial IP Address 2a07:6b43:115
         data = self.getJson(url_for("search", "data.json", q="2a07:6b43:115"))

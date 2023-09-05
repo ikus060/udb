@@ -51,7 +51,7 @@ class EnvironmentPageTest(WebCase, CommonTest):
             vrf=vrf,
         ).add().commit()
         # Given a database with DHCP Record change
-        DhcpRecord(ip='192.168.45.67', mac='E5:D3:56:7B:22:A3').add().commit()
+        DhcpRecord(ip='192.168.45.67', mac='E5:D3:56:7B:22:A3', vrf=vrf).add().commit()
 
     def test_follow(self):
         "Skip this test"

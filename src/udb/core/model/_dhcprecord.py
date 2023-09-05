@@ -19,7 +19,7 @@ import ipaddress
 
 import cherrypy
 import validators
-from sqlalchemy import Column, ForeignKey, Index, and_, event, func, select
+from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint, Index, Integer, and_, event, func, literal, select
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import aliased, declared_attr, foreign, relationship, remote, validates
 from sqlalchemy.types import String
@@ -37,6 +37,7 @@ from ._rule import Rule, RuleConstraint
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._subnet import Subnet, SubnetRange
+from ._vrf import Vrf
 
 Base = cherrypy.tools.db.get_base()
 
@@ -44,11 +45,13 @@ Base = cherrypy.tools.db.get_base()
 class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
     _ip_column_name = 'ip'
     _mac_column_name = 'mac'
-
-    ip = Column(InetType, ForeignKey("ip.ip"), nullable=False)
+    ip = Column(InetType, nullable=False)
     _ip = relationship("Ip", back_populates='related_dhcp_records', lazy=True)
     mac = Column(String, ForeignKey("mac.mac"), nullable=False)
     _mac = relationship("Mac", backref='related_dhcp_records', lazy=True)
+    vrf_id = Column(Integer, ForeignKey("vrf.id"), nullable=False)
+    vrf = relationship(Vrf)
+    __table_args__ = (ForeignKeyConstraint(["ip", "vrf_id"], ["ip.ip", "ip.vrf_id"]),)
 
     @classmethod
     def _search_string(cls):
@@ -60,7 +63,7 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
         try:
             return str(ipaddress.ip_address(value))
         except ValueError:
-            raise ValueError('ip', _('value must be a valid IP address'))
+            raise ValueError('ip', _('must be a valid IPv4 or IPv6 address'))
 
     @validates('mac')
     def validate_mac(self, key, value):
@@ -81,17 +84,34 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
         return self.ip.host() + " (" + self.mac + ")"
 
     @declared_attr
-    def related_ptr_dnsrecord(cls):
+    def related_dnsrecord(cls):
         return relationship(
             DnsRecord,
             primaryjoin=and_(
                 remote(foreign(DnsRecord.generated_ip)) == cls.ip,
+                remote(foreign(DnsRecord.vrf_id)) == cls.vrf_id,
                 DnsRecord.type.in_(['PTR', 'A', 'AAAA']),
                 DnsRecord.status == DnsRecord.STATUS_ENABLED,
             ),
             lazy=True,
             viewonly=True,
         )
+
+    def find_vrf(self):
+        """
+        Lookup database to find the best matching VRF for this record.
+        """
+        q = (
+            Vrf.query.join(Subnet.vrf)
+            .join(Subnet.subnet_ranges)
+            .filter(
+                SubnetRange.version == func.family(literal(self.ip)),
+                SubnetRange.start_ip <= func.inet(literal(self.ip)),
+                SubnetRange.end_ip >= func.inet(literal(self.ip)),
+                Subnet.status == Subnet.STATUS_ENABLED,
+            )
+        )
+        return q.all()
 
 
 Index(
@@ -137,6 +157,7 @@ RuleConstraint(
                 SubnetRange.version == func.family(DhcpRecord.ip),
                 SubnetRange.start_ip <= DhcpRecord.ip,
                 SubnetRange.end_ip >= DhcpRecord.ip,
+                Subnet.vrf_id == DhcpRecord.vrf_id,
                 Subnet.status == Subnet.STATUS_ENABLED,
             )
             .exists()
@@ -161,6 +182,7 @@ RuleConstraint(
                 SubnetRange.version == func.family(DhcpRecord.ip),
                 SubnetRange.dhcp_start_ip <= DhcpRecord.ip,
                 SubnetRange.dhcp_end_ip >= DhcpRecord.ip,
+                Subnet.vrf_id == DhcpRecord.vrf_id,
                 Subnet.status == Subnet.STATUS_ENABLED,
             )
             .exists()
@@ -183,7 +205,7 @@ RuleConstraint(
                 DhcpRecord.id.label('id'),
                 DhcpRecord.summary.label('name'),
             )
-            .join(a, DhcpRecord.ip == a.ip)
+            .join(a, and_(DhcpRecord.ip == a.ip, DhcpRecord.vrf_id == a.vrf_id))
             .filter(
                 DhcpRecord.id != a.id,
                 DhcpRecord.status == DhcpRecord.STATUS_ENABLED,
@@ -193,7 +215,7 @@ RuleConstraint(
         )
     ),
     info={
-        'description': _('Multiple DHCP Reservation for the same IP address.'),
+        'description': _('Multiple DHCP Reservation for the same IP address within the same VRF.'),
         'field': 'ip',
     },
 )

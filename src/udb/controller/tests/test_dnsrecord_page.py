@@ -68,6 +68,32 @@ class DnsRecordPageTest(WebCase, CommonTest):
         self.assertStatus(200)
         self.assertInBody('PTR records must ends with `.in-addr.arpa` or `.ip6.arpa`')
 
+    def test_new_with_default_vrf(self):
+        # Given a database with a VRF
+        # When creating a new DHCP Reservation without defining the VRF
+        self.getPage(
+            url_for(self.base_url, 'new'),
+            method='POST',
+            body={'name': 'foo.example.com', 'type': 'A', 'value': '192.168.1.98'},
+        )
+        self.assertStatus(303)
+        # Then the VRF is automatically defined
+        dnsrecord = DnsRecord.query.filter(DnsRecord.value == '192.168.1.98').first()
+        self.assertEqual(self.vrf.id, dnsrecord.vrf_id)
+
+    def test_new_with_invalid_vrf(self):
+        # Given a database with a VRF
+        vrf2 = Vrf(name='uplink').add().commit()
+        # When creating a new DHCP Reservation without defining the VRF
+        self.getPage(
+            url_for(self.base_url, 'new'),
+            method='POST',
+            body={'name': 'foo.example.com', 'type': 'A', 'value': '192.168.1.98', 'vrf_id': vrf2.id},
+        )
+        # Then an error message is displayed
+        self.assertStatus(200)
+        self.assertInBody("IP address must be defined within the DNS Zone.")
+
     @parameterized.expand(
         [
             ({'name': 'foo.example.com', 'type': 'A', 'value': '192.168.1.101'}, True),
@@ -79,6 +105,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
     def test_new_create_reverse_record(self, data, expect_success):
         # Given an empty database
         data['create_reverse_record'] = 'y'
+        data['vrf_id'] = self.vrf.id
         # When creating a new DNS Record
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
         # Then user is redirected
@@ -102,7 +129,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
     )
     def test_reverse_record(self, data, expect_success):
         # Given a database with a record
-        obj = self.obj_cls(**data).add()
+        obj = self.obj_cls(vrf=self.vrf, **data).add()
         obj.commit()
         self.assertIsNone(obj.get_reverse_dns_record())
         # When requesting reverse record to be created
@@ -122,7 +149,13 @@ class DnsRecordPageTest(WebCase, CommonTest):
 
     def test_new_create_reverse_record_with_invalid(self):
         # Given an empty database
-        data = {'name': 'foo.invalid.com', 'type': 'A', 'value': '192.168.1.101', 'create_reverse_record': 'y'}
+        data = {
+            'name': 'foo.invalid.com',
+            'type': 'A',
+            'value': '192.168.1.101',
+            'create_reverse_record': 'y',
+            'vrf_id': self.vrf.id,
+        }
         # When creating a new DNS Record with invalid data
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
         # Then error message is displayed to the user attach to the right field !
@@ -133,8 +166,12 @@ class DnsRecordPageTest(WebCase, CommonTest):
 
     def test_dns_record_mismatch_rule(self):
         # Give two DNS Record mismatch
-        DnsRecord(name='foo.example.com', type='A', value='192.168.1.101').add().commit()
-        ptr = DnsRecord(name='98.1.168.192.in-addr.arpa', type='PTR', value='foo.example.com').add().commit()
+        DnsRecord(name='foo.example.com', type='A', value='192.168.1.101', vrf=self.vrf).add().commit()
+        ptr = (
+            DnsRecord(name='98.1.168.192.in-addr.arpa', type='PTR', value='foo.example.com', vrf=self.vrf)
+            .add()
+            .commit()
+        )
         # When editing PTR record
         self.getPage(url_for(ptr, 'edit'))
         self.assertStatus(200)
@@ -145,7 +182,11 @@ class DnsRecordPageTest(WebCase, CommonTest):
 
     def test_dns_record_ptr_without_forward_rule(self):
         # Given a PTR without forward record.
-        ptr = DnsRecord(name='98.1.168.192.in-addr.arpa', type='PTR', value='foo.example.com').add().commit()
+        ptr = (
+            DnsRecord(name='98.1.168.192.in-addr.arpa', type='PTR', value='foo.example.com', vrf=self.vrf)
+            .add()
+            .commit()
+        )
         # When editing PTR record
         self.getPage(url_for(ptr, 'edit'))
         self.assertStatus(200)
@@ -156,8 +197,12 @@ class DnsRecordPageTest(WebCase, CommonTest):
 
     def test_dns_record_ptr_with_ipv6_forward_rule(self):
         # Given a PTR without forward record.
-        DnsRecord(name='foo.example.com', type='AAAA', value='2001:db8:85a3::1').add()
-        ptr = DnsRecord(name='98.1.168.192.in-addr.arpa', type='PTR', value='foo.example.com').add().commit()
+        DnsRecord(name='foo.example.com', type='AAAA', value='2001:db8:85a3::1', vrf=self.vrf).add()
+        ptr = (
+            DnsRecord(name='98.1.168.192.in-addr.arpa', type='PTR', value='foo.example.com', vrf=self.vrf)
+            .add()
+            .commit()
+        )
         # When editing PTR record
         self.getPage(url_for(ptr, 'edit'))
         self.assertStatus(200)
@@ -181,7 +226,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
     def test_dns_cname_not_unique_rule(self):
         # Given a CNAME and a A record on the same host
         cname = DnsRecord(name='www.example.com', type='CNAME', value='example.com').add().commit()
-        other = DnsRecord(name='www.example.com', type='A', value='192.168.1.101').add().commit()
+        other = DnsRecord(name='www.example.com', type='A', value='192.168.1.101', vrf=self.vrf).add().commit()
         # When editing CNAME record
         self.getPage(url_for(cname, 'edit'))
         self.assertStatus(200)
@@ -197,9 +242,13 @@ class DnsRecordPageTest(WebCase, CommonTest):
 
     def test_dns_record_related_json(self):
         # Given two DNS with the same hostname
-        fwd = DnsRecord(name='foo.example.com', type='A', value='192.168.1.101').add().commit()
+        fwd = DnsRecord(name='foo.example.com', type='A', value='192.168.1.101', vrf=self.vrf).add().commit()
         txt = DnsRecord(name='foo.example.com', type='TXT', value='ddzb27gl54spcr60hkpp0zzwqk2ybrwz').add().commit()
-        ptr = DnsRecord(name='101.1.168.192.in-addr.arpa', type='PTR', value='foo.example.com').add().commit()
+        ptr = (
+            DnsRecord(name='101.1.168.192.in-addr.arpa', type='PTR', value='foo.example.com', vrf=self.vrf)
+            .add()
+            .commit()
+        )
         # When querying list of mismatch record.
         data = self.getJson(url_for('dnsrecord', fwd.id, 'related'))
         # Then one result is returned.
@@ -269,6 +318,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
             'name': 'foo.example.com',
             'type': 'A',
             'value': '192.0.2.23',
+            'vrf_id': self.vrf.id,
         }
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
         # Then an error is raised
@@ -287,6 +337,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
             'name': 'foo.example.com',
             'type': 'AAAA',
             'value': '2002::1234:abcd:ffff:c0a6:101',
+            'vrf_id': self.vrf.id,
         }
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
         # Then an error is raised
@@ -305,6 +356,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
             'name': '255.2.0.192.in-addr.arpa',
             'type': 'PTR',
             'value': 'bar.example.com',
+            'vrf_id': self.vrf.id,
         }
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
         # Then an error is raised
@@ -323,6 +375,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
             'name': 'b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
             'type': 'PTR',
             'value': 'bar.example.com',
+            'vrf_id': self.vrf.id,
         }
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
         # Then an error is raised

@@ -24,18 +24,18 @@ class MacTest(WebCase):
     def setUp(self):
         super().setUp()
         # Given a database with a subnet.
-        vrf = Vrf(name='default')
+        self.vrf = Vrf(name='default')
         Subnet(
             subnet_ranges=[
                 SubnetRange('192.0.2.0/24', dhcp=True, dhcp_start_ip='192.0.2.1', dhcp_end_ip='192.0.2.254')
             ],
-            vrf=vrf,
+            vrf=self.vrf,
         ).add().commit()
 
     def test_with_dhcp_record(self):
         # Given a empty database
         # When creating multiple DHCP Record with the same IP
-        dhcp_record1 = DhcpRecord(ip='192.0.2.25', mac='00:00:5e:00:53:bf').add().commit()
+        dhcp_record1 = DhcpRecord(ip='192.0.2.25', mac='00:00:5e:00:53:bf', vrf=self.vrf).add().commit()
         # Then a single MAC Record is created
         self.assertEqual(1, Mac.query.count())
         mac_obj = Mac.query.first()
@@ -46,9 +46,9 @@ class MacTest(WebCase):
 
     def test_mac(self):
         # Given a list of DhcpRecord and DnsRecord
-        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
-        DhcpRecord(ip='192.0.2.24', mac='00:00:5e:00:53:df').add()
-        DhcpRecord(ip='192.0.2.25', mac='00:00:5e:00:53:cf').add().commit()
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', vrf=self.vrf).add()
+        DhcpRecord(ip='192.0.2.24', mac='00:00:5e:00:53:df', vrf=self.vrf).add()
+        DhcpRecord(ip='192.0.2.25', mac='00:00:5e:00:53:cf', vrf=self.vrf).add().commit()
         # When querying list of MAC
         objs = Mac.query.order_by('mac').all()
         # Then is matches the DhcpRecord.
@@ -59,7 +59,7 @@ class MacTest(WebCase):
 
     def test_ip_with_dhcp_deleted_status(self):
         # Given a deleted DhcpRecord
-        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', status='deleted').add().commit()
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', status='deleted', vrf=self.vrf).add().commit()
         # When querying list of Mac
         objs = Mac.query.all()
         # Then an Ip record got created
@@ -67,7 +67,7 @@ class MacTest(WebCase):
 
     def test_get_dhcp_records(self):
         # Given a list of DnsRecords and DhcpRecord
-        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add().commit()
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', vrf=self.vrf).add().commit()
         # When querying list of related DnsRecord on a Ip.
         objs = Mac.query.order_by('mac').first().related_dhcp_records
         # Then the list include a single DnsRecord
@@ -76,7 +76,7 @@ class MacTest(WebCase):
 
     def test_update_dhcp_record_ip(self):
         # Given a DhcpRecord
-        record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add().commit()
+        record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', vrf=self.vrf).add().commit()
         # When updating the Mac value
         record.mac = '00:00:5e:00:53:ff'
         record.commit()
@@ -95,7 +95,7 @@ class MacTest(WebCase):
 
     def test_update_dhcp_record_status(self):
         # Given a DhcpRecord creating an IP Record
-        record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add().commit()
+        record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', vrf=self.vrf).add().commit()
         Mac.query.filter(Mac.mac == '00:00:5e:00:53:bf').one()
         # When updating the DHCP Record status
         record.status = DhcpRecord.STATUS_DELETED

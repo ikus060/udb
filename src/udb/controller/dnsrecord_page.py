@@ -16,12 +16,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
+from sqlalchemy import func
 from wtforms.fields import BooleanField, IntegerField, SelectField, StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange
 
 from udb.controller import flash, show_exception, url_for, verify_perm
-from udb.core.model import DnsRecord, User
+from udb.core.model import DnsRecord, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
@@ -70,6 +71,17 @@ class EditDnsRecordForm(CherryForm):
         ],
     )
 
+    vrf_id = SelectObjectField(
+        _('VRF'),
+        object_cls=Vrf,
+        description=_("Determined automatically if left blank."),
+        render_kw={
+            "data-showif-field": "type",
+            "data-showif-operator": "in",
+            "data-showif-value": '["A", "AAAA", "PTR"]',
+        },
+    )
+
     notes = TextAreaField(
         _('Notes'),
         default='',
@@ -84,6 +96,15 @@ class EditDnsRecordForm(CherryForm):
         object_cls=User,
         default=lambda: cherrypy.serving.request.currentuser.id,
     )
+
+    def populate_obj(self, obj):
+        super().populate_obj(obj)
+        # If vrf is not defined, let find the best match.
+        if self.vrf_id.data is None and obj.type in ["A", "AAAA", "PTR"] and obj.ip_value:
+            vrfs = obj.find_vrf()
+            if not vrfs:
+                raise ValueError('vrf_id', _('Cannot find a valid VRF for this IP.'))
+            obj.vrf = vrfs[0]
 
 
 class NewDnsRecordForm(EditDnsRecordForm):
@@ -159,16 +180,39 @@ class DnsRecordPage(CommonPage):
         Drop unused fields
         """
         # Make use of short label to minimize footprint
-        return DnsRecord.query.outerjoin(DnsRecord.owner).with_entities(
-            DnsRecord.id,
-            DnsRecord.status,
-            DnsRecord.name,
-            DnsRecord.type,
-            DnsRecord.ttl,
-            DnsRecord.value,
-            DnsRecord.notes,
-            User.summary.label('owner'),
+        return (
+            DnsRecord.query.outerjoin(DnsRecord.owner)
+            .outerjoin(DnsRecord.vrf)
+            .with_entities(
+                DnsRecord.id,
+                DnsRecord.status,
+                DnsRecord.name,
+                DnsRecord.type,
+                DnsRecord.ttl,
+                DnsRecord.value,
+                Vrf.id,
+                Vrf.name,
+                DnsRecord.notes,
+                User.summary.label('owner'),
+            )
         )
+
+    @cherrypy.expose
+    @cherrypy.tools.jinja2(template=['{model_name}/list.html', 'common/list.html'])
+    def index(self):
+        """
+        This implementation return a list of VRF
+        """
+        values = super().index()
+        # Query VRF with number of assigned Dns Record.
+        values['vrf_list'] = [
+            (row.id, row.name, row.count)
+            for row in Vrf.query.with_entities(Vrf.id, Vrf.name, func.count(DnsRecord.id).label('count'))
+            .outerjoin(DnsRecord)
+            .group_by(Vrf.id)
+            .all()
+        ]
+        return values
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()

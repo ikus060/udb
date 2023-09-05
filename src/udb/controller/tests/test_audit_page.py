@@ -62,28 +62,28 @@ class AuditPageTest(WebCase):
         # Given a query to data_json
         data = self.getJson(url_for(self.base_url, 'data.json'))
         # Then a response is return with latest changes
-        self.assertEqual(data, {'draw': None, 'recordsTotal': 52, 'recordsFiltered': 52, 'data': ANY})
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 53, 'recordsFiltered': 53, 'data': ANY})
         self.assertEqual(10, len(data['data']))
 
     def test_data_json_with_length(self):
         # Given a query to data_json
         data = self.getJson(url_for(self.base_url, 'data.json', length=5))
         # Then a response is return with latest changes
-        self.assertEqual(data, {'draw': None, 'recordsTotal': 52, 'recordsFiltered': 52, 'data': ANY})
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 53, 'recordsFiltered': 53, 'data': ANY})
         self.assertEqual(5, len(data['data']))
 
     def test_data_json_with_start(self):
         # Given a query to data_json
         data = self.getJson(url_for(self.base_url, 'data.json', start=5, length=5))
         # Then a response is return with latest changes
-        self.assertEqual(data, {'draw': None, 'recordsTotal': 52, 'recordsFiltered': 52, 'data': ANY})
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 53, 'recordsFiltered': 53, 'data': ANY})
         self.assertEqual(5, len(data['data']))
 
     def test_data_json_with_search(self):
         # Given a query to data_json
         data = self.getJson(url_for(self.base_url, 'data.json', **{'search[value]': 'test'}))
         # Then a response is return with latest changes
-        self.assertEqual(data, {'draw': None, 'recordsTotal': 52, 'recordsFiltered': 2, 'data': ANY})
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 53, 'recordsFiltered': 2, 'data': ANY})
         self.assertEqual(2, len(data['data']))
 
     @parameterized.expand(['0', '1', '2', '3', '4', '5', '6'])
@@ -97,14 +97,14 @@ class AuditPageTest(WebCase):
         # Given a query with model_name
         data = self.getJson(url_for(self.base_url, 'data.json', **{'columns[3][search][value]': 'vrf'}))
         # Then data only container our type
-        self.assertEqual(data, {'draw': None, 'recordsTotal': 52, 'recordsFiltered': 1, 'data': ANY})
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 53, 'recordsFiltered': 1, 'data': ANY})
         self.assertEqual(1, len(data['data']))
 
     def test_data_json_filter_multi_model_name(self):
         # Given a query with model_name
         data = self.getJson(url_for(self.base_url, 'data.json', **{'columns[3][search][value]': '(vrf|user)'}))
         # Then data only container our type
-        self.assertEqual(data, {'draw': None, 'recordsTotal': 52, 'recordsFiltered': 3, 'data': ANY})
+        self.assertEqual(data, {'draw': None, 'recordsTotal': 53, 'recordsFiltered': 3, 'data': ANY})
         self.assertEqual(3, len(data['data']))
 
     def test_data_json_filter_model_name_selenium(self):
@@ -132,8 +132,6 @@ class AuditPageTest(WebCase):
             # When making a query to audit log
             driver.get(url_for(self.base_url, ''))
             driver.implicitly_wait(3)
-            # Then all record type are displayed
-            driver.find_element('xpath', "//*[contains(text(), 'dhcprecord_ip_without_subnet')]")
             # When user select VRF in the menu
             type_menu = driver.find_element('css selector', '.udb-btn-collectionfilter')
             type_menu.click()

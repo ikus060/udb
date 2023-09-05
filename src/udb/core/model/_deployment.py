@@ -24,7 +24,7 @@ import sys
 import tempfile
 
 import cherrypy
-from sqlalchemy import Column, ForeignKey, and_, event, func, or_, select
+from sqlalchemy import Column, ForeignKey, and_, func, or_, select
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declared_attr, foreign, relationship, remote
 from sqlalchemy.types import JSON, Integer, SmallInteger, String, Text
@@ -39,7 +39,6 @@ from ._message import Message, MessageMixin
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._subnet import Subnet, SubnetRange
-from ._update import column_add, column_exists
 from ._vrf import Vrf
 
 Base = cherrypy.tools.db.get_base()
@@ -355,10 +354,3 @@ class Environment(CommonMixin, JsonMixin, MessageMixin, StatusMixing, Searchable
     @classmethod
     def count_pending_changes(cls, limit=10):
         return Environment.query.with_entities(func.count(Message.id)).join(Environment.pending_changes).scalar()
-
-
-@event.listens_for(Base.metadata, 'after_create')
-def update_environment_schema(target, conn, **kw):
-    # Create new column "model_name"
-    if not column_exists(conn, Deployment.model_name):
-        column_add(conn, Deployment.model_name)

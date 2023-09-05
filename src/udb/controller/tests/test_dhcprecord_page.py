@@ -36,7 +36,7 @@ class DhcpRecordPageTest(WebCase, CommonTest):
     def setUp(self):
         super().setUp()
         # Generate a changes
-        vrf = Vrf(name='default')
+        self.vrf = Vrf(name='default')
         Subnet(
             subnet_ranges=[
                 SubnetRange(
@@ -46,8 +46,10 @@ class DhcpRecordPageTest(WebCase, CommonTest):
                     dhcp_end_ip='1.2.3.254',
                 )
             ],
-            vrf=vrf,
+            vrf=self.vrf,
         ).add().commit()
+        # Update data
+        self.new_data['vrf_id'] = self.vrf.id
 
     def test_new_duplicate(self):
         # Given a database with a record
@@ -61,6 +63,28 @@ class DhcpRecordPageTest(WebCase, CommonTest):
         self.assertInBody('A DHCP Reservation already exists for this MAC address.')
         # Then a link to duplicate record is provided
         self.assertInBody(url_for(obj, 'edit'))
+
+    def test_new_with_default_vrf(self):
+        # Given a database with a VRF
+        # When creating a new DHCP Reservation without defining the VRF
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body={'ip': '1.2.3.4', 'mac': '02:42:d7:e4:aa:58'})
+        self.assertStatus(303)
+        # Then the VRF is automatically defined
+        dhcp = DhcpRecord.query.filter(DhcpRecord.ip == '1.2.3.4').first()
+        self.assertEqual(self.vrf.id, dhcp.vrf_id)
+
+    def test_new_with_invalid_vrf(self):
+        # Given a database with a VRF
+        vrf2 = Vrf(name='invalid').add().commit()
+        # When creating a new DHCP Reservation without defining the VRF
+        self.getPage(
+            url_for(self.base_url, 'new'),
+            method='POST',
+            body={'ip': '1.2.3.4', 'mac': '02:42:d7:e4:aa:58', 'vrf_id': vrf2.id},
+        )
+        # Then an error message is displayed
+        self.assertStatus(200)
+        self.assertInBody("IP address must be defined within a Subnet.")
 
     def test_edit_owner_and_notes(self):
         # Given a database with a record
@@ -99,7 +123,7 @@ class DhcpRecordPageTest(WebCase, CommonTest):
 
     def test_dhcprecord_edit_invalid_subnet_rule(self):
         # Given a DHCP reservation on a subnet.
-        record = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:67').add().commit()
+        record = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:67', vrf=self.vrf).add().commit()
         # Given DHCP get disable on the subnet
         subnet = Subnet.query.first()
         subnet.subnet_ranges[0].dhcp = False
@@ -112,15 +136,15 @@ class DhcpRecordPageTest(WebCase, CommonTest):
 
     def test_dhcprecord_unique_ip(self):
         # Given two (2) dhcp reservation with the same IP.
-        record1 = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:67').add().commit()
-        record2 = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:58').add().commit()
+        record1 = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:67', vrf=self.vrf).add().commit()
+        record2 = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:58', vrf=self.vrf).add().commit()
         # When editing record
         self.getPage(url_for(record1, 'edit'))
         self.assertStatus(200)
         # Then a warning is displayed
-        self.assertInBody('Multiple DHCP Reservation for the same IP address.')
+        self.assertInBody('Multiple DHCP Reservation for the same IP address within the same VRF.')
         # When editing record
         self.getPage(url_for(record2, 'edit'))
         self.assertStatus(200)
         # Then a warning is displayed
-        self.assertInBody('Multiple DHCP Reservation for the same IP address.')
+        self.assertInBody('Multiple DHCP Reservation for the same IP address within the same VRF.')
