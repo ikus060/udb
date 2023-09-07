@@ -157,12 +157,16 @@ class WebCase(BaseClass):
         self.zone.flush()
         DnsZone(name='bfh.science', notes='This is a note', owner=self.user).add()
         DnsZone(name='bfh.info', notes='This is a note', owner=self.user).add()
-        DhcpRecord(ip='147.87.250.1', mac='00:ba:d5:a2:34:56', notes='webserver bla bla bla', owner=self.user).add()
-        self.dnsrecord = DnsRecord(name='foo.bfh.ch', type='A', value='147.87.250.3', owner=self.user).add()
+        DhcpRecord(
+            ip='147.87.250.1', mac='00:ba:d5:a2:34:56', notes='webserver bla bla bla', owner=self.user, vrf=self.vrf
+        ).add()
+        self.dnsrecord = DnsRecord(
+            name='foo.bfh.ch', type='A', value='147.87.250.3', owner=self.user, vrf=self.vrf
+        ).add()
         self.dnsrecord.add_message(Message(body='This is a message', author=self.user))
-        DnsRecord(name='bar.bfh.ch', type='A', value='147.87.250.1', owner=self.user).add()
-        DnsRecord(name='bar.bfh.ch', type='CNAME', value='www.bar.bfh.ch', owner=self.user).add()
-        DnsRecord(name='baz.bfh.ch', type='A', value='147.87.250.2', owner=self.user).add()
+        DnsRecord(name='bar.bfh.ch', type='A', value='147.87.250.1', owner=self.user, vrf=self.vrf).add()
+        DnsRecord(name='bar.bfh.ch', type='CNAME', value='www.bar.bfh.ch', owner=self.user, vrf=self.vrf).add()
+        DnsRecord(name='baz.bfh.ch', type='A', value='147.87.250.2', owner=self.user, vrf=self.vrf).add()
         env = Environment(name='test-env', script='echo FOO', model_name='dhcprecord').add().commit()
         Deployment(
             environment_id=env.id,

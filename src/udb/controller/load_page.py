@@ -26,7 +26,7 @@ import cherrypy
 from wtforms import validators
 from wtforms.fields import FileField, SelectField
 
-from udb.controller import flash, show_exception
+from udb.controller import flash, show_exception, url_for
 from udb.core.model import DnsRecord, DnsZone, Subnet, SubnetRange, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
@@ -125,6 +125,11 @@ class LoadPage:
                     if type in ['CNAME', 'PTR', 'NS']:
                         value = value.strip('.')
                     r = DnsRecord(name=name, ttl=ttl, type=type, value=value)
+                    if type in ['A', 'AAAA', 'PTR']:
+                        vrfs = r.find_vrf()
+                        if not vrfs:
+                            raise ValueError('Missing VRF for IP ' + r.ip_value)
+                        r.vrf_id = vrfs[0].id
                     r.add().flush()
             cherrypy.tools.db.get_session().commit()
         except Exception as e:
@@ -154,17 +159,19 @@ class LoadPage:
                 with open(fd, 'wb') as f:
                     shutil.copyfileobj(form.upload_file.data.file, f, length=65365)
 
-                # Import accoridng to file type
+                # Import according to file type
                 if form.type_file.data == 'subnet':
                     self._import_subnet(temp_filename)
                 elif form.type_file.data == 'dnsrecord':
                     self._import_dnsrecord(temp_filename)
                 else:
-                    raise ValueError('invalid type')
-
-                flash(_('CSV File imported with success !'))
+                    raise ValueError('invalid data type')
             except Exception as e:
                 cherrypy.tools.db.get_session().rollback()
                 show_exception(e)
+            else:
+                # Redirect user to load page.
+                flash(_('CSV File imported with success !'))
+                cherrypy.HTTPRedirect(url_for(), 303)
 
         return {'form': form}

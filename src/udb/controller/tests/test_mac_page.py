@@ -25,15 +25,15 @@ class MacPageTest(WebCase):
     def setUp(self):
         super().setUp()
         # Given a database with a subnet.
-        vrf = Vrf(name='default')
+        self.vrf = Vrf(name='default')
         Subnet(
             subnet_ranges=[SubnetRange('1.2.3.0/24', dhcp=True, dhcp_start_ip='1.2.3.1', dhcp_end_ip='1.2.3.254')],
-            vrf=vrf,
+            vrf=self.vrf,
         ).add().commit()
 
     def test_no_deleted_filter(self):
         # Given a database with records
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59', vrf=self.vrf).add()
         obj.commit()
         # When browsing Mac list view
         self.getPage('/mac/')
@@ -43,7 +43,7 @@ class MacPageTest(WebCase):
 
     def test_no_create_new(self):
         # Given a database with records
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59', vrf=self.vrf).add()
         obj.commit()
         # When browsing MAC list view
         self.getPage('/mac/')
@@ -53,7 +53,7 @@ class MacPageTest(WebCase):
     def test_edit_mac(self):
         # Given a database with records
         user = User.create(username='guest', password='password', role='guest').add()
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59', vrf=self.vrf).add()
         obj.commit()
         mac = Mac.query.one()
         # When editing notes of IP
@@ -73,7 +73,7 @@ class MacPageTest(WebCase):
 
     def test_get_data_json(self):
         # Given a database with records
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59', vrf=self.vrf).add()
         obj.commit()
         Mac.query.one()
         # When requesting data.json
@@ -83,7 +83,7 @@ class MacPageTest(WebCase):
 
     def test_data_json_count(self):
         # Given a database with records
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add().commit()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59', vrf=self.vrf).add().commit()
         obj.mac = '02:42:d7:e4:aa:ff'
         obj.commit()
         # When requesting data.json

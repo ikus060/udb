@@ -54,7 +54,7 @@ class DeploymentPageTest(WebCase):
             ],
             vrf=vrf,
         ).add().commit()
-        DhcpRecord(ip='192.168.45.67', mac='E5:D3:56:7B:22:A3').add().commit()
+        DhcpRecord(ip='192.168.45.67', mac='E5:D3:56:7B:22:A3', vrf=vrf).add().commit()
         # Create a new environment
         self.environment = Environment(name='test-env', script='echo FOO', model_name='dhcprecord').add().commit()
         self.new_data = {
@@ -163,7 +163,7 @@ class DeploymentPageTest(WebCase):
                     ANY,
                     'new',
                     '',
-                    {'ip': [None, '192.168.45.67'], 'mac': [None, 'E5:D3:56:7B:22:A3']},
+                    {'ip': [None, '192.168.45.67'], 'mac': [None, 'E5:D3:56:7B:22:A3'], 'vrf': [None, 'default']},
                     '/dhcprecord/1/edit',
                 ],
                 [
@@ -220,12 +220,12 @@ class DeploymentPageTest(WebCase):
         vrf = Vrf(name='test')
         subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
         DnsZone(name='test.ca', subnets=[subnet]).add().flush()
-        DnsRecord(name='test.ca', type='A', value='192.0.2.45').add().commit()
+        DnsRecord(name='test.ca', type='A', value='192.0.2.45', vrf=vrf).add().commit()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
-        DnsRecord(name='example.com', type='A', value='192.0.2.23').add().commit()
-        DnsRecord(name='23.2.0.192.in-addr.arpa', type='PTR', value='example.com').add().commit()
-        DnsRecord(name='*.example.com', type='CNAME', value='bar.example.com').add().commit()
-        DnsRecord(name='_acme-challenge.example.com', type='CNAME', value='foo.example.com').add().commit()
+        DnsRecord(name='example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
+        DnsRecord(name='23.2.0.192.in-addr.arpa', type='PTR', value='example.com', vrf=vrf).add().commit()
+        DnsRecord(name='*.example.com', type='CNAME', value='bar.example.com', vrf=vrf).add().commit()
+        DnsRecord(name='_acme-challenge.example.com', type='CNAME', value='foo.example.com', vrf=vrf).add().commit()
         # Given a new deployment
         env = Environment(name='test-env', script='echo FOO', model_name='dnsrecord').add().commit()
         deploy = Deployment(

@@ -31,7 +31,7 @@ class DnsRecordTest(WebCase):
         vrf = Vrf(name='default')
         subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
-        obj = DnsRecord(name='foo.example.com', type='A', value='192.0.2.23').add().commit()
+        obj = DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
         # When serializing the object to json
         data = obj.to_json()
         # Then a json representation is return
@@ -95,7 +95,7 @@ class DnsRecordTest(WebCase):
         )
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # When creating a DnsRecord
-        record = DnsRecord(**data).add().commit()
+        record = DnsRecord(vrf=vrf, **data).add().commit()
         # Then validate ip_value
         self.assertEqual(expected_ip_value, record.ip_value)
         self.assertEqual(expected_hostname_value, record.hostname_value)
@@ -116,7 +116,7 @@ class DnsRecordTest(WebCase):
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
         self.assertEqual(0, DnsRecord.query.count())
         # When adding a DnsRecord
-        DnsRecord(name='foo.example.com', type='A', value='192.0.2.23').add().commit()
+        DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
         # Then a new record is created
         self.assertEqual(1, DnsRecord.query.count())
 
@@ -132,14 +132,15 @@ class DnsRecordTest(WebCase):
 
     @parameterized.expand(
         [
-            (DnsRecord(name='foo.example.com', type='A', value='192.0.2.23'),),
-            (DnsRecord(name='foo.example.com', type='AAAA', value='2002::1234:abcd:ffff:c0a7:101'),),
+            (DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf_id=1),),
+            (DnsRecord(name='foo.example.com', type='AAAA', value='2002::1234:abcd:ffff:c0a7:101', vrf_id=1),),
             (DnsRecord(name='foo.example.com', type='CNAME', value='bar.example.com'),),
             (DnsRecord(name='foo.example.com', type='TXT', value='some data'),),
         ]
     )
     def test_add_record_without_valid_dnszone(self, record):
-        # Given an empty database
+        # Given an empty database with a single VRF
+        Vrf(name='default').add().commit()
         self.assertEqual(0, DnsRecord.query.count())
         # When adding a DnsRecord
         record = record.add().commit()
@@ -155,7 +156,7 @@ class DnsRecordTest(WebCase):
         subnet = Subnet(subnet_ranges=[SubnetRange('10.255.0.0/16')], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
         # When adding a DnsRecord
-        record = DnsRecord(name='foo.example.com', type='A', value='192.0.2.23').add().commit()
+        record = DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
         # Then an exception is raised
         with self.assertRaises(RuleError) as cm:
             Rule.verify(record, errors='raise')
@@ -168,7 +169,7 @@ class DnsRecordTest(WebCase):
         subnet = Subnet(subnet_ranges=[SubnetRange('2002:0:0:1234::/64')], vrf=vrf)
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
         # When adding a DnsRecord
-        DnsRecord(name='foo.example.com', type='AAAA', value='2002::1234:abcd:ffff:c0a9:101').add().commit()
+        DnsRecord(name='foo.example.com', type='AAAA', value='2002::1234:abcd:ffff:c0a9:101', vrf=vrf).add().commit()
         # Then a new record is created
         self.assertEqual(1, DnsRecord.query.count())
 
@@ -188,7 +189,11 @@ class DnsRecordTest(WebCase):
         subnet = Subnet(subnet_ranges=[SubnetRange('10.0.0.0/8')], vrf=vrf)
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
         # When adding a DnsRecord
-        record = DnsRecord(name='foo.example.com', type='AAAA', value='2002::1234:abcd:ffff:c0a6:101').add().commit()
+        record = (
+            DnsRecord(name='foo.example.com', type='AAAA', value='2002::1234:abcd:ffff:c0a6:101', vrf=vrf)
+            .add()
+            .commit()
+        )
         # Then an error is raised during rule verification
         with self.assertRaises(RuleError) as cm:
             Rule.verify(record, errors='raise')
@@ -226,7 +231,7 @@ class DnsRecordTest(WebCase):
         subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # When adding a DnsRecord
-        DnsRecord(name='254.2.0.192.in-addr.arpa', type='PTR', value='bar.example.com').add().commit()
+        DnsRecord(name='254.2.0.192.in-addr.arpa', type='PTR', value='bar.example.com', vrf=vrf).add().commit()
         # Then a new record is created
         self.assertEqual(1, DnsRecord.query.count())
         # Then revice_ip is valid
@@ -239,7 +244,7 @@ class DnsRecordTest(WebCase):
         subnet = Subnet(subnet_ranges=[SubnetRange('192.0.5.0/24')], vrf=vrf)
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
         # When adding a DnsRecord with invalid DNS Zone
-        record = DnsRecord(name='255.2.0.192.in-addr.arpa', type='PTR', value='bar.example.com').add().commit()
+        record = DnsRecord(name='255.2.0.192.in-addr.arpa', type='PTR', value='bar.example.com', vrf=vrf).add().commit()
         # Then an error is raised during rule verification.
         with self.assertRaises(RuleError) as cm:
             Rule.verify(record, errors='raise', severity=Rule.SEVERITY_ENFORCED)
@@ -256,6 +261,7 @@ class DnsRecordTest(WebCase):
             name='b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
             type='PTR',
             value='bar.example.com',
+            vrf=vrf,
         ).add().commit()
         # Then a new record is created
         self.assertEqual(1, DnsRecord.query.count())
@@ -271,6 +277,7 @@ class DnsRecordTest(WebCase):
                 name='b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
                 type='PTR',
                 value='bar.example.com',
+                vrf=vrf,
             )
             .add()
             .commit()
@@ -289,7 +296,7 @@ class DnsRecordTest(WebCase):
         # Given an ipv6 record in uppercase
         name = 'b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.IP6.ARPA'
         # When adding the record to the database
-        DnsRecord(name=name, type='PTR', value='bar.example.com').add().commit()
+        DnsRecord(name=name, type='PTR', value='bar.example.com', vrf=vrf).add().commit()
         # Then the record is added with lowercase
         self.assertEqual(name.lower(), DnsRecord.query.first().name)
 
@@ -305,6 +312,7 @@ class DnsRecordTest(WebCase):
                 name='b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
                 type='PTR',
                 value='192.0.2.23',
+                vrf=vrf,
             ).add().commit()
         self.assertIn('dnsrecord_value_domain_name', str(cm.exception))
 
@@ -316,7 +324,7 @@ class DnsRecordTest(WebCase):
         # When adding a DnsRecord with an invalid value
         # Then an exception is raised
         with self.assertRaises(ValueError) as cm:
-            DnsRecord(name='foo.example.com', type='PTR', value='foo.example.com').add().commit()
+            DnsRecord(name='foo.example.com', type='PTR', value='foo.example.com', vrf=vrf).add().commit()
         self.assertEqual('name', str(cm.exception.args[0]))
         self.assertEqual(
             'PTR records must ends with `.in-addr.arpa` or `.ip6.arpa` and define a valid IPv4 or IPv6 address',
@@ -348,9 +356,11 @@ class DnsRecordTest(WebCase):
         vrf = Vrf(name='default')
         subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
-        a_record = DnsRecord(name='foo.example.com', value='192.0.2.1', type='A').add()
+        a_record = DnsRecord(name='foo.example.com', value='192.0.2.1', type='A', vrf=vrf).add()
         # Given a PTR DNS Record
-        prt_record = DnsRecord(name='1.2.0.192.in-addr.arpa', value='foo.example.com', type='PTR').add().commit()
+        prt_record = (
+            DnsRecord(name='1.2.0.192.in-addr.arpa', value='foo.example.com', type='PTR', vrf=vrf).add().commit()
+        )
         # When getting reverse record
         # Then the PTR Record is return
         self.assertEqual(a_record, prt_record.get_reverse_dns_record())
@@ -361,12 +371,13 @@ class DnsRecordTest(WebCase):
         vrf = Vrf(name='default')
         subnet = Subnet(subnet_ranges=[SubnetRange('2a07:6b43:26:11::/64')], vrf=vrf)
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
-        a_record = DnsRecord(name='foo.example.com', value='2a07:6b43:26:11::1', type='AAAA').add()
+        a_record = DnsRecord(name='foo.example.com', value='2a07:6b43:26:11::1', type='AAAA', vrf=vrf).add()
         # Given a PTR DNS Record
         prt_record = DnsRecord(
             name='1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.1.0.0.6.2.0.0.3.4.b.6.7.0.a.2.ip6.arpa',
             value='foo.example.com',
             type='PTR',
+            vrf=vrf,
         )
         prt_record.add().commit()
         # When getting reverse record
@@ -444,3 +455,18 @@ class DnsRecordTest(WebCase):
         with self.assertRaises(RuleError) as cm:
             Rule.verify(other, errors='raise')
         self.assertIn('dns_cname_not_unique', str(cm.exception))
+
+    def test_null_vrf_id(self):
+        # Given a dns record
+        vrf = Vrf(name='default')
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        self.assertEqual(0, DnsRecord.query.count())
+        record = DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
+        # When updating the vrf_id to null
+        record.vrf = None
+        record.add()
+        # Then an exception is raised
+        with self.assertRaises(IntegrityError) as cm:
+            record.commit()
+        self.assertIn('dnsrecord_a_aaaa_ptr_without_vrf', str(cm.exception))

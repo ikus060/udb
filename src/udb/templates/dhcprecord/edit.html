@@ -19,7 +19,7 @@
   <div class="col mb-2 d-none d-xl-block">
     <h5>{% trans %}Related DNS Record{% endtrans %}</h5>
     <div class="list-group">
-      {% for record in obj.related_ptr_dnsrecord %}
+      {% for record in obj.related_dnsrecord %}
         <a href="{{ url_for(record, 'edit') }}"
            class="list-group-item list-group-item-action text-nowrap w-100">{{ macro.icon(record) }} {{ record.summary }}</a>
       {% else %}
@@ -35,7 +35,7 @@
               data-bs-toggle="dropdown"
               aria-expanded="false">{% trans %}Related DNS Record{% endtrans %}</button>
       <ul class="dropdown-menu">
-        {% for record in obj.related_ptr_dnsrecord %}
+        {% for record in obj.related_dnsrecord %}
           <li>
             <a href="{{ url_for(record, 'edit') }}" class="dropdown-item">{{ macro.icon(record) }} {{ record.summary }}</a>
           </li>

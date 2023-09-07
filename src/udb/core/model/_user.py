@@ -31,7 +31,6 @@ from udb.tools.i18n import gettext_lazy as _
 from ._json import JsonMixin
 from ._message import MessageMixin
 from ._status import StatusMixing
-from ._update import column_add, column_exists
 
 Base = cherrypy.tools.db.get_base()
 
@@ -193,13 +192,3 @@ def user_before_update(mapper, connection, instance):
         # Raise exception when current user try to updated it's own role
         if state.attrs['role'].history.has_changes():
             raise ValueError('role', _('A user cannot update his own role.'))
-
-
-@event.listens_for(Base.metadata, 'after_create')
-def update_schema_user(target, conn, **kw):
-    """
-    Update user table.
-    """
-    # Adding timezone column
-    if not column_exists(conn, User.timezone):
-        column_add(conn, User.timezone)

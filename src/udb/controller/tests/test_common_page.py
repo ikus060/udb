@@ -373,9 +373,9 @@ class CommonTest:
         data = self.getJson(url_for('api', self.base_url, obj.id), headers=self.authorization)
         # Then our records is return as json
         self.assertStatus(200)
-        self.assertEqual(data['id'], obj.id)
+        self.assertEqual(data['id'], obj.id, "obj.id not equal")
         for k, v in (self.new_json or self.new_data).items():
-            self.assertEqual(data[k], v)
+            self.assertEqual(data[k], v, "attribute %s not equal" % k)
 
     def test_api_post(self):
         # Given a valid payload

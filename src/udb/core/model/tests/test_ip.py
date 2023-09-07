@@ -31,8 +31,8 @@ class IpTest(WebCase):
             vrf=vrf,
         ).add().commit()
         # When creating multiple DHCP Record with the same IP
-        dhcp_record1 = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
-        dhcp_record2 = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bc').add().commit()
+        dhcp_record1 = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', vrf=vrf).add()
+        dhcp_record2 = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bc', vrf=vrf).add().commit()
         # Then a single IP Record is created
         self.assertEqual(1, Ip.query.count())
         ip_record = Ip.query.first()
@@ -48,8 +48,8 @@ class IpTest(WebCase):
         subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # When creating multiple Dns Record with the same IP
-        dns_record1 = DnsRecord(name='foo.example.com', type='A', value='192.0.2.20').add()
-        dns_record2 = DnsRecord(name='bar.example.com', type='A', value='192.0.2.20').add().commit()
+        dns_record1 = DnsRecord(name='foo.example.com', type='A', value='192.0.2.20', vrf=vrf).add()
+        dns_record2 = DnsRecord(name='bar.example.com', type='A', value='192.0.2.20', vrf=vrf).add().commit()
         # Then a single IP Record is created
         self.assertEqual(1, Ip.query.count())
         ip_record = Ip.query.first()
@@ -70,11 +70,11 @@ class IpTest(WebCase):
         ).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # Given a list of DhcpRecord and DnsRecord
-        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
-        DhcpRecord(ip='192.0.2.24', mac='00:00:5e:00:53:df').add()
-        DhcpRecord(ip='192.0.2.25', mac='00:00:5e:00:53:cf').add()
-        DnsRecord(name='foo.example.com', type='A', value='192.0.2.20').add()
-        DnsRecord(name='bar.example.com', type='A', value='192.0.2.23').add().commit()
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', vrf=vrf).add()
+        DhcpRecord(ip='192.0.2.24', mac='00:00:5e:00:53:df', vrf=vrf).add()
+        DhcpRecord(ip='192.0.2.25', mac='00:00:5e:00:53:cf', vrf=vrf).add()
+        DnsRecord(name='foo.example.com', type='A', value='192.0.2.20', vrf=vrf).add()
+        DnsRecord(name='bar.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
         # When querying list of IPs
         objs = Ip.query.order_by('ip').all()
         # Then is matches the DhcpRecord.
@@ -94,7 +94,7 @@ class IpTest(WebCase):
             vrf=vrf,
         ).add().commit()
         # Given a deleted DhcpRecord
-        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', status='deleted').add().commit()
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', status='deleted', vrf=vrf).add().commit()
         # When querying list of IPs
         objs = Ip.query.order_by('ip').all()
         # Then an Ip record got created
@@ -111,7 +111,7 @@ class IpTest(WebCase):
         ).add()
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
         # Given a deleted DnsRecord
-        DnsRecord(name='foo.example.com', type='A', value='192.0.2.20', status='deleted').add().commit()
+        DnsRecord(name='foo.example.com', type='A', value='192.0.2.20', status='deleted', vrf=vrf).add().commit()
         # When querying list of IPs
         objs = Ip.query.order_by('ip').all()
         # Then the list is empty
@@ -128,9 +128,9 @@ class IpTest(WebCase):
         ).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # Given a list of DnsRecords and DhcpRecord
-        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
-        DnsRecord(name='bar.example.com', type='A', value='192.0.2.23').add()
-        DnsRecord(name='bar.example.com', type='TXT', value='x47').add().commit()
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', vrf=vrf).add()
+        DnsRecord(name='bar.example.com', type='A', value='192.0.2.23', vrf=vrf).add()
+        DnsRecord(name='bar.example.com', type='TXT', value='x47', vrf=vrf).add().commit()
         # When querying list of related DnsRecord on a Ip.
         objs = Ip.query.order_by('ip').first().related_dns_records
         # Then the list include a single DnsRecord
@@ -148,9 +148,9 @@ class IpTest(WebCase):
         ).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # Given a list of DnsRecords and DhcpRecord
-        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add()
-        DnsRecord(name='bar.example.com', type='A', value='192.0.2.23').add()
-        DnsRecord(name='bar.example.com', type='TXT', value='x47').add().commit()
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', vrf=vrf).add()
+        DnsRecord(name='bar.example.com', type='A', value='192.0.2.23', vrf=vrf).add()
+        DnsRecord(name='bar.example.com', type='TXT', value='x47', vrf=vrf).add().commit()
         # When querying list of related DhcpRecord on a Ip.
         objs = Ip.query.order_by('ip').first().related_dhcp_records
         # Then the list include all DhcpRecord matching the fqdn
@@ -173,8 +173,10 @@ class IpTest(WebCase):
         ).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # Given a list of DnsRecords and DhcpRecord with ipv6
-        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf').add().commit()
-        DnsRecord(name='bar.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add().commit()
+        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf', vrf=vrf).add().commit()
+        DnsRecord(
+            name='bar.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334', vrf=vrf
+        ).add().commit()
         # When querying list of related DnsRecord on a Ip.
         self.assertEqual(1, Ip.query.count())
         obj = Ip.query.order_by('ip').first()
@@ -188,7 +190,9 @@ class IpTest(WebCase):
         subnet = Subnet(subnet_ranges=[SubnetRange('2001:db8:85a3::/64')], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # Given a DnsRecords with ipv6
-        DnsRecord(name='bar.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334').add().commit()
+        DnsRecord(
+            name='bar.example.com', type='AAAA', value='2001:0db8:85a3:0000:0000:8a2e:0370:7334', vrf=vrf
+        ).add().commit()
         # When querying list of related DnsRecord on a Ip.
         obj = Ip.query.order_by('ip').first()
         # Then the list include all DnsRecord matching the fqdn
@@ -210,7 +214,7 @@ class IpTest(WebCase):
             vrf=vrf,
         ).add().commit()
         # Given a DhcpRecord with ipv6
-        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf').add().commit()
+        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf', vrf=vrf).add().commit()
         # When querying list of related DhcpRecord on a Ip.
         obj = Ip.query.order_by('ip').first()
         # Then the list include all DhcpRecord matching the fqdn
@@ -222,7 +226,7 @@ class IpTest(WebCase):
         vrf = Vrf(name='default')
         subnet = Subnet(subnet_ranges=[SubnetRange('192.168.2.0/24')], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
-        DnsRecord(name='254.2.168.192.in-addr.arpa', type='PTR', value='bar.example.com').add().commit()
+        DnsRecord(name='254.2.168.192.in-addr.arpa', type='PTR', value='bar.example.com', vrf=vrf).add().commit()
         # When querying list of IP
         obj = Ip.query.order_by('ip').first()
         # Then is include the IP Address of the PTR record
@@ -238,6 +242,7 @@ class IpTest(WebCase):
             name='b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
             type='PTR',
             value='bar.example.com',
+            vrf=vrf,
         ).add().commit()
         # When querying list of IP
         obj = Ip.query.order_by('ip').first()
@@ -265,19 +270,13 @@ class IpTest(WebCase):
                 name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
                 type='PTR',
                 value='bar.example.com',
+                vrf=vrf,
             )
             .add()
             .commit()
         )
         # Given a deleted DHCP Reservation
-        dhcp = (
-            DhcpRecord(
-                ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
-                mac='00:00:5e:00:53:bf',
-            )
-            .add()
-            .commit()
-        )
+        dhcp = DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf', vrf=vrf).add().commit()
         # When querying list of IP
         self.assertEqual(1, Ip.query.count())
         obj = Ip.query.order_by('ip').first()
@@ -304,10 +303,7 @@ class IpTest(WebCase):
             .add()
             .commit()
         )
-        DhcpRecord(
-            ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
-            mac='00:00:5e:00:53:bf',
-        ).add().commit()
+        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf', vrf=vrf).add().commit()
         # Given a deleted DNS Record
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
         DnsRecord(
@@ -315,6 +311,7 @@ class IpTest(WebCase):
             type='PTR',
             value='bar.example.com',
             status=DnsRecord.STATUS_DELETED,
+            vrf=vrf,
         ).add().commit()
         # When querying list of IP
         obj = Ip.query.order_by('ip').first()
@@ -341,12 +338,14 @@ class IpTest(WebCase):
             name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
             type='PTR',
             value='bar.example.com',
+            vrf=vrf,
         ).add().commit()
         # Given a deleted DHCP Reservation
         DhcpRecord(
             ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
             mac='00:00:5e:00:53:bf',
             status=DhcpRecord.STATUS_DELETED,
+            vrf=vrf,
         ).add().commit()
         # When querying list of IP
         obj = Ip.query.order_by('ip').first()
@@ -384,12 +383,10 @@ class IpTest(WebCase):
             name='4.3.3.7.0.7.3.0.e.2.a.8.0.0.0.0.0.0.0.0.3.a.5.8.8.b.d.0.1.0.0.2.ip6.arpa',
             type='PTR',
             value='bar.example.com',
+            vrf=vrf,
         ).add().commit()
         # Given a deleted DHCP Reservation
-        DhcpRecord(
-            ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
-            mac='00:00:5e:00:53:bf',
-        ).add().commit()
+        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:bf', vrf=vrf).add().commit()
         # When querying the related subnets
         obj = Ip.query.order_by('ip').first()
         self.assertEqual([subnet1, subnet2], obj.related_subnets)
@@ -400,7 +397,7 @@ class IpTest(WebCase):
         Subnet(subnet_ranges=[SubnetRange('2a07:6b40::/32')], vrf=vrf).add()
         subnet2 = Subnet(subnet_ranges=[SubnetRange('192.168.14.0/24')], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet2]).add().flush()
-        DnsRecord(name='example.com', type='A', value='192.168.14.1').add().commit()
+        DnsRecord(name='example.com', type='A', value='192.168.14.1', vrf=vrf).add().commit()
         # When querying the related subnets
         obj = Ip.query.filter(Ip.ip == '192.168.14.1').one()
         self.assertEqual([subnet2], obj.related_subnets)
@@ -414,7 +411,7 @@ class IpTest(WebCase):
             ],
             vrf=vrf,
         ).add().commit()
-        record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add().commit()
+        record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', vrf=vrf).add().commit()
         # When updating the IP value
         record.ip = '192.0.2.24'
         record.commit()
@@ -427,7 +424,11 @@ class IpTest(WebCase):
         # Then new IP Record get created
         new_ip = Ip.query.filter(Ip.ip == '192.0.2.24').one()
         self.assertEqual(
-            {'ip': [None, '192.0.2.24'], 'related_dhcp_records': [[], ['192.0.2.24 (00:00:5e:00:53:bf)']]},
+            {
+                'ip': [None, '192.0.2.24'],
+                'related_dhcp_records': [[], ['192.0.2.24 (00:00:5e:00:53:bf)']],
+                'vrf_id': [None, 1],
+            },
             new_ip.messages[-1].changes,
         )
 
@@ -441,6 +442,7 @@ class IpTest(WebCase):
             name='bar.example.com',
             type='A',
             value='192.0.2.23',
+            vrf=vrf,
         )
         record.add().commit()
         # When updating the IP value
@@ -455,7 +457,11 @@ class IpTest(WebCase):
         # Then new IP Record get created
         new_ip = Ip.query.filter(Ip.ip == '192.0.2.24').one()
         self.assertEqual(
-            {'ip': [None, '192.0.2.24'], 'related_dns_records': [[], ['bar.example.com = 192.0.2.24 (A)']]},
+            {
+                'ip': [None, '192.0.2.24'],
+                'related_dns_records': [[], ['bar.example.com = 192.0.2.24 (A)']],
+                'vrf_id': [None, 1],
+            },
             new_ip.messages[-1].changes,
         )
 
@@ -468,7 +474,7 @@ class IpTest(WebCase):
             vrf=vrf,
         ).add().commit()
         # Given a DhcpRecord creating an IP Record
-        record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf').add().commit()
+        record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', vrf=vrf).add().commit()
         Ip.query.filter(Ip.ip == '192.0.2.23').one()
         # When updating the DHCP Record status
         record.status = DhcpRecord.STATUS_DELETED

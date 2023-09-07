@@ -17,6 +17,8 @@
 
 from unittest import mock
 
+from sqlalchemy.exc import IntegrityError
+
 from udb.controller.tests import WebCase
 from udb.core.model import DhcpRecord, Ip, Rule, RuleError, Subnet, SubnetRange, Vrf
 
@@ -36,7 +38,7 @@ class DhcpRecordTest(WebCase):
             ],
             vrf=vrf,
         ).add().commit()
-        obj = DhcpRecord(ip='2002::1234:abcd:ffff:c0a8:101', mac='00:00:5e:00:53:af').add()
+        obj = DhcpRecord(ip='2002::1234:abcd:ffff:c0a8:101', mac='00:00:5e:00:53:af', vrf=vrf).add()
         obj.commit()
         # When serializing the object to json
         data = obj.to_json()
@@ -60,7 +62,7 @@ class DhcpRecordTest(WebCase):
         ).add().commit()
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord
-        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af', vrf=vrf).add().commit()
         # Then a new record is created
         self.assertEqual(1, DhcpRecord.query.count())
         # Then an Ip record get created
@@ -83,7 +85,7 @@ class DhcpRecordTest(WebCase):
         ).add().commit()
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord
-        DhcpRecord(ip='2002::1234:abcd:ffff:c0a8:101', mac='00:00:5e:00:53:af').add().commit()
+        DhcpRecord(ip='2002::1234:abcd:ffff:c0a8:101', mac='00:00:5e:00:53:af', vrf=vrf).add().commit()
         # Then a new record is created
         self.assertEqual(1, DhcpRecord.query.count())
         # Then an Ip record get created
@@ -105,19 +107,20 @@ class DhcpRecordTest(WebCase):
             vrf=vrf,
         ).add().commit()
         # Given a DHCP Reservation with IPv6
-        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:af').add().commit()
+        DhcpRecord(ip='2001:0db8:85a3:0000:0000:8a2e:0370:7334', mac='00:00:5e:00:53:af', vrf=vrf).add().commit()
         # When querying the object
         dhcp = DhcpRecord.query.first()
         # Then the IPv6 is reformated
         self.assertEqual('2001:db8:85a3::8a2e:370:7334', dhcp.ip)
 
     def test_add_with_invalid_ip(self):
-        # Given an empty database
+        # Given a database with a VRF
+        vrf = Vrf(name='default')
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord with invalid data
         # Then an exception is raised
         with self.assertRaises(ValueError) as cm:
-            DhcpRecord(ip='a.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+            DhcpRecord(ip='a.0.2.23', mac='00:00:5e:00:53:af', vrf=vrf).add().commit()
         self.assertEqual(cm.exception.args, ('ip', mock.ANY))
 
     def test_add_with_invalid_subnet(self):
@@ -136,7 +139,7 @@ class DhcpRecordTest(WebCase):
         ).add().commit()
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord with invalid ip address
-        record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+        record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af', vrf=vrf).add().commit()
         # Then an exception is raised by Soft Rule
         with self.assertRaises(RuleError) as cm:
             Rule.verify(record, errors='raise')
@@ -144,21 +147,35 @@ class DhcpRecordTest(WebCase):
 
     def test_add_with_invalid_mac(self):
         # Given an empty database
+        vrf = Vrf(name='default').add().commit()
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord with invalid data
         # Then an exception is raised
         with self.assertRaises(ValueError) as cm:
-            DhcpRecord(ip='192.0.2.23', mac='invalid').add().commit()
+            DhcpRecord(ip='192.0.2.23', mac='invalid', vrf=vrf).add().commit()
         self.assertEqual(cm.exception.args, ('mac', mock.ANY))
 
     def test_add_with_dhcp_disabled(self):
         # Given a database with subnet with DHCP disabled
-        vrf = Vrf(name='default')
+        vrf = Vrf(name='default').add()
         Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24', dhcp=False)], vrf=vrf).add().commit()
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord to the subnet
         # Then a record is created
-        obj = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+        obj = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af', vrf=vrf).add().commit()
         # Then a soft rule is raised
         errors = Rule.verify(obj)
         self.assertEqual(1, len(errors))
+
+    def test_null_vrf_id(self):
+        # Given a dns record
+        vrf = Vrf(name='default').add()
+        Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf).add().commit()
+        record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af', vrf=vrf).add().commit()
+        # When updating the vrf_id to null
+        record.vrf = None
+        record.add()
+        # Then an exception is raised
+        with self.assertRaises(IntegrityError) as cm:
+            record.commit()
+        self.assertIn('null constraint', str(cm.exception).lower())

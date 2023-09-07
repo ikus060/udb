@@ -3,6 +3,15 @@
   {'name':'id', 'visible':False},
   {'name': 'ip', 'title':_('IP Address'), 'orderable':True, 'render':'summary', 'render_arg':'ip', 'className':'export'},
   {'name':'count', 'title':_('Referenced'), 'orderable':True, 'className':'export'},
+  {'name':'vrf_id', 'visible':False},
+  {'name':'vrf', 'title':form.vrf_id.label.text|string, 'orderable':True, 'className':'export'},
   {'name':'notes', 'title':form.notes.label.text|string, 'orderable':True, 'className':'export'},
   {'name':'owner', 'title':form.owner_id.label.text|string, 'orderable':True, 'className':'export'}
 ] %}
+{# Add menu to filter by VRF. #}
+{% set ns = namespace(vrf_btn=[]) %}
+{% for id, name, count in vrf_list|sort(attribute=1) %}
+  {% set ns.vrf_btn = ns.vrf_btn + [{'text':'%s (%s)' % (name, count), 'extend': 'btnfilter', 'column': 'vrf_id:name', 'search': '^' + id|string + '$' , 'regex': True, 'multi': True}] %}
+{% endfor %}
+{% set vrf_menu = {'text': _('VRF') + ' ', 'extend': 'collectionfilter', 'popoverTitle': _('VRF'), 'buttons': ns.vrf_btn, 'column': 'vrf_id:name' } %}
+{% set extra_buttons = [vrf_menu] %}

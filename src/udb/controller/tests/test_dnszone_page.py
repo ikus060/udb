@@ -80,7 +80,7 @@ class DnsZonePageTest(WebCase, CommonTest):
         vrf = Vrf(name='default').add()
         subnet = Subnet(subnet_ranges=[SubnetRange('192.168.0.1/24')], vrf=vrf).add()
         obj = self.obj_cls(**{'name': 'examples.com', 'subnets': [subnet]}).add().commit()
-        DnsRecord(name='foo.examples.com', type='A', value='192.168.0.54').add().commit()
+        DnsRecord(name='foo.examples.com', type='A', value='192.168.0.54', vrf=vrf).add().commit()
         # When downloading the zonefile
         self.getPage(url_for(self.base_url, obj.id, 'zonefile'))
         # Then zonefile is downloaded

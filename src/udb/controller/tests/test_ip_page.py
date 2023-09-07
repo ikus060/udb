@@ -25,7 +25,7 @@ class IPTest(WebCase):
     def setUp(self):
         super().setUp()
         # Given a database with a subnet.
-        vrf = Vrf(name='default')
+        self.vrf = Vrf(name='default')
         Subnet(
             subnet_ranges=[
                 SubnetRange(
@@ -35,7 +35,7 @@ class IPTest(WebCase):
                     dhcp_end_ip='1.2.3.254',
                 )
             ],
-            vrf=vrf,
+            vrf=self.vrf,
         ).add()
         Subnet(
             subnet_ranges=[
@@ -46,12 +46,12 @@ class IPTest(WebCase):
                     dhcp_end_ip='2.3.4.254',
                 )
             ],
-            vrf=vrf,
+            vrf=self.vrf,
         ).add().commit()
 
     def test_no_deleted_filter(self):
         # Given a database with records
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59', vrf=self.vrf).add()
         obj.commit()
         # When browsing IP list view
         self.getPage('/ip/')
@@ -61,7 +61,7 @@ class IPTest(WebCase):
 
     def test_no_create_new(self):
         # Given a database with records
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59', vrf=self.vrf).add()
         obj.commit()
         # When browsing IP list view
         self.getPage('/ip/')
@@ -70,7 +70,7 @@ class IPTest(WebCase):
 
     def test_get_ip(self):
         # Given a database with records
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59', vrf=self.vrf).add()
         obj.commit()
         ip = Ip.query.one()
         # When showing the IP Page
@@ -84,7 +84,7 @@ class IPTest(WebCase):
     def test_edit_ip(self):
         # Given a database with records
         user = User.create(username='guest', password='password', role='guest').add()
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59', vrf=self.vrf).add()
         obj.commit()
         ip = Ip.query.one()
         # When editing notes of IP
@@ -104,7 +104,7 @@ class IPTest(WebCase):
 
     def test_get_data_json(self):
         # Given a database with records
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59', vrf=self.vrf).add()
         obj.commit()
         Ip.query.one()
         # When requesting data.json
@@ -114,7 +114,7 @@ class IPTest(WebCase):
 
     def test_data_json_count(self):
         # Given a database with records
-        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59').add().commit()
+        obj = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:59', vrf=self.vrf).add().commit()
         obj.ip = '2.3.4.5'
         obj.commit()
         # When requesting data.json
@@ -122,11 +122,9 @@ class IPTest(WebCase):
         # Then json data is returned
         data['data'] = sorted(data['data'], key=lambda row: row[0])
         self.assertEqual(
-            data,
-            {
-                'data': [
-                    [1, '1.2.3.4', 0, '', None, '/ip/1/edit'],
-                    [2, '2.3.4.5', 1, '', None, '/ip/2/edit'],
-                ]
-            },
+            data['data'],
+            [
+                [1, '1.2.3.4', 0, 1, 'default', '', None, '/ip/1/edit'],
+                [2, '2.3.4.5', 1, 1, 'default', '', None, '/ip/2/edit'],
+            ],
         )

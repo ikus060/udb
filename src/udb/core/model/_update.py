@@ -111,6 +111,31 @@ def constraint_add(conn, constraint):
         conn.execute(text(str(ddl.AddConstraint(constraint).compile(conn.engine))))
 
 
+def index_exists(conn, index_name):
+    """
+    Check if the given index exists.
+    """
+    assert index_name
+    if is_sqlite(conn):
+        row = conn.execute(text("SELECT 1 FROM sqlite_master WHERE type='index' and name = '%s'" % index_name)).first()
+    else:
+        row = conn.execute(
+            text(
+                "SELECT 1 FROM pg_index, pg_class WHERE pg_class.oid = pg_index.indexrelid and relname = '%s'"
+                % index_name
+            )
+        ).first()
+    return row is not None
+
+
+def index_drop(conn, index_name):
+    """
+    Drop given constraints.
+    """
+    assert index_name
+    conn.execute(text("DROP INDEX %s" % index_name))
+
+
 def table_exists(conn, table):
     """
     Check if given table exists.
