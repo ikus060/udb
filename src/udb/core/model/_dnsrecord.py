@@ -613,6 +613,7 @@ RuleConstraint(
 RuleConstraint(
     name="dns_cname_not_unique",
     model=DnsRecord,
+    severity=Rule.SEVERITY_ENFORCED,
     statement=lambda: (
         (a := aliased(DnsRecord))
         and (

@@ -432,3 +432,15 @@ class DnsRecordTest(WebCase):
         with self.assertRaises(IntegrityError) as cm:
             DnsRecord(name='bar.example.com', type='INVA', value='testing').add().flush()
         self.assertIn('dnsrecord_types', str(cm.exception))
+
+    def test_dns_cname_not_unique_rule(self):
+        # Given a CNAME and a A record on the same host
+        DnsZone(name='example.com').add()
+        DnsRecord(name='www.example.com', type='CNAME', value='example.com').add().commit()
+        # When creating another record
+        other = DnsRecord(name='www.example.com', type='TXT', value='value').add().commit()
+        # Then an error is raised
+        # Then an exception is raised by Soft Rule
+        with self.assertRaises(RuleError) as cm:
+            Rule.verify(other, errors='raise')
+        self.assertIn('dns_cname_not_unique', str(cm.exception))
