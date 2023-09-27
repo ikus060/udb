@@ -423,3 +423,23 @@ class DnsRecordPageTest(WebCase, CommonTest):
         self.assertStatus(200)
         # Make sure the constraint of dnsrecord is not shown.
         self.assertInBody('Database integrity error:')
+
+    def test_update_vrf_id(self):
+        # Given a database with a second VRF
+        dns = DnsRecord(name='foo.example.com', type='A', value='192.168.1.25').add().commit()
+        vrf2 = Vrf(name='new')
+        Subnet(
+            subnet_ranges=[
+                SubnetRange(
+                    '192.168.1.0/24',
+                )
+            ],
+            vrf=vrf2,
+            dnszones=[self.zone],
+        ).add().commit()
+        # When updating the VRF of an existing DHCP Record
+        self.getPage(url_for(dns, 'edit'), method='POST', body={'vrf_id': vrf2.id})
+        # Then the VRF get updated.
+        self.assertStatus(303)
+        dns.expire()
+        self.assertEqual(dns.vrf_id, vrf2.id)
