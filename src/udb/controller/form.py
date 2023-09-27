@@ -172,18 +172,26 @@ class SelectMultipleObjectField(SelectMultipleField):
         self.object_cls = object_cls
         self.object_query = object_query
 
+    def _summary_with_status(self, obj):
+        """
+        Return a summary with a status.
+        """
+        if obj.estatus == self.object_cls.STATUS_ENABLED:
+            return obj.summary
+        elif obj.estatus == self.object_cls.STATUS_DISABLED:
+            return obj.summary + ' [%s]' % _('Disabled')
+        return obj.summary + ' [%s]' % _('Deleted')
+
     @property
     def choices(self):
         """
         Replace default implementation by returning the list of objects.
+        Hide deleted record
         """
         entries = [
-            (
-                obj.id,
-                obj.summary if obj.status == self.object_cls.STATUS_ENABLED else "%s [%s]" % (obj.summary, obj.status),
-            )
+            (obj.id, self._summary_with_status(obj))
             for obj in self._query().all()
-            if obj.status != self.object_cls.STATUS_DELETED or (self.data and obj.id in self.data)
+            if obj.estatus != self.object_cls.STATUS_DELETED or (self.data and obj.id in self.data)
         ]
         return entries
 
@@ -210,7 +218,7 @@ class SelectMultipleObjectField(SelectMultipleField):
         """
         Build query of object to be listed by the Field.
         """
-        q = self.object_cls.query.with_entities(self.object_cls.id, self.object_cls.summary, self.object_cls.status)
+        q = self.object_cls.query.with_entities(self.object_cls.id, self.object_cls.summary, self.object_cls.estatus)
         if self.object_query:
             assert hasattr(self.object_query, '__call__'), "object_query should be callable"
             q = self.object_query(q)
@@ -229,18 +237,25 @@ class SelectObjectField(SelectField):
         self.object_cls = object_cls
         self.object_query = object_query
 
+    def _summary_with_status(self, obj):
+        """
+        Return a summary with a status.
+        """
+        if obj.estatus == self.object_cls.STATUS_ENABLED:
+            return obj.summary
+        elif obj.estatus == self.object_cls.STATUS_DISABLED:
+            return obj.summary + ' [%s]' % _('Disabled')
+        return obj.summary + ' [%s]' % _('Deleted')
+
     @property
     def choices(self):
         """
         Replace default implementation by returning the list of objects.
         """
         entries = [
-            (
-                obj.id,
-                obj.summary if obj.status == self.object_cls.STATUS_ENABLED else "%s [%s]" % (obj.summary, obj.status),
-            )
+            (obj.id, self._summary_with_status(obj))
             for obj in self._query().all()
-            if obj.status != self.object_cls.STATUS_DELETED or obj.id == self.data
+            if obj.estatus != self.object_cls.STATUS_DELETED or obj.id == self.data
         ]
         # Add a "null" option if the field is optional
         if 'required' not in self.flags:
@@ -276,7 +291,7 @@ class SelectObjectField(SelectField):
         """
         Build query of object to be listed by the Field.
         """
-        q = self.object_cls.query.with_entities(self.object_cls.id, self.object_cls.summary, self.object_cls.status)
+        q = self.object_cls.query.with_entities(self.object_cls.id, self.object_cls.summary, self.object_cls.estatus)
         if self.object_query:
             assert hasattr(self.object_query, '__call__'), "object_query should be callable"
             q = self.object_query(q)

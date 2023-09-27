@@ -60,7 +60,7 @@ class WebCase(BaseClass):
     username = 'admin'
     password = 'admin'
 
-    default_config = {'debug': False}
+    default_config = {'debug': True}
 
     @classmethod
     def setup_class(cls):
@@ -157,9 +157,7 @@ class WebCase(BaseClass):
         self.zone.flush()
         DnsZone(name='bfh.science', notes='This is a note', owner=self.user).add()
         DnsZone(name='bfh.info', notes='This is a note', owner=self.user).add()
-        DhcpRecord(
-            ip='147.87.250.1', mac='00:ba:d5:a2:34:56', notes='webserver bla bla bla', owner=self.user, vrf=self.vrf
-        ).add()
+        DhcpRecord(ip='147.87.250.1', mac='00:ba:d5:a2:34:56', notes='webserver bla bla bla', owner=self.user).add()
         self.dnsrecord = DnsRecord(
             name='foo.bfh.ch', type='A', value='147.87.250.3', owner=self.user, vrf=self.vrf
         ).add()

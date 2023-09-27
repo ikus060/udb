@@ -18,9 +18,9 @@
 import re
 
 import cherrypy
-from sqlalchemy import CheckConstraint, Column, ForeignKey, Index, Table, and_, func, select
+from sqlalchemy import CheckConstraint, Column, ForeignKey, Index, Table, and_, event, func
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import column_property, declared_attr, relationship
+from sqlalchemy.orm import relationship
 from sqlalchemy.types import String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
@@ -58,27 +58,12 @@ class DnsZone(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin,
     subnets = relationship(
         "Subnet",
         secondary=dnszone_subnet,
-        secondaryjoin=lambda: and_(Subnet.id == dnszone_subnet.c.subnet_id, Subnet.status != Subnet.STATUS_DELETED),
+        secondaryjoin=lambda: and_(Subnet.id == dnszone_subnet.c.subnet_id, Subnet.estatus != Subnet.STATUS_DELETED),
         backref="dnszones",
         active_history=True,
         sync_backref=True,
         lazy=True,
     )
-
-    @declared_attr
-    def subnets_count(cls):
-        return column_property(
-            select(func.count(Subnet.id))
-            .where(
-                and_(
-                    Subnet.id == dnszone_subnet.c.subnet_id,
-                    Subnet.status != Subnet.STATUS_DELETED,
-                    dnszone_subnet.c.dnszone_id == cls.id,
-                )
-            )
-            .scalar_subquery(),
-            deferred=True,
-        )
 
     @classmethod
     def _search_string(cls):
@@ -94,22 +79,30 @@ class DnsZone(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin,
 
 # Make DNS Zone name (FQDN) unique without case-sensitive
 Index(
-    'dnszone_name_index',
-    func.lower(DnsZone.name),
+    'dnszone_name_unique_ix',
+    DnsZone.name,
     unique=True,
-    sqlite_where=DnsZone.status == DnsZone.STATUS_ENABLED,
-    postgresql_where=DnsZone.status == DnsZone.STATUS_ENABLED,
+    sqlite_where=DnsZone.estatus != DnsZone.STATUS_DELETED,
+    postgresql_where=DnsZone.estatus != DnsZone.STATUS_DELETED,
     info={
         'description': _('A DNS Zone aready exist for this domain.'),
         'field': 'name',
         'related': lambda obj: DnsZone.query.filter(
-            DnsZone.status == DnsZone.STATUS_ENABLED, func.lower(DnsZone.name) == func.lower(obj.name)
+            DnsZone.estatus != DnsZone.STATUS_DELETED, DnsZone.name == obj.name
         ).first(),
     },
 )
 
+Index(
+    'dnszone_id_name_estatus_unique_ix',
+    DnsZone.id,
+    DnsZone.name,
+    DnsZone.estatus,
+    unique=True,
+)
 
-dnsrecord_value_domain_name = CheckConstraint(
+
+CheckConstraint(
     DnsZone.name.regexp_match(NAME_PATTERN.pattern),
     name="dnszone_domain_name",
     info={
@@ -117,3 +110,24 @@ dnsrecord_value_domain_name = CheckConstraint(
         'field': 'name',
     },
 )
+
+CheckConstraint(
+    DnsZone.name == func.lower(DnsZone.name),
+    name="dnszone_lower_case_name",
+    info={
+        'description': _('Enter domain with lower case.'),
+        'field': 'name',
+    },
+)
+
+
+@event.listens_for(Base.metadata, 'after_create')
+def create_arpa_zone(target, conn, **kw):
+    # To allow usage of ORM session within DDL scope, we need to manually assign the connection to our current session.
+    DnsZone.session.bind = conn
+
+    # Create default reverse pointer zone.
+    for name in ['in-addr.arpa', 'ip6.arpa']:
+        zone = DnsZone.query.filter(DnsZone.name == name).first()
+        if not zone:
+            DnsZone(name=name).add().flush()

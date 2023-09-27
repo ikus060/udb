@@ -97,15 +97,6 @@ class EditDnsRecordForm(CherryForm):
         default=lambda: cherrypy.serving.request.currentuser.id,
     )
 
-    def populate_obj(self, obj):
-        super().populate_obj(obj)
-        # If vrf is not defined, let find the best match.
-        if self.vrf_id.data is None and obj.type in ["A", "AAAA", "PTR"] and obj.ip_value:
-            vrfs = obj.find_vrf()
-            if not vrfs:
-                raise ValueError('vrf_id', _('Cannot find a valid VRF for this IP.'))
-            obj.vrf = vrfs[0]
-
 
 class NewDnsRecordForm(EditDnsRecordForm):
 
@@ -185,7 +176,7 @@ class DnsRecordPage(CommonPage):
             .outerjoin(DnsRecord.vrf)
             .with_entities(
                 DnsRecord.id,
-                DnsRecord.status,
+                DnsRecord.estatus,
                 DnsRecord.name,
                 DnsRecord.type,
                 DnsRecord.ttl,
@@ -220,7 +211,7 @@ class DnsRecordPage(CommonPage):
         obj = self._get_or_404(key)
         query = obj.related_dns_record_query().with_entities(
             DnsRecord.id,
-            DnsRecord.status,
+            DnsRecord.estatus,
             DnsRecord.name,
             DnsRecord.type,
             DnsRecord.ttl,

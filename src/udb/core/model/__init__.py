@@ -20,6 +20,7 @@ import cherrypy
 
 from . import _bool_or  # noqa
 from . import _group_concat  # noqa
+from . import _least  # noqa
 from ._deployment import Deployment, Environment  # noqa
 from ._dhcprecord import DhcpRecord  # noqa
 from ._dnsrecord import DnsRecord  # noqa
@@ -29,7 +30,7 @@ from ._ip import Ip  # noqa
 from ._mac import Mac  # noqa
 from ._message import Message  # noqa
 from ._rule import Rule, RuleError  # noqa
-from ._subnet import Subnet, SubnetRange, subnetrange_index, subnetrange_order  # noqa
+from ._subnet import Subnet, SubnetRange  # noqa
 from ._user import User  # noqa
 from ._vrf import Vrf  # noqa
 

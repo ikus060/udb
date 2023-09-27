@@ -158,7 +158,7 @@ class EnvironmentPageTest(WebCase, CommonTest):
         self.assertEqual(
             data['data'],
             [
-                [1, 'enabled', 'subnet_env', 'subnet', 2, '', '/environment/1/edit'],
-                [2, 'enabled', 'dhcp_env', 'dhcprecord', 2, '', '/environment/2/edit'],
+                [1, Environment.STATUS_ENABLED, 'subnet_env', 'subnet', 2, '', '/environment/1/edit'],
+                [2, Environment.STATUS_ENABLED, 'dhcp_env', 'dhcprecord', 2, '', '/environment/2/edit'],
             ],
         )

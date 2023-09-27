@@ -40,7 +40,13 @@ class Follower(Base):
 
 
 # Create a unique index for username
-Index('follower_index', Follower.model_name, Follower.model_id, Follower.user_id, unique=True)
+Index(
+    'follower_model_name_model_id_user_id_unique_ix',
+    Follower.model_name,
+    Follower.model_id,
+    Follower.user_id,
+    unique=True,
+)
 
 
 class FollowerMixin:

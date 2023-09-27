@@ -1,14 +1,15 @@
-{% set status_label = {'enabled':_('Enabled'), 'disabled': _('Disabled'), 'deleted': _('Deleted')} %}
-{% set status_bs_cls = {"enabled": "success", "disabled": "warning", "deleted": "danger"} %}
+{% set status_label = {2:_('Enabled'), 1: _('Disabled'), 0: _('Deleted')} %}
+{% set status_bs_cls = {2: 'success', 1: 'warning', 0: 'danger'} %}
 {% macro badge(obj, force=False) %}
-  {% if obj.status != 'enabled' or force %}
-    <span class="badge rounded-pill bg-{{ status_bs_cls.get(obj.status, 'secondary') }}">
-      {{ status_label.get(obj.status, obj.status) }}
+  {% if obj.estatus != 2 or force %}
+    <span class="badge rounded-pill bg-{{ status_bs_cls.get(obj.estatus, 'secondary') }}">
+      {{ status_label.get(obj.estatus, obj.estatus) }}
+      {% if obj.estatus!=obj.status %}inherit from parent{% endif %}
     </span>
   {% endif %}
 {% endmacro %}
 {% macro bg_color(obj) %}
-  {%- if obj.status != 'enabled' or force -%}
+  {%- if obj.status != 2 or force -%}
     bg-light-{{ status_bs_cls.get(obj.status, 'secondary') }}
   {%- endif -%}
 {% endmacro %}

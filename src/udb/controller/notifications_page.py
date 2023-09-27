@@ -21,7 +21,7 @@ from sqlalchemy import and_, literal, select, union_all
 from wtforms.fields import BooleanField
 
 from udb.controller import flash, show_exception, url_for
-from udb.core.model import Follower, followable_model_name, followable_models
+from udb.core.model import Follower, User, followable_model_name, followable_models
 from udb.tools.i18n import gettext_lazy as _
 
 from .form import CherryForm
@@ -31,7 +31,8 @@ AllModel = union_all(
         select(
             literal(model.__tablename__.lower()).label('model_name'),
             model.id.label('model_id'),
-            getattr(model, 'status', literal('enabled')).label('status'),
+            getattr(model, 'status', literal(User.STATUS_ENABLED)).label('status'),
+            getattr(model, 'estatus', literal(User.STATUS_ENABLED)).label('estatus'),
             model.summary,
         )
         for model in followable_models
@@ -134,7 +135,7 @@ class NotificationsPage:
         query = (
             Follower.session.query(
                 Follower.model_id,
-                AllModel.c.status,
+                AllModel.c.estatus,
                 Follower.model_name,
                 AllModel.c.summary,
             )
@@ -152,7 +153,7 @@ class NotificationsPage:
             'data': [
                 [
                     obj.model_id,
-                    obj.status,
+                    obj.estatus,
                     obj.model_name,
                     obj.summary,
                     url_for(obj, 'edit'),

@@ -1,7 +1,7 @@
 {% extends 'common/list.html' %}
 {% set columns = [
   {'name':'id', 'visible':False},
-  {'name':'status', 'visible':False, 'search': '(enabled|disabled)', 'regex':True},
+  {'name':'status', 'visible':False, 'search': '(1|2)', 'regex':True},
   {'name':'ip', 'title':form.ip.label.text|string, 'orderable':True, 'render':'summary', 'render_arg':'dhcprecord', 'className':'export'},
   {'name':'mac', 'title':form.mac.label.text|string, 'orderable':True, 'className':'export'},
   {'name':'vrf_id', 'visible':False},

@@ -55,11 +55,13 @@ class SubnetPageTest(WebCase, CommonTest):
             # Then the web page is loaded without error.
             self.assertFalse(driver.get_log('browser'))
             # When user transfert item to selected list and save
-            available = driver.find_element('xpath', '//select[@id="dnszones-not-checked"]/option[@value="1"]')
+            available = driver.find_element(
+                'xpath', '//select[@id="dnszones-not-checked"]/option[@value="%s"]' % zone.id
+            )
             available.click()
             add_item_btn = driver.find_element('id', 'multiselect_rightSelected')
             add_item_btn.click()
-            driver.find_element('xpath', '//select[@id="dnszones"]/option[@value="1"]')
+            driver.find_element('xpath', '//select[@id="dnszones"]/option[@value="%s"]' % zone.id)
             save_change_btn = driver.find_element('id', 'save-changes')
             save_change_btn.send_keys(Keys.ENTER)
         # Then record got updated.
@@ -105,15 +107,15 @@ class SubnetPageTest(WebCase, CommonTest):
             % zone.id
         )
 
-    def test_edit_with_deleted_vrf(self):
+    def test_edit_with_disabled_vrf(self):
         # Given a Subnet associated to deleted VRF
-        self.vrf.status = Vrf.STATUS_DELETED
+        self.vrf.status = Vrf.STATUS_DISABLED
         obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
         # Then the VRF Field contains our deleted VRF
-        self.assertInBody('default [deleted]')
+        self.assertInBody('default [Disabled]')
 
     def test_edit_assign_deleted_vrf(self):
         # Given a Subnet associated to VRF
@@ -123,7 +125,7 @@ class SubnetPageTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
         # Then the deleted VRF is not listed
-        self.assertNotInBody('MyVrf [deleted]')
+        self.assertNotInBody('MyVrf [Deleted]')
         # When trying to assign a deleted VRF to the subnet
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'vrf_id': deleted_vrf.id})
         self.assertStatus(303)
@@ -132,17 +134,17 @@ class SubnetPageTest(WebCase, CommonTest):
         self.assertEqual(obj.vrf_id, deleted_vrf.id)
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
-        self.assertInBody('MyVrf [deleted]')
+        self.assertInBody('MyVrf [Deleted]')
 
-    def test_edit_with_deleted_zone(self):
+    def test_edit_with_disabled_zone(self):
         # Given a Subnet associated to deleted VRF
-        zone = DnsZone(name='examples.com', status=DnsZone.STATUS_DELETED).add().flush()
+        zone = DnsZone(name='examples.com', status=DnsZone.STATUS_DISABLED).add().flush()
         obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[zone], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
         # Then the VRF Field contains our deleted VRF
-        self.assertInBody('examples.com [deleted]')
+        self.assertInBody('examples.com [Disabled]')
 
     def test_edit_assign_deleted_zone(self):
         # Given a Subnet associated to VRF
@@ -154,7 +156,7 @@ class SubnetPageTest(WebCase, CommonTest):
         self.assertStatus(200)
         # Then the deleted VRF is not listed
         self.assertInBody('examples.com')
-        self.assertNotInBody('foo.com [deleted]')
+        self.assertNotInBody('foo.com [Deleted]')
         # When trying to assign a deleted VRF to the subnet
         self.getPage(
             url_for(self.base_url, obj.id, 'edit'), method='POST', body={'dnszones': [zone.id, deleted_zone.id]}
@@ -166,7 +168,7 @@ class SubnetPageTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
         self.assertInBody('examples.com')
-        self.assertInBody('foo.com [deleted]')
+        self.assertInBody('foo.com [Deleted]')
 
     @parameterized.expand(
         [
@@ -224,6 +226,39 @@ class SubnetPageTest(WebCase, CommonTest):
         obj.expire()
         self.assertEqual(expected_value, obj.subnet_ranges[0].dhcp)
 
+    def test_edit_add_range(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add().commit()
+        subnetrange_id = obj.subnet_ranges[0].id
+        # Given a new subnet
+        payload = {
+            'subnet_ranges-0-range': obj.subnet_ranges[0].range,
+            'subnet_ranges-1-range': '192.168.14.0/24',
+        }
+        # When creating the subnet with DHCP ranges
+        self.getPage(url_for(obj, 'edit'), method='POST', body=payload)
+        # Then subnet get updated
+        self.assertStatus(303)
+        # Then subnetrange was updated too
+        obj.expire()
+        self.assertEqual(subnetrange_id, obj.subnet_ranges[0].id)
+
+    def test_edit_update_range(self):
+        # Given a database with a record
+        obj = self.obj_cls(**self.new_data).add().commit()
+        subnetrange_id = obj.subnet_ranges[0].id
+        # Given a new subnet
+        payload = {
+            'subnet_ranges-0-range': '192.168.14.0/24',
+        }
+        # When creating the subnet with DHCP ranges
+        self.getPage(url_for(obj, 'edit'), method='POST', body=payload)
+        # Then subnet get updated
+        self.assertStatus(303)
+        # Then subnetrange was updated too
+        obj.expire()
+        self.assertEqual(subnetrange_id, obj.subnet_ranges[0].id)
+
     def test_new_ranges(self):
         # Given a data without records
         # When creating a subnet for the first time
@@ -244,7 +279,7 @@ class SubnetPageTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_post)
         # Then error is repported to the user.
         self.assertStatus(200)
-        self.assertInBody('This IP Range is already defined in another subnet.')
+        self.assertInBody('This IP Range is already defined by another subnet.')
         # Then a link to the duplicate subnet is provided
         self.assertInBody(url_for(obj, 'edit'))
 
@@ -259,7 +294,7 @@ class SubnetPageTest(WebCase, CommonTest):
         # Then enabled zone is displayed
         self.assertInBody(zone1.name)
         # Then disabled zone is displayed with a tag
-        self.assertInBody(zone2.name + ' [disabled]')
+        self.assertInBody(zone2.name + ' [Disabled]')
         # Then deleted zone is hidden
         self.assertNotInBody(zone3.name)
 
@@ -396,7 +431,7 @@ class SubnetPageTest(WebCase, CommonTest):
             [
                 [
                     1,
-                    'enabled',
+                    2,
                     1,
                     0,
                     '192.168.1.0/24',
@@ -434,7 +469,7 @@ class SubnetPageTest(WebCase, CommonTest):
             [
                 [
                     1,
-                    'enabled',
+                    2,
                     1,
                     0,
                     '192.168.1.0/24',
@@ -451,7 +486,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     2,
-                    'enabled',
+                    2,
                     2,
                     1,
                     '192.168.1.128/30',
@@ -484,7 +519,7 @@ class SubnetPageTest(WebCase, CommonTest):
             [
                 [
                     1,
-                    'enabled',
+                    2,
                     1,
                     0,
                     '192.168.0.0/16',
@@ -501,7 +536,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     2,
-                    'enabled',
+                    2,
                     2,
                     1,
                     '192.168.0.0/24',
@@ -518,7 +553,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     3,
-                    'enabled',
+                    2,
                     3,
                     2,
                     '192.168.0.0/26',
@@ -535,7 +570,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     4,
-                    'enabled',
+                    2,
                     4,
                     2,
                     '192.168.0.64/26',
@@ -552,7 +587,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     5,
-                    'enabled',
+                    2,
                     5,
                     1,
                     '192.168.14.0/24',
@@ -587,7 +622,7 @@ class SubnetPageTest(WebCase, CommonTest):
             [
                 [
                     1,
-                    'deleted',
+                    0,
                     1,
                     0,
                     '192.168.0.0/16',
@@ -604,7 +639,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     2,
-                    'enabled',
+                    2,
                     2,
                     0,
                     '192.168.0.0/24',
@@ -621,7 +656,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     3,
-                    'enabled',
+                    2,
                     3,
                     1,
                     '192.168.0.0/26',
@@ -638,7 +673,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     4,
-                    'enabled',
+                    2,
                     4,
                     1,
                     '192.168.0.64/26',
@@ -655,7 +690,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     5,
-                    'enabled',
+                    2,
                     5,
                     0,
                     '192.168.14.0/24',
@@ -706,7 +741,7 @@ class SubnetPageTest(WebCase, CommonTest):
             [
                 [
                     3,
-                    'enabled',
+                    2,
                     1,
                     0,
                     '10.255.0.0/16',
@@ -723,7 +758,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     4,
-                    'enabled',
+                    2,
                     2,
                     0,
                     '192.0.2.23/32',
@@ -740,7 +775,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     1,
-                    'enabled',
+                    2,
                     3,
                     0,
                     '192.168.1.0/24',
@@ -757,7 +792,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     2,
-                    'enabled',
+                    2,
                     4,
                     1,
                     '192.168.1.128/30',
@@ -774,7 +809,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     9,
-                    'enabled',
+                    2,
                     5,
                     0,
                     '192.168.1.128/30',
@@ -791,7 +826,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     5,
-                    'enabled',
+                    2,
                     6,
                     0,
                     '2a07:6b40::/32',
@@ -808,7 +843,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     6,
-                    'enabled',
+                    2,
                     7,
                     1,
                     '2a07:6b40::/48',
@@ -825,7 +860,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     7,
-                    'enabled',
+                    2,
                     8,
                     2,
                     '2a07:6b40::/64',
@@ -842,7 +877,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 ],
                 [
                     8,
-                    'enabled',
+                    2,
                     9,
                     1,
                     '2a07:6b40:1::/48',

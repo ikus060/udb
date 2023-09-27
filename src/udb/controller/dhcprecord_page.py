@@ -67,15 +67,6 @@ class DhcpRecordForm(CherryForm):
         default=lambda: cherrypy.serving.request.currentuser.id,
     )
 
-    def populate_obj(self, obj):
-        super().populate_obj(obj)
-        # If vrf is not defined, let find the best match.
-        if self.vrf_id.data is None:
-            vrfs = obj.find_vrf()
-            if not vrfs:
-                raise ValueError('ip', _('Cannot find a valid VRF for this IP.'))
-            obj.vrf = vrfs[0]
-
 
 class DhcpRecordPage(CommonPage):
     def __init__(self) -> None:
@@ -87,7 +78,7 @@ class DhcpRecordPage(CommonPage):
             .join(DhcpRecord.vrf)
             .with_entities(
                 DhcpRecord.id,
-                DhcpRecord.status,
+                DhcpRecord.estatus,
                 DhcpRecord.ip,
                 DhcpRecord.mac,
                 Vrf.id,

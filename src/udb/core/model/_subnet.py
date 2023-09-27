@@ -16,9 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import ipaddress
+import itertools
 
 import cherrypy
-from sqlalchemy import CheckConstraint, Column, Computed, ForeignKey, ForeignKeyConstraint, Index, event, func
+from sqlalchemy import CheckConstraint, Column, Computed, ForeignKeyConstraint, Index, event, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import deferred, relationship, validates
 from sqlalchemy.types import Boolean, Integer, SmallInteger, String
@@ -38,33 +39,18 @@ from ._vrf import Vrf
 Base = cherrypy.tools.db.get_base()
 
 
+Session = cherrypy.tools.db.get_session()
+
+
 class SubnetRange(Base):
     __tablename__ = 'subnetrange'
     id = Column(Integer, primary_key=True)
-    subnet_id = Column(Integer, nullable=False)
     vrf_id = Column(Integer, nullable=False)
+    # Define VRF relation as a view, since it not assignable and get updated by parent subnet.
+    vrf = relationship(Vrf, primaryjoin=Vrf.id == vrf_id, foreign_keys="SubnetRange.vrf_id", viewonly=True)
+    subnet_id = Column(Integer, nullable=False)
+    subnet_estatus = Column(Integer, nullable=False)
     range = Column(CidrType, nullable=False)
-    __table_args__ = (
-        ForeignKeyConstraint(["subnet_id", "vrf_id"], ["subnet.id", "subnet.vrf_id"], onupdate="CASCADE"),
-        # Make sure DHCP start/end range is defined when DHCP is enabled
-        CheckConstraint(
-            "dhcp IS FALSE OR (dhcp_start_ip IS NOT NULL AND dhcp_end_ip IS NOT NULL)",
-            name='dhcp_start_end_not_null',
-        ),
-        # Make sure DHCP start/end range are defined within CIDR
-        CheckConstraint(
-            "dhcp_start_ip IS NULL or dhcp_start_ip > start_ip",
-            name='dhcp_start_ip_within_range',
-        ),
-        CheckConstraint(
-            "dhcp_end_ip IS NULL or CASE WHEN version = 4 THEN dhcp_end_ip < end_ip ELSE dhcp_end_ip <= end_ip END",
-            name='dhcp_end_ip_within_range',
-        ),
-        # Make sure DHCP start < end
-        CheckConstraint(
-            "dhcp_start_ip IS NULL or dhcp_end_ip IS NULL or dhcp_start_ip < dhcp_end_ip", name='dhcp_start_end_asc'
-        ),
-    )
     version = deferred(
         Column(
             SmallInteger,
@@ -99,6 +85,32 @@ class SubnetRange(Base):
     dhcp_end_ip = Column(
         InetType,
         nullable=True,
+    )
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["vrf_id", "subnet_id", "subnet_estatus"],
+            ["subnet.vrf_id", "subnet.id", "subnet.estatus"],
+            onupdate="CASCADE",
+        ),
+        # Make sure DHCP start/end range is defined when DHCP is enabled
+        CheckConstraint(
+            "dhcp IS FALSE OR (dhcp_start_ip IS NOT NULL AND dhcp_end_ip IS NOT NULL)",
+            name='dhcp_start_end_not_null',
+        ),
+        # Make sure DHCP start/end range are defined within CIDR
+        CheckConstraint(
+            "dhcp_start_ip IS NULL or dhcp_start_ip > start_ip",
+            name='dhcp_start_ip_within_range',
+        ),
+        CheckConstraint(
+            "dhcp_end_ip IS NULL or CASE WHEN version = 4 THEN dhcp_end_ip < end_ip ELSE dhcp_end_ip <= end_ip END",
+            name='dhcp_end_ip_within_range',
+        ),
+        # Make sure DHCP start < end
+        CheckConstraint(
+            "dhcp_start_ip IS NULL or dhcp_end_ip IS NULL or dhcp_start_ip < dhcp_end_ip",
+            name='dhcp_start_end_asc',
+        ),
     )
 
     def __init__(self, range=None, **kwargs):
@@ -155,27 +167,38 @@ class SubnetRange(Base):
         return str(self.range)
 
 
-# Create a unique index for username
-subnetrange_index = Index(
-    'subnetrange_index',
+Index(
+    'subnetrange_vrf_id_range_unique_idx',
     SubnetRange.vrf_id,
     SubnetRange.range,
     unique=True,
     info={
-        'description': _('This IP Range is already defined in another subnet.'),
-        'field': 'subnet_ranges',
-        'related': lambda obj: Subnet.query.join(Subnet.subnet_ranges)
-        .filter(
-            SubnetRange.vrf_id == obj.vrf_id,
-            SubnetRange.range.in_([r.range for r in obj.subnet_ranges]),
-            Subnet.id != obj.id,
-        )
-        .first(),
+        'description': _('This IP Range is already defined by another subnet.'),
+        'field': 'range',
+        # Specific message for subnet model_name.
+        'subnet': {
+            'description': _('This IP Range is already defined by another subnet.'),
+            'field': 'subnet_ranges',
+            'related': lambda obj: Subnet.query.join(Subnet.subnet_ranges)
+            .filter(
+                SubnetRange.vrf_id == obj.vrf_id,
+                SubnetRange.range.in_([r.range for r in obj.subnet_ranges]),
+                Subnet.id != obj.id,
+            )
+            .first(),
+        },
     },
 )
 
-# Index for cidr sorting
-subnetrange_order = Index('subnetrange_order', SubnetRange.vrf_id, SubnetRange.version.desc(), SubnetRange.range)
+Index(
+    'subnetrange_estatus_unique_idx',
+    SubnetRange.id,
+    SubnetRange.vrf_id,
+    SubnetRange.subnet_id,
+    SubnetRange.subnet_estatus,
+    SubnetRange.range,
+    unique=True,
+)
 
 
 class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
@@ -183,7 +206,8 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
     RIR_STATUS_ALLOCATED_BY_LIR = "ALLOCATED-BY-LIR"
 
     name = Column(String, nullable=False, default='')
-    vrf_id = Column(Integer, ForeignKey("vrf.id"), nullable=False)
+    vrf_id = Column(Integer, nullable=False)
+    vrf_estatus = Column(Integer, nullable=False)
     vrf = relationship(Vrf)
     l3vni = Column(Integer, nullable=True)
     l2vni = Column(Integer, nullable=True)
@@ -203,6 +227,13 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
         server_default='',
         doc="store string representation of the subnet ranges used for search",
     )
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["vrf_id", "vrf_estatus"],
+            ["vrf.id", "vrf.estatus"],
+            onupdate="CASCADE",
+        ),
+    )
 
     # Transient fields for ordering
     depth = None
@@ -211,6 +242,13 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
     @classmethod
     def _search_string(cls):
         return cls.name + " " + cls.notes + " " + cls._subnet_string
+
+    @classmethod
+    def _estatus(cls):
+        """
+        Efective status computed based on status and vrf's status.
+        """
+        return [cls.status, cls.vrf_estatus]
 
     def _update_subnet_string(self):
         """
@@ -254,18 +292,34 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
             raise ValueError('rir_status', "`%s` " % value + _('is not a valid RIR status'))
         return value
 
-
-@event.listens_for(Subnet, 'before_insert')
-@event.listens_for(Subnet, 'before_update')
-def receive_before_insert_or_update(mapper, connection, subnet):
-
-    if not subnet.subnet_ranges:
-        # you should probably use your own exception class here
-        raise ValueError('ranges', _('at least one IPv6 or IPv4 network is required'))
-
-    # Trigger update of subnet search string.
-    subnet._update_subnet_string()
+    def _validate(self):
+        if not self.subnet_ranges:
+            # you should probably use your own exception class here
+            raise ValueError('ranges', _('at least one IPv6 or IPv4 network is required'))
 
 
-# Create a unique index subnet & vrf
-Index('subnet_vrf_index', Subnet.id, Subnet.vrf_id, unique=True)
+@event.listens_for(Session, 'before_flush')
+def subnet_before_flush(session, flush_context, instances):
+
+    # TODO It all depends of the record status
+
+    # When creating new DHCP Record, make sure to asign a SubnetRange and an IP
+    for obj in itertools.chain(session.new, session.dirty):
+        if isinstance(obj, Subnet):
+            # Validate ranges.
+            obj._validate()
+            # Trigger update of subnet search string.
+            obj._update_subnet_string()
+            # Update VRF relationship
+            if obj.attr_has_changes('vrf_id'):
+                obj.vrf = Vrf.query.filter(Vrf.id == obj.vrf_id).first()
+
+
+# Create a unique index subnet, vrf, estatus for foreignkey
+Index(
+    'subnet_estatus_unique_ix',
+    Subnet.vrf_id,
+    Subnet.id,
+    Subnet.estatus,
+    unique=True,
+)

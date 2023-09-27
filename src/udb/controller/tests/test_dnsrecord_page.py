@@ -38,10 +38,17 @@ class DnsRecordPageTest(WebCase, CommonTest):
     def setUp(self):
         super().setUp()
         self.vrf = Vrf(name='default').add()
-        self.subnet = Subnet(
-            subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('2001:db8:85a3::/64')], vrf=self.vrf
-        ).add()
-        self.zone = DnsZone(name='example.com', subnets=[self.subnet]).add().commit()
+        self.zone = DnsZone(name='example.com').add().commit()
+        all_zones = DnsZone.query.all()
+        self.subnet = (
+            Subnet(
+                subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('2001:db8:85a3::/64')],
+                vrf=self.vrf,
+                dnszones=all_zones,
+            )
+            .add()
+            .commit()
+        )
 
     def test_edit_invalid(self):
         # Given a database with a record
@@ -103,6 +110,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
         ]
     )
     def test_new_create_reverse_record(self, data, expect_success):
+
         # Given an empty database
         data['create_reverse_record'] = 'y'
         data['vrf_id'] = self.vrf.id
@@ -258,7 +266,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
                 'data': [
                     [
                         txt.id,
-                        'enabled',
+                        2,
                         'foo.example.com',
                         'TXT',
                         3600,
@@ -267,7 +275,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
                     ],
                     [
                         ptr.id,
-                        'enabled',
+                        2,
                         '101.1.168.192.in-addr.arpa',
                         'PTR',
                         3600,
@@ -351,6 +359,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
 
     def test_add_ipv4_ptr_record_without_valid_dnszone(self):
         # Given a valid DNS Zone
+        arpa_zone = DnsZone.query.filter(DnsZone.name == 'in-addr.arpa').first()
         # When adding a DnsRecord with invalid DNS Zone
         data = {
             'name': '255.2.0.192.in-addr.arpa',
@@ -363,13 +372,14 @@ class DnsRecordPageTest(WebCase, CommonTest):
         self.assertStatus(200)
         self.assertInBody('IP address must be defined within the DNS Zone.')
         # Then a link to DNZ Zone is provided
-        self.assertInBody(url_for(self.zone, 'edit'))
+        self.assertInBody(url_for(arpa_zone, 'edit'))
         # Then a list of subnet is provided matching the familly.
         self.assertInBody('192.168.1.0/24')
         self.assertNotInBody('2001:db8:85a3::/64')
 
     def test_add_ipv6_ptr_record_without_valid_dnszone(self):
         # Given a valid DNS Zone
+        arpa_zone = DnsZone.query.filter(DnsZone.name == 'ip6.arpa').first()
         # When adding a DnsRecord
         data = {
             'name': 'b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
@@ -382,7 +392,34 @@ class DnsRecordPageTest(WebCase, CommonTest):
         self.assertStatus(200)
         self.assertInBody('IP address must be defined within the DNS Zone.')
         # Then a link to DNZ Zone is provided
-        self.assertInBody(url_for(self.zone, 'edit'))
+        self.assertInBody(url_for(arpa_zone, 'edit'))
         # Then a list of subnet is provided matching the familly.
-        self.assertNotInBody('192.168.1.0/24')
         self.assertInBody('2001:db8:85a3::/64')
+        self.assertNotInBody('192.168.1.0/24')
+
+    def test_update_parent_dnszone_name(self):
+        # Given a database with a DNS Zone and a DnsRecord
+        DnsRecord(name='foo.example.com', type='CNAME', value='example.com').add().commit()
+        # When updating the DnsZone's name
+        self.getPage(url_for(self.zone, 'edit'), method='POST', body={'name': 'test.com'})
+        # Then an exception is raised.
+        self.assertStatus(200)
+        # Make sure the constraint of dnsrecord is not shown.
+        self.assertInBody('Database integrity error:')
+
+    def test_update_parent_subnet_range(self):
+        # Given a database with a Subnet and a DnsRecord
+        DnsRecord(name='foo.example.com', type='A', value='192.168.1.25').add().commit()
+        # When updating the Subnet range.
+        self.getPage(
+            url_for(self.subnet, 'edit'),
+            method='POST',
+            body={
+                'subnet_ranges-0-range': '2001:db8:85a3::/64',
+                'subnet_ranges-1-range': '192.168.0.0/24',
+            },
+        )
+        # Then an exception is raised.
+        self.assertStatus(200)
+        # Make sure the constraint of dnsrecord is not shown.
+        self.assertInBody('Database integrity error:')

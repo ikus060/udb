@@ -124,13 +124,7 @@ class LoadPage:
                     value = row[4]
                     if type in ['CNAME', 'PTR', 'NS']:
                         value = value.strip('.')
-                    r = DnsRecord(name=name, ttl=ttl, type=type, value=value)
-                    if type in ['A', 'AAAA', 'PTR']:
-                        vrfs = r.find_vrf()
-                        if not vrfs:
-                            raise ValueError('Missing VRF for IP ' + r.ip_value)
-                        r.vrf_id = vrfs[0].id
-                    r.add().flush()
+                    DnsRecord(name=name, ttl=ttl, type=type, value=value).add().flush()
             cherrypy.tools.db.get_session().commit()
         except Exception as e:
             msg = _('Fail to process the given file.')

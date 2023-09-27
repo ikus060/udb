@@ -114,7 +114,7 @@ class UserPage(CommonPage):
     def _list_query(self):
         return User.query.with_entities(
             User.id,
-            User.status,
+            User.estatus,
             User.username,
             User.fullname,
             User.email,

@@ -134,7 +134,7 @@ class NotifiationPlugin(SimplePlugin):
             .distinct()
             .join(Follower)
             .filter(criteria)
-            .filter(User.email.is_not(None), User.email != '', User.status == User.STATUS_ENABLED)
+            .filter(User.email.is_not(None), User.email != '', User.estatus == User.STATUS_ENABLED)
             .all()
         )
         bcc = [Recipient(user.email, user.lang, user.timezone) for user in followers]

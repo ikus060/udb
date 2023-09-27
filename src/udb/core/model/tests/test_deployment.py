@@ -29,7 +29,7 @@ class DeploymentTest(WebCase):
         subnet_env = Environment(name='subnet_env', model_name='subnet').add()
         # Given a database with changes
         vrf = Vrf(name='default').add().flush()
-        Subnet(name='LAN', subnet_ranges=[SubnetRange('192.168.14.0/24')], vrf=vrf).add()
+        Subnet(name='LAN', subnet_ranges=[SubnetRange('192.168.14.0/24')], vrf=vrf).add().flush()
         DhcpRecord(ip='192.168.14.10', mac='5e:4b:85:7b:b4:2b', vrf=vrf).add().commit()
         # When creating a deployment
         user = User.query.first()
@@ -43,7 +43,7 @@ class DeploymentTest(WebCase):
         # Given a database with changes
         vrf = Vrf(name='default').add().flush()
         zone = DnsZone(name='example.com')
-        Subnet(name='LAN', subnet_ranges=[SubnetRange('192.168.14.0/24')], vrf=vrf, dnszones=[zone]).add()
+        Subnet(name='LAN', subnet_ranges=[SubnetRange('192.168.14.0/24')], vrf=vrf, dnszones=[zone]).add().flush()
         DnsRecord(name='example.com', type='A', value='192.168.14.15', vrf=vrf).add().commit()
         # When creating a deployment
         user = User.query.first()
@@ -70,7 +70,7 @@ class DeploymentTest(WebCase):
         # Given a database with changes
         vrf = Vrf(name='default').add().flush()
         zone = DnsZone(name='example.com')
-        Subnet(name='LAN', subnet_ranges=[SubnetRange('192.168.14.0/24')], vrf=vrf, dnszones=[zone]).add()
+        Subnet(name='LAN', subnet_ranges=[SubnetRange('192.168.14.0/24')], vrf=vrf, dnszones=[zone]).add().flush()
         DhcpRecord(ip='192.168.14.10', mac='5e:4b:85:7b:b4:2b', vrf=vrf).add().commit()
         # When creating a deployment
         user = User.query.first()
@@ -94,7 +94,7 @@ class EnvironmentTest(WebCase):
         dhcp_env = Environment(name='dhcp_env', model_name='dhcprecord').add().commit()
         # Given a database with changes
         vrf = Vrf(name='default').add().flush()
-        Subnet(name='LAN', subnet_ranges=[SubnetRange('192.168.14.0/24')], vrf=vrf).add()
+        Subnet(name='LAN', subnet_ranges=[SubnetRange('192.168.14.0/24')], vrf=vrf).add().flush()
         DhcpRecord(ip='192.168.14.10', mac='5e:4b:85:7b:b4:2b', vrf=vrf).add().commit()
         # When querying the pending changes
         # Then it return the changes

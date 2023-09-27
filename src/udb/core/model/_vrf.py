@@ -50,14 +50,21 @@ class Vrf(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, Sea
 
 
 Index(
-    'vrf_name_key',
+    'vrf_name_unique_ix',
     Vrf.name,
     unique=True,
-    sqlite_where=Vrf.status == Vrf.STATUS_ENABLED,
-    postgresql_where=Vrf.status == Vrf.STATUS_ENABLED,
+    sqlite_where=Vrf.estatus == Vrf.STATUS_ENABLED,
+    postgresql_where=Vrf.estatus == Vrf.STATUS_ENABLED,
     info={
         'description': _('A Vrf aready exist with the same name.'),
         'field': 'name',
-        'related': lambda obj: Vrf.query.filter(Vrf.status == Vrf.STATUS_ENABLED, Vrf.name == obj.name).first(),
+        'related': lambda obj: Vrf.query.filter(Vrf.estatus == Vrf.STATUS_ENABLED, Vrf.name == obj.name).first(),
     },
+)
+
+Index(
+    'vrf_estatus_unique_ix',
+    Vrf.id,
+    Vrf.estatus,
+    unique=True,
 )

@@ -124,7 +124,7 @@ class Rule(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, StatusMixing, Ba
         assert severity in [None, Rule.SEVERITY_SOFT, Rule.SEVERITY_ENFORCED]
 
         # Query list of rules matching our object type and severity to limit the scope of analysis.
-        query_rules = Rule.query.filter(Rule.status == Rule.STATUS_ENABLED, Rule.type == Rule.TYPE_SQL)
+        query_rules = Rule.query.filter(Rule.estatus == Rule.STATUS_ENABLED, Rule.type == Rule.TYPE_SQL)
         if severity:
             query_rules = query_rules.filter(Rule.severity == severity)
         if obj:

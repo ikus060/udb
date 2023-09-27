@@ -48,7 +48,8 @@ class SubnetTest(WebCase):
         self.assertEqual(
             data,
             {
-                'status': 'enabled',
+                'estatus': Subnet.STATUS_ENABLED,
+                'status': Subnet.STATUS_ENABLED,
                 'id': 1,
                 'notes': '',
                 'created_at': mock.ANY,
@@ -56,6 +57,7 @@ class SubnetTest(WebCase):
                 'name': 'test',
                 'ranges': ['192.168.1.0/24'],
                 'vrf_id': 1,
+                'vrf_estatus': 2,
                 'l3vni': 1,
                 'l2vni': 2,
                 'vlan': 3,
@@ -88,6 +90,13 @@ class SubnetTest(WebCase):
         subnet = Subnet.query.first()
         self.assertEqual(1, len(subnet.subnet_ranges))
         self.assertEqual('2002:0:0:1234::/64', subnet.subnet_ranges[0].range)
+
+    def test_add_with_vrf_id(self):
+        # Given a VRF
+        vrf = Vrf(name='test').add().commit()
+        # When adding a new Subnet using vrf_id
+        # Then record get created.
+        Subnet(name='test', vrf_id=vrf.id, subnet_ranges=[SubnetRange('192.168.12.0/24')]).add().commit()
 
     def test_add_ranges(self):
         # Given an empty database
@@ -244,8 +253,8 @@ class SubnetTest(WebCase):
         subnet.dnszones.append(zone)
         zone.add().commit()
         # Then a subnet is added
-        subnet = Subnet.query.first()
-        zone = DnsZone.query.first()
+        subnet = Subnet.query.all()[-1]
+        zone = DnsZone.query.all()[-1]
         self.assertEqual(1, len(subnet.dnszones))
         self.assertEqual('bfh.ch', subnet.dnszones[0].name)
         self.assertEqual(1, len(subnet.dnszones[0].subnets))

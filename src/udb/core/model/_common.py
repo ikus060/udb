@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from sqlalchemy import Column, ForeignKey, Integer, String, func
+from sqlalchemy import Column, ForeignKey, Integer, String, func, inspect
 from sqlalchemy.orm import declarative_mixin, declared_attr, relationship
 
 from ._timestamp import Timestamp
@@ -44,3 +44,24 @@ class CommonMixin(object):
     @declared_attr
     def owner(cls):
         return relationship(User, lazy=True, active_history=True)
+
+    def attr_has_changes(self, *attrs):
+        """
+        Return true if any of the given attributes of the model has changed.
+        """
+        state = inspect(self)
+        for key in attrs:
+            attr_state = state.attrs[key]
+            hist = attr_state.history
+            if hist.has_changes():
+                return True
+        return False
+
+    def attr_revert_changes(self, *attrs):
+        """
+        Used to clear the state history of an attribute.
+        """
+        state = inspect(self)
+        for key in attrs:
+            if key in state.dict:
+                del state.dict['vrf']

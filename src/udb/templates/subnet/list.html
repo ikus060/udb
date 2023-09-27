@@ -3,7 +3,7 @@
 {# The `primary_range` render is responsible to define the ordering using the 'order' column and the depth using `depth` column. #}
 {% set columns = [
   {'name':'id', 'visible':False},
-  {'name':'status', 'visible':False, 'search': '(enabled|disabled)', 'regex':True},
+  {'name':'status', 'visible':False, 'search': '(1|2)', 'regex':True},
   {'name':'order', 'visible':False},
   {'name':'depth', 'visible':False},
   {'name':'primary_range', 'title': _('Primary IP Range'), 'orderable':True, 'render':'primary_range', 'type':'number', 'width':250, 'className':'export'},

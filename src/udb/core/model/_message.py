@@ -76,6 +76,7 @@ def create_messages(session, flush_context, instances):
     if currentuser:
         author_id = currentuser.id
     # Create message if object is created or modified
+    # Call "add_change" to let the object decide what should be updated.
     for obj in itertools.chain(session.new, session.dirty):
         if hasattr(obj, 'add_change'):
             # compute the list of changes base on sqlalchemy history

@@ -168,8 +168,14 @@ class UserPageTest(WebCase):
         for k, v in self.new_data.items():
             self.assertEqual(v, getattr(obj, k))
 
-    @parameterized.expand([('enabled', 'disabled'), ('enabled', 'deleted'), ('disabled', 'enabled')])
-    def test_edit_status_disabled(self, initial_status, new_status):
+    @parameterized.expand(
+        [
+            (User.STATUS_ENABLED, User.STATUS_DISABLED),
+            (User.STATUS_ENABLED, User.STATUS_DELETED),
+            (User.STATUS_DISABLED, User.STATUS_ENABLED),
+        ]
+    )
+    def test_edit_status(self, initial_status, new_status):
         # Given a database with a record
         obj = User(**self.new_data)
         obj.status = initial_status
@@ -195,14 +201,14 @@ class UserPageTest(WebCase):
         self.assertStatus(200)
         self.assertInBody('Invalid value: invalid')
         # Then object status is enabled is removed to the record
-        self.assertEqual('enabled', User.query.filter_by(username=self.new_data['username']).first().status)
+        self.assertEqual(User.STATUS_ENABLED, User.query.filter_by(username=self.new_data['username']).first().status)
 
     def test_edit_own_status(self):
         # Given a database with admin user
         obj = User.query.first()
         self.assertEqual('admin', obj.username)
         # When trying to update our own status
-        self.getPage(url_for('user', obj.id, 'edit'), method='POST', body={'status': 'disabled'})
+        self.getPage(url_for('user', obj.id, 'edit'), method='POST', body={'status': User.STATUS_DISABLED})
         # Then edit page showing an error message
         self.assertStatus(200)
         self.assertInBody('A user cannot update his own status.')
@@ -220,7 +226,7 @@ class UserPageTest(WebCase):
 
     @parameterized.expand(
         [
-            ({'status': 'disabled'}, 'myuser@test.com'),
+            ({'status': User.STATUS_DISABLED}, 'myuser@test.com'),
             ({'role': 'admin'}, 'myuser@test.com'),
             ({'email': 'newemail@test.com'}, ['myuser@test.com', 'newemail@test.com']),
         ]
@@ -232,6 +238,8 @@ class UserPageTest(WebCase):
         self.listener.send_mail.reset_mock()
         # When user is updated
         self.getPage(url_for('user', userobj.id, 'edit'), method='POST', body=new_body)
+        # Then user is redirected.
+        self.assertStatus(303)
         # Then user get notified
         self.wait_for_tasks()
         if isinstance(expected_email, list):

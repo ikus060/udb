@@ -57,7 +57,7 @@ class VrfPage(CommonPage):
     def _list_query(self):
         return Vrf.session.query(
             Vrf.id,
-            Vrf.status,
+            Vrf.estatus,
             Vrf.name,
             Vrf.notes,
             User.summary.label('owner'),

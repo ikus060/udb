@@ -231,12 +231,14 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
             message=mock.ANY,
         )
 
-    def test_with_dns_record_notify_dns_record_followers(self):
+    def test_with_dns_record_notify_related_dns_record_followers(self):
         follower = User.create(username='follower', email='follower@test.com').add()
         vrf = Vrf(name='default')
-        subnet = Subnet(subnet_ranges=[SubnetRange('147.87.250.0/24')], name='its-main-4', vrf=vrf)
-        zone = DnsZone(name='my.zone.com', subnets=[subnet]).add().flush()
-        zone.commit()
+        zone1 = DnsZone(name='my.zone.com').add()
+        zone2 = DnsZone.query.filter(DnsZone.name == 'in-addr.arpa').first()
+        Subnet(
+            subnet_ranges=[SubnetRange('147.87.250.0/24')], name='its-main-4', vrf=vrf, dnszones=[zone1, zone2]
+        ).add().commit()
         self.wait_for_tasks()
         self.listener.send_mail.reset_mock()
         # Given a DNS Record follower
