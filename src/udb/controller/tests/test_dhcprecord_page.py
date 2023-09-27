@@ -37,17 +37,21 @@ class DhcpRecordPageTest(WebCase, CommonTest):
         super().setUp()
         # Generate a changes
         self.vrf = Vrf(name='default')
-        Subnet(
-            subnet_ranges=[
-                SubnetRange(
-                    '1.2.3.0/24',
-                    dhcp=True,
-                    dhcp_start_ip='1.2.3.1',
-                    dhcp_end_ip='1.2.3.254',
-                )
-            ],
-            vrf=self.vrf,
-        ).add().commit()
+        self.subnet = (
+            Subnet(
+                subnet_ranges=[
+                    SubnetRange(
+                        '1.2.3.0/24',
+                        dhcp=True,
+                        dhcp_start_ip='1.2.3.1',
+                        dhcp_end_ip='1.2.3.254',
+                    )
+                ],
+                vrf=self.vrf,
+            )
+            .add()
+            .commit()
+        )
         # Update data
         self.new_data['vrf_id'] = self.vrf.id
 
@@ -84,7 +88,7 @@ class DhcpRecordPageTest(WebCase, CommonTest):
         )
         # Then an error message is displayed
         self.assertStatus(200)
-        self.assertInBody("IP address must be defined within a Subnet.")
+        self.assertInBody("Cannot find a valid Subnet for this IP.")
 
     def test_edit_owner_and_notes(self):
         # Given a database with a record
@@ -100,6 +104,7 @@ class DhcpRecordPageTest(WebCase, CommonTest):
             method='POST',
             body={'notes': 'Change me to get notification !', 'owner': user_obj.id},
         )
+        self.assertStatus(303)
         # Then a single message is added to the record
         self.assertEqual(2, len(obj.messages))
 
@@ -148,3 +153,22 @@ class DhcpRecordPageTest(WebCase, CommonTest):
         self.assertStatus(200)
         # Then a warning is displayed
         self.assertInBody('Multiple DHCP Reservation for the same IP address within the same VRF.')
+
+    def test_update_parent_subnet_range(self):
+        # Given a database with a Subnet and a DnsRecord
+        DhcpRecord(ip='1.2.3.4', mac='00:00:5e:00:53:af').add().commit()
+        # When updating the Subnet range.
+        self.getPage(
+            url_for(self.subnet, 'edit'),
+            method='POST',
+            body={
+                'subnet_ranges-0-range': '192.168.0.0/24',
+                'subnet_ranges-0-dhcp': 'on',
+                'subnet_ranges-0-dhcp_start_ip': '192.168.0.5',
+                'subnet_ranges-0-dhcp_end_ip': '192.168.0.150',
+            },
+        )
+        # Then an exception is raised.
+        self.assertStatus(200)
+        # Make sure the constraint of dnsrecord is not shown.
+        self.assertInBody('Database integrity error:')

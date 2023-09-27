@@ -24,8 +24,6 @@ from udb.core.model import DnsRecord, DnsZone, Rule, RuleError, Subnet, SubnetRa
 
 
 class DnsRecordTest(WebCase):
-    default_config = {'debug': False}
-
     def test_json(self):
         # Given a DnsRecord
         vrf = Vrf(name='default')
@@ -82,18 +80,20 @@ class DnsRecordTest(WebCase):
             ),
         ]
     )
-    def test_ip_and_hostname_value(self, data, expected_ip_value, expected_hostname_value):
+    def test_generated_ip_and_hostname_value(self, data, expected_ip_value, expected_hostname_value):
         # Given a Vrf, Subnet and DnsZone
         vrf = Vrf(name='default')
-        subnet = Subnet(
+        DnsZone(name='example.com').add().flush()
+        all_zone = DnsZone.query.all()
+        Subnet(
             subnet_ranges=[
                 SubnetRange('192.168.1.0/24'),
                 SubnetRange('2001:db8::/64'),
                 SubnetRange('4321:0:1:2:3:4:567:0/112'),
             ],
+            dnszones=all_zone,
             vrf=vrf,
-        )
-        DnsZone(name='example.com', subnets=[subnet]).add().flush()
+        ).add().commit()
         # When creating a DnsRecord
         record = DnsRecord(vrf=vrf, **data).add().commit()
         # Then validate ip_value
@@ -105,9 +105,10 @@ class DnsRecordTest(WebCase):
         DnsRecord.query.filter(DnsRecord.hostname_value == expected_hostname_value).one()
 
     def test_add_without_type(self):
+        DnsZone(name='example.com').add().flush()
         with self.assertRaises(IntegrityError) as cm:
             DnsRecord(name='foo.example.com', type='', value='192.0.2.23').add().commit()
-        self.assertIn('dnsrecord_types', str(cm.exception))
+        self.assertIn('dnsrecord_types_ck', str(cm.exception))
 
     def test_add_a_record(self):
         # Given a database with a subnet and a dnszone
@@ -143,12 +144,10 @@ class DnsRecordTest(WebCase):
         Vrf(name='default').add().commit()
         self.assertEqual(0, DnsRecord.query.count())
         # When adding a DnsRecord
-        record = record.add().commit()
-        # Then an exception is raised on rule verification
-        with self.assertRaises(RuleError) as cm:
-            Rule.verify(record, errors='raise')
-        self.assertEqual(cm.exception.field, 'name')
-        self.assertEqual(cm.exception.description, 'Hostname must be defined within a valid DNS Zone.')
+        # Then an exception is raised
+        with self.assertRaises(IntegrityError) as cm:
+            record = record.add().commit()
+        self.assertIn('dnsrecord_dnszone_required_ck', str(cm.exception))
 
     def test_add_a_record_without_valid_subnet(self):
         # Given a database with a Subnet and a DnsZone
@@ -156,12 +155,19 @@ class DnsRecordTest(WebCase):
         subnet = Subnet(subnet_ranges=[SubnetRange('10.255.0.0/16')], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
         # When adding a DnsRecord
-        record = DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
         # Then an exception is raised
-        with self.assertRaises(RuleError) as cm:
-            Rule.verify(record, errors='raise')
-        self.assertEqual(cm.exception.field, 'value')
-        self.assertEqual(cm.exception.description, 'IP address must be defined within the DNS Zone.')
+        with self.assertRaises(IntegrityError) as cm:
+            DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
+        self.assertIn('dnsrecord_subnetrange_required_ck', str(cm.exception))
+
+    def test_add_a_record_with_host_subnet(self):
+        # Given a database with a Subnet and a DnsZone
+        vrf = Vrf(name='default')
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.23/32')], vrf=vrf).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        # When adding a DnsRecord
+        DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
+        # Then not exception are raised
 
     def test_add_aaaa_record(self):
         # Given an empty database
@@ -189,16 +195,12 @@ class DnsRecordTest(WebCase):
         subnet = Subnet(subnet_ranges=[SubnetRange('10.0.0.0/8')], vrf=vrf)
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
         # When adding a DnsRecord
-        record = (
-            DnsRecord(name='foo.example.com', type='AAAA', value='2002::1234:abcd:ffff:c0a6:101', vrf=vrf)
-            .add()
-            .commit()
-        )
-        # Then an error is raised during rule verification
-        with self.assertRaises(RuleError) as cm:
-            Rule.verify(record, errors='raise')
-        self.assertEqual(cm.exception.field, 'value')
-        self.assertEqual(cm.exception.description, 'IP address must be defined within the DNS Zone.')
+        # Then an error is raised
+        with self.assertRaises(IntegrityError) as cm:
+            DnsRecord(
+                name='foo.example.com', type='AAAA', value='2002::1234:abcd:ffff:c0a6:101', vrf=vrf
+            ).add().commit()
+        self.assertIn('dnsrecord_subnetrange_required_ck', str(cm.exception))
 
     def test_add_cname_record(self):
         # Given a DnsZone
@@ -218,7 +220,7 @@ class DnsRecordTest(WebCase):
 
     def test_add_txt_record_with_invalid_value(self):
         # Given an empty database
-        DnsZone(name='examples.com').add().commit()
+        DnsZone(name='example.com').add().commit()
         # When adding a DnsRecord with an invalid value
         # Then an exception is raised
         with self.assertRaises(IntegrityError) as cm:
@@ -228,8 +230,8 @@ class DnsRecordTest(WebCase):
     def test_add_ipv4_ptr_record(self):
         # Given a valid DNS Zone
         vrf = Vrf(name='default')
-        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
-        DnsZone(name='example.com', subnets=[subnet]).add().flush()
+        zone = DnsZone.query.filter(DnsZone.name == 'in-addr.arpa').first()
+        Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], dnszones=[zone], vrf=vrf).add().commit()
         # When adding a DnsRecord
         DnsRecord(name='254.2.0.192.in-addr.arpa', type='PTR', value='bar.example.com', vrf=vrf).add().commit()
         # Then a new record is created
@@ -241,21 +243,19 @@ class DnsRecordTest(WebCase):
     def test_add_ipv4_ptr_record_without_valid_dnszone(self):
         # Given a valid DNS Zone
         vrf = Vrf(name='default')
-        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.5.0/24')], vrf=vrf)
-        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        zone = DnsZone.query.filter(DnsZone.name == 'in-addr.arpa').first()
+        Subnet(subnet_ranges=[SubnetRange('192.0.5.0/24')], dnszones=[zone], vrf=vrf).add().commit()
         # When adding a DnsRecord with invalid DNS Zone
-        record = DnsRecord(name='255.2.0.192.in-addr.arpa', type='PTR', value='bar.example.com', vrf=vrf).add().commit()
-        # Then an error is raised during rule verification.
-        with self.assertRaises(RuleError) as cm:
-            Rule.verify(record, errors='raise', severity=Rule.SEVERITY_ENFORCED)
-        self.assertEqual(cm.exception.field, 'name')
-        self.assertEqual(cm.exception.description, 'IP address must be defined within the DNS Zone.')
+        # Then an error is raised
+        with self.assertRaises(IntegrityError) as cm:
+            DnsRecord(name='255.2.0.192.in-addr.arpa', type='PTR', value='bar.example.com', vrf=vrf).add().commit()
+        self.assertIn('dnsrecord_subnetrange_required_ck', str(cm.exception))
 
     def test_add_ipv6_ptr_record(self):
         # Given a valid DNS Zone
         vrf = Vrf(name='default')
-        subnet = Subnet(subnet_ranges=[SubnetRange('4321:0:1:2:3:4:567:0/112')], vrf=vrf)
-        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        zone = DnsZone.query.filter(DnsZone.name == 'ip6.arpa').first()
+        Subnet(subnet_ranges=[SubnetRange('4321:0:1:2:3:4:567:0/112')], dnszones=[zone], vrf=vrf).add().commit()
         # When adding a DnsRecord
         DnsRecord(
             name='b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
@@ -269,30 +269,24 @@ class DnsRecordTest(WebCase):
     def test_add_ipv6_ptr_record_without_valid_dnszone(self):
         # Given a valid DNS Zone
         vrf = Vrf(name='default')
-        subnet = Subnet(subnet_ranges=[SubnetRange('4321:0:1:2:3:4:567:0/128')], vrf=vrf)
-        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        zone = DnsZone.query.filter(DnsZone.name == 'ip6.arpa').first()
+        Subnet(subnet_ranges=[SubnetRange('4321:0:1:2:3:4:567:0/128')], dnszones=[zone], vrf=vrf).add().commit()
         # When adding a DnsRecord
-        record = (
+        # Then error is raised
+        with self.assertRaises(IntegrityError) as cm:
             DnsRecord(
                 name='b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
                 type='PTR',
                 value='bar.example.com',
                 vrf=vrf,
-            )
-            .add()
-            .commit()
-        )
-        # Then error is raised during rule verification
-        with self.assertRaises(RuleError) as cm:
-            Rule.verify(record, errors='raise', severity=Rule.SEVERITY_ENFORCED)
-        self.assertEqual(cm.exception.field, 'name')
-        self.assertEqual(cm.exception.description, 'IP address must be defined within the DNS Zone.')
+            ).add().commit()
+        self.assertIn('dnsrecord_subnetrange_required_ck', str(cm.exception))
 
     def test_add_ipv6_ptr_uppercase(self):
         # Given a valid DNS Zone
         vrf = Vrf(name='default')
-        subnet = Subnet(subnet_ranges=[SubnetRange('4321:0:1:2:3:4:567:0/112')], vrf=vrf)
-        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        zone = DnsZone.query.filter(DnsZone.name == 'ip6.arpa').first()
+        Subnet(subnet_ranges=[SubnetRange('4321:0:1:2:3:4:567:0/112')], dnszones=[zone], vrf=vrf).add().commit()
         # Given an ipv6 record in uppercase
         name = 'b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.IP6.ARPA'
         # When adding the record to the database
@@ -303,8 +297,8 @@ class DnsRecordTest(WebCase):
     def test_add_ptr_record_with_invalid_value(self):
         # Given a valid DNS Zone
         vrf = Vrf(name='default')
-        subnet = Subnet(subnet_ranges=[SubnetRange('4321:0:1:2:3:4:567:0/112')], vrf=vrf)
-        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        zone = DnsZone.query.filter(DnsZone.name == 'ip6.arpa').first()
+        Subnet(subnet_ranges=[SubnetRange('4321:0:1:2:3:4:567:0/112')], dnszones=[zone], vrf=vrf).add().commit()
         # When adding a DnsRecord with an invalid value
         # Then an exception is raised
         with self.assertRaises(IntegrityError) as cm:
@@ -353,10 +347,11 @@ class DnsRecordTest(WebCase):
 
     def test_get_reverse_dns_record_with_ipv4(self):
         # Given a A DNS Record
-        vrf = Vrf(name='default')
-        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
+        vrf = Vrf(name='default').add()
+        zone = DnsZone.query.filter(DnsZone.name == 'in-addr.arpa').first()
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], dnszones=[zone], vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
-        a_record = DnsRecord(name='foo.example.com', value='192.0.2.1', type='A', vrf=vrf).add()
+        a_record = DnsRecord(name='foo.example.com', value='192.0.2.1', type='A', vrf=vrf).add().commit()
         # Given a PTR DNS Record
         prt_record = (
             DnsRecord(name='1.2.0.192.in-addr.arpa', value='foo.example.com', type='PTR', vrf=vrf).add().commit()
@@ -369,9 +364,10 @@ class DnsRecordTest(WebCase):
     def test_get_reverse_dns_record_with_ipv6(self):
         # Given a A DNS Record
         vrf = Vrf(name='default')
-        subnet = Subnet(subnet_ranges=[SubnetRange('2a07:6b43:26:11::/64')], vrf=vrf)
+        zone = DnsZone.query.filter(DnsZone.name == 'ip6.arpa').first()
+        subnet = Subnet(subnet_ranges=[SubnetRange('2a07:6b43:26:11::/64')], dnszones=[zone], vrf=vrf)
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
-        a_record = DnsRecord(name='foo.example.com', value='2a07:6b43:26:11::1', type='AAAA', vrf=vrf).add()
+        a_record = DnsRecord(name='foo.example.com', value='2a07:6b43:26:11::1', type='AAAA', vrf=vrf).add().commit()
         # Given a PTR DNS Record
         prt_record = DnsRecord(
             name='1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.1.0.0.6.2.0.0.3.4.b.6.7.0.a.2.ip6.arpa',
@@ -422,31 +418,26 @@ class DnsRecordTest(WebCase):
         DnsZone(name='example.com').add().commit()
         # When creating a SOA on sub-domain
         # Then an error is raised
-        record = (
+        with self.assertRaises(IntegrityError) as cm:
             DnsRecord(
                 name='foo.example.com',
                 value='ddns.bfh.info. bfh-linux-sysadmin.lists.bfh.science. 33317735 600 60 36000 3600',
                 type='SOA',
-            )
-            .add()
-            .commit()
-        )
-        # Then an exception is raised by Soft Rule
-        with self.assertRaises(RuleError) as cm:
-            Rule.verify(record, errors='raise')
-        self.assertEqual(cm.exception.field, 'name')
+            ).add().commit()
+        self.assertIn('dnsrecord_soa_dnszone_ck', str(cm.exception))
 
     def test_invalid_record_type(self):
-        # Given a DNSRecord with an invalid type
+        # Given a DnsZone
+        DnsZone(name='example.com').add().commit()
         # When flushing the object
         # Then an error is raised.
         with self.assertRaises(IntegrityError) as cm:
             DnsRecord(name='bar.example.com', type='INVA', value='testing').add().flush()
-        self.assertIn('dnsrecord_types', str(cm.exception))
+        self.assertIn('dnsrecord_types_ck', str(cm.exception))
 
-    def test_dns_cname_not_unique_rule(self):
+    def test_dnsrecord_cname_unique_rule(self):
         # Given a CNAME and a A record on the same host
-        DnsZone(name='example.com').add()
+        DnsZone(name='example.com').add().flush()
         DnsRecord(name='www.example.com', type='CNAME', value='example.com').add().commit()
         # When creating another record
         other = DnsRecord(name='www.example.com', type='TXT', value='value').add().commit()
@@ -454,19 +445,105 @@ class DnsRecordTest(WebCase):
         # Then an exception is raised by Soft Rule
         with self.assertRaises(RuleError) as cm:
             Rule.verify(other, errors='raise')
-        self.assertIn('dns_cname_not_unique', str(cm.exception))
+        self.assertIn('dnsrecord_cname_unique_rule', str(cm.exception))
 
-    def test_null_vrf_id(self):
+    def test_null_vrf(self):
         # Given a dns record
         vrf = Vrf(name='default')
         subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
         self.assertEqual(0, DnsRecord.query.count())
         record = DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
-        # When updating the vrf_id to null
+        # When updating the vrf to null
         record.vrf = None
-        record.add()
-        # Then an exception is raised
+        record.add().commit()
+        # Then a new default VRF get assigned
+        self.assertEqual(record.vrf, vrf)
+
+    def test_parent_dnszone(self):
+        # Given a database with a DNS Record
+        vrf = Vrf(name='default')
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
+        zone = DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        self.assertEqual(0, DnsRecord.query.count())
+        record = DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
+        # When getting the parent_dnszone of the record.
+        # Then we get reference to the right one.
+        self.assertEqual(zone, record._dnszone)
+
+    def test_parent_dnszone_with_subzone(self):
+        # Given a database with a DNS Record
+        vrf = Vrf(name='default')
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        subzone = DnsZone(name='mmi.example.com', subnets=[subnet]).add().commit()
+        self.assertEqual(0, DnsRecord.query.count())
+        record = DnsRecord(name='foo.mmi.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
+        # When getting the parent_dnszone of the record.
+        # Then we get reference to the right one.
+        self.assertEqual(subzone, record._dnszone)
+
+    def test_estatus_with_vrf_status(self):
+        # Given an enabled VRF and enabled DHCP
+        vrf = Vrf(name='default')
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        record = DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
+        # When deleting parent VRF.
+        vrf.status = Vrf.STATUS_DELETED
+        vrf.add().commit()
+        # Then DHCP effective status is deleted.
+        record.expire()
+        self.assertEqual(DnsRecord.STATUS_DELETED, record.estatus)
+
+    def test_estatus_with_subnet_status(self):
+        # Given an enabled VRF and enabled DHCP
+        vrf = Vrf(name='default')
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        record = DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
+        # When deleting parent VRF.
+        subnet.status = Vrf.STATUS_DELETED
+        subnet.add().commit()
+        # Then DHCP effective status is deleted.
+        record.expire()
+        self.assertEqual(DnsRecord.STATUS_DELETED, record.estatus)
+
+    def test_estatus_with_zone_status(self):
+        # Given an enabled VRF and enabled DHCP
+        vrf = Vrf(name='default')
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
+        zone = DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        record = DnsRecord(name='foo.example.com', type='CNAME', value='example.com').add().commit()
+        # When deleting parent VRF.
+        zone.status = Vrf.STATUS_DELETED
+        zone.add().commit()
+        # Then DHCP effective status is deleted.
+        record.expire()
+        self.assertEqual(DnsRecord.STATUS_DELETED, record.estatus)
+
+    def test_update_parent_dnszone_name(self):
+        # Given a database with a DNS Zone and a DnsRecord
+        vrf = Vrf(name='default')
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
+        zone = DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        DnsRecord(name='foo.example.com', type='CNAME', value='example.com').add().commit()
+        # When updating the DnsZone's name
+        # Then an exception is raised.
         with self.assertRaises(IntegrityError) as cm:
-            record.commit()
-        self.assertIn('dnsrecord_a_aaaa_ptr_without_vrf', str(cm.exception))
+            zone.name = 'test.com'
+            zone.add().commit()
+        self.assertIn('dnsrecord_dnszone_required_ck', str(cm.exception))
+
+    def test_update_parent_subnet_range(self):
+        # Given a database with a Subnet and a DnsRecord
+        vrf = Vrf(name='default')
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        DnsRecord(name='foo.example.com', type='A', value='192.0.2.25').add().commit()
+        # When updating the Subnet range.
+        # Then an exception is raised.
+        with self.assertRaises(IntegrityError) as cm:
+            subnet.subnet_ranges[0].range = '192.0.10.0/24'
+            subnet.commit()
+        self.assertIn('dnsrecord_subnetrange_required_ck', str(cm.exception))

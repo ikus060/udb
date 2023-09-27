@@ -142,7 +142,7 @@ class RulePage(CommonPage):
     def _list_query(self):
         return Rule.session.query(
             Rule.id,
-            Rule.status,
+            Rule.estatus,
             Rule.name,
             Rule.model_name,
             Rule.description,

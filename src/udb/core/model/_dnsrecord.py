@@ -14,8 +14,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import ipaddress
+import itertools
 from collections import namedtuple
 
 import cherrypy
@@ -36,13 +36,13 @@ from sqlalchemy import (
 )
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import aliased, declared_attr, relationship, validates
+from sqlalchemy.orm import aliased, declared_attr, foreign, relationship, remote, validates
 from sqlalchemy.types import Integer, String
 
 import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
 
-from ._cidr import InetType
+from ._cidr import CidrType, InetType
 from ._common import CommonMixin
 from ._dnszone import NAME_PATTERN, DnsZone
 from ._follower import FollowerMixin
@@ -52,9 +52,12 @@ from ._rule import Rule, RuleConstraint
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._subnet import Subnet, SubnetRange
+from ._update import constraint_add, constraint_exists
 from ._vrf import Vrf
 
 Base = cherrypy.tools.db.get_base()
+
+Session = cherrypy.tools.db.get_session()
 
 
 def _collapse_subnet_ranges(obj):
@@ -140,8 +143,13 @@ def _reverse_ipv6(value):
     return str(ipaddress.ip_address(full_address))
 
 
+def _match_zone(name, zonename):
+    if isinstance(name, str):
+        name = literal(name)
+    return or_(name == zonename, name.endswith('.' + zonename))
+
+
 class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
-    _ip_column_name = 'ip_value'
 
     TYPES = [
         'CNAME',
@@ -166,9 +174,52 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
     type = Column(String, nullable=False)
     ttl = Column(Integer, nullable=False, default=3600)
     value = Column(String, nullable=False)
-    vrf_id = Column(Integer, ForeignKey("vrf.id"), nullable=True)
+
+    # A DNS Record must be asigned to a specific VRF
+    vrf_id = Column(Integer, ForeignKey("vrf.id"))
     vrf = relationship(Vrf)
-    __table_args__ = (ForeignKeyConstraint(["generated_ip", "vrf_id"], ["ip.ip", "ip.vrf_id"]),)
+
+    # TODO Create a check constraint for NAME
+    # A DNS Record must be created with a DNS Zone
+    dnszone_id = Column(Integer)
+    dnszone_name = Column(String)
+    dnszone_estatus = Column(Integer)
+    _dnszone = relationship(DnsZone)
+
+    # TODO Create a check constraint for range.
+    # A DNS Record must be created within a SubnetRange (A, AAAA, PTR)
+    subnetrange_id = Column(Integer)
+    subnet_id = Column(Integer)
+    subnet_estatus = Column(Integer)
+    subnetrange_range = Column(CidrType)
+    _subnetrange = relationship(SubnetRange, overlaps="vrf")
+
+    __table_args__ = (
+        ForeignKeyConstraint(["generated_ip", "vrf_id"], ["ip.ip", "ip.vrf_id"]),
+        ForeignKeyConstraint(
+            ["dnszone_id", "dnszone_name", "dnszone_estatus"],
+            ["dnszone.id", "dnszone.name", "dnszone.estatus"],
+            onupdate="CASCADE",
+        ),
+        # Use onupdate CASCADE to automatically update the status based on subnet and vrf status.
+        ForeignKeyConstraint(
+            [
+                "subnetrange_id",
+                "vrf_id",
+                "subnet_id",
+                "subnet_estatus",
+                "subnetrange_range",
+            ],
+            [
+                "subnetrange.id",
+                "subnetrange.vrf_id",
+                "subnetrange.subnet_id",
+                "subnetrange.subnet_estatus",
+                "subnetrange.range",
+            ],
+            onupdate="CASCADE",
+        ),
+    )
 
     # Relation to Ip record uses GENERATE ALWAYS
     @declared_attr
@@ -188,26 +239,33 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
     def _search_string(cls):
         return cls.name + " " + cls.type + " " + cls.value
 
-    def _get_related_dnszone(self):
+    @classmethod
+    def _estatus(cls):
+        return [cls.status, func.coalesce(cls.subnet_estatus, DnsZone.STATUS_ENABLED), cls.dnszone_estatus]
+
+    def _get_related_dnszones(self):
         """
         Return DnsZone matching our name.
         """
         return (
             DnsZone.query.filter(
-                literal(self.hostname_value).endswith(DnsZone.name),
-                DnsZone.status != DnsZone.STATUS_DELETED,
+                or_(
+                    _match_zone(self.hostname_value, DnsZone.name),
+                    _match_zone(self.name, DnsZone.name),
+                ),
+                DnsZone.estatus == DnsZone.STATUS_ENABLED,
             )
             .order_by(func.length(DnsZone.name))
-            .first()
+            .all()
         )
 
     def related_dns_record_query(self):
         """
-        Return a list of DNS Record with the same `name` excluding our self.
+        Return a list of DNS Record with the same `hostname_value` excluding our self.
         """
         return DnsRecord.query.filter(
             DnsRecord.hostname_value == literal(self.hostname_value),
-            DnsRecord.status != DnsRecord.STATUS_DELETED,
+            DnsRecord.estatus != DnsRecord.STATUS_DELETED,
             DnsRecord.id != self.id,
         )
 
@@ -222,7 +280,7 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
                 DnsRecord.type.in_(['A', 'AAAA']),
                 DnsRecord.name == self.value,
                 DnsRecord.value == str(self.ip_value),
-                DnsRecord.status != DnsRecord.STATUS_DELETED,
+                DnsRecord.estatus == DnsRecord.STATUS_ENABLED,
             ).first()
         elif self.type in ['A', 'AAAA']:
             value = ipaddress.ip_address(self.value).reverse_pointer
@@ -230,7 +288,7 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
                 DnsRecord.type == 'PTR',
                 DnsRecord.name == value,
                 DnsRecord.value == self.name,
-                DnsRecord.status != DnsRecord.STATUS_DELETED,
+                DnsRecord.estatus == DnsRecord.STATUS_ENABLED,
             ).first()
         return None
 
@@ -267,6 +325,12 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
     def summary(self):
         return self.name + " = " + self.value + " (" + self.type + ")"
 
+    @property
+    def hostname_field(self):
+        if self.type == 'PTR':
+            return 'value'
+        return 'name'
+
     @hybrid_property
     def hostname_value(self):
         """
@@ -288,6 +352,16 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
             ),
             else_=cls.name,
         )
+
+    @property
+    def ip_field(self):
+        if self.type == 'PTR':
+            return 'name'
+        elif self.type == 'A':
+            return 'value'
+        elif self.type == 'AAAA':
+            return 'value'
+        return None
 
     @hybrid_property
     def ip_value(self):
@@ -381,8 +455,7 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
         objects = [(self.__tablename__, self.id)]
         # Reference to parent DNZ Zone
         try:
-            dnszone = self._get_related_dnszone()
-            if dnszone:
+            for dnszone in self._get_related_dnszones():
                 objects.append((dnszone.__tablename__, dnszone.id))
         except Exception:
             pass
@@ -429,34 +502,43 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
                 _('PTR records must ends with `.in-addr.arpa` or `.ip6.arpa` and define a valid IPv4 or IPv6 address'),
             )
 
-    def find_vrf(self):
+    def find_dnszone(self):
         """
-        Lookup database to find the best matching VRF for this record.
+        The parent DNS Zone for this record.
         """
+        # FIXME Should we filter base on status
+        q = DnsZone.query.filter(
+            _match_zone(self.name, remote(foreign(DnsZone.name))),
+            DnsZone.estatus == DnsZone.STATUS_ENABLED,
+        ).order_by(-func.length(DnsZone.name))
+        return q.first()
+
+    def find_subnetrange(self):
+        """
+        Lookup database to find the best matching Subnet for this record.
+        """
+        # FIXME Should we filter base on status
         q = (
-            Vrf.query.join(Subnet.vrf)
-            .join(Subnet.subnet_ranges)
+            SubnetRange.query.join(SubnetRange.parent)
             .join(Subnet.dnszones)
             .filter(
-                literal(self.name).endswith(DnsZone.name),
                 SubnetRange.version == func.family(literal(self.ip_value)),
                 SubnetRange.start_ip <= func.inet(literal(self.ip_value)),
                 SubnetRange.end_ip >= func.inet(literal(self.ip_value)),
-                DnsZone.status == DnsZone.STATUS_ENABLED,
-                Subnet.status == Subnet.STATUS_ENABLED,
+                SubnetRange.subnet_estatus == Subnet.STATUS_ENABLED,
             )
         )
-        return q.all()
-
-
-@event.listens_for(DnsRecord, "before_update")
-def before_update(mapper, connection, instance):
-    instance._validate()
-
-
-@event.listens_for(DnsRecord, "before_insert")
-def before_insert(mapper, connection, instance):
-    instance._validate()
+        # Filter by VRF
+        if self.vrf_id:
+            q = q.filter(Subnet.vrf_id == self.vrf_id)
+        elif self.vrf:
+            q = q.filter(Subnet.vrf == self.vrf)
+        # Filter by DNSZone
+        if self.dnszone_id:
+            q = q.filter(DnsZone.id == self.dnszone_id)
+        else:
+            q = q.filter(DnsZone.id == self._dnszone.id)
+        return q.first()
 
 
 @event.listens_for(DnsRecord.ip_value, 'set')
@@ -466,12 +548,101 @@ def dns_reload_ip(self, new_value, old_value, initiator):
         self._ip
 
 
-# Make sure `type` only matches suported types.
-CheckConstraint(DnsRecord.type.in_(DnsRecord.TYPES), name="dnsrecord_types")
+# insert=True is required to run before messages hook.
+@event.listens_for(Session, 'before_flush', insert=True)
+def dnsrecord_assign_subnetrange(session, flush_context, instances):
 
-dnsrecord_value_not_empty = CheckConstraint(
+    # TODO It all depends of the record status
+
+    # When creating new DHCP Record, make sure to asign a SubnetRange and an IP
+    for obj in itertools.chain(session.new, session.dirty):
+        if isinstance(obj, DnsRecord):
+            # Run default validation of field.
+            obj._validate()
+
+            # Lookup dnszone
+            if obj.attr_has_changes(obj.hostname_field):
+                obj._dnszone = obj.find_dnszone()
+
+            # Update subnetrange when vrf_id or IP address get updated.
+            if obj._dnszone and obj.ip_field:
+                if obj.attr_has_changes('vrf', obj.ip_field):
+                    obj._subnetrange = obj.find_subnetrange()
+            if obj._subnetrange is not None:
+                if obj.vrf != obj._subnetrange.vrf:
+                    obj.vrf = obj._subnetrange.vrf
+
+                # Update relation to IP when vrf_id or ip get updated
+                if obj.attr_has_changes('vrf', obj.ip_field) and obj.vrf:
+                    from ._ip import Ip
+
+                    obj._ip  # Fetch record for history tracking
+                    obj._ip = Ip.unique_ip(session, obj.ip_value, obj.vrf.id)
+
+
+# Make sure `type` only matches supported types.
+CheckConstraint(
+    DnsRecord.type.in_(DnsRecord.TYPES),
+    name="dnsrecord_types_ck",
+    info={
+        'description': _('DNS record type not supported.'),
+        'field': 'type',
+    },
+)
+
+CheckConstraint(
+    and_(
+        DnsRecord.dnszone_id.is_not(None),
+        DnsRecord.dnszone_name.is_not(None),
+        DnsRecord.dnszone_estatus.is_not(None),
+        _match_zone(DnsRecord.name, DnsRecord.dnszone_name),
+    ),
+    name="dnsrecord_dnszone_required_ck",
+    info={
+        'description': _('Hostname must be defined within a valid DNS Zone.'),
+        'field': 'name',
+    },
+)
+
+dnsrecord_subnetrange_required_ck = CheckConstraint(
+    or_(
+        DnsRecord.type.not_in(['A', 'AAAA', 'PTR']),
+        and_(
+            DnsRecord.vrf_id.is_not(None),
+            DnsRecord.subnetrange_id.is_not(None),
+            DnsRecord.subnet_id.is_not(None),
+            DnsRecord.subnet_estatus.is_not(None),
+            DnsRecord.subnetrange_range.is_not(None),
+            func.subnet_of(DnsRecord.generated_ip, DnsRecord.subnetrange_range),
+        ),
+    ),
+    name="dnsrecord_subnetrange_required_ck",
+    info={
+        'description': _('IP address must be defined within the DNS Zone.'),
+        'field': 'value',
+        'related': lambda obj: _collapse_subnet_ranges(
+            DnsZone.query.with_entities(
+                DnsZone.id.label('model_id'),
+                literal(DnsZone.__tablename__).label('model_name'),
+                func.group_concat(SubnetRange.range.text()).label('summary'),
+            )
+            .join(DnsZone.subnets)
+            .join(Subnet.subnet_ranges)
+            .filter(
+                DnsZone.estatus == DnsZone.STATUS_ENABLED,
+                Subnet.estatus == Subnet.STATUS_ENABLED,
+                SubnetRange.version == (6 if obj.type == 'AAAA' or obj.name.endswith('.ip6.arpa') else 4),
+                _match_zone(literal(obj.name), DnsZone.name),
+            )
+            .group_by(DnsZone.id)
+            .first()
+        ),
+    },
+)
+
+CheckConstraint(
     DnsRecord.value != '',
-    name="dnsrecord_value_not_empty",
+    name="dnsrecord_value_not_empty_ck",
     info={
         'description': _('value must not be empty'),
         'field': 'value',
@@ -479,9 +650,9 @@ dnsrecord_value_not_empty = CheckConstraint(
 )
 
 # When type is CNAME, PTR or NS, value must be a valid domain name.
-dnsrecord_value_domain_name = CheckConstraint(
+CheckConstraint(
     or_(DnsRecord.type.not_in(['CNAME', 'NS', 'PTR']), DnsRecord.value.regexp_match(NAME_PATTERN.pattern)),
-    name="dnsrecord_value_domain_name",
+    name="dnsrecord_value_domain_name_ck",
     info={
         'description': _('value must be a valid domain name'),
         'field': 'value',
@@ -489,25 +660,25 @@ dnsrecord_value_domain_name = CheckConstraint(
 )
 
 # When type is A, AAAA value must be a valid IP.
-dnsrecord_a_invalid_ip = CheckConstraint(
+CheckConstraint(
     or_(DnsRecord.type != 'A', and_(DnsRecord.generated_ip.is_not(None), func.family(DnsRecord.generated_ip) == 4)),
-    name="dnsrecord_a_invalid_ip_value",
+    name="dnsrecord_a_ip_value_ck",
     info={
         'description': _('value must be a valid IPv4 address'),
         'field': 'value',
     },
 )
 
-dnsrecord_aaaa_invalid_ip = CheckConstraint(
+CheckConstraint(
     or_(DnsRecord.type != 'AAAA', and_(DnsRecord.generated_ip.is_not(None), func.family(DnsRecord.generated_ip) == 6)),
-    name="dnsrecord_aaaa_invalid_ip_value",
+    name="dnsrecord_aaaa_ip_value_ck",
     info={
         'description': _('value must be a valid IPv6 address'),
         'field': 'value',
     },
 )
 
-dnsrecord_ptr_invalid_ip = CheckConstraint(
+CheckConstraint(
     or_(
         DnsRecord.type != 'PTR',
         and_(
@@ -519,7 +690,7 @@ dnsrecord_ptr_invalid_ip = CheckConstraint(
             and_(DnsRecord.generated_ip.is_not(None), func.family(DnsRecord.generated_ip) == 6),
         ),
     ),
-    name="dnsrecord_ptr_invalid_ip",
+    name="dnsrecord_ptr_ip_value_ck",
     info={
         'description': _(
             'PTR records must ends with `.in-addr.arpa` or `.ip6.arpa` and define a valid IPv4 or IPv6 address'
@@ -528,92 +699,66 @@ dnsrecord_ptr_invalid_ip = CheckConstraint(
     },
 )
 
-dnsrecord_a_aaaa_ptr_without_vrf = CheckConstraint(
-    or_(
-        DnsRecord.vrf_id.is_not(None),
-        DnsRecord.type.not_in(['A', 'AAAA', 'PTR']),
-    ),
-    name="dnsrecord_a_aaaa_ptr_without_vrf",
+CheckConstraint(
+    or_(DnsRecord.type != 'SOA', DnsRecord.estatus != DnsZone.STATUS_ENABLED, DnsRecord.dnszone_name == DnsRecord.name),
+    name='dnsrecord_soa_dnszone_ck',
     info={
-        'description': _('A VRF is required for this type of DNS Record.'),
-        'field': 'vrf_id',
+        'description': _('SOA record must be defined on DNS Zone.'),
+        'field': 'name',
     },
 )
 
 # Make sure only one SOA record exists.
 Index(
-    'dnsrecord_soa_uniq_index',
+    'dnsrecord_soa_unique_ix',
     DnsRecord.name,
     unique=True,
-    sqlite_where=and_(DnsRecord.type == 'SOA', DnsRecord.status == DnsRecord.STATUS_ENABLED),
-    postgresql_where=and_(DnsRecord.type == 'SOA', DnsRecord.status == DnsRecord.STATUS_ENABLED),
+    sqlite_where=and_(DnsRecord.type == 'SOA', DnsRecord.estatus != DnsRecord.STATUS_DELETED),
+    postgresql_where=and_(DnsRecord.type == 'SOA', DnsRecord.estatus != DnsRecord.STATUS_DELETED),
     info={
         'description': _('An SOA record already exist for this domain.'),
         'field': 'name',
         'related': lambda obj: DnsRecord.query.filter(
-            DnsRecord.type == 'SOA', DnsRecord.status == DnsRecord.STATUS_ENABLED, DnsRecord.name == obj.name
+            DnsRecord.type == 'SOA', DnsRecord.estatus != DnsRecord.STATUS_DELETED, DnsRecord.name == obj.name
         ).first(),
     },
 )
 
 RuleConstraint(
-    name='dns_without_dns_zone',
+    name='dnsrecord_ptr_dnszone_required_rule',
     model=DnsRecord,
-    severity=Rule.SEVERITY_ENFORCED,
-    statement=select(DnsRecord.id.label('id'), DnsRecord.summary.label('name')).filter(
-        # SOA and PTR are validated with another rule.
-        DnsRecord.type.in_([t for t in DnsRecord.TYPES if t not in ['SOA', 'PTR']]),
-        DnsRecord.status == DnsRecord.STATUS_ENABLED,
-        ~(
-            select(DnsZone.id)
-            .filter(
-                DnsZone.status == DnsZone.STATUS_ENABLED,
-                DnsRecord.name.endswith(DnsZone.name),
-            )
-            .exists()
-        ),
-    ),
-    info={
-        'description': _('Hostname must be defined within a valid DNS Zone.'),
-        'field': 'name',
-    },
-)
-
-RuleConstraint(
-    name='dns_ptr_without_dns_zone',
-    model=DnsRecord,
-    severity=Rule.SEVERITY_ENFORCED,
+    severity=Rule.SEVERITY_SOFT,
     statement=select(DnsRecord.id.label('id'), DnsRecord.summary.label('name')).filter(
         # SOA and PTR are validated with another rule.
         DnsRecord.type == 'PTR',
-        DnsRecord.status == DnsRecord.STATUS_ENABLED,
+        DnsRecord.estatus == DnsRecord.STATUS_ENABLED,
         ~(
             select(DnsZone.id)
             .filter(
-                DnsZone.status == DnsZone.STATUS_ENABLED,
-                DnsRecord.value.endswith(DnsZone.name),
+                _match_zone(DnsRecord.name, DnsZone.name),
+                DnsZone.estatus == DnsZone.STATUS_ENABLED,
             )
             .exists()
         ),
     ),
     info={
-        'description': _('Hostname must be defined within a valid DNS Zone.'),
+        'description': _('The value of the PTR record must be a hostname in a managed DNS zone.'),
         'field': 'value',
     },
 )
 
 RuleConstraint(
-    name="dns_ptr_without_forward",
+    name="dnsrecord_ptr_forward_required_rule",
     model=DnsRecord,
     statement=(
         lambda: (fwd := aliased(DnsRecord))
         and select(DnsRecord.id.label('id'), DnsRecord.summary.label('name'),).filter(
             DnsRecord.type == 'PTR',
-            DnsRecord.status == DnsRecord.STATUS_ENABLED,
+            DnsRecord.estatus == DnsRecord.STATUS_ENABLED,
             ~(
                 select(fwd.id)
                 .filter(
-                    fwd.status == DnsRecord.STATUS_ENABLED,
+                    fwd.estatus == DnsRecord.STATUS_ENABLED,
                     fwd.type.in_(['A', 'AAAA']),
                     fwd.vrf_id == DnsRecord.vrf_id,
                     fwd.generated_ip == DnsRecord.generated_ip,
@@ -630,17 +775,14 @@ RuleConstraint(
 )
 
 RuleConstraint(
-    name="dns_cname_on_dns_zone",
+    name="dnsrecord_cname_dnszone_rule",
     model=DnsRecord,
+    severity=Rule.SEVERITY_ENFORCED,
     statement=(
-        select(
-            DnsRecord.id,
-            DnsRecord.summary.label('name'),
-        )
-        .join(DnsZone, DnsRecord.name == DnsZone.name)
-        .filter(
+        select(DnsRecord.id, DnsRecord.summary.label('name'),).filter(
             DnsRecord.type == 'CNAME',
-            DnsRecord.status == DnsRecord.STATUS_ENABLED,
+            DnsRecord.name == DnsRecord.dnszone_name,
+            DnsRecord.estatus == DnsRecord.STATUS_ENABLED,
         )
     ),
     info={
@@ -652,7 +794,7 @@ RuleConstraint(
 
 
 RuleConstraint(
-    name="dns_cname_not_unique",
+    name="dnsrecord_cname_unique_rule",
     model=DnsRecord,
     severity=Rule.SEVERITY_ENFORCED,
     statement=lambda: (
@@ -668,8 +810,8 @@ RuleConstraint(
                     and_(DnsRecord.type == 'CNAME', a.type != 'CNAME'),
                     and_(DnsRecord.type != 'CNAME', a.type == 'CNAME'),
                 ),
-                DnsRecord.status == DnsRecord.STATUS_ENABLED,
-                a.status == DnsRecord.STATUS_ENABLED,
+                DnsRecord.estatus == DnsRecord.STATUS_ENABLED,
+                a.estatus == DnsRecord.STATUS_ENABLED,
             )
             .distinct()
         )
@@ -677,122 +819,14 @@ RuleConstraint(
     info={
         'description': _('You cannot define other record type when an alias for a canonical name (CNAME) is defined.'),
         'related': lambda obj: DnsRecord.query.filter(
-            DnsRecord.name == obj.name, DnsRecord.type != 'CNAME' if obj.type == 'CNAME' else DnsRecord.type == 'CNAME'
+            DnsRecord.name == obj.name,
+            DnsRecord.type != 'CNAME' if obj.type == 'CNAME' else DnsRecord.type == 'CNAME',
         ).first(),
     },
 )
 
-RuleConstraint(
-    name='dns_soa_without_dns_zone',
-    severity=Rule.SEVERITY_ENFORCED,
-    model=DnsRecord,
-    statement=select(DnsRecord.id.label('id'), DnsRecord.summary.label('name')).filter(
-        DnsRecord.type == 'SOA',
-        DnsRecord.status == DnsRecord.STATUS_ENABLED,
-        ~(
-            select(DnsZone.id)
-            .filter(
-                DnsZone.status == DnsZone.STATUS_ENABLED,
-                DnsZone.name == DnsRecord.name,
-            )
-            .exists()
-        ),
-    ),
-    info={
-        'description': _('SOA record must be defined on DNS Zone.'),
-        'field': 'name',
-    },
-)
 
-
-RuleConstraint(
-    name='dns_fwr_invalid_subnet_range',
-    severity=Rule.SEVERITY_ENFORCED,
-    model=DnsRecord,
-    statement=select(DnsRecord.id.label('id'), DnsRecord.summary.label('name')).filter(
-        DnsRecord.type.in_(['A', 'AAAA']),
-        DnsRecord.status == DnsRecord.STATUS_ENABLED,
-        ~(
-            select(DnsZone.id)
-            .join(DnsZone.subnets)
-            .join(Subnet.subnet_ranges)
-            .filter(
-                DnsRecord.name.endswith(DnsZone.name),
-                SubnetRange.version == func.family(DnsRecord.generated_ip),
-                SubnetRange.start_ip <= DnsRecord.generated_ip,
-                SubnetRange.end_ip >= DnsRecord.generated_ip,
-                Subnet.vrf_id == DnsRecord.vrf_id,
-                DnsZone.status == DnsZone.STATUS_ENABLED,
-                Subnet.status == Subnet.STATUS_ENABLED,
-            )
-            .exists()
-        ),
-    ),
-    info={
-        'description': _('IP address must be defined within the DNS Zone.'),
-        'field': 'value',
-        'related': lambda obj: _collapse_subnet_ranges(
-            DnsZone.query.with_entities(
-                DnsZone.id.label('model_id'),
-                literal(DnsZone.__tablename__).label('model_name'),
-                func.group_concat(SubnetRange.range.text()).label('summary'),
-            )
-            .join(DnsZone.subnets)
-            .join(Subnet.subnet_ranges)
-            .filter(
-                DnsZone.status == DnsZone.STATUS_ENABLED,
-                Subnet.status == Subnet.STATUS_ENABLED,
-                SubnetRange.version == (6 if obj.type == 'AAAA' else 4),
-                literal(obj.name).endswith(DnsZone.name),
-            )
-            .group_by(DnsZone.id)
-            .first()
-        ),
-    },
-)
-
-RuleConstraint(
-    name='dns_ptr_invalid_subnet_range',
-    severity=Rule.SEVERITY_ENFORCED,
-    model=DnsRecord,
-    statement=select(DnsRecord.id.label('id'), DnsRecord.summary.label('name')).filter(
-        DnsRecord.type == 'PTR',
-        DnsRecord.status == DnsRecord.STATUS_ENABLED,
-        ~(
-            select(DnsZone.id)
-            .join(DnsZone.subnets)
-            .join(Subnet.subnet_ranges)
-            .filter(
-                DnsRecord.value.endswith(DnsZone.name),
-                SubnetRange.version == func.family(DnsRecord.generated_ip),
-                SubnetRange.start_ip <= DnsRecord.generated_ip,
-                SubnetRange.end_ip >= DnsRecord.generated_ip,
-                Subnet.vrf_id == DnsRecord.vrf_id,
-                DnsZone.status == DnsZone.STATUS_ENABLED,
-                Subnet.status == Subnet.STATUS_ENABLED,
-            )
-            .exists()
-        ),
-    ),
-    info={
-        'description': _('IP address must be defined within the DNS Zone.'),
-        'field': 'name',
-        'related': lambda obj: _collapse_subnet_ranges(
-            DnsZone.query.with_entities(
-                DnsZone.id.label('model_id'),
-                literal(DnsZone.__tablename__).label('model_name'),
-                func.group_concat(SubnetRange.range.text()).label('summary'),
-            )
-            .join(DnsZone.subnets)
-            .join(Subnet.subnet_ranges)
-            .filter(
-                DnsZone.status == DnsZone.STATUS_ENABLED,
-                Subnet.status == Subnet.STATUS_ENABLED,
-                SubnetRange.version == (6 if obj.name.endswith('.ip6.arpa') else 4),
-                literal(obj.value).endswith(DnsZone.name),
-            )
-            .group_by(DnsZone.id)
-            .first()
-        ),
-    },
-)
+@event.listens_for(Base.metadata, 'after_create')
+def create_missing_constraints(target, conn, **kw):
+    if not constraint_exists(conn, dnsrecord_subnetrange_required_ck):
+        constraint_add(conn, dnsrecord_subnetrange_required_ck)

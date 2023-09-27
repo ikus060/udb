@@ -118,7 +118,7 @@ class EnvironmentPage(CommonPage):
         return (
             Environment.query.with_entities(
                 Environment.id,
-                Environment.status,
+                Environment.estatus,
                 Environment.name,
                 Environment.model_name,
                 func.count(Environment.pending_changes).label('changes_count'),

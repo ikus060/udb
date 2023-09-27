@@ -129,7 +129,7 @@ class User(JsonMixin, StatusMixing, MessageMixin, Base):
         """
         return User.query.filter(
             func.lower(User.username) == username.lower(),
-            User.status == User.STATUS_ENABLED,
+            User.estatus == User.STATUS_ENABLED,
         ).first()
 
     def set_password(self, new_password):
@@ -169,7 +169,7 @@ class User(JsonMixin, StatusMixing, MessageMixin, Base):
 
 # Create a unique index for username
 Index(
-    'user_username_index',
+    'user_username_unique_ix',
     func.lower(User.username),
     unique=True,
     info={

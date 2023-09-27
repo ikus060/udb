@@ -41,11 +41,11 @@ class DashboardPage:
         )
 
         # Count records
-        vrf_count = Vrf.query.filter(Vrf.status == Vrf.STATUS_ENABLED).count()
-        subnet_count = Subnet.query.filter(Subnet.status == Subnet.STATUS_ENABLED).count()
-        dnszone_count = DnsZone.query.filter(DnsZone.status == DnsZone.STATUS_ENABLED).count()
-        dnsrecord_count = DnsRecord.query.filter(DnsRecord.status == DnsRecord.STATUS_ENABLED).count()
-        dhcprecord_count = DhcpRecord.query.filter(DhcpRecord.status == DhcpRecord.STATUS_ENABLED).count()
+        vrf_count = Vrf.query.filter(Vrf.estatus == Vrf.STATUS_ENABLED).count()
+        subnet_count = Subnet.query.filter(Subnet.estatus == Subnet.STATUS_ENABLED).count()
+        dnszone_count = DnsZone.query.filter(DnsZone.estatus == DnsZone.STATUS_ENABLED).count()
+        dnsrecord_count = DnsRecord.query.filter(DnsRecord.estatus == DnsRecord.STATUS_ENABLED).count()
+        dhcprecord_count = DhcpRecord.query.filter(DhcpRecord.estatus == DhcpRecord.STATUS_ENABLED).count()
         mac_count = Mac.query.count()
         ip_count = Ip.query.count()
         return {

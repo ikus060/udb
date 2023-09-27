@@ -353,10 +353,10 @@ $.fn.dataTable.render.primary_range = function () {
             const api = new $.fn.dataTable.Api(meta.settings);
             const status_idx = api.column('status:name').index();
             if (status_idx) {
-                if (row[status_idx] == 'disabled') {
-                    html += ' <span class="badge bg-warning">' + api.settings().i18n('disabled') + '</span>';
-                } else if (row[1] == 'deleted') {
-                    html += ' <span class="badge bg-danger">' + api.settings().i18n('deleted') + '</span>';
+                if (row[status_idx] == 1) {
+                    html += ' <span class="badge bg-warning">' + api.settings().i18n('udb.status.disabled') + '</span>';
+                } else if (row[status_idx] == 0) {
+                    html += ' <span class="badge bg-danger">' + api.settings().i18n('udb.status.deleted') + '</span>';
                 }
             }
             return html;
@@ -414,10 +414,10 @@ $.fn.dataTable.render.summary = function (render_arg) {
             /* add label with status if available */
             const status_idx = api.column('status:name').index();
             if (status_idx) {
-                if (row[status_idx] == 'disabled') {
-                    html += ' <span class="badge bg-warning">' + api.settings().i18n('disabled') + '</span>';
-                } else if (row[1] == 'deleted') {
-                    html += ' <span class="badge bg-danger">' + api.settings().i18n('deleted') + '</span>';
+                if (row[status_idx] == 1) {
+                    html += ' <span class="badge bg-warning">' + api.settings().i18n('udb.status.disabled') + '</span>';
+                } else if (row[status_idx] == 0) {
+                    html += ' <span class="badge bg-danger">' + api.settings().i18n('udb.status.deleted') + '</span>';
                 }
             }
             return html;

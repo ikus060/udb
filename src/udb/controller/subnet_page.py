@@ -242,7 +242,7 @@ SubnetRow = namedtuple(
     'SubnetRow',
     [
         'id',
-        'status',
+        'estatus',
         'order',
         'depth',
         'primary_range',
@@ -271,7 +271,7 @@ class SubnetPage(CommonPage):
             .group_by(Subnet.id, SubnetRange.vrf_id, Vrf.name)
             .with_entities(
                 Subnet.id,
-                Subnet.status,
+                Subnet.estatus,
                 Subnet.name,
                 SubnetRange.vrf_id,
                 Vrf.name.label('vrf_name'),
@@ -311,7 +311,7 @@ class SubnetPage(CommonPage):
                 prev_row.pop()
             yield SubnetRow(
                 id=row.id,
-                status=row.status,
+                estatus=row.estatus,
                 order=order,
                 depth=len(prev_row),
                 primary_range=primary_range,
@@ -326,7 +326,7 @@ class SubnetPage(CommonPage):
                 dnszone_names=dnszone_names,
             )
             # Keep reference of previous row for depth calculation
-            if row.status != Subnet.STATUS_DELETED:
+            if row.estatus != Subnet.STATUS_DELETED:
                 prev_row.append(
                     {
                         'vrf_id': row.vrf_id,

@@ -15,11 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import itertools
 
 import cherrypy
 import validators
-from sqlalchemy import Column, Index, String, event
+from sqlalchemy import Column, Index, String
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import validates
 
@@ -45,6 +44,27 @@ class Mac(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing,
     def _search_string(cls):
         return cls.mac + " " + cls.notes
 
+    @classmethod
+    def unique_mac(cls, session, key):
+        """
+        Using a session cache, make sure to return unique Mac object.
+        """
+        assert key
+        cache = getattr(session, '_unique_mac_cache', None)
+        if cache is None:
+            session._unique_mac_cache = cache = {}
+
+        if key in cache:
+            return cache[key]
+        else:
+            with session.no_autoflush:
+                obj = session.query(Mac).filter_by(mac=key).first()
+                if not obj:
+                    obj = Mac(mac=key)
+                    session.add(obj)
+            cache[key] = obj
+            return obj
+
     @hybrid_property
     def summary(self):
         return self.mac
@@ -57,45 +77,11 @@ class Mac(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing,
         return value
 
 
-Index('mac_mac_key', Mac.mac, unique=True)
-
-
-@event.listens_for(Session, "before_flush", insert=True)
-def _update_mac(session, flush_context, instances):
-    """
-    Create missing Mac Record when creating or updating record.
-    """
-    for instance in itertools.chain(session.new, session.dirty):
-        if hasattr(instance, '_mac_column_name'):
-            # Get IP Value
-            try:
-                value = getattr(instance, instance._mac_column_name)
-                validators.mac_address(value)
-            except ValueError:
-                value = None
-            # Make sure to get/create unique IP record.
-            # Do not assign the object as it might impact the update statement for generated column.
-            if value is not None:
-                instance._mac  # Fetch the MAC for history
-                instance._mac = _unique_mac(session, value)
-
-
-def _unique_mac(session, key):
-    """
-    Using a session cache, make sure to return unique Mac object.
-    """
-    assert key
-    cache = getattr(session, '_unique_mac_cache', None)
-    if cache is None:
-        session._unique_mac_cache = cache = {}
-
-    if key in cache:
-        return cache[key]
-    else:
-        with session.no_autoflush:
-            obj = session.query(Mac).filter_by(mac=key).first()
-            if not obj:
-                obj = Mac(mac=key)
-                session.add(obj)
-        cache[key] = obj
-        return obj
+Index(
+    'mac_mac_unique_ix',
+    Mac.mac,
+    unique=True,
+    info={
+        'description': _('A MAC address must be unique.'),
+    },
+)

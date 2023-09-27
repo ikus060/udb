@@ -16,8 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from sqlalchemy import Column, String
-from sqlalchemy.orm import validates
+from sqlalchemy import Column, Computed, Integer, func
+from sqlalchemy.orm import declared_attr, validates
 
 
 class StatusMixing(object):
@@ -25,15 +25,29 @@ class StatusMixing(object):
     Mixin to support soft delete (enabled, disable, deleted)
     """
 
-    STATUS_ENABLED = 'enabled'
-    STATUS_DISABLED = 'disabled'
-    STATUS_DELETED = 'deleted'
-    STATUS = [STATUS_ENABLED, STATUS_DISABLED, STATUS_DELETED]
+    STATUS_ENABLED = 2
+    STATUS_DISABLED = 1
+    STATUS_DELETED = 0
 
-    status = Column(String, default=STATUS_ENABLED)
+    status = Column(Integer, default=STATUS_ENABLED, server_default=str(STATUS_ENABLED), nullable=False)
+
+    @declared_attr
+    def estatus(cls):
+        """
+        Create a column with real status.
+        """
+        status_fields = cls._estatus()
+        assert status_fields
+        if len(status_fields) == 1:
+            return Column(Integer, Computed(status_fields[0], persisted=True))
+        return Column(Integer, Computed(func.least(*status_fields), persisted=True))
+
+    @classmethod
+    def _estatus(cls):
+        return [cls.status]
 
     @validates('status')
     def validate_status(self, key, value):
-        if value not in StatusMixing.STATUS:
+        if value not in [StatusMixing.STATUS_ENABLED, StatusMixing.STATUS_DISABLED, StatusMixing.STATUS_DELETED]:
             raise ValueError(value)
         return value

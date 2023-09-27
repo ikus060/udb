@@ -178,7 +178,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
                 )
                 .join(Subnet.vrf)
                 .join(Subnet.subnet_ranges)
-                .filter(Subnet.status == Subnet.STATUS_ENABLED)
+                .filter(Subnet.estatus == Subnet.STATUS_ENABLED)
                 .group_by(Subnet.id, Vrf.name)
                 .all()
             )
@@ -192,7 +192,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
                     DnsRecord.ttl,
                     DnsRecord.value,
                 )
-                .filter(DnsRecord.status == DnsRecord.STATUS_ENABLED)
+                .filter(DnsRecord.estatus == DnsRecord.STATUS_ENABLED)
                 .all()
             )
             self.data = {'dnsrecord': [s._asdict() for s in dnsrecord]}
@@ -219,7 +219,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
                 .join(Subnet.subnet_ranges)
                 .filter(
                     SubnetRange.dhcp.is_(True),
-                    Subnet.status == Subnet.STATUS_ENABLED,
+                    Subnet.estatus == Subnet.STATUS_ENABLED,
                 )
             )
             # Identify the subnet related for each dhcp record.
@@ -228,7 +228,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
                 .join(Subnet.subnet_ranges)
                 .filter(
                     SubnetRange.dhcp.is_(True),
-                    Subnet.status == Subnet.STATUS_ENABLED,
+                    Subnet.estatus == Subnet.STATUS_ENABLED,
                     SubnetRange.version == func.family(DhcpRecord.ip),
                     SubnetRange.dhcp_start_ip <= DhcpRecord.ip,
                     SubnetRange.dhcp_end_ip >= DhcpRecord.ip,
@@ -241,7 +241,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
                 .filter(
                     DnsRecord.type == 'PTR',
                     DnsRecord.generated_ip == DhcpRecord.ip,
-                    DnsRecord.status == DnsRecord.STATUS_ENABLED,
+                    DnsRecord.estatus == DnsRecord.STATUS_ENABLED,
                 )
                 .scalar_subquery()
             )
@@ -253,14 +253,14 @@ class Deployment(CommonMixin, JsonMixin, Base):
                 # TODO must be tested
                 hostname_query.label('hostname'),
             ).filter(
-                DhcpRecord.status == DhcpRecord.STATUS_ENABLED,
+                DhcpRecord.estatus == DhcpRecord.STATUS_ENABLED,
             )
             self.data = {
                 'dhcprecord': [s._asdict() for s in DhcpRecord.session.execute(dhcp_query).all()],
                 'subnet_range': [s._asdict() for s in Subnet.session.execute(subnet_query).all()],
             }
         else:
-            raise ValueError('unsuported model_name: %s' % self.model_name)
+            raise ValueError('unsupported model_name: %s' % self.model_name)
 
     def schedule_task(self, base_url):
         """

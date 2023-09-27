@@ -234,9 +234,9 @@ class CommonPage(object):
                     message = Message(body=body, author=currentuser)
                     obj.add_message(message)
                 # Update status
-                status = kwargs.get('status', False)
+                status = kwargs.get('status', None)
                 if self.has_status and status:
-                    obj.status = status
+                    obj.status = int(status)
                 obj.add().flush()
                 # Check enforced rules and raise error if required to prevent record from being saved.
                 Rule.verify(obj, errors='raise', severity=Rule.SEVERITY_ENFORCED)

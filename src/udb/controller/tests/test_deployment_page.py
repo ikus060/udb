@@ -218,10 +218,13 @@ class DeploymentPageTest(WebCase):
     def test_get_deployment_api_zonefile(self):
         # Given a datbase with a DnsRecord
         vrf = Vrf(name='test')
-        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
-        DnsZone(name='test.ca', subnets=[subnet]).add().flush()
+        builtin_zones = DnsZone.query.all()
+        zone1 = DnsZone(name='test.ca').add()
+        zone2 = DnsZone(name='example.com').add()
+        Subnet(
+            subnet_ranges=[SubnetRange('192.0.2.0/24')], dnszones=[zone1, zone2, *builtin_zones], vrf=vrf
+        ).add().commit()
         DnsRecord(name='test.ca', type='A', value='192.0.2.45', vrf=vrf).add().commit()
-        DnsZone(name='example.com', subnets=[subnet]).add().flush()
         DnsRecord(name='example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
         DnsRecord(name='23.2.0.192.in-addr.arpa', type='PTR', value='example.com', vrf=vrf).add().commit()
         DnsRecord(name='*.example.com', type='CNAME', value='bar.example.com', vrf=vrf).add().commit()

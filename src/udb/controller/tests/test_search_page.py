@@ -88,7 +88,7 @@ class TestSearchPage(WebCase):
                 'draw': None,
                 'recordsTotal': 1,
                 'recordsFiltered': 1,
-                'data': [[1, 'enabled', 'DMZ', 'subnet', 'test', 'public', ANY, '/subnet/1/edit']],
+                'data': [[1, 2, 'DMZ', 'subnet', 'test', 'public', ANY, '/subnet/1/edit']],
             },
         )
 
@@ -166,18 +166,18 @@ class TestSearchPage(WebCase):
                 'recordsFiltered': 2,
                 'data': [
                     [
-                        1,
-                        'enabled',
+                        3,
+                        2,
                         'bfh.ch',
                         'dnszone',
                         'test',
                         'DMZ Zone',
                         ANY,
-                        '/dnszone/1/edit',
+                        '/dnszone/3/edit',
                     ],
                     [
                         1,
-                        'enabled',
+                        2,
                         'DMZ',
                         'subnet',
                         'test',
@@ -200,7 +200,7 @@ class TestSearchPage(WebCase):
                 'draw': None,
                 'recordsTotal': 1,
                 'recordsFiltered': 1,
-                'data': [[1, 'enabled', 'bfh.ch', 'dnszone', 'test', 'DMZ Zone', ANY, '/dnszone/1/edit']],
+                'data': [[3, 2, 'bfh.ch', 'dnszone', 'test', 'DMZ Zone', ANY, '/dnszone/3/edit']],
             },
         )
         # When searching for a specific model_name
@@ -212,7 +212,7 @@ class TestSearchPage(WebCase):
                 'draw': None,
                 'recordsTotal': 1,
                 'recordsFiltered': 1,
-                'data': [[1, 'enabled', 'DMZ', 'subnet', 'test', 'public', ANY, '/subnet/1/edit']],
+                'data': [[1, 2, 'DMZ', 'subnet', 'test', 'public', ANY, '/subnet/1/edit']],
             },
         )
 
@@ -235,7 +235,7 @@ class TestSearchPage(WebCase):
                 'data': [
                     [
                         5,
-                        'enabled',
+                        2,
                         'lumos.example.com = 192.168.1.14 (A)',
                         'dnsrecord',
                         None,
@@ -263,7 +263,7 @@ class TestSearchPage(WebCase):
                 'data': [
                     [
                         5,
-                        'enabled',
+                        2,
                         '',
                         'subnet',
                         None,
@@ -295,7 +295,7 @@ class TestSearchPage(WebCase):
                 'data': [
                     [
                         5,
-                        'enabled',
+                        2,
                         'lumos.example.com = 192.168.1.14 (A)',
                         'dnsrecord',
                         None,
@@ -305,7 +305,7 @@ class TestSearchPage(WebCase):
                     ],
                     [
                         4,
-                        'enabled',
+                        2,
                         '192.168.1.14',
                         'ip',
                         None,
@@ -315,7 +315,7 @@ class TestSearchPage(WebCase):
                     ],
                     [
                         5,
-                        'enabled',
+                        2,
                         '',
                         'subnet',
                         None,
@@ -347,7 +347,7 @@ class TestSearchPage(WebCase):
                 'data': [
                     [
                         5,
-                        'enabled',
+                        2,
                         'lumos.example.com = 2a07:6b43:115:11::127 (AAAA)',
                         'dnsrecord',
                         None,
@@ -357,7 +357,7 @@ class TestSearchPage(WebCase):
                     ],
                     [
                         4,
-                        'enabled',
+                        2,
                         '2a07:6b43:115:11::127',
                         'ip',
                         None,
@@ -380,7 +380,7 @@ class TestSearchPage(WebCase):
                 'status': 200,
                 'data': [
                     {'model_id': 1, 'model_name': 'subnet', 'summary': 'DMZ', 'url': '/subnet/1/edit'},
-                    {'model_id': 1, 'model_name': 'dnszone', 'summary': 'bfh.ch', 'url': '/dnszone/1/edit'},
+                    {'model_id': 3, 'model_name': 'dnszone', 'summary': 'bfh.ch', 'url': '/dnszone/3/edit'},
                 ],
             },
         )

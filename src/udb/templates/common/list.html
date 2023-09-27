@@ -26,7 +26,7 @@
   {% set columns = columns + [{'name':'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px'}] %}
   {# Add Status Filter if status column exists #}
   {% if 'status' in (columns|map(attribute='name')|list) %}
-    {% set buttons = buttons + [{'text': _('Show Deleted'), 'extend': 'btnfilter', 'column': 'status:name', 'search':'(enabled|disabled|deleted)', 'search_off': '(enabled|disabled)', 'regex': True }] %}
+    {% set buttons = buttons + [{'text': _('Show Deleted'), 'extend': 'btnfilter', 'column': 'status:name', 'search':'(0|1|2)', 'search_off': '(1|2)', 'regex': True }] %}
   {% endif %}
   {# Add Owner filter if owner column exists #}
   {% if 'owner' in (columns|map(attribute='name')|list) %}

@@ -43,13 +43,15 @@
         "days": _('%%d days ago'),
         "hours": _('%%d hours ago'),
         "minutes": _('%%d minutes ago'),
-        "seconds": _('%%d seconds ago')
+        "seconds": _('%%d seconds ago'),
+        "status" :{
+          "deleted": _('Deleted'),
+          "disabled": _('Disabled')
+        }
       },
       "message_new": _('Created by'),
       "message_dirty": _('Modified by'),
       "message_comment": _('Comment on'),
-      "deleted": _('Deleted'),
-      "disabled": _('Disabled'),
       "info": info_message or (_(' from _START_ to _END_ of _TOTAL_ total') if paging else _('Showing total of _TOTAL_')),
       "infoFiltered": _('(filtered from _MAX_ total entries)'),
       "infoEmpty": _('- No records available'),

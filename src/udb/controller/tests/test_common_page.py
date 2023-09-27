@@ -70,6 +70,8 @@ class CommonTest:
         with self.selenium() as driver:
             # When showing the page with default filter
             driver.get(url_for(self.base_url, ''))
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
             # Then the deleted record badge are hidden
             with self.assertRaises(Exception):
                 driver.find_element('xpath', "//span[@class='badge bg-danger' and contains(text(), 'Deleted')]")
@@ -77,6 +79,8 @@ class CommonTest:
             element = driver.find_element('css selector', 'button.udb-btn-filter')
             self.assertEqual("Show Deleted", element.text)
             element.click()
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
             # Then the list show deleted record.
             driver.find_element('xpath', "//span[@class='badge bg-danger' and contains(text(), 'Deleted')]")
 
@@ -117,7 +121,7 @@ class CommonTest:
         # Given a database with a new record with editing
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
-        obj.status = 'disabled'
+        obj.status = self.obj_cls.STATUS_DISABLED
         obj.add()
         obj.commit()
         # Given a webpage
@@ -130,7 +134,7 @@ class CommonTest:
             self.assertFalse(driver.get_log('browser'))
             # Then history section contains our modification
             driver.implicitly_wait(10)
-            driver.find_element('xpath', "//li[contains(text(), 'disabled')]")
+            driver.find_element('xpath', "//*[contains(text(), 'Modified by')]")
 
     def test_get_new_page(self):
         # Given an empty database
@@ -161,7 +165,7 @@ class CommonTest:
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then database is updated
-        new_obj = self.obj_cls.query.first()
+        new_obj = self.obj_cls.query.filter(self.obj_cls.id == obj.id).one()
         for k, v in self.edit_data.items():
             self.assertEqual(getattr(new_obj, k), v)
 
@@ -169,7 +173,6 @@ class CommonTest:
         # Given a database with one record
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
-        self.assertEqual(1, self.obj_cls.query.count())
         # When trying to update it's name
         body = dict(self.edit_data)
         body['body'] = 'This is my comment'
@@ -179,7 +182,7 @@ class CommonTest:
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then database is updated
-        new_obj = self.obj_cls.query.first()
+        new_obj = self.obj_cls.query.filter(self.obj_cls.id == obj.id).one()
         for k, v in self.edit_data.items():
             self.assertEqual(getattr(new_obj, k), v)
         # Then a message is added with our comment and changes
@@ -198,7 +201,7 @@ class CommonTest:
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then database is updated
-        new_obj = self.obj_cls.query.first()
+        new_obj = self.obj_cls.query.filter(self.obj_cls.id == obj.id).one()
         self.assertEqual(new_obj.owner, User.query.first())
         # Then an audit message is displayed on edit page.
         self.getPage(url_for(obj, 'messages'))
@@ -222,8 +225,8 @@ class CommonTest:
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then database is updated
-        new_obj = self.obj_cls.query.first()
-        self.assertEqual(new_obj.owner, None)
+        obj.expire()
+        self.assertEqual(obj.owner, None)
 
     def test_new(self):
         # Given an empty database
@@ -233,7 +236,7 @@ class CommonTest:
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(self.base_url) + '/')
         # Then database is updated
-        obj = self.obj_cls.query.first()
+        obj = self.obj_cls.query.all()[-1]
         for k, v in (self.new_json or self.new_data).items():
             self.assertEqual(v, obj.to_json()[k])
         # Then a audit message is created
@@ -249,7 +252,7 @@ class CommonTest:
         self.getPage(url_for(obj, 'edit'), method='POST', body={'body': 'this is my message'})
         # Then user is redirected to the edit page
         self.assertStatus(303)
-        obj = self.obj_cls.query.first()
+        obj = self.obj_cls.query.all()[-1]
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then a new message is added to the record.
         message = obj.messages[-1]
@@ -269,7 +272,7 @@ class CommonTest:
         self.getPage(url_for(obj, 'follow'), method='POST', body={"user_id": 1})
         # Then user is redirected to the edit page
         self.assertStatus(303)
-        obj = self.obj_cls.query.first()
+        obj = self.obj_cls.query.all()[-1]
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then a new follower is added to the record
         follower = obj.followers[0]
@@ -306,7 +309,13 @@ class CommonTest:
         self.getPage(url_for(obj, 'unfollow'), method='GET')
         self.assertStatus(405)
 
-    @parameterized.expand([('enabled', 'disabled'), ('enabled', 'deleted'), ('disabled', 'enabled')])
+    @parameterized.expand(
+        [
+            (User.STATUS_ENABLED, User.STATUS_DISABLED),
+            (User.STATUS_ENABLED, User.STATUS_DELETED),
+            (User.STATUS_DISABLED, User.STATUS_ENABLED),
+        ]
+    )
     def test_edit_status(self, initial_status, new_status):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data)
@@ -320,7 +329,7 @@ class CommonTest:
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
         # Then object status is disabled is removed to the record
-        self.assertEqual(new_status, self.obj_cls.query.first().status)
+        self.assertEqual(new_status, self.obj_cls.query.all()[-1].status)
 
     def test_edit_status_invalid(self):
         # Given a database with a record
@@ -328,12 +337,12 @@ class CommonTest:
         obj.add()
         obj.commit()
         # When trying enabled
-        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'status': 'invalid'})
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'status': -1})
         # Then user an error is displayed
         self.assertStatus(200)
-        self.assertInBody('Invalid value: invalid')
+        self.assertInBody('Invalid value: -1')
         # Then object status is enabled is removed to the record
-        self.assertEqual('enabled', self.obj_cls.query.first().status)
+        self.assertEqual(self.obj_cls.STATUS_ENABLED, self.obj_cls.query.first().status)
 
     def test_get_data_json(self):
         # Given a database with record
@@ -356,14 +365,15 @@ class CommonTest:
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
+        count = self.obj_cls.query.count()
         # When querying the list of records
         data = self.getJson(url_for('api', self.base_url), headers=self.authorization)
         # Then our records is part of the list
         self.assertStatus(200)
-        self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]['id'], obj.id)
+        self.assertEqual(len(data), count)
+        self.assertEqual(data[-1]['id'], obj.id)
         for k, v in (self.new_json or self.new_data).items():
-            self.assertEqual(data[0][k], v)
+            self.assertEqual(data[-1][k], v)
 
     def test_api_get(self):
         # Given a database with a record
@@ -481,14 +491,15 @@ class CommonTest:
             "/login/", method='POST', body={'username': user.username, 'password': 'password', 'redirect': '/'}
         )
         self.assertStatus('303 See Other')
-        # Given a DnsZone
+        # Given a record
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
+        count = self.obj_cls.query.count()
         # When requesting list of records
         data = self.getJson(url_for(self.base_url, 'data.json'))
         # Then the list is available
         self.assertStatus(200)
-        self.assertEqual(1, len(data['data']))
+        self.assertEqual(count, len(data['data']))
 
     def test_edit_as_guest(self):
         # Given a 'guest' user authenticated

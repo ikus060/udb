@@ -19,6 +19,8 @@ import ipaddress
 from sqlalchemy import String, TypeDecorator, event, func
 from sqlalchemy.dialects.postgresql import CIDR, INET
 from sqlalchemy.engine import Engine
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.functions import GenericFunction
 
 
 def _bytes_to_ip_network(value):
@@ -104,6 +106,44 @@ def _sqlite_family(value):
     return ipaddress.ip_network(value, strict=False).version
 
 
+def _sqlite_masklen(value):
+    """
+    Receive inet return marklen. masklen(inet '192.168.1.5/24') → 24
+    """
+    if value is None:
+        return None
+    if isinstance(value, bytes):
+        n = _bytes_to_ip_network(value)
+    else:
+        n = ipaddress.ip_network(value)
+    return n.prefixlen
+
+
+def _sqlite_subnet_of(value, other):
+    """
+    Return True if this `value` network is a subnet of `other`.
+    """
+    if value is None or other is None:
+        return None
+    n = _bytes_to_ip_network(value) if isinstance(value, bytes) else ipaddress.ip_network(value)
+    o = _bytes_to_ip_network(other) if isinstance(other, bytes) else ipaddress.ip_network(other)
+    return n.subnet_of(o)
+
+
+class subnet_of(GenericFunction):
+    name = "subnet_of"
+    inherit_cache = True
+
+
+@compiles(subnet_of, "postgresql")
+def _render_subnet_of_postgresql(element, compiler, **kw):
+    """
+    On Postgresql, `subnet_of` is implemented with operator '<<='.
+    """
+    left, right = element.clauses
+    return "%s <<= %s" % (compiler.process(left, **kw), compiler.process(right, **kw))
+
+
 @event.listens_for(Engine, "connect")
 def _register_sqlite_cidr_functions(dbapi_con, unused):
     """
@@ -116,6 +156,8 @@ def _register_sqlite_cidr_functions(dbapi_con, unused):
         dbapi_con.create_function("inet_sortable", 1, _sqlite_inet, deterministic=True)
         dbapi_con.create_function("family", 1, _sqlite_family, deterministic=True)
         dbapi_con.create_function("text", 1, _sqlite_text, deterministic=True)
+        dbapi_con.create_function("masklen", 1, _sqlite_masklen, deterministic=True)
+        dbapi_con.create_function("subnet_of", 2, _sqlite_subnet_of, deterministic=True)
 
 
 class CidrType(TypeDecorator):

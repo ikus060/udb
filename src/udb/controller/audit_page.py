@@ -34,7 +34,7 @@ AllModel = union_all(
         select(
             literal(model.__tablename__.lower()).label('model_name'),
             model.id.label('model_id'),
-            getattr(model, 'status', literal('enabled')).label('status'),
+            getattr(model, 'estatus', literal(User.STATUS_ENABLED)).label('estatus'),
             model.summary,
             getattr(model, 'search_string', model.summary).label('search_string'),
         )
@@ -62,7 +62,7 @@ class AuditPage:
         query = (
             Message.query.with_entities(
                 Message.model_id,
-                AllModel.c.status,
+                AllModel.c.estatus,
                 AllModel.c.summary,
                 Message.model_name,
                 User.summary.label('author_name'),
@@ -123,7 +123,7 @@ class AuditPage:
             'data': [
                 AuditRow(
                     model_id=row.model_id,
-                    status=row.status,
+                    status=row.estatus,
                     summary=row.summary,
                     model_name=row.model_name,
                     author_name=row.author_name or str(_('System')),

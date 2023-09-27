@@ -18,14 +18,14 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
 
-class bool_or(GenericFunction):
-    name = "bool_or"
+class least(GenericFunction):
+    name = "least"
     inherit_cache = True
 
 
-@compiles(bool_or, "sqlite")
-def _render_bool_or_sqlite(element, compiler, **kw):
+@compiles(least, "sqlite")
+def _render_least_sqlite(element, compiler, **kw):
     """
-    On SQLite, `bool_or` is not supported, so we use sum()
+    On SQLite, `least` is not supported, so we use min()
     """
-    return "CASE WHEN max(%s) > 0 THEN 1 ELSE 0 END" % (compiler.process(element.clauses, **kw),)
+    return "min(%s)" % (compiler.process(element.clauses, **kw),)

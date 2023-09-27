@@ -153,6 +153,7 @@ def show_exception(e, form=None, obj=None):
             _show_error(description=_('Invalid value: %s') % e, form=form)
     elif isinstance(e, IntegrityError):
         # Integrity error are raised by Database
+        logger.warning('database integrity error', exc_info=1)
         _show_integrity_error(e, form=form, obj=obj)
     elif isinstance(e, RuleError):
         _show_rule_error(e, form=form, obj=obj)
@@ -174,26 +175,17 @@ def _show_integrity_error(e, form=None, obj=None):
     description = _('Database integrity error: %s' % e)
     field = None
     related = None
-
-    # Extract the constraint name for Postgresql and SQLite
-    # Postgresql: duplicate key value violates unique constraint "subnet_name_key"\nDETAIL:  Key (name)=() already exists.\n
-    # Postgresql: violates check constraint "dnsrecord_value_domain_name"
-    # SQLite: UNIQUE constrain: subnet.name
-    # SQLite: UNIQUE constraint failed: index 'dnszone_name_index'
-    # SQLite: CHECK constraint failed: dnsrecord_value_domain_name
-    constraint_match = (
-        re.search(r'unique constraint "([^"]+)"', error)
-        or re.search(r'check constraint "([^"]+)"', error)
-        or re.search(r': (.+\..+)', error)
-        or re.search(r"UNIQUE constraint failed: index '([^']+)'", error)
-        or re.search(r"CHECK constraint failed: (.+)", error)
-    )
-    if constraint_match:
-        constraint = _find_constraint(constraint_match[1])
-        if constraint:
-            description = constraint.info.get('description', description)
-            field = constraint.info.get('field', None)
-            related = _fetch_related(constraint.info.get('related', None), obj)
+    metadata = None
+    constraint = _find_constraint(error)
+    if constraint and obj.__table__.name in constraint.info:
+        metadata = constraint.info.get(obj.__table__.name)
+    elif constraint and constraint.table == obj.__table__:
+        metadata = constraint.info
+    if metadata:
+        # If availabe use metdata for specific model_name.
+        description = metadata.get('description', description)
+        field = metadata.get('field', description)
+        related = _fetch_related(metadata.get('related', None), obj)
     else:
         field_match = re.search(r'Key \((.+?)\)', error) or re.search(r'.+\.(.+)', error)
         if field_match:
@@ -252,7 +244,27 @@ def _show_error(description, field=None, related=None, level='error', form=None)
         flash(message, level=level)
 
 
-def _find_constraint(name):
+def _find_constraint(error):
+    """
+    Search reference of constraint within the error message. Return None if not found.
+    """
+    # Extract the constraint name for Postgresql and SQLite
+    # Postgresql: duplicate key value violates unique constraint "subnet_name_key"\nDETAIL:  Key (name)=() already exists.\n
+    # Postgresql: violates check constraint "dnsrecord_value_domain_name"
+    # SQLite: UNIQUE constrain: subnet.name
+    # SQLite: UNIQUE constraint failed: index 'dnszone_name_index'
+    # SQLite: CHECK constraint failed: dnsrecord_value_domain_name
+    constraint_match = (
+        re.search(r'unique constraint "([^"]+)"', error)
+        or re.search(r'check constraint "([^"]+)"', error)
+        or re.search(r': (.+\..+)', error)
+        or re.search(r"UNIQUE constraint failed: index '([^']+)'", error)
+        or re.search(r"CHECK constraint failed: (.+)", error)
+    )
+    if not constraint_match:
+        return None
+    name = constraint_match[1]
+
     # Use a lookup cache to simplify the search of index and constraints.
     if not getattr(_find_constraint, '_cache', False):
         cache = {}

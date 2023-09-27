@@ -33,7 +33,7 @@ SearchableModel = union_all(
         select(
             literal(model.__tablename__.lower()).label('model_name'),
             model.id.label('model_id'),
-            getattr(model, 'status', literal('enabled')).label('status'),
+            getattr(model, 'estatus', literal(User.STATUS_ENABLED)).label('estatus'),
             model.summary,
             model.notes,
             model.owner_id,
@@ -107,7 +107,7 @@ class SearchPage:
         # Build query
         query = select(
             SearchableModel.c.model_id,
-            SearchableModel.c.status,
+            SearchableModel.c.estatus,
             SearchableModel.c.summary,
             SearchableModel.c.model_name,
             User.summary.label('owner'),
@@ -152,7 +152,7 @@ class SearchPage:
             'data': [
                 SearchRow(
                     model_id=obj.model_id,
-                    status=obj.status,
+                    status=obj.estatus,
                     summary=obj.summary,
                     model_name=obj.model_name,
                     owner=obj.owner,
@@ -175,7 +175,7 @@ class SearchPage:
                 SearchableModel.c.model_name,
             )
             .filter(
-                SearchableModel.c.status == 'enabled',
+                SearchableModel.c.estatus != User.STATUS_DELETED,
                 func.udb_websearch(SearchableModel.c.search_string, q),
             )
             .order_by(~SearchableModel.c.summary.startswith(q))

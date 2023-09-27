@@ -38,7 +38,7 @@ def _subnet_query(query):
             (func.group_concat(SubnetRange.range.text(), order_by=SubnetRange.range.desc()) + " " + Subnet.name).label(
                 'summary'
             ),
-            Subnet.status,
+            Subnet.estatus,
         )
         .join(Subnet.subnet_ranges)
         .group_by(Subnet.id)
@@ -89,8 +89,18 @@ class DnsZonePage(CommonPage):
         super().__init__(DnsZone, DnsZoneForm, new_perm=User.PERM_DNSZONE_CREATE)
 
     def _list_query(self):
-        return DnsZone.query.outerjoin(DnsZone.owner).with_entities(
-            DnsZone.id, DnsZone.status, DnsZone.name, DnsZone.subnets_count, DnsZone.notes, User.summary.label('owner')
+        return (
+            DnsZone.query.outerjoin(DnsZone.owner)
+            .outerjoin(DnsZone.subnets)
+            .with_entities(
+                DnsZone.id,
+                DnsZone.estatus,
+                DnsZone.name,
+                func.count(Subnet.id),
+                DnsZone.notes,
+                User.summary.label('owner'),
+            )
+            .group_by(DnsZone.id, User.summary)
         )
 
     @cherrypy.expose()
@@ -111,10 +121,7 @@ class DnsZonePage(CommonPage):
                 DnsRecord.ttl,
                 DnsRecord.value,
             )
-            .filter(
-                DnsRecord.status == DnsRecord.STATUS_ENABLED,
-                DnsRecord.hostname_value.endswith(zone.name),
-            )
+            .filter(DnsRecord.estatus == DnsRecord.STATUS_ENABLED, DnsRecord.dnszone_id == zone.id)
             .all()
         )
         return {'dnsrecords': [r._asdict() for r in dnsrecords], 'dnsrecord_sort_key': DnsRecord.dnsrecord_sort_key}

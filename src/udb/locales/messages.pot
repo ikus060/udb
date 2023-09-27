@@ -986,7 +986,7 @@ msgid "does not appear to be a valid IPv6 or IPv4 network"
 msgstr ""
 
 #: src/udb/core/model/_subnet.py:165
-msgid "This IP Range is already defined in another subnet."
+msgid "This IP Range is already defined by another subnet."
 msgstr ""
 
 #: src/udb/core/model/_subnet.py:254

@@ -59,7 +59,9 @@ class MacTest(WebCase):
 
     def test_ip_with_dhcp_deleted_status(self):
         # Given a deleted DhcpRecord
-        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', status='deleted', vrf=self.vrf).add().commit()
+        DhcpRecord(
+            ip='192.0.2.23', mac='00:00:5e:00:53:bf', status=DhcpRecord.STATUS_DELETED, vrf=self.vrf
+        ).add().commit()
         # When querying list of Mac
         objs = Mac.query.all()
         # Then an Ip record got created
@@ -74,7 +76,7 @@ class MacTest(WebCase):
         self.assertEqual(len(objs), 1)
         self.assertEqual(objs[0].ip, '192.0.2.23')
 
-    def test_update_dhcp_record_ip(self):
+    def test_update_dhcp_record_mac(self):
         # Given a DhcpRecord
         record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', vrf=self.vrf).add().commit()
         # When updating the Mac value
@@ -87,10 +89,10 @@ class MacTest(WebCase):
             old_mac.messages[-1].changes,
         )
         # Then new Mac Record get created
-        new_ip = Mac.query.filter(Mac.mac == '00:00:5e:00:53:ff').one()
+        new_mac = Mac.query.filter(Mac.mac == '00:00:5e:00:53:ff').one()
         self.assertEqual(
             {'mac': [None, '00:00:5e:00:53:ff'], 'related_dhcp_records': [[], ['192.0.2.23 (00:00:5e:00:53:ff)']]},
-            new_ip.messages[-1].changes,
+            new_mac.messages[-1].changes,
         )
 
     def test_update_dhcp_record_status(self):
