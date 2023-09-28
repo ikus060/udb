@@ -42,6 +42,7 @@ from udb.controller.dnsrecord_page import DnsRecordPage
 from udb.controller.dnszone_page import DnsZonePage
 from udb.controller.environment_page import EnvironmentApi, EnvironmentPage
 from udb.controller.ip_page import IpPage
+from udb.controller.language import Language
 from udb.controller.load_page import LoadPage
 from udb.controller.login_page import LoginPage
 from udb.controller.mac_page import MacPage
@@ -235,6 +236,7 @@ class Root(object):
         self.search = SearchPage()
         self.load = LoadPage()
         self.static = Static()
+        self.language = Language()
         # Import modules to be added to this app.
         self.vrf = VrfPage()
         self.rule = RulePage()
@@ -267,6 +269,7 @@ class Root(object):
             if cfg.favicon
             else pkg_resources.resource_filename('udb.controller.static', 'udb_16.svg')
         )
+        self.favicon_ico = self.static.favicon
 
     @cherrypy.expose
     @cherrypy.tools.jinja2(template='index.html')

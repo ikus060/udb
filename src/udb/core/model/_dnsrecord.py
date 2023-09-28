@@ -179,14 +179,12 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
     vrf_id = Column(Integer, ForeignKey("vrf.id"))
     vrf = relationship(Vrf)
 
-    # TODO Create a check constraint for NAME
     # A DNS Record must be created with a DNS Zone
     dnszone_id = Column(Integer)
     dnszone_name = Column(String)
     dnszone_estatus = Column(Integer)
     _dnszone = relationship(DnsZone)
 
-    # TODO Create a check constraint for range.
     # A DNS Record must be created within a SubnetRange (A, AAAA, PTR)
     subnetrange_id = Column(Integer)
     subnet_id = Column(Integer)
@@ -528,15 +526,11 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
                 SubnetRange.subnet_estatus == Subnet.STATUS_ENABLED,
             )
         )
-        # Filter by VRF
-        if self.vrf_id:
-            q = q.filter(Subnet.vrf_id == self.vrf_id)
-        elif self.vrf:
+        # If define, filter by VRF
+        if self.vrf:
             q = q.filter(Subnet.vrf == self.vrf)
         # Filter by DNSZone
-        if self.dnszone_id:
-            q = q.filter(DnsZone.id == self.dnszone_id)
-        else:
+        if self._dnszone:
             q = q.filter(DnsZone.id == self._dnszone.id)
         return q.first()
 

@@ -1,5 +1,5 @@
 {% import "common/status.html" as _status %}
-{% import "components/table.html" as _table %}
+{% import "components/table.html" as _table with context %}
 {% if field.object_data %}
   <table class="table table-sm table-hover mb-2" aria-label="{{ field.name }}">
     <thead>

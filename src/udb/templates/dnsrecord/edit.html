@@ -1,5 +1,5 @@
 {% extends 'common/edit.html' %}
-{% import "components/table.html" as _table %}
+{% import "components/table.html" as _table with context %}
 {% block extra_actions %}
   {# Reverse Record #}
   {% if obj.type in ['A', 'AAAA', 'PTR'] %}

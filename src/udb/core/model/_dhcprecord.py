@@ -162,9 +162,8 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
             )
             .order_by(func.masklen(SubnetRange.range).desc())
         )
-        if self.vrf_id:
-            q = q.filter(Subnet.vrf_id == self.vrf_id)
-        elif self.vrf:
+        # If define, filter by VRF
+        if self.vrf:
             q = q.filter(Subnet.vrf == self.vrf)
         return q.first()
 

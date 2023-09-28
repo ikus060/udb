@@ -172,3 +172,25 @@ class DhcpRecordPageTest(WebCase, CommonTest):
         self.assertStatus(200)
         # Make sure the constraint of dnsrecord is not shown.
         self.assertInBody('Database integrity error:')
+
+    def test_update_vrf_id(self):
+        # Given a database with a second VRF
+        dhcp = DhcpRecord(ip='1.2.3.4', mac='00:00:5e:00:53:af').add().commit()
+        vrf2 = Vrf(name='new')
+        Subnet(
+            subnet_ranges=[
+                SubnetRange(
+                    '1.2.3.0/24',
+                    dhcp=True,
+                    dhcp_start_ip='1.2.3.1',
+                    dhcp_end_ip='1.2.3.254',
+                )
+            ],
+            vrf=vrf2,
+        ).add().commit()
+        # When updating the VRF of an existing DHCP Record
+        self.getPage(url_for(dhcp, 'edit'), method='POST', body={'vrf_id': vrf2.id})
+        # Then the VRF get updated.
+        self.assertStatus(303)
+        dhcp.expire()
+        self.assertEqual(dhcp.vrf_id, vrf2.id)
