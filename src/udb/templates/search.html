@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 {% import 'macro.html' as macro %}
 {% import "common/status.html" as _status %}
-{% import "components/table.html" as _table %}
+{% import "components/table.html" as _table with context %}
 {% block title %}
   {% trans %}Result for: {% endtrans %}{{ form.q.data }}
 {% endblock title %}

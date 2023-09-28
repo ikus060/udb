@@ -280,11 +280,14 @@ $.fn.dataTable.render.changes = function () {
                 html += '<ul class="mb-0">';
                 if (row[type_idx] === 'new') {
                     for (const [key, values] of Object.entries(data)) {
-                        html += '<li><b>' + safe(key) + '</b>: ' + safe(values[1]) + ' </li>';
+                        const field_name = safe(api.settings().i18n(`udb.field.${key}`, key));
+                        const new_value = safe(api.settings().i18n(`udb.value.${key}.${values[1]}`, `${values[1]}`));
+                        html += '<li><b>' + field_name + '</b>: ' + new_value + ' </li>';
                     }
                 } else {
                     for (const [key, values] of Object.entries(data)) {
-                        html += '<li><b>' + safe(key) + '</b>: '
+                        const field_name = safe(api.settings().i18n(`udb.field.${key}`, key));
+                        html += '<li><b>' + field_name + '</b>: '
                         if (Array.isArray(values[0])) {
                             for (const deleted of values[0]) {
                                 html += '<br/> - ' + safe(deleted);
@@ -293,7 +296,9 @@ $.fn.dataTable.render.changes = function () {
                                 html += '<br/> + ' + safe(added);
                             }
                         } else {
-                            html += safe(values[0]) + ' → ' + safe(values[1]) + '</li>';
+                            const old_value = safe(api.settings().i18n(`udb.value.${key}.${values[0]}`, `${values[0]}`));
+                            const new_value = safe(api.settings().i18n(`udb.value.${key}.${values[1]}`, `${values[1]}`));
+                            html += old_value + ' → ' + new_value + '</li>';
                         }
                     }
                 }
@@ -318,7 +323,7 @@ $.fn.dataTable.render.message_body = function () {
             const type_idx = api.column('type:name').index();
             if (type_idx) {
                 const type = row[type_idx];
-                html += api.settings().i18n(`message_${type}`, type);
+                html += api.settings().i18n(`udb.value.type.${type}`, type);
             }
 
             const author_idx = api.column('author:name').index();
