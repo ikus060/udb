@@ -48,8 +48,8 @@ Base = cherrypy.tools.db.get_base()
 dnszone_subnet = Table(
     'dnszone_subnet',
     Base.metadata,
-    Column('dnszone_id', ForeignKey('dnszone.id')),
-    Column('subnet_id', ForeignKey('subnet.id')),
+    Column('dnszone_id', ForeignKey('dnszone.id'), primary_key=True),
+    Column('subnet_id', ForeignKey('subnet.id'), primary_key=True),
 )
 
 

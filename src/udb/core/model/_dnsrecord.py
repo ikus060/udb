@@ -193,11 +193,13 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
     _subnetrange = relationship(SubnetRange, overlaps="vrf")
 
     __table_args__ = (
-        ForeignKeyConstraint(["generated_ip", "vrf_id"], ["ip.ip", "ip.vrf_id"]),
+        ForeignKeyConstraint(["generated_ip", "vrf_id"], ["ip.ip", "ip.vrf_id"], name="dnsrecord_ip_fk"),
+        # Use onupdate CASCADE to automatically update the status base on dnszone.
         ForeignKeyConstraint(
             ["dnszone_id", "dnszone_name", "dnszone_estatus"],
             ["dnszone.id", "dnszone.name", "dnszone.estatus"],
             onupdate="CASCADE",
+            name="dnsrecord_dnszone_fk",
         ),
         # Use onupdate CASCADE to automatically update the status based on subnet and vrf status.
         ForeignKeyConstraint(
@@ -216,6 +218,12 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
                 "subnetrange.range",
             ],
             onupdate="CASCADE",
+            name="dnsrecord_subnetrange_fk",
+        ),
+        ForeignKeyConstraint(
+            ["subnet_id", "dnszone_id"],
+            ["dnszone_subnet.subnet_id", "dnszone_subnet.dnszone_id"],
+            name="dnsrecord_dnszone_subnet_fk",
         ),
     )
 

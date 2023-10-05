@@ -547,3 +547,21 @@ class DnsRecordTest(WebCase):
             subnet.subnet_ranges[0].range = '192.0.10.0/24'
             subnet.commit()
         self.assertIn('dnsrecord_subnetrange_required_ck', str(cm.exception))
+
+    def test_remove_allowed_subnet_range(self):
+        # Given a database with a Subnet and a DnsRecord
+        vrf = Vrf(name='default')
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        DnsRecord(name='foo.example.com', type='A', value='192.0.2.25').add().commit()
+        # When updating the list of allowed dnszone
+        # Then an exception is raised.
+        with self.assertRaises(IntegrityError) as cm:
+            subnet.dnszones = []
+            subnet.commit()
+        is_sqlite = 'sqlite' in str(self.session.bind)
+        if is_sqlite:
+            # SQLite doesn't return the name of the constraint.
+            self.assertIn('FOREIGN KEY constraint failed', str(cm.exception))
+        else:
+            self.assertIn('dnsrecord_dnszone_subnet_fk', str(cm.exception))
