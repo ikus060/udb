@@ -264,6 +264,7 @@ class SubnetPage(CommonPage):
         super().__init__(Subnet, SubnetForm, new_perm=User.PERM_SUBNET_CREATE)
 
     def _list_query(self):
+
         query = (
             Subnet.query.join(Subnet.subnet_ranges)
             .outerjoin(Subnet.dnszones)
@@ -279,7 +280,11 @@ class SubnetPage(CommonPage):
                 Subnet.l2vni,
                 Subnet.vlan,
                 Subnet.rir_status,
-                func.bool_or(SubnetRange.dhcp).label('dhcp'),
+                func.format(
+                    str(_('%s on %s')),
+                    func.count(case((SubnetRange.dhcp.is_(True), SubnetRange.id)).distinct()),
+                    func.count(SubnetRange.id.distinct()),
+                ).label('dhcp'),
                 func.group_concat(SubnetRange.range.text().distinct()).label('ranges'),
                 func.group_concat(DnsZone.name.distinct()).label('dnszone_names'),
             )

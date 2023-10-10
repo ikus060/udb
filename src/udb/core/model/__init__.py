@@ -19,6 +19,7 @@ import inspect
 import cherrypy
 
 from . import _bool_or  # noqa
+from . import _format  # noqa
 from . import _group_concat  # noqa
 from . import _least  # noqa
 from ._deployment import Deployment, Environment  # noqa
