@@ -6,7 +6,8 @@
             class="form-control"
             size="8"
             multiple="multiple">
-      {% for value, label, checked in field.iter_choices() %}
+      {% for choice in field.iter_choices() %}
+        {% set value, label, checked = choice[0:3] %}
         {% if not checked %}<option value="{{ value }}">{{ label }}</option>{% endif %}
       {% endfor %}
     </select>
@@ -34,7 +35,8 @@
             class="form-control"
             size="8"
             multiple="multiple">
-      {% for value, label, checked in field.iter_choices() %}
+      {% for choice in field.iter_choices() %}
+        {% set value, label, checked = choice[0:3] %}
         {% if checked %}<option value="{{ value }}">{{ label }}</option>{% endif %}
       {% endfor %}
     </select>
