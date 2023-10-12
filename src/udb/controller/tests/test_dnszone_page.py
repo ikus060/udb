@@ -53,10 +53,7 @@ class DnsZonePageTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         # Then subnets are select
         self.assertStatus(200)
-        self.assertInBody(
-            '<select name="subnets"\n            id="subnets"\n            class="form-control"\n            size="8"\n            multiple="multiple">\n<option value="%s">'
-            % subnet.id
-        )
+        self.assertInBody('<option selected value="%s">' % subnet.id)
 
     def test_edit_add_subnet(self):
         # Given a database with a record
@@ -70,10 +67,7 @@ class DnsZonePageTest(WebCase, CommonTest):
         # Then subnets are select
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
-        self.assertInBody(
-            '<select name="subnets"\n            id="subnets"\n            class="form-control"\n            size="8"\n            multiple="multiple">\n<option value="%s">'
-            % subnet.id
-        )
+        self.assertInBody('<option selected value="%s">' % subnet.id)
 
     def test_zonefile(self):
         # Given a database with a record

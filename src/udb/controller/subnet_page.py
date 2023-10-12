@@ -27,15 +27,7 @@ from udb.core.model import DnsZone, Subnet, SubnetRange, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import (
-    CherryForm,
-    DualListWidget,
-    EditableTableWidget,
-    SelectMultipleObjectField,
-    SelectObjectField,
-    Strip,
-    SwitchWidget,
-)
+from .form import CherryForm, EditableTableWidget, SelectMultipleObjectField, SelectObjectField, Strip, SwitchWidget
 
 
 def _subnet_of(range1, range2):
@@ -211,7 +203,12 @@ class SubnetForm(CherryForm):
     dnszones = SelectMultipleObjectField(
         _('Allowed DNS zone(s)'),
         object_cls=DnsZone,
-        widget=DualListWidget(),
+        render_kw={
+            "class": "multi",
+            "data-non_selected_header": _("Available"),
+            "data-selected_header": _("Selected"),
+            "data-search_placeholder": _("Filter..."),
+        },
     )
     notes = TextAreaField(
         _('Notes'),

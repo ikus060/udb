@@ -42,6 +42,10 @@ class Static:
     def typeahead(*args, **kwargs):
         raise cherrypy.HTTPError(400)
 
+    @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'multi'))
+    def multi(*args, **kwargs):
+        raise cherrypy.HTTPError(400)
+
     @cherrypy.tools.staticfile(
         filename=pkg_resources.resource_filename(__name__, 'taylor-vick-M5tzZtFCOfs-unsplash.jpg')
     )
