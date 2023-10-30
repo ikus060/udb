@@ -4,6 +4,7 @@
   {'name':'status', 'visible':False, 'search': '(1|2)', 'regex':True},
   {'name':'name', 'title':form.name.label.text|string, 'orderable':True, 'render':'summary', 'render_arg':'dnszone', 'className':'export'},
   {'name':'subnets_count', 'title':_('Subnet count'), 'orderable':True, 'className':'export'},
+  {'name':'dnsrecord_count', 'title':_('DNS Record count'), 'orderable':True, 'className':'export'},
   {'name':'notes', 'title':form.notes.label.text|string, 'orderable':True, 'className':'export'},
   {'name':'owner', 'title':form.owner_id.label.text|string, 'orderable':True, 'className':'export'}
 ] %}

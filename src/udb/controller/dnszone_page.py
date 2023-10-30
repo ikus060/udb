@@ -17,6 +17,7 @@
 
 import cherrypy
 from sqlalchemy import case, func
+from sqlalchemy.orm import aliased
 from wtforms.fields import StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length
@@ -94,18 +95,26 @@ class DnsZonePage(CommonPage):
         super().__init__(DnsZone, DnsZoneForm, new_perm=User.PERM_DNSZONE_CREATE)
 
     def _list_query(self):
-        return (
-            DnsZone.query.outerjoin(DnsZone.owner)
-            .outerjoin(DnsZone.subnets)
-            .with_entities(
-                DnsZone.id,
-                DnsZone.estatus,
-                DnsZone.name,
-                func.count(Subnet.id),
-                DnsZone.notes,
-                User.summary.label('owner'),
-            )
-            .group_by(DnsZone.id, User.summary)
+        a1 = aliased(DnsZone)
+        subnet_count = (
+            Subnet.query.with_entities(func.count(Subnet.id))
+            .join(a1.subnets)
+            .filter(a1.id == DnsZone.id)
+            .scalar_subquery()
+        )
+        dnsrecord_count = (
+            DnsRecord.query.with_entities(func.count(DnsRecord.id))
+            .filter(DnsRecord.dnszone_id == DnsZone.id)
+            .scalar_subquery()
+        )
+        return DnsZone.query.outerjoin(DnsZone.owner).with_entities(
+            DnsZone.id,
+            DnsZone.estatus,
+            DnsZone.name,
+            subnet_count,
+            dnsrecord_count,
+            DnsZone.notes,
+            User.summary.label('owner'),
         )
 
     @cherrypy.expose()
