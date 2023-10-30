@@ -139,10 +139,6 @@ class JinjaWidget:
         return Markup(tmpl.render(field=field, **kwargs))
 
 
-class DualListWidget(JinjaWidget):
-    filename = 'widgets/DualListWidget.html'
-
-
 # Widget that could be used with FieldList
 class TableWidget(JinjaWidget):
     filename = 'widgets/TableWidget.html'
@@ -218,10 +214,12 @@ class SelectMultipleObjectField(SelectMultipleField):
         """
         Build query of object to be listed by the Field.
         """
-        q = self.object_cls.query.with_entities(self.object_cls.id, self.object_cls.summary, self.object_cls.estatus)
+        q = self.object_cls.query.with_entities(
+            self.object_cls.id, self.object_cls.summary, self.object_cls.estatus
+        ).order_by(self.object_cls.summary)
         if self.object_query:
             assert hasattr(self.object_query, '__call__'), "object_query should be callable"
-            q = self.object_query(q)
+            q = self.object_query()
         return q
 
 
@@ -291,10 +289,12 @@ class SelectObjectField(SelectField):
         """
         Build query of object to be listed by the Field.
         """
-        q = self.object_cls.query.with_entities(self.object_cls.id, self.object_cls.summary, self.object_cls.estatus)
+        q = self.object_cls.query.with_entities(
+            self.object_cls.id, self.object_cls.summary, self.object_cls.estatus
+        ).order_by(self.object_cls.summary)
         if self.object_query:
             assert hasattr(self.object_query, '__call__'), "object_query should be callable"
-            q = self.object_query(q)
+            q = self.object_query()
         return q
 
 

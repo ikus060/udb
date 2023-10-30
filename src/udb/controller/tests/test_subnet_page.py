@@ -54,14 +54,12 @@ class SubnetPageTest(WebCase, CommonTest):
             driver.get(url_for(self.base_url, obj.id, 'edit'))
             # Then the web page is loaded without error.
             self.assertFalse(driver.get_log('browser'))
-            # When user transfert item to selected list and save
-            available = driver.find_element(
-                'xpath', '//select[@id="dnszones-not-checked"]/option[@value="%s"]' % zone.id
-            )
+            # When user click on item
+            available = driver.find_element('css selector', '.non-selected-wrapper a.item[data-value="%s"]' % zone.id)
             available.click()
-            add_item_btn = driver.find_element('id', 'multiselect_rightSelected')
-            add_item_btn.click()
-            driver.find_element('xpath', '//select[@id="dnszones"]/option[@value="%s"]' % zone.id)
+            # Then element is transfer to selected list
+            driver.find_element('css selector', '.selected-wrapper a.item[data-value="%s"]' % zone.id)
+            # When saving the form
             save_change_btn = driver.find_element('id', 'save-changes')
             save_change_btn.send_keys(Keys.ENTER)
         # Then record got updated.
@@ -87,10 +85,7 @@ class SubnetPageTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         # Then the zone is selected
         self.assertStatus(200)
-        self.assertInBody(
-            'Selected    <select name="dnszones"\n            id="dnszones"\n            class="form-control"\n            size="8"\n            multiple="multiple">\n<option value="%s">examples.com</option>    </select>'
-            % zone.id
-        )
+        self.assertInBody('<option selected value="%s">' % zone.id)
 
     def test_edit_add_dnszone(self):
         # Given a database with a record
@@ -102,10 +97,7 @@ class SubnetPageTest(WebCase, CommonTest):
         # Then the zone is selected
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
-        self.assertInBody(
-            'Selected    <select name="dnszones"\n            id="dnszones"\n            class="form-control"\n            size="8"\n            multiple="multiple">\n<option value="%s">examples.com</option>    </select>'
-            % zone.id
-        )
+        self.assertInBody('<option selected value="%s">' % zone.id)
 
     def test_edit_with_disabled_vrf(self):
         # Given a Subnet associated to deleted VRF

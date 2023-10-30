@@ -25,15 +25,15 @@ from udb.core.model import DnsRecord, DnsZone, Subnet, SubnetRange, User
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, DualListWidget, SelectMultipleObjectField, SelectObjectField
+from .form import CherryForm, SelectMultipleObjectField, SelectObjectField
 
 
-def _subnet_query(query):
+def _subnet_query():
     """
     Adjust the original query to list the subnet name and subnet ranges.
     """
     return (
-        query.with_entities(
+        Subnet.query.with_entities(
             Subnet.id,
             (func.group_concat(SubnetRange.range.text(), order_by=SubnetRange.range.desc()) + " " + Subnet.name).label(
                 'summary'
@@ -67,7 +67,12 @@ class DnsZoneForm(CherryForm):
         object_cls=Subnet,
         # Completly replace the query to include the subnet ranges in the summary
         object_query=_subnet_query,
-        widget=DualListWidget(),
+        render_kw={
+            "class": "multi",
+            "data-non_selected_header": _("Available"),
+            "data-selected_header": _("Selected"),
+            "data-search_placeholder": _("Filter..."),
+        },
     )
 
     notes = TextAreaField(

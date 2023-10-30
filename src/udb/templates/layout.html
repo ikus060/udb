@@ -53,6 +53,13 @@
           crossorigin="anonymous" />
     <script src="{{ url_for('static/typeahead/jquery.typeahead.min.js', v=cache_invalidate) }}"
             crossorigin="anonymous"></script>
+    {# Multi.js #}
+    <link rel="stylesheet"
+          type="text/css"
+          href="{{ url_for('static/multi/multi.min.css', v=cache_invalidate) }}"
+          crossorigin="anonymous" />
+    <script src="{{ url_for('static/multi/multi.min.js', v=cache_invalidate) }}"
+            crossorigin="anonymous"></script>
     {# Custom #}
     <script src="{{url_for('static/main.js', v=cache_invalidate)}}"></script>
     <link rel="stylesheet"
