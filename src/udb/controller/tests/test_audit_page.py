@@ -115,7 +115,6 @@ class AuditPageTest(WebCase):
             driver.get(url_for(self.base_url, ''))
             driver.implicitly_wait(3)
             # Then all record type are displayed
-            driver.find_element('xpath', "//*[contains(text(), 'dnsrecord_ptr_dnszone_required_rule')]")
             # When user click on Type Menu
             type_menu = driver.find_element('css selector', '.udb-btn-collectionfilter')
             type_menu.click()

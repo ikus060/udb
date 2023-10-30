@@ -432,7 +432,9 @@ class DnsRecordPageTest(WebCase, CommonTest):
         # Then an exception is raised.
         self.assertStatus(200)
         # Make sure the constraint of dnsrecord is not shown.
-        self.assertInBody('Database integrity error:')
+        self.assertInBody(
+            "You can&#39;t change the DNS zone name once you&#39;ve created a DNS record for it. Consider creating a new DNS zone with your new name."
+        )
 
     def test_update_parent_subnet_range(self):
         # Given a database with a Subnet and a DnsRecord
