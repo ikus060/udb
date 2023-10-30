@@ -20,6 +20,7 @@ from sqlalchemy.sql.functions import GenericFunction
 
 class format(GenericFunction):
     name = "format"
+    inherit_cache = True
 
 
 @compiles(format, "sqlite")
