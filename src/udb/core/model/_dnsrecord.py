@@ -310,7 +310,7 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
         elif self.type in ['A', 'AAAA']:
             value = ipaddress.ip_address(self.value).reverse_pointer
             return DnsRecord(name=value, type='PTR', value=self.name, ttl=self.ttl, vrf=self.vrf, **kwargs)
-        return None
+        raise ValueError(_('Can only create reverse DNS Record for PTR, A, AAAA types.'))
 
     @validates('name')
     def validate_name(self, key, value):
@@ -620,7 +620,9 @@ dnsrecord_subnetrange_required_ck = CheckConstraint(
     ),
     name="dnsrecord_subnetrange_required_ck",
     info={
-        'description': _('IP address must be defined within the DNS Zone.'),
+        'description': _(
+            'The IP address {obj.ip_value} is not allowed in the DNS zone {obj.dnszone_name}. Consider modifying the list of authorized subnets for this zone.'
+        ),
         'field': 'value',
         'related': lambda obj: _collapse_subnet_ranges(
             DnsZone.query.with_entities(

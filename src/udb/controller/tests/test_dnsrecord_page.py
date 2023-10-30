@@ -99,7 +99,9 @@ class DnsRecordPageTest(WebCase, CommonTest):
         )
         # Then an error message is displayed
         self.assertStatus(200)
-        self.assertInBody("IP address must be defined within the DNS Zone.")
+        self.assertInBody(
+            "The IP address 192.168.1.98 is not allowed in the DNS zone example.com. Consider modifying the list of authorized subnets for this zone."
+        )
 
     @parameterized.expand(
         [
@@ -110,22 +112,22 @@ class DnsRecordPageTest(WebCase, CommonTest):
         ]
     )
     def test_new_create_reverse_record(self, data, expect_success):
-
         # Given an empty database
         data['create_reverse_record'] = 'y'
         data['vrf_id'] = self.vrf.id
         # When creating a new DNS Record
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
-        # Then user is redirected
-        self.assertStatus(303)
-        # Then two records get created with the same owner
         if expect_success:
+            # Then user is redirected
+            self.assertStatus(303)
+            # Then two records get created with the same owner
             records = DnsRecord.query.all()
             self.assertEqual(2, len(records))
             for record in records:
                 self.assertIsNotNone(record.owner)
         else:
-            self.assertEqual(1, DnsRecord.query.count())
+            self.assertStatus(200)
+            self.assertEqual(0, DnsRecord.query.count())
 
     @parameterized.expand(
         [
@@ -154,6 +156,23 @@ class DnsRecordPageTest(WebCase, CommonTest):
         else:
             self.assertInBody('Cannnot create Reverse DNS Record.')
             self.assertIsNone(obj.get_reverse_dns_record())
+
+    def test_new_create_reverse_record_with_error(self):
+        # Given a database with a record
+        Subnet(subnet_ranges=[SubnetRange('10.255.0.0/24')], vrf=self.vrf, dnszones=[self.zone]).add().commit()
+        obj = DnsRecord(name='foo.example.com', type='A', value='10.255.0.101', vrf=self.vrf).add().commit()
+        self.assertIsNone(obj.get_reverse_dns_record())
+        # When creating a new reverse record without proper subnet in DNS Zone
+        self.getPage(url_for(obj, 'reverse_record'), method='POST')
+        # Then user is redirect
+        self.assertStatus(303)
+        location = self.assertHeader('Location')
+        self.getPage(location)
+        # Then an error is displayed
+        self.assertInBody('Cannnot create Reverse DNS Record.')
+        self.assertInBody(
+            'The IP address 10.255.0.101 is not allowed in the DNS zone in-addr.arpa. Consider modifying the list of authorized subnets for this zone.'
+        )
 
     def test_new_create_reverse_record_with_invalid(self):
         # Given an empty database
@@ -331,7 +350,9 @@ class DnsRecordPageTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
         # Then an error is raised
         self.assertStatus(200)
-        self.assertInBody('IP address must be defined within the DNS Zone.')
+        self.assertInBody(
+            'The IP address 192.0.2.23 is not allowed in the DNS zone example.com. Consider modifying the list of authorized subnets for this zone.'
+        )
         # Then a link to DNZ Zone is provided
         self.assertInBody(url_for(self.zone, 'edit'))
         # Then a list of subnet is provided matching the familly.
@@ -350,7 +371,9 @@ class DnsRecordPageTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
         # Then an error is raised
         self.assertStatus(200)
-        self.assertInBody('IP address must be defined within the DNS Zone.')
+        self.assertInBody(
+            'The IP address 2002::1234:abcd:ffff:c0a6:101 is not allowed in the DNS zone example.com. Consider modifying the list of authorized subnets for this zone.'
+        )
         # Then a link to DNZ Zone is provided
         self.assertInBody(url_for(self.zone, 'edit'))
         # Then a list of subnet is provided matching the familly.
@@ -370,7 +393,9 @@ class DnsRecordPageTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
         # Then an error is raised
         self.assertStatus(200)
-        self.assertInBody('IP address must be defined within the DNS Zone.')
+        self.assertInBody(
+            'The IP address 192.0.2.255 is not allowed in the DNS zone in-addr.arpa. Consider modifying the list of authorized subnets for this zone.'
+        )
         # Then a link to DNZ Zone is provided
         self.assertInBody(url_for(arpa_zone, 'edit'))
         # Then a list of subnet is provided matching the familly.
@@ -390,7 +415,9 @@ class DnsRecordPageTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
         # Then an error is raised
         self.assertStatus(200)
-        self.assertInBody('IP address must be defined within the DNS Zone.')
+        self.assertInBody(
+            'The IP address 4321:0:1:2:3:4:567:89ab is not allowed in the DNS zone ip6.arpa. Consider modifying the list of authorized subnets for this zone.'
+        )
         # Then a link to DNZ Zone is provided
         self.assertInBody(url_for(arpa_zone, 'edit'))
         # Then a list of subnet is provided matching the familly.

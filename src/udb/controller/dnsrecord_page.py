@@ -152,14 +152,13 @@ class DnsRecordPage(CommonPage):
             verify_perm(self.new_perm)
             try:
                 reverse_record = obj.create_reverse_dns_record(owner=cherrypy.serving.request.currentuser)
-                if reverse_record:
-                    reverse_record.add().commit()
-                    flash(_("Reverse DNS Record created."))
-                else:
-                    flash(_("Cannnot create Reverse DNS Record."))
+                reverse_record.add().commit()
+                flash(_("Reverse DNS Record created."))
             except Exception as e:
                 cherrypy.tools.db.get_session().rollback()
-                show_exception(e)
+                flash(_("Cannnot create Reverse DNS Record."), level='error')
+                show_exception(e, obj=reverse_record)
+                reverse_record = None
         # Then redirect user
         if reverse_record:
             raise cherrypy.HTTPRedirect(url_for(reverse_record, 'edit'))
