@@ -177,13 +177,15 @@ def _show_integrity_error(e, form=None, obj=None):
     related = None
     metadata = None
     constraint = _find_constraint(error)
-    if constraint and obj.__table__.name in constraint.info:
+    if constraint and obj and obj.__table__.name in constraint.info:
         metadata = constraint.info.get(obj.__table__.name)
-    elif constraint and constraint.table == obj.__table__:
+    elif constraint and obj and constraint.table == obj.__table__:
         metadata = constraint.info
     if metadata:
         # If availabe use metdata for specific model_name.
         description = metadata.get('description', description)
+        if obj and '{' in description:
+            description = description.format(obj=obj)
         field = metadata.get('field', description)
         related = _fetch_related(metadata.get('related', None), obj)
     else:

@@ -310,7 +310,7 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
         elif self.type in ['A', 'AAAA']:
             value = ipaddress.ip_address(self.value).reverse_pointer
             return DnsRecord(name=value, type='PTR', value=self.name, ttl=self.ttl, vrf=self.vrf, **kwargs)
-        return None
+        raise ValueError(_('Can only create reverse DNS Record for PTR, A, AAAA types.'))
 
     @validates('name')
     def validate_name(self, key, value):
@@ -592,7 +592,7 @@ CheckConstraint(
     },
 )
 
-CheckConstraint(
+dnsrecord_dnszone_required_ck = CheckConstraint(
     and_(
         DnsRecord.dnszone_id.is_not(None),
         DnsRecord.dnszone_name.is_not(None),
@@ -603,6 +603,12 @@ CheckConstraint(
     info={
         'description': _('Hostname must be defined within a valid DNS Zone.'),
         'field': 'name',
+        'dnszone': {
+            'description': _(
+                "You can't change the DNS zone name once you've created a DNS record for it. Consider creating a new DNS zone with your new name."
+            ),
+            'field': 'name',
+        },
     },
 )
 
@@ -620,7 +626,9 @@ dnsrecord_subnetrange_required_ck = CheckConstraint(
     ),
     name="dnsrecord_subnetrange_required_ck",
     info={
-        'description': _('IP address must be defined within the DNS Zone.'),
+        'description': _(
+            'The IP address {obj.ip_value} is not allowed in the DNS zone {obj.dnszone_name}. Consider modifying the list of authorized subnets for this zone.'
+        ),
         'field': 'value',
         'related': lambda obj: _collapse_subnet_ranges(
             DnsZone.query.with_entities(
@@ -831,4 +839,7 @@ RuleConstraint(
 @event.listens_for(Base.metadata, 'after_create')
 def create_missing_constraints(target, conn, **kw):
     if not constraint_exists(conn, dnsrecord_subnetrange_required_ck):
+        constraint_add(conn, dnsrecord_subnetrange_required_ck)
+    # Create new constraint.
+    if not constraint_exists(conn, dnsrecord_dnszone_required_ck):
         constraint_add(conn, dnsrecord_subnetrange_required_ck)
