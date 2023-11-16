@@ -20,6 +20,7 @@ from collections import namedtuple
 
 import cherrypy
 from sqlalchemy import case, func
+from sqlalchemy.orm import aliased
 from wtforms.fields import BooleanField, FieldList, FormField, IntegerField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, StopValidation, ValidationError
 
@@ -27,7 +28,7 @@ from udb.core.model import DnsZone, Subnet, SubnetRange, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, EditableTableWidget, SelectMultipleObjectField, SelectObjectField, Strip, SwitchWidget
+from .form import CherryForm, EditableTableWidget, SelectMultipleObjectField, SelectObjectField, SwitchWidget
 
 
 def _subnet_of(range1, range2):
@@ -49,6 +50,42 @@ def _sort_ranges(ranges):
     return [r.compressed for r in ranges]
 
 
+def _norm_range(value):
+    """
+    Used to normalize the subnet range values without running validation.
+    """
+    # For empty string or None, return None
+    if not value:
+        return None
+    # Strip the value from extra spaces.
+    value = value.strip()
+    # Normalize the subnet range.
+    try:
+        return str(ipaddress.ip_network(value))
+    except Exception:
+        # If the range is not valid, so we can't normalize the value.
+        # Validation error will be raised.
+        return value
+
+
+def _norm_ipaddress(value):
+    """
+    Used to normalize the subnet range values without running validation.
+    """
+    # For empty string or None, return None
+    if not value:
+        return None
+    # Strip the value from extra spaces.
+    value = value.strip()
+    # Normalize the subnet range.
+    try:
+        return str(ipaddress.ip_address(value))
+    except Exception:
+        # If the range is not valid, so we can't normalize the value.
+        # Validation error will be raised.
+        return value
+
+
 class SubnetRangeform(CherryForm):
     range = StringField(
         label=_('IP Ranges'),
@@ -56,7 +93,7 @@ class SubnetRangeform(CherryForm):
             DataRequired(),
             Length(max=256),
         ],
-        filters=[Strip()],
+        filters=[_norm_range],
         render_kw={"placeholder": _("174.95.0.0/16 or 2001:0db8:85a3::/64")},
     )
     dhcp = BooleanField(
@@ -66,13 +103,13 @@ class SubnetRangeform(CherryForm):
     dhcp_start_ip = StringField(
         _('DHCP Start'),
         validators=[Length(max=256)],
-        filters=[Strip()],
+        filters=[_norm_ipaddress],
         render_kw={"placeholder": _("Leave blank for default")},
     )
     dhcp_end_ip = StringField(
         _('DHCP Stop'),
         validators=[Length(max=256)],
-        filters=[Strip()],
+        filters=[_norm_ipaddress],
         render_kw={"placeholder": _("Leave blank for default")},
     )
 
@@ -222,17 +259,38 @@ class SubnetForm(CherryForm):
         default=lambda: cherrypy.serving.request.currentuser.id,
     )
 
-    def process(self, formdata=None, obj=None, data=None, **kwargs):
-        """
-        Custom implementation to take account of subnet-ranges fields.
-        """
-        super().process(formdata, obj, data=data, **kwargs)
-
-        # When subnet ranges are not defined in formdata, let used the value from the object instead of replacing the value with empty array.
-        if formdata:
-            subnet_range_defined = list(self.subnet_ranges._extract_indices(self.subnet_ranges.name, formdata))
-            if not subnet_range_defined:
-                self.subnet_ranges.process(None, obj.subnet_ranges)
+    def populate_obj(self, obj):
+        # Populate object from form data. Except subnet_ranges
+        for name, field in self._fields.items():
+            if field.name == 'subnet_ranges' or (field.render_kw and field.render_kw.get('readonly')):
+                continue
+            field.populate_obj(obj, name)
+        # Populate subnet ranges with a custom implementation to avoid unwanted effect.
+        obj_subnet_ranges = list(obj.subnet_ranges)
+        for form_subnet_range in self.subnet_ranges:
+            # Search for corresponding range in database. Either an exact match or similar subnet.
+            exact_matches = [r for r in obj_subnet_ranges if r.range == form_subnet_range.range.data]
+            similar_matches = [
+                r
+                for r in obj_subnet_ranges
+                if _subnet_of(r.range, form_subnet_range.range.data)
+                or _subnet_of(form_subnet_range.range.data, r.range)
+            ]
+            if exact_matches:
+                match = exact_matches[0]
+                obj_subnet_ranges.remove(match)
+            elif similar_matches:
+                match = similar_matches[0]
+                match.range = form_subnet_range.range.data
+                obj_subnet_ranges.remove(match)
+            else:
+                match = SubnetRange(form_subnet_range.range.data).add()
+                obj.subnet_ranges.append(match)
+            match.dhcp = form_subnet_range.dhcp.data
+            match.dhcp_start_ip = form_subnet_range.dhcp_start_ip.data
+            match.dhcp_end_ip = form_subnet_range.dhcp_end_ip.data
+        for r in obj_subnet_ranges:
+            obj.subnet_ranges.remove(r)
 
 
 SubnetRow = namedtuple(
@@ -261,10 +319,15 @@ class SubnetPage(CommonPage):
         super().__init__(Subnet, SubnetForm, new_perm=User.PERM_SUBNET_CREATE)
 
     def _list_query(self):
-
+        a1 = aliased(Subnet)
+        dnszone_names = (
+            DnsZone.query.with_entities(func.group_concat(DnsZone.name).label('dnszone_names'))
+            .join(a1, DnsZone.subnets)
+            .filter(DnsZone.estatus != DnsZone.STATUS_DELETED, Subnet.id == a1.id)
+            .scalar_subquery()
+        )
         query = (
             Subnet.query.join(Subnet.subnet_ranges)
-            .outerjoin(Subnet.dnszones)
             .join(Subnet.vrf)
             .group_by(Subnet.id, SubnetRange.vrf_id, Vrf.name)
             .with_entities(
@@ -283,7 +346,7 @@ class SubnetPage(CommonPage):
                     func.count(SubnetRange.id.distinct()),
                 ).label('dhcp'),
                 func.group_concat(SubnetRange.range.text().distinct()).label('ranges'),
-                func.group_concat(DnsZone.name.distinct()).label('dnszone_names'),
+                dnszone_names.label('dnszone_names'),
             )
             .order_by(
                 SubnetRange.vrf_id,

@@ -52,6 +52,20 @@ class CommonTest:
         self.assertStatus(200)
         self.assertInBody('<table')
 
+    def test_get_list_with_deleted(self):
+        # Given a database with existing record
+        data = self.getJson(url_for(self.base_url, 'data.json'))
+        count = len(data['data'])
+        # Given a database with a deleted record
+        obj = self.obj_cls(**self.new_data).add()
+        obj.commit()
+        obj.status = self.obj_cls.STATUS_DELETED
+        obj.add().commit()
+        # When making a query to list page
+        data = self.getJson(url_for(self.base_url, 'data.json'))
+        # Then the list contains deleted record.
+        self.assertEqual(1 + count, len(data['data']))
+
     def test_get_list_page_selenium(self):
         # Given a webpage
         with self.selenium() as driver:
@@ -64,9 +78,9 @@ class CommonTest:
 
     def test_get_list_filter_selenium(self):
         # Given a database with a deleted record
-        obj = self.obj_cls(**self.new_data).add()
+        obj = self.obj_cls(**self.new_data).add().flush()
         obj.status = self.obj_cls.STATUS_DELETED
-        obj.commit()
+        obj.add().commit()
         with self.selenium() as driver:
             # When showing the page with default filter
             driver.get(url_for(self.base_url, ''))
@@ -174,7 +188,7 @@ class CommonTest:
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
         # When trying to update it's name
-        body = dict(self.edit_data)
+        body = dict(self.edit_post or self.edit_data)
         body['body'] = 'This is my comment'
         self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=body)
         obj.expire()
@@ -249,7 +263,9 @@ class CommonTest:
         obj = self.obj_cls(**self.new_data).add()
         obj.commit()
         # When trying to post a message
-        self.getPage(url_for(obj, 'edit'), method='POST', body={'body': 'this is my message'})
+        body = dict(self.new_post or self.new_data)
+        body['body'] = 'this is my message'
+        self.getPage(url_for(obj, 'edit'), method='POST', body=body)
         # Then user is redirected to the edit page
         self.assertStatus(303)
         obj = self.obj_cls.query.all()[-1]
@@ -323,7 +339,9 @@ class CommonTest:
         obj.add()
         obj.commit()
         # When trying disabled
-        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'status': new_status})
+        body = dict(self.new_post or self.new_data)
+        body['status'] = new_status
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=body)
         obj.expire()
         # Then user is redirected to the edit page
         self.assertStatus(303)
@@ -337,7 +355,9 @@ class CommonTest:
         obj.add()
         obj.commit()
         # When trying enabled
-        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'status': -1})
+        body = dict(self.new_post or self.new_data)
+        body['status'] = -1
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body=body)
         # Then user an error is displayed
         self.assertStatus(200)
         self.assertInBody('Invalid value: -1')
@@ -345,14 +365,17 @@ class CommonTest:
         self.assertEqual(self.obj_cls.STATUS_ENABLED, self.obj_cls.query.first().status)
 
     def test_get_data_json(self):
+        # Given a database
+        data = self.getJson(url_for(self.base_url, 'data.json'))
+        count = len(data['data'])
         # Given a database with record
         obj = self.obj_cls(**self.new_data)
         obj.add()
         obj.commit()
         # When requesting data.json
-        self.getPage(url_for(self.base_url, 'data.json'))
-        # Then json data is returned
-        self.assertStatus(200)
+        data = self.getJson(url_for(self.base_url, 'data.json'))
+        # Then data contains at least one record.
+        self.assertEqual(1 + count, len(data['data']))
 
     def test_api_list_without_credentials(self):
         # Given I don't have credentials
@@ -471,8 +494,8 @@ class CommonTest:
         self.assertInBody('href="%s"' % referer)
         self.assertInBody('<input id="referer" name="referer" type="hidden" value="%s">' % referer)
         # When editing the record with a referer
-        body = {'referer': referer}
-        body.update(self.edit_data)
+        body = dict(self.edit_post or self.edit_data)
+        body['referer'] = referer
         self.getPage(
             url_for(self.base_url, obj.id, 'edit'),
             method='POST',

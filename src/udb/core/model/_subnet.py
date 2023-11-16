@@ -248,7 +248,7 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
         """
         Efective status computed based on status and vrf's status.
         """
-        return [cls.status, cls.vrf_estatus]
+        return [cls.status, func.coalesce(cls.vrf_estatus, Vrf.STATUS_ENABLED)]
 
     def _update_subnet_string(self):
         """
@@ -295,7 +295,7 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
     def _validate(self):
         if not self.subnet_ranges:
             # you should probably use your own exception class here
-            raise ValueError('ranges', _('at least one IPv6 or IPv4 network is required'))
+            raise ValueError('subnet_ranges', _('at least one IPv6 or IPv4 network is required'))
 
 
 @event.listens_for(Session, 'before_flush')

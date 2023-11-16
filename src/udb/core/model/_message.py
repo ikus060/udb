@@ -46,11 +46,12 @@ def _get_model_changes(model, ignore=['messages']):
     state = inspect(model)
     changes = {}
     for attr in state.attrs:
-        hist = attr.load_history()
-        if not hist.has_changes():
-            continue
         # Ignore `messages` field and other private field
         if attr.key == 'messages' or attr.key.startswith('_'):
+            continue
+        # Ignore attribute without history changes.
+        hist = attr.load_history()
+        if not hist.has_changes():
             continue
         if isinstance(attr.value, (list, tuple)) or len(hist.deleted) > 1 or len(hist.added) > 1:
             # If array, store array

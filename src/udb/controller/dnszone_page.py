@@ -99,12 +99,12 @@ class DnsZonePage(CommonPage):
         subnet_count = (
             Subnet.query.with_entities(func.count(Subnet.id))
             .join(a1.subnets)
-            .filter(a1.id == DnsZone.id)
+            .filter(a1.id == DnsZone.id, Subnet.estatus != Subnet.STATUS_DELETED)
             .scalar_subquery()
         )
         dnsrecord_count = (
             DnsRecord.query.with_entities(func.count(DnsRecord.id))
-            .filter(DnsRecord.dnszone_id == DnsZone.id)
+            .filter(DnsRecord.dnszone_id == DnsZone.id, DnsRecord.estatus != DnsRecord.STATUS_DELETED)
             .scalar_subquery()
         )
         return DnsZone.query.outerjoin(DnsZone.owner).with_entities(

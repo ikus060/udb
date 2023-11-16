@@ -548,6 +548,25 @@ class DnsRecordTest(WebCase):
             subnet.commit()
         self.assertIn('dnsrecord_subnetrange_required_ck', str(cm.exception))
 
+    def test_update_parent_subnet_vrf(self):
+        # Given a database with a Subnet and a DNS Record
+        vrf = Vrf(name='default').add()
+        new_vrf = Vrf(name='new').add()
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf).add()
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        DnsRecord(name='foo.example.com', type='A', value='192.0.2.25').add().commit()
+        # When updating the vrf of the subnet
+        # Then an exception is raised
+        with self.assertRaises(IntegrityError) as cm:
+            subnet.vrf = new_vrf
+            subnet.add().commit()
+        is_sqlite = 'sqlite' in str(self.session.bind)
+        if is_sqlite:
+            # SQLite doesn't return the name of the constraint.
+            self.assertIn('FOREIGN KEY constraint failed', str(cm.exception))
+        else:
+            self.assertIn('dnsrecord_ip_fk', str(cm.exception))
+
     def test_remove_allowed_subnet_range(self):
         # Given a database with a Subnet and a DnsRecord
         vrf = Vrf(name='default')
@@ -565,3 +584,58 @@ class DnsRecordTest(WebCase):
             self.assertIn('FOREIGN KEY constraint failed', str(cm.exception))
         else:
             self.assertIn('dnsrecord_dnszone_subnet_fk', str(cm.exception))
+
+    def test_deleted_record(self):
+        # Given a DHCP Record
+        vrf = Vrf(name='default')
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf)
+        zone = DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        dns = DnsRecord(name='foo.example.com', type='A', value='192.0.2.25').add().commit()
+        # When deleting the record.
+        dns.status = DnsRecord.STATUS_DELETED
+        dns.add().commit()
+        # Then It get detached from subnet parent.
+        self.assertIsNone(dns._subnetrange)
+        self.assertIsNone(dns.subnetrange_id)
+        self.assertIsNone(dns.subnet_id)
+        self.assertIsNone(dns.subnet_estatus)
+        self.assertIsNone(dns.subnetrange_range)
+        # Then It get detached from zone parent.
+        self.assertIsNone(dns.dnszone_id)
+        self.assertIsNone(dns.dnszone_name)
+        self.assertIsNone(dns.dnszone_estatus)
+        self.assertIsNone(dns._dnszone)
+        # Then record is still attached to IP
+        self.assertIsNotNone(dns.vrf)
+        self.assertIsNotNone(dns.vrf_id)
+        self.assertIsNotNone(dns._ip)
+        # Then parent subnet could be edited without error.
+        subnet.subnet_ranges = [SubnetRange('10.255.0.0/24')]
+        subnet.add().commit()
+        # Then parent dns zone could be edited without error.
+        zone.name = 'bar.org'
+        zone.add().commit()
+
+    def test_add_with_disabled_parents(self):
+        # Given a disabled DNS Zone
+        vrf = Vrf(name='default')
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf, status=Subnet.STATUS_DISABLED)
+        zone = DnsZone(name='example.com', subnets=[subnet], status=DnsZone.STATUS_DISABLED).add().commit()
+        # Given a disabled Subnet
+        # When creating a DNS Record with those parent
+        dns = DnsRecord(name='foo.example.com', type='A', value='192.0.2.25').add().commit()
+        # Then the record get created with disabled status.
+        self.assertEqual(dns.estatus, DnsRecord.STATUS_DISABLED)
+        self.assertEqual(dns._dnszone, zone)
+        self.assertIsNotNone(dns._subnetrange)
+
+    def test_add_with_deleted_parents(self):
+        vrf = Vrf(name='default')
+        # Given a disabled Subnet
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf, status=Subnet.STATUS_DELETED)
+        # Given a disabled DNS Zone
+        DnsZone(name='example.com', subnets=[subnet], status=DnsZone.STATUS_DELETED).add().commit()
+        # When creating a DNS Record with those parent
+        # Then an integrity error is raised
+        with self.assertRaises(IntegrityError):
+            DnsRecord(name='foo.example.com', type='A', value='192.0.2.25').add().commit()

@@ -75,7 +75,7 @@ class DhcpRecordPage(CommonPage):
     def _list_query(self):
         return (
             DhcpRecord.query.outerjoin(DhcpRecord.owner)
-            .join(DhcpRecord.vrf)
+            .outerjoin(DhcpRecord.vrf)
             .with_entities(
                 DhcpRecord.id,
                 DhcpRecord.estatus,
