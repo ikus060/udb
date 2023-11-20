@@ -163,6 +163,7 @@ class LoadPage:
             except Exception as e:
                 cherrypy.tools.db.get_session().rollback()
                 show_exception(e)
+                cherrypy.tools.db.get_session().expire_all()
             else:
                 # Redirect user to load page.
                 flash(_('CSV File imported with success !'))
