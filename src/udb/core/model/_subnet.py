@@ -301,9 +301,7 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
 @event.listens_for(Session, 'before_flush')
 def subnet_before_flush(session, flush_context, instances):
 
-    # TODO It all depends of the record status
-
-    # When creating new DHCP Record, make sure to asign a SubnetRange and an IP
+    # When creating or updating new Subnet, make sure to assign proper VRF
     for obj in itertools.chain(session.new, session.dirty):
         if isinstance(obj, Subnet):
             # Validate ranges.

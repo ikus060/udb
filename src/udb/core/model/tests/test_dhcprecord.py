@@ -262,3 +262,15 @@ class DhcpRecordTest(WebCase):
         # Then an error is raised
         with self.assertRaises(IntegrityError):
             DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+
+    def test_dhcprecord_reassign_subnetrange(self):
+        # Given a DHCP Record assign to a subnet
+        vrf = Vrf(name='default').add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/16')], vrf=vrf).add().flush()
+        dhcp = DhcpRecord(ip='192.168.2.23', mac='00:00:5e:00:53:af').add().commit()
+        # When creating a new Subnet
+        subnet2 = Subnet(subnet_ranges=[SubnetRange('192.168.2.0/24')], vrf=vrf).add().commit()
+        # Then DHCP Record get reassigned
+        dhcp.expire()
+        self.assertEqual(dhcp.subnet_id, subnet2.id)
+        self.assertEqual(dhcp.subnetrange_range, '192.168.2.0/24')

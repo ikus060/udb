@@ -56,12 +56,3 @@ class CommonMixin(object):
             if hist.has_changes():
                 return True
         return False
-
-    def attr_revert_changes(self, *attrs):
-        """
-        Used to clear the state history of an attribute.
-        """
-        state = inspect(self)
-        for key in attrs:
-            if key in state.dict:
-                del state.dict['vrf']

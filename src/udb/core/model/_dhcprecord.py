@@ -33,6 +33,8 @@ from sqlalchemy import (
     literal,
     or_,
     select,
+    tuple_,
+    update,
 )
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import aliased, declared_attr, foreign, relationship, remote, validates
@@ -230,8 +232,8 @@ def dns_reload_mac(self, new_value, old_value, initiator):
 @event.listens_for(Session, 'before_flush', insert=True)
 def dhcprecord_assign_subnetrange(session, flush_context, instances):
 
-    # When creating new DHCP Record, make sure to asign a SubnetRange and an IP
     for obj in itertools.chain(session.new, session.dirty):
+        # When creating new DHCP Record, make sure to asign a SubnetRange and an IP
         if isinstance(obj, DhcpRecord):
             # Disosiate the record from it's parent when getting deleted.
             if obj.status == DhcpRecord.STATUS_DELETED:
@@ -250,6 +252,55 @@ def dhcprecord_assign_subnetrange(session, flush_context, instances):
             if obj.attr_has_changes('mac'):
                 obj._mac  # Fetch record for history tracking
                 obj._mac = Mac.unique_mac(session, obj.mac)
+
+
+# `insert=True` is required to run before messages hook.
+@event.listens_for(Session, 'after_flush', insert=True)
+def dhcprecord_reassign_subnetrange(session, flush_context):
+
+    for obj in itertools.chain(session.new, session.dirty):
+        # When subnet-range get update or created, make sure to re-assign the DHCP accordingly.
+        if isinstance(obj, Subnet) and obj.estatus != Subnet.STATUS_DELETED:
+            for range in obj.subnet_ranges:
+                child = session.execute(
+                    select(SubnetRange.id)
+                    .filter(
+                        SubnetRange.id != obj.id,
+                        SubnetRange.vrf_id == obj.vrf_id,
+                        func.subnet_of(SubnetRange.range, func.inet(range.range)),
+                        SubnetRange.subnet_estatus != Subnet.STATUS_DELETED,
+                    )
+                    .limit(1)
+                ).first()
+                if child:
+                    # Our current subnet range is not a "leaf" so we don't have anything to re-assign.
+                    continue
+                # Our current subnet range is a new "leaf" we need to resign.
+                subquery = (
+                    select(SubnetRange.id, SubnetRange.subnet_id, SubnetRange.subnet_estatus, SubnetRange.range)
+                    .filter(SubnetRange.id == range.id)
+                    .scalar_subquery()
+                )
+                session.execute(
+                    update(DhcpRecord)
+                    .filter(
+                        DhcpRecord.vrf_id == obj.vrf_id,
+                        DhcpRecord.subnetrange_id != range.id,
+                        func.subnet_of(func.inet(DhcpRecord.ip), func.inet(range.range)),
+                        DhcpRecord.estatus != DhcpRecord.STATUS_DELETED,
+                    )
+                    .values(
+                        {
+                            tuple_(
+                                DhcpRecord.subnetrange_id,
+                                DhcpRecord.subnet_id,
+                                DhcpRecord.subnet_estatus,
+                                DhcpRecord.subnetrange_range,
+                            ).self_group(): subquery
+                        }
+                    ),
+                    execution_options={'synchronize_session': False},
+                )
 
 
 CheckConstraint(

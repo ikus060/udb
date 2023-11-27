@@ -30,9 +30,12 @@ from sqlalchemy import (
     case,
     event,
     func,
+    inspect,
     literal,
     or_,
     select,
+    tuple_,
+    update,
 )
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -654,6 +657,73 @@ def dnsrecord_assign_subnetrange(session, flush_context, instances):
                 obj._ip = Ip.unique_ip(session, obj.ip_value, obj.vrf.id)
             else:
                 obj._ip = None
+
+
+# `insert=True` is required to run before messages hook.
+@event.listens_for(Session, 'after_flush', insert=True)
+def dnsrecord_reassign_subnetrange(session, flush_context):
+    # Collect all pair of subnet range & zone.
+    pairs = set()
+    for obj in itertools.chain(session.new, session.dirty):
+        if isinstance(obj, Subnet) and obj.estatus != Subnet.STATUS_DELETED:
+            for range in inspect(obj).attrs['subnet_ranges'].history.added or []:
+                for zone in obj.dnszones:
+                    pairs.add((range, zone))
+            for zone in inspect(obj).attrs['dnszones'].history.added or []:
+                for range in obj.subnet_ranges:
+                    pairs.add((range, zone))
+        elif isinstance(obj, DnsZone) and obj.estatus != DnsZone.STATUS_DELETED:
+            # Use history tracker to get list of subnet added to the dns zone.
+            for subnet in inspect(obj).attrs['subnets'].history.added or []:
+                for range in subnet.subnet_ranges:
+                    pairs.add((range, obj))
+
+    # When subnet-range get update or created, make sure to re-assign the DNS Record accordingly.
+    for range, zone in pairs:
+        child = session.execute(
+            select(SubnetRange.id)
+            .join(SubnetRange.parent)
+            .join(Subnet.dnszones)
+            .filter(
+                SubnetRange.id != range.id,
+                SubnetRange.vrf_id == range.vrf_id,
+                DnsZone.id == zone.id,
+                func.subnet_of(SubnetRange.range, func.inet(range.range)),
+                SubnetRange.subnet_estatus != Subnet.STATUS_DELETED,
+            )
+            .limit(1)
+        ).first()
+        if child:
+            # Our current subnet range is not a "leaf" so we don't have anything to re-assign.
+            continue
+        # Our current subnet range is a new "leaf" we need to resign.
+        subquery = (
+            select(SubnetRange.id, SubnetRange.subnet_id, SubnetRange.subnet_estatus, SubnetRange.range)
+            .filter(SubnetRange.id == range.id)
+            .scalar_subquery()
+        )
+        session.execute(
+            update(DnsRecord)
+            .filter(
+                DnsRecord.vrf_id == range.vrf_id,
+                DnsRecord.dnszone_id == zone.id,
+                DnsRecord.subnetrange_id != range.id,
+                func.subnet_of(func.inet(DnsRecord.generated_ip), func.inet(range.range)),
+                DnsRecord.type.in_(['A', 'AAAA', 'PTR']),
+                DnsRecord.estatus != DnsRecord.STATUS_DELETED,
+            )
+            .values(
+                {
+                    tuple_(
+                        DnsRecord.subnetrange_id,
+                        DnsRecord.subnet_id,
+                        DnsRecord.subnet_estatus,
+                        DnsRecord.subnetrange_range,
+                    ).self_group(): subquery
+                }
+            ),
+            execution_options={'synchronize_session': False},
+        )
 
 
 # Make sure `type` only matches supported types.

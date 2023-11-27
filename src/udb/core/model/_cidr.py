@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import ipaddress
 
-from sqlalchemy import String, TypeDecorator, event, func
+from sqlalchemy import Boolean, String, TypeDecorator, event, func
 from sqlalchemy.dialects.postgresql import CIDR, INET
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.compiler import compiles
@@ -127,10 +127,11 @@ def _sqlite_subnet_of(value, other):
         return None
     n = _bytes_to_ip_network(value) if isinstance(value, bytes) else ipaddress.ip_network(value)
     o = _bytes_to_ip_network(other) if isinstance(other, bytes) else ipaddress.ip_network(other)
-    return n.subnet_of(o)
+    return n.version == o.version and n.subnet_of(o)
 
 
 class subnet_of(GenericFunction):
+    type = Boolean
     name = "subnet_of"
     inherit_cache = True
 

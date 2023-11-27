@@ -639,3 +639,22 @@ class DnsRecordTest(WebCase):
         # Then an integrity error is raised
         with self.assertRaises(IntegrityError):
             DnsRecord(name='foo.example.com', type='A', value='192.0.2.25').add().commit()
+
+    def test_dnsrecord_reassign_subnetrange(self):
+        # Given a DNS Record assign to a subnet
+        vrf = Vrf(name='default').add()
+        subnet1 = Subnet(subnet_ranges=[SubnetRange('192.168.0.0/16')], vrf=vrf).add().flush()
+        zone = DnsZone(name='example.com', subnets=[subnet1]).add().commit()
+        dns = DnsRecord(name='foo.example.com', type='A', value='192.168.2.25').add().commit()
+        # When creating a new Subnet Without DNS Zone
+        subnet2 = Subnet(subnet_ranges=[SubnetRange('192.168.2.0/24')], vrf=vrf).add().commit()
+        # Then DNS Record is not reassigned.
+        dns.expire()
+        self.assertEqual(dns.subnet_id, subnet1.id)
+        # When updating the Subnet with DNS Zone
+        zone.subnets.append(subnet2)
+        zone.add().commit()
+        # Then DNS Record is not reassigned.
+        dns.expire()
+        self.assertEqual(dns.subnet_id, subnet2.id)
+        self.assertEqual(dns.subnetrange_range, '192.168.2.0/24')
