@@ -21,7 +21,7 @@ from selenium.webdriver.common.keys import Keys
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DnsZone, Subnet, SubnetRange, Vrf
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, SubnetRange, Vrf
 
 from .test_common_page import CommonTest
 
@@ -43,6 +43,7 @@ class SubnetPageTest(WebCase, CommonTest):
             'subnet_ranges': [{'dhcp': False, 'dhcp_end_ip': None, 'dhcp_start_ip': None, 'range': '192.168.0.0/24'}],
             'vrf_id': self.vrf.id,
         }
+        self.edit_post = {'notes': 'test', 'vlan': 3, 'subnet_ranges-0-range': '192.168.0.0/24'}
 
     def test_edit_dnszone_selenium(self):
         # Given a database with a record
@@ -92,7 +93,11 @@ class SubnetPageTest(WebCase, CommonTest):
         zone = DnsZone(name='examples.com').add().flush()
         obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[], vrf=self.vrf).add().commit()
         # When editing the record
-        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'dnszones': zone.id})
+        self.getPage(
+            url_for(self.base_url, obj.id, 'edit'),
+            method='POST',
+            body={'dnszones': zone.id, 'subnet_ranges-0-range': '192.168.0.0/24'},
+        )
         self.assertStatus(303)
         # Then the zone is selected
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
@@ -112,14 +117,18 @@ class SubnetPageTest(WebCase, CommonTest):
     def test_edit_assign_deleted_vrf(self):
         # Given a Subnet associated to VRF
         deleted_vrf = Vrf(name='MyVrf', status=Vrf.STATUS_DELETED).add()
-        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.0/24')], dnszones=[], vrf=self.vrf).add().commit()
         # When editing the Subnet
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
         # Then the deleted VRF is not listed
         self.assertNotInBody('MyVrf [Deleted]')
         # When trying to assign a deleted VRF to the subnet
-        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'vrf_id': deleted_vrf.id})
+        self.getPage(
+            url_for(self.base_url, obj.id, 'edit'),
+            method='POST',
+            body={'vrf_id': deleted_vrf.id, 'subnet_ranges-0-range': '192.168.0.0/24'},
+        )
         self.assertStatus(303)
         obj.expire()
         # Then the Subnet is used with the new value
@@ -142,7 +151,7 @@ class SubnetPageTest(WebCase, CommonTest):
         # Given a Subnet associated to VRF
         zone = DnsZone(name='examples.com').add().flush()
         deleted_zone = DnsZone(name='foo.com', status=DnsZone.STATUS_DELETED).add().flush()
-        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[zone], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.0/24')], dnszones=[zone], vrf=self.vrf).add().commit()
         # When editing the Subnet
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
@@ -151,7 +160,9 @@ class SubnetPageTest(WebCase, CommonTest):
         self.assertNotInBody('foo.com [Deleted]')
         # When trying to assign a deleted VRF to the subnet
         self.getPage(
-            url_for(self.base_url, obj.id, 'edit'), method='POST', body={'dnszones': [zone.id, deleted_zone.id]}
+            url_for(self.base_url, obj.id, 'edit'),
+            method='POST',
+            body={'dnszones': [zone.id, deleted_zone.id], 'subnet_ranges-0-range': '192.168.0.0/24'},
         )
         self.assertStatus(303)
         obj.expire()
@@ -177,7 +188,12 @@ class SubnetPageTest(WebCase, CommonTest):
         self.getPage(
             url_for(self.base_url, obj.id, 'edit'),
             method='POST',
-            body={'l3vni': str(value), 'l2vni': str(value), 'vlan': str(value)},
+            body={
+                'l3vni': str(value),
+                'l2vni': str(value),
+                'vlan': str(value),
+                'subnet_ranges-0-range': '192.168.0.0/24',
+            },
         )
         if expect_succes:
             # Then user is redirected
@@ -247,9 +263,31 @@ class SubnetPageTest(WebCase, CommonTest):
         self.getPage(url_for(obj, 'edit'), method='POST', body=payload)
         # Then subnet get updated
         self.assertStatus(303)
-        # Then subnetrange was updated too
+        # Then a new subnetrange was created
         obj.expire()
-        self.assertEqual(subnetrange_id, obj.subnet_ranges[0].id)
+        self.assertNotEqual(subnetrange_id, obj.subnet_ranges[0].id)
+
+    def test_edit_update_range_with_children(self):
+        # Given a Subnet with Children DNS Record and DHCP Record
+        zone = DnsZone(name='example.com').add()
+        subnet = Subnet(dnszones=[zone], **self.new_data).add().commit()
+        subnetrange_id = subnet.subnet_ranges[0].id
+        DnsRecord(name='foo.example.com', type='A', value='192.168.0.25').add().commit()
+        DhcpRecord(ip='192.168.0.50', mac='FF:40:23:5D:5D:9F').add().commit()
+        # When editing the subnet range with a similar range.
+        self.getPage(
+            url_for(subnet, 'edit'),
+            method='POST',
+            body={
+                'subnet_ranges-0-range': '192.168.0.0/22',
+                'dnszones': zone.id,
+            },
+        )
+        # Then the record get updatd without error.
+        self.assertStatus(303)
+        subnet.expire()
+        self.assertEqual(subnetrange_id, subnet.subnet_ranges[0].id)
+        self.assertEqual('192.168.0.0/22', subnet.subnet_ranges[0].range)
 
     def test_new_ranges(self):
         # Given a data without records
@@ -435,6 +473,41 @@ class SubnetPageTest(WebCase, CommonTest):
                     None,
                     None,
                     '2 on 2',
+                    None,
+                    '/subnet/1/edit',
+                ]
+            ],
+        )
+
+    def test_list_with_deleted_dns_zone(self):
+        # Given a subnet associated with a deleted DNS Zone.
+        zone = DnsZone(name='deleted.com', status=DnsZone.STATUS_DELETED).add()
+        Subnet(
+            subnet_ranges=[SubnetRange('192.168.1.0/24')],
+            name='foo',
+            vrf=self.vrf,
+            dnszones=[zone],
+        ).add().commit()
+        # When displaying the list of subnet
+        data = self.getJson(url_for(self.base_url, 'data.json'))
+        # Then the DNS Zone name is not displayed.
+        self.assertEqual(
+            data['data'],
+            [
+                [
+                    1,
+                    2,
+                    1,
+                    0,
+                    '192.168.1.0/24',
+                    '',
+                    'foo',
+                    'default',
+                    None,
+                    None,
+                    None,
+                    None,
+                    '0 on 1',
                     None,
                     '/subnet/1/edit',
                 ]

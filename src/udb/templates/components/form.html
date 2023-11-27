@@ -29,7 +29,7 @@
         {{ field(id=False) }}
         {# Show only error directly related to this fields. Hide subfield errors. #}
         {% for error in field.errors %}
-          {% if error|length>1 %}<div class="invalid-feedback">{{ error }}</div>{% endif %}
+          {% if error is not mapping %}<div class="invalid-feedback">{{ error }}</div>{% endif %}
         {% endfor %}
         {% if field.description %}<div class="form-text">{{ field.description }}</div>{% endif %}
       </div>

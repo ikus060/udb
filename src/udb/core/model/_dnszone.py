@@ -18,7 +18,7 @@
 import re
 
 import cherrypy
-from sqlalchemy import CheckConstraint, Column, ForeignKey, Index, Table, and_, event, func
+from sqlalchemy import CheckConstraint, Column, ForeignKey, Index, Table, event, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import String
@@ -58,7 +58,7 @@ class DnsZone(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin,
     subnets = relationship(
         "Subnet",
         secondary=dnszone_subnet,
-        secondaryjoin=lambda: and_(Subnet.id == dnszone_subnet.c.subnet_id, Subnet.estatus != Subnet.STATUS_DELETED),
+        secondaryjoin=(Subnet.id == dnszone_subnet.c.subnet_id),
         backref="dnszones",
         active_history=True,
         sync_backref=True,

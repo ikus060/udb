@@ -60,6 +60,38 @@ class DnsRecordPageTest(WebCase, CommonTest):
         self.assertStatus(200)
         self.assertInBody('value must be a valid domain name')
 
+    def test_edit_invalid_ip(self):
+        # given a database with a record
+        obj = self.obj_cls(name='foo.example.com', type='A', value='192.168.1.101').add()
+        obj.commit()
+        # When editing the IP address of the record for an invalid one.
+        self.getPage(
+            url_for(self.base_url, obj.id, 'edit'),
+            method='POST',
+            body={'name': 'foo.example.com', 'type': 'A', 'value': '192.168.15.101'},
+        )
+        # Then an error is raised
+        self.assertStatus(200)
+        self.assertInBody(
+            'The IP address 192.168.15.101 is not allowed in the DNS zone example.com. Consider modifying the list of authorized subnets for this zone.'
+        )
+        # Then a link to the zone is provided with subnet name
+        self.assertInBody('<a href="%s">192.168.1.0/24</a>' % url_for(self.zone, 'edit'))
+
+    def test_edit_empty_zone(self):
+        # Given a zone without any subnet
+        zone1 = DnsZone(name='test.com').add().commit()
+        # When trying to create a new record
+        data = {'name': 'foo.test.com', 'type': 'A', 'value': '10.255.0.101'}
+        self.getPage(url_for(self.base_url, 'new'), method='POST', body=data)
+        # Then an error message is raised
+        self.assertStatus(200)
+        self.assertInBody(
+            'The IP address 10.255.0.101 is not allowed in the DNS zone test.com. Consider modifying the list of authorized subnets for this zone.'
+        )
+        # Then a link to the zone is provided with a zone name
+        self.assertInBody('<a href="%s">test.com</a>' % url_for(zone1, 'edit'))
+
     def test_new_with_default(self):
         # Given a URL with default value
         self.getPage(url_for(self.base_url, 'new', **{'d-value': '192.168.34.56'}))
@@ -426,32 +458,124 @@ class DnsRecordPageTest(WebCase, CommonTest):
 
     def test_update_parent_dnszone_name(self):
         # Given a database with a DNS Zone and a DnsRecord
-        DnsRecord(name='foo.example.com', type='CNAME', value='example.com').add().commit()
+        dns = DnsRecord(name='foo.example.com', type='CNAME', value='example.com').add().commit()
         # When updating the DnsZone's name
         self.getPage(url_for(self.zone, 'edit'), method='POST', body={'name': 'test.com'})
         # Then an exception is raised.
         self.assertStatus(200)
         # Make sure the constraint of dnsrecord is not shown.
-        self.assertInBody(
-            "You can&#39;t change the DNS zone name once you&#39;ve created a DNS record for it. Consider creating a new DNS zone with your new name."
-        )
+        self.assertInBody("You can&#39;t change the DNS zone name once you&#39;ve created a DNS record for it.")
+        self.assertInBody(url_for(dns, 'edit'))
 
-    def test_update_parent_subnet_range(self):
+    def test_update_parent_subnet_range_modified(self):
         # Given a database with a Subnet and a DnsRecord
-        DnsRecord(name='foo.example.com', type='A', value='192.168.1.25').add().commit()
+        dns = DnsRecord(name='foo.example.com', type='A', value='192.168.1.25').add().commit()
         # When updating the Subnet range.
         self.getPage(
             url_for(self.subnet, 'edit'),
             method='POST',
             body={
+                'dnszones': self.zone.id,
                 'subnet_ranges-0-range': '2001:db8:85a3::/64',
-                'subnet_ranges-1-range': '192.168.0.0/24',
+                'subnet_ranges-1-range': '192.168.1.0/30',
             },
         )
         # Then an exception is raised.
         self.assertStatus(200)
+        # Make sure the constraint of dnsrecord is shown.
+        self.assertInBody(
+            'Once DNS records have been created for a subnet range, it is not possible to modify this range.'
+        )
+        self.assertInBody(url_for(dns, 'edit'))
+
+    def test_update_parent_subnet_range_deleted(self):
+        # Given a database with a Subnet and a DnsRecord
+        dns = DnsRecord(name='foo.example.com', type='A', value='192.168.1.25').add().commit()
+        # When updating the Subnet range.
+        self.getPage(
+            url_for(self.subnet, 'edit'),
+            method='POST',
+            body={
+                'dnszones': self.zone.id,
+                'subnet_ranges-0-range': '2001:db8:85a3::/64',
+            },
+        )
+        # Then an exception is raised.
+        self.assertStatus(200)
+        # Make sure the constraint of dnsrecord is shown.
+        is_sqlite = 'sqlite' in str(self.session.bind)
+        if is_sqlite:
+            self.assertInBody('Database integrity error:')
+            self.assertInBody('FOREIGN KEY constraint failed')
+        else:
+            self.assertInBody(
+                'Once DNS records have been created for a subnet range, it is not possible to remove that subnet range.'
+            )
+            self.assertInBody(url_for(dns, 'edit'))
+
+    def test_update_parent_subnet_dnszones(self):
+        # Given a database with a Subnet and a DnsRecord
+        dns = DnsRecord(name='foo.example.com', type='A', value='192.168.1.25').add().commit()
+        # When removing the dnszone from the subnet.
+        self.getPage(
+            url_for(self.subnet, 'edit'),
+            method='POST',
+            body={'subnet_ranges-0-range': '2001:db8:85a3::/64', 'subnet_ranges-1-range': '192.168.1.0/24'},
+        )
+        # Then an exception is raised.
+        self.assertStatus(200)
         # Make sure the constraint of dnsrecord is not shown.
-        self.assertInBody('Database integrity error:')
+        is_sqlite = 'sqlite' in str(self.session.bind)
+        if is_sqlite:
+            self.assertInBody('Database integrity error:')
+            self.assertInBody('FOREIGN KEY constraint failed')
+        else:
+            self.assertInBody(
+                'Once DNS records have been created for a subnet, it is not possible to remove the DNS Zone associated with that subnet range.'
+            )
+            self.assertInBody(url_for(dns, 'edit'))
+
+    def test_update_parent_dnszone_subnets(self):
+        # Given a database with a Subnet and a DnsRecord
+        dns = DnsRecord(name='foo.example.com', type='A', value='192.168.1.25').add().commit()
+        # When removing the subnet from the zone.
+        self.getPage(url_for(self.zone, 'edit'), method='POST', body={})
+        # Then an exception is raised.
+        self.assertStatus(200)
+        # Make sure the constraint of dnsrecord is not shown.
+        is_sqlite = 'sqlite' in str(self.session.bind)
+        if is_sqlite:
+            self.assertInBody('Database integrity error:')
+            self.assertInBody('FOREIGN KEY constraint failed')
+        else:
+            self.assertInBody(
+                'Once DNS records have been created for a DNS Zone, it is not possible to remove the subnet associated with that DNS Zone.'
+            )
+            self.assertInBody(url_for(dns, 'edit'))
+
+    def test_update_parent_subnet_vrf(self):
+        # Given another VRF
+        vrf2 = Vrf(name='new').add()
+        # Given a database with a Subnet and a DnsRecord
+        dns = DnsRecord(name='foo.example.com', type='A', value='192.168.1.25').add().commit()
+        # When removing the dnszone from the subnet.
+        self.getPage(
+            url_for(self.subnet, 'edit'),
+            method='POST',
+            body={'subnet_ranges-1-range': '192.168.1.0/24', 'vrf_id': vrf2.id, 'dnszones': self.zone.id},
+        )
+        # Then an exception is raised.
+        self.assertStatus(200)
+        # Make sure the constraint of dnsrecord is not shown.
+        is_sqlite = 'sqlite' in str(self.session.bind)
+        if is_sqlite:
+            self.assertInBody('Database integrity error:')
+            self.assertInBody('FOREIGN KEY constraint failed')
+        else:
+            self.assertInBody(
+                'Once DNS records have been created for a subnet range, it is not possible to update the VRF for this subnet.'
+            )
+            self.assertInBody(url_for(dns, 'edit'))
 
     def test_update_vrf_id(self):
         # Given a database with a second VRF

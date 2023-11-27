@@ -227,7 +227,9 @@ class CommonPage(object):
         if form.validate_on_submit():
             verify_perm(self.edit_perm)
             try:
+                obj_copy = dict(obj.__dict__)
                 form.populate_obj(obj)
+                obj_copy = dict(obj.__dict__)
                 # Add Message to explain changes.
                 body = kwargs.get('body', False)
                 if self.has_messages and body:
@@ -243,7 +245,12 @@ class CommonPage(object):
                 obj.commit()
             except Exception as e:
                 cherrypy.tools.db.get_session().rollback()
-                show_exception(e, form=form, obj=obj)
+                # Recreate an object from the copied fields to make sure the message contains the right values.
+                obj_copy.pop('_sa_instance_state')
+                edited_obj = self.model(**obj_copy)
+                show_exception(e, form=form, obj=edited_obj)
+                # Then we need to rollback to clear the sqlalchemy session.
+                cherrypy.tools.db.get_session().rollback()
             else:
                 flash(_('Record updated successfully'))
                 for unused in Rule.verify(obj):

@@ -41,6 +41,6 @@ class VrfPageTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
         # Then error is repported to the user.
         self.assertStatus(200)
-        self.assertInBody('A Vrf aready exist with the same name.')
+        self.assertInBody('A Vrf already exists with the same name.')
         # Then a URL to duplicate record is provided.
         self.assertInBody(url_for(obj, 'edit'))

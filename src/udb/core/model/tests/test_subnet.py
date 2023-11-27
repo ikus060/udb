@@ -340,3 +340,19 @@ class SubnetTest(WebCase):
         else:
             with self.assertRaises(IntegrityError):
                 subnet.add().commit()
+
+    def test_add_with_disabled_vrf(self):
+        # Given a disabled VRF
+        vrf = Vrf(name='default', status=Vrf.STATUS_DISABLED).add().commit()
+        # When creating a subnet with it
+        subnet = Subnet(vrf=vrf, subnet_ranges=[SubnetRange('192.168.1.0/24')]).add().commit()
+        # Then the subnet get created with disabled state.
+        self.assertEqual(subnet.estatus, Subnet.STATUS_DISABLED)
+
+    def test_add_with_deleted_vrf(self):
+        # Given a deleted VRF
+        vrf = Vrf(name='default', status=Vrf.STATUS_DELETED).add().commit()
+        # When trying to create a subnet with that VRF
+        subnet = Subnet(vrf=vrf, subnet_ranges=[SubnetRange('192.168.1.0/24')]).add().commit()
+        # Then the subnet get created
+        self.assertEqual(subnet.estatus, Subnet.STATUS_DELETED)

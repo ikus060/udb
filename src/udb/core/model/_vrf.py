@@ -53,12 +53,12 @@ Index(
     'vrf_name_unique_ix',
     Vrf.name,
     unique=True,
-    sqlite_where=Vrf.estatus == Vrf.STATUS_ENABLED,
-    postgresql_where=Vrf.estatus == Vrf.STATUS_ENABLED,
+    sqlite_where=Vrf.estatus != Vrf.STATUS_DELETED,
+    postgresql_where=Vrf.estatus != Vrf.STATUS_DELETED,
     info={
-        'description': _('A Vrf aready exist with the same name.'),
+        'description': _('A Vrf already exists with the same name.'),
         'field': 'name',
-        'related': lambda obj: Vrf.query.filter(Vrf.estatus == Vrf.STATUS_ENABLED, Vrf.name == obj.name).first(),
+        'related': lambda obj: Vrf.query.filter(Vrf.estatus != Vrf.STATUS_DELETED, Vrf.name == obj.name).first(),
     },
 )
 

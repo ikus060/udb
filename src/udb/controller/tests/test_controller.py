@@ -16,7 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from udb.controller import url_for
+from parameterized import parameterized
+
+from udb.controller import _find_constraint, url_for
 from udb.controller.tests import WebCase
 from udb.core.model import DnsZone
 
@@ -68,3 +70,42 @@ class TestController(WebCase):
     def test_with_forwarded_host_ignored(self):
         self.getPage('/dashboard/', headers=[('X-Forwarded-Host', 'https://www.example.test')])
         self.assertNotInBody('https://www.example.test/')
+
+    @parameterized.expand(
+        [
+            # Postgresql: Foreign constraint
+            (
+                "dnsrecord_dnszone_subnet_fk",
+                'update or delete on table "dnszone_subnet" violates foreign key constraint "dnsrecord_dnszone_subnet_fk" on table "dnsrecord"',
+            ),
+            # Postgresql: UNIQUE constraint
+            (
+                "user_username_unique_ix",
+                'duplicate key value violates unique constraint "user_username_unique_ix"',
+            ),
+            # Postgresql: CHECK constraint
+            (
+                "dnsrecord_types_ck",
+                'violates check constraint "dnsrecord_types_ck"',
+            ),
+            # SQLite: UNIQUE constraint
+            (
+                "user_username_unique_ix",
+                "UNIQUE constraint failed: index 'user_username_unique_ix'",
+            ),
+            # SQLite: UNIQUE constrain
+            ("dhcprecord_mac_unique_ix", "UNIQUE constraint failed: dhcprecord.mac"),
+            # SQLite: CHECK constraint
+            ("dnsrecord_types_ck", "SQLite: CHECK constraint failed: dnsrecord_types_ck"),
+        ]
+    )
+    def test_find_constraint(self, expected_rule, error_msg):
+        # Given an error message
+        # When searching for corresponding constraint
+        constraint = _find_constraint(error_msg)
+        # Then constraint is found or not
+        if expected_rule:
+            self.assertIsNotNone(constraint, 'expecting constaint to be found')
+            self.assertEqual(expected_rule, constraint.name)
+        else:
+            self.assertIsNone(constraint, 'not existing a constraint to be found')

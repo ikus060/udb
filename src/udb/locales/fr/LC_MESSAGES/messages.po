@@ -963,7 +963,7 @@ msgid "Cannot find a valid Subnet for this IP."
 msgstr "Impossible de trouver un sous-réseau valide pour cette IP."
 
 #: src/udb/core/model/_dhcprecord.py:262
-msgid "DHCP Reservation is outside of DHCP range or DHCP is disabled."
+msgid "The subnet for this DHCP is currently disabled."
 msgstr "La réservation DHCP est en dehors de la plage DHCP ou DHCP est désactivé."
 
 #: src/udb/core/model/_dhcprecord.py:288
@@ -1100,7 +1100,7 @@ msgid "A user cannot update his own role."
 msgstr "Un utilisateur ne peut pas mettre à jour son propre rôle."
 
 #: src/udb/core/model/_vrf.py:59
-msgid "A Vrf aready exist with the same name."
+msgid "A Vrf already exists with the same name."
 msgstr "Il existe déjà un Vrf portant le même nom."
 
 #: src/udb/templates/dashboard.html:24 src/udb/templates/dashboard.html:27

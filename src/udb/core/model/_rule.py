@@ -18,7 +18,7 @@
 import logging
 
 import cherrypy
-from sqlalchemy import Boolean, Column, SmallInteger, String, event, text
+from sqlalchemy import Boolean, CheckConstraint, Column, SmallInteger, String, event, text
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql import ddl
 
@@ -38,7 +38,7 @@ Base = cherrypy.tools.db.get_base()
 def _list_constraints():
     for table in Base.metadata.tables.values():
         for item in table.constraints:
-            if item.name:
+            if item.name and isinstance(item, CheckConstraint):
                 yield item
 
 
@@ -259,12 +259,13 @@ def create_update_rule(target, conn, **kw):
         if not obj:
             obj = Rule(name=constraint.name)
         try:
+            sql = str(constraint.sqltext.compile(conn.engine, compile_kwargs={"literal_binds": True}))
             # Update database
             obj.description = str(constraint.info.get('description', ''))
             obj.severity = Rule.SEVERITY_ENFORCED
             obj.field = str(constraint.info.get('field', None))
             obj.model_name = constraint.table.name
-            obj.statement = "CHECK CONSTRAINT %s" % constraint.sqltext
+            obj.statement = "CHECK CONSTRAINT %s" % sql
             obj.builtin = True
             obj.type = Rule.TYPE_CHECK
             obj.add().flush()

@@ -186,7 +186,7 @@ def _show_integrity_error(e, form=None, obj=None):
         description = metadata.get('description', description)
         if obj and '{' in description:
             description = description.format(obj=obj)
-        field = metadata.get('field', description)
+        field = metadata.get('field', None)
         related = _fetch_related(metadata.get('related', None), obj)
     else:
         field_match = re.search(r'Key \((.+?)\)', error) or re.search(r'.+\.(.+)', error)
@@ -224,15 +224,18 @@ def _show_error(description, field=None, related=None, level='error', form=None)
     """
 
     # From data collected, create an error message for the user.
+    message = description
+    # Append liste of related records if provided.
     if related:
-        message = Markup('%s <a href="%s">%s</a>') % (
-            description,
-            url_for(related, 'edit'),
+        # Related could be a single object or a list of objects.
+        if not isinstance(related, list):
+            related = [related]
+        for obj in related:
             # From time to time, a record may have no summary. So provide a default value for the label.
-            related.summary or _('Show related record'),
-        )
-    else:
-        message = description
+            message += Markup(' <a href="%s">%s</a>') % (
+                url_for(obj, 'edit'),
+                obj.summary or _('Show related record'),
+            )
 
     if form and field in form:
         # Add message to form if field exists.
@@ -253,17 +256,20 @@ def _find_constraint(error):
     # Extract the constraint name for Postgresql and SQLite
     # Postgresql: duplicate key value violates unique constraint "subnet_name_key"\nDETAIL:  Key (name)=() already exists.\n
     # Postgresql: violates check constraint "dnsrecord_value_domain_name"
+    # Postgresql: foreign key constraint "dnsrecord_dnszone_subnet_fk"
     # SQLite: UNIQUE constrain: subnet.name
     # SQLite: UNIQUE constraint failed: index 'dnszone_name_index'
     # SQLite: CHECK constraint failed: dnsrecord_value_domain_name
     constraint_match = (
         re.search(r'unique constraint "([^"]+)"', error)
         or re.search(r'check constraint "([^"]+)"', error)
-        or re.search(r': (.+\..+)', error)
         or re.search(r"UNIQUE constraint failed: index '([^']+)'", error)
+        or re.search(r"UNIQUE constraint failed: ([^']+)", error)
         or re.search(r"CHECK constraint failed: (.+)", error)
+        or re.search(r'foreign key constraint "([^"]+)"', error)
     )
     if not constraint_match:
+
         return None
     name = constraint_match[1]
 
@@ -298,7 +304,7 @@ def _fetch_related(func, obj):
     try:
         return func(obj)
     except Exception:
-        logger.warning('error retreiving related record', exc_info=1)
+        logger.warning('error retreiving related record(s)', exc_info=1)
         return None
 
 

@@ -140,7 +140,7 @@ class DhcpRecordTest(WebCase):
         self.assertEqual(0, DhcpRecord.query.count())
         # When adding a DnsRecord with invalid ip address
         with self.assertRaises(IntegrityError) as cm:
-            DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+            DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af', vrf=vrf).add().commit()
         self.assertIn('dhcprecord_subnetrange_required_ck', str(cm.exception))
 
     def test_add_with_invalid_mac(self):
@@ -190,7 +190,7 @@ class DhcpRecordTest(WebCase):
         self.assertEqual(DhcpRecord.STATUS_DELETED, record.estatus)
 
     def test_update_parent_subnet_range(self):
-        # Given a database with a Subnet and a DnsRecord
+        # Given a database with a Subnet and a DHCP Record
         vrf = Vrf(name='default').add()
         subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf).add().commit()
         DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
@@ -200,3 +200,77 @@ class DhcpRecordTest(WebCase):
             subnet.subnet_ranges[0].range = '192.0.10.0/24'
             subnet.commit()
         self.assertIn('dhcprecord_subnetrange_required_ck', str(cm.exception))
+
+    def test_update_parent_subnet_vrf(self):
+        # Given a database with a Subnet and a DHCP Record
+        vrf = Vrf(name='default').add()
+        new_vrf = Vrf(name='new').add()
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf).add().commit()
+        DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+        # When updating the vrf of the subnet
+        # Then an exception is raised
+        with self.assertRaises(IntegrityError) as cm:
+            subnet.vrf = new_vrf
+            subnet.add().commit()
+        is_sqlite = 'sqlite' in str(self.session.bind)
+        if is_sqlite:
+            # SQLite doesn't return the name of the constraint.
+            self.assertIn('FOREIGN KEY constraint failed', str(cm.exception))
+        else:
+            self.assertIn('dhcprecord_ip_fk', str(cm.exception))
+
+    def test_deleted_record(self):
+        # Given a DHCP Record
+        vrf = Vrf(name='default').add()
+        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf).add().commit()
+        dhcp = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+        # When deleting the record.
+        dhcp.status = DhcpRecord.STATUS_DELETED
+        dhcp.add().commit()
+        # It get detached from parent.
+        self.assertIsNone(dhcp._subnetrange)
+        self.assertIsNone(dhcp.subnetrange_id)
+        self.assertIsNone(dhcp.subnet_id)
+        self.assertIsNone(dhcp.subnet_estatus)
+        self.assertIsNone(dhcp.subnetrange_range)
+        # Then record is still attached to IP
+        self.assertIsNotNone(dhcp.vrf)
+        self.assertIsNotNone(dhcp.vrf_id)
+        self.assertIsNotNone(dhcp._ip)
+        # Then parent could be edited without error.
+        subnet.subnet_ranges = [SubnetRange('10.255.0.0/24')]
+        subnet.add().commit()
+
+    def test_add_with_disabled_parents(self):
+        vrf = Vrf(name='default').add()
+        # Given a disabled Subnet
+        subnet = (
+            Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf, status=Subnet.STATUS_DISABLED).add().commit()
+        )
+        # When creating a DhcpRecord with those parent
+        dhcp = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+        # Then the record get created with disabled status.
+        self.assertEqual(dhcp.estatus, dhcp.STATUS_DISABLED)
+        self.assertIsNotNone(dhcp._subnetrange)
+        self.assertIsNotNone(dhcp.subnet_id, subnet.id)
+
+    def test_add_with_deleted_parents(self):
+        vrf = Vrf(name='default').add()
+        # Given a deleted Subnet
+        Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf, status=Subnet.STATUS_DELETED).add().commit()
+        # When creating a DhcpRecord with those parent
+        # Then an error is raised
+        with self.assertRaises(IntegrityError):
+            DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+
+    def test_dhcprecord_reassign_subnetrange(self):
+        # Given a DHCP Record assign to a subnet
+        vrf = Vrf(name='default').add()
+        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/16')], vrf=vrf).add().flush()
+        dhcp = DhcpRecord(ip='192.168.2.23', mac='00:00:5e:00:53:af').add().commit()
+        # When creating a new Subnet
+        subnet2 = Subnet(subnet_ranges=[SubnetRange('192.168.2.0/24')], vrf=vrf).add().commit()
+        # Then DHCP Record get reassigned
+        dhcp.expire()
+        self.assertEqual(dhcp.subnet_id, subnet2.id)
+        self.assertEqual(dhcp.subnetrange_range, '192.168.2.0/24')

@@ -175,8 +175,8 @@ class DnsZoneTest(WebCase):
         zone = DnsZone(name='bfh.ch', subnets=[subnet]).add().commit()
         # When querying the list of subnets within a zone
         subnets = zone.subnets
-        # Then the list doesn't include the deleted subnet
-        self.assertEqual([], subnets)
+        # Then the list include the deleted subnet
+        self.assertEqual([subnet], subnets)
 
     def test_get_messages(self):
         # Given a database with an existing record
