@@ -654,7 +654,7 @@ def dnsrecord_assign_subnetrange(session, flush_context, instances):
                 from ._ip import Ip
 
                 obj._ip  # Fetch record for history tracking
-                obj._ip = Ip.unique_ip(session, obj.ip_value, obj.vrf.id)
+                obj._ip = Ip.unique_ip(session, obj.ip_value, obj.vrf)
             else:
                 obj._ip = None
 
