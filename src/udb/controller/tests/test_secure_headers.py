@@ -25,7 +25,7 @@ class SecureHeadersTest(WebCase):
     login = True
 
     def test_cookie_samesite_lax(self):
-        # Given a request made to rdiffweb
+        # Given a request made to udb
         # When receiving the response
         self.getPage('/dashboard/')
         # Then the header contains Set-Cookie with SameSite=Lax
@@ -41,7 +41,7 @@ class SecureHeadersTest(WebCase):
         self.assertNoHeader('Set-Cookie')
 
     def test_cookie_with_https(self):
-        # Given an https request made to rdiffweb
+        # Given an https request made to udb
         self.getPage('/dashboard/', headers=[('X-Forwarded-Proto', 'https')])
         # When receiving the response
         self.assertStatus(200)
@@ -58,7 +58,7 @@ class SecureHeadersTest(WebCase):
         ]
     )
     def test_cookie_with_https_http_error(self, url, expected_error_code):
-        # Given an https request made to rdiffweb
+        # Given an https request made to udb
         self.getPage(url, headers=[('X-Forwarded-Proto', 'https')])
         # When receiving the response
         self.assertStatus(expected_error_code)
@@ -67,7 +67,7 @@ class SecureHeadersTest(WebCase):
         self.assertIn('Secure', cookie)
 
     def test_cookie_with_http(self):
-        # Given an https request made to rdiffweb
+        # Given an https request made to udb
         self.getPage('/dashboard/')
         # When receiving the response
         self.assertStatus(200)
@@ -76,14 +76,14 @@ class SecureHeadersTest(WebCase):
         self.assertNotIn('Secure', cookie)
 
     def test_get_with_wrong_origin(self):
-        # Given a GET request made to rdiffweb
+        # Given a GET request made to udb
         # When the request is made using a different origin
         self.getPage('/dashboard/', headers=[('Origin', 'http://www.examples.com')])
         # Then the response status it 200 OK.
         self.assertStatus(200)
 
     def test_post_with_wrong_origin(self):
-        # Given a POST request made to rdiffweb
+        # Given a POST request made to udb
         # When the request is made using a different origin
         self.getPage('/dashboard/', headers=[('Origin', 'http://www.examples.com')], method='POST')
         # Then the request is refused with 403 Forbiden
@@ -91,7 +91,7 @@ class SecureHeadersTest(WebCase):
         self.assertInBody('Unexpected Origin header')
 
     def test_post_with_prefixed_origin(self):
-        # Given a POST request made to rdiffweb
+        # Given a POST request made to udb
         # When the request is made using a different origin
         base = 'http://%s:%s' % (self.HOST + 'anything.com', self.PORT)
         self.getPage('/dashboard/', headers=[('Origin', base)], method='POST')
@@ -100,7 +100,7 @@ class SecureHeadersTest(WebCase):
         self.assertInBody('Unexpected Origin header')
 
     def test_post_with_valid_origin(self):
-        # Given a POST request made to rdiffweb
+        # Given a POST request made to udb
         # When the request is made using a different origin
         base = 'http://%s:%s' % (self.HOST, self.PORT)
         self.getPage('/dashboard/', headers=[('Origin', base)], method='POST')
@@ -108,14 +108,14 @@ class SecureHeadersTest(WebCase):
         self.assertStatus(200)
 
     def test_post_without_origin(self):
-        # Given a POST request made to rdiffweb
+        # Given a POST request made to udb
         # When the request is made without an origin
         self.getPage('/dashboard/', method='POST')
         # Then the request is accepted with 200 OK
         self.assertStatus(200)
 
     def test_clickjacking_defense(self):
-        # Given a POST request made to rdiffweb
+        # Given a POST request made to udb
         # When the request is made without an origin
         self.getPage('/dashboard/')
         # Then the request is accepted with 200 OK
@@ -123,7 +123,7 @@ class SecureHeadersTest(WebCase):
         self.assertHeaderItemValue('X-Frame-Options', 'DENY')
 
     def test_no_cache(self):
-        # Given a POST request made to rdiffweb
+        # Given a POST request made to udb
         # When the request is made without an origin
         self.getPage('/dashboard/')
         # Then the request is accepted with 200 OK
@@ -136,7 +136,7 @@ class SecureHeadersTest(WebCase):
         self.assertHeaderItemValue('Expires', '0')
 
     def test_no_cache_with_static(self):
-        # Given a POST request made to rdiffweb
+        # Given a POST request made to udb
         # When the request is made without an origin
         self.getPage('/static/main.css')
         # Then the request is accepted with 200 OK
@@ -146,7 +146,7 @@ class SecureHeadersTest(WebCase):
         self.assertNoHeader('Expires')
 
     def test_referrer_policy(self):
-        # Given a POST request made to rdiffweb
+        # Given a POST request made to udb
         # When the request is made without an origin
         self.getPage('/dashboard/')
         # Then the request is accepted with 200 OK
@@ -154,7 +154,7 @@ class SecureHeadersTest(WebCase):
         self.assertHeaderItemValue('Referrer-Policy', 'same-origin')
 
     def test_nosniff(self):
-        # Given a POST request made to rdiffweb
+        # Given a POST request made to udb
         # When the request is made without an origin
         self.getPage('/dashboard/')
         # Then the request is accepted with 200 OK
@@ -162,7 +162,7 @@ class SecureHeadersTest(WebCase):
         self.assertHeaderItemValue('X-Content-Type-Options', 'nosniff')
 
     def test_xss_protection(self):
-        # Given a POST request made to rdiffweb
+        # Given a POST request made to udb
         # When the request is made without an origin
         self.getPage('/dashboard/')
         # Then the request is accepted with 200 OK
@@ -170,7 +170,7 @@ class SecureHeadersTest(WebCase):
         self.assertHeaderItemValue('X-XSS-Protection', '1; mode=block')
 
     def test_content_security_policy(self):
-        # Given a POST request made to rdiffweb
+        # Given a POST request made to udb
         # When the request is made without an origin
         self.getPage('/dashboard/')
         # Then the request is accepted with 200 OK
@@ -181,7 +181,7 @@ class SecureHeadersTest(WebCase):
         )
 
     def test_strict_transport_security(self):
-        # Given a POST request made to rdiffweb
+        # Given a POST request made to udb
         # When the request is made without an origin
         self.getPage('/dashboard/', headers=[('X-Forwarded-Proto', 'https')])
         # Then the request is accepted with 200 OK
