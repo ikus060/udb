@@ -44,4 +44,4 @@ def get_currentuser(userobj, session_key=SESSION_KEY):
         cherrypy.serving.request.currentuser = currentuser
 
 
-cherrypy.tools.currentuser = cherrypy.Tool('before_handler', get_currentuser, priority=73)
+cherrypy.tools.currentuser = cherrypy.Tool('before_handler', get_currentuser, priority=72)
