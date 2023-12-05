@@ -65,13 +65,14 @@ Session = cherrypy.tools.db.get_session()
 
 def _collapse_subnet_ranges(obj):
     """
-    Collapse the list of subnet range return by the query.
+    Collect list of available subnetrange that could be used for the dns record.
     """
     if not obj:
         return None
 
+    # Collect list of subnet range (separated by comma) matching the dnsrecord zone name
     a1 = aliased(DnsZone)
-    ranges = (
+    ranges_subquery = (
         SubnetRange.query.with_entities(func.group_concat(SubnetRange.range.text()))
         .join(SubnetRange.parent)
         .join(Subnet.dnszones)
@@ -82,19 +83,20 @@ def _collapse_subnet_ranges(obj):
         )
         .scalar_subquery()
     )
-    zone = (
+    row = (
         a1.query.with_entities(
             a1.id.label('model_id'),
             literal(a1.__tablename__).label('model_name'),
-            func.coalesce(ranges, a1.summary).label('summary'),
+            a1.summary,
+            func.coalesce(ranges_subquery, a1.summary).label('ranges'),
         )
         .filter(a1.estatus != DnsZone.STATUS_DELETED, _match_zone(literal(obj.name), a1.name))
         .first()
     )
-    if zone is None:
+    if row is None:
         return None
     # Get list of range
-    ranges = zone.summary.split(',')
+    ranges = row.ranges.split(',')
     try:
         # Convert string to ip_network objects
         ranges = [ipaddress.ip_network(r) for r in ranges]
@@ -103,13 +105,13 @@ def _collapse_subnet_ranges(obj):
         # Replace original summary by our combined range
         new_obj = namedtuple('Row', ['model_id', 'model_name', 'summary'])
         return new_obj(
-            zone.model_id,
-            zone.model_name,
-            ', '.join(map(str, combined_ranges)),
+            row.model_id,
+            row.model_name,
+            row.summary + ' ' + ', '.join(map(str, combined_ranges)),
         )
     except ValueError:
         # Return original zone object if summary is not a subnet ranges.
-        return zone
+        return row
 
 
 def _sqlite_split_part(string, delimiter, position):
@@ -654,7 +656,7 @@ def dnsrecord_assign_subnetrange(session, flush_context, instances):
                 from ._ip import Ip
 
                 obj._ip  # Fetch record for history tracking
-                obj._ip = Ip.unique_ip(session, obj.ip_value, obj.vrf.id)
+                obj._ip = Ip.unique_ip(session, obj.ip_value, obj.vrf)
             else:
                 obj._ip = None
 

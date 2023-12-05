@@ -76,7 +76,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
             'The IP address 192.168.15.101 is not allowed in the DNS zone example.com. Consider modifying the list of authorized subnets for this zone.'
         )
         # Then a link to the zone is provided with subnet name
-        self.assertInBody('<a href="%s">192.168.1.0/24</a>' % url_for(self.zone, 'edit'))
+        self.assertInBody('<a href="%s">example.com 192.168.1.0/24</a>' % url_for(self.zone, 'edit'))
 
     def test_edit_empty_zone(self):
         # Given a zone without any subnet

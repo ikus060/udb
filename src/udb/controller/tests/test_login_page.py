@@ -189,7 +189,7 @@ class TestLogin(WebCase):
     def test_logout(self):
         # Given an unauthenticated user.
         # When trying to access the logout page.
-        self.getPage("/logout")
+        self.getPage("/logout", method="POST")
         # Then user is redirect to login page
         self.assertStatus('303 See Other')
         self.assertHeaderItemValue('Location', self.baseurl + '/')
@@ -200,7 +200,7 @@ class TestLogin(WebCase):
         self.getPage("/dashboard/")
         self.assertStatus('200 OK')
         # When trying to access the logout page.
-        self.getPage("/logout")
+        self.getPage("/logout", method="POST")
         # Then user is redirect to login page
         self.assertStatus('303 See Other')
         self.assertHeaderItemValue('Location', self.baseurl + '/')

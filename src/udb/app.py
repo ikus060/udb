@@ -157,8 +157,14 @@ class Root(object):
                 'tools.db.uri': cfg.database_uri,
                 'tools.db.debug': cfg.debug,
                 # Configure session storage
+                'tools.sessions.debug': cfg.debug,
                 'tools.sessions.storage_class': session_storage_class,
                 'tools.sessions.storage_path': cfg.session_dir,
+                'tools.sessions.httponly': True,
+                'tools.sessions.timeout': cfg.session_idle_timeout,  # minutes
+                'tools.sessions.persistent': False,  # auth_form should update this.
+                'tools.auth_form.persistent_timeout': cfg.session_persistent_timeout,  # minutes
+                'tools.auth_form.absolute_timeout': cfg.session_absolute_timeout,  # minutes
                 # Configure rate limit
                 'tools.ratelimit.debug': cfg.debug,
                 'tools.ratelimit.limit': cfg.rate_limit,

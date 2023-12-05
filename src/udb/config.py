@@ -92,10 +92,13 @@ def parse_args(args=None, config_file_contents=None):
     parser.add_argument('-f', '--config', is_config_file=True, help=_('configuration file path'))
     parser.add_argument('-v', '--version', action='version', version='udb ' + __version__)
     parser.add_argument(
-        '--server-host', metavar='IP', help=_('Define the IP address to listen to.'), default='127.0.0.1'
+        '--server-host',
+        metavar='IP',
+        help=_('Define the IP address to listen to. Default: 127.0.0.1'),
+        default='127.0.0.1',
     )
     parser.add_argument(
-        '--server-port', metavar='PORT', help=_('Define the port to listen to.'), default='8080', type=int
+        '--server-port', metavar='PORT', help=_('Define the port to listen to. Default: 8080'), default='8080', type=int
     )
     parser.add(
         '--external-url',
@@ -113,15 +116,6 @@ def parse_args(args=None, config_file_contents=None):
         choices=['ERROR', 'WARN', 'INFO', 'DEBUG'],
         default='INFO',
     )
-    parser.add(
-        '--session-dir',
-        '--sessiondir',
-        '--rate-limit-dir',
-        metavar='FOLDER',
-        help=_(
-            'location where to store user session information and rate-limit information. When undefined, the data are kept in memory.'
-        ),
-    )
 
     parser.add_argument(
         '--default-lang',
@@ -135,13 +129,44 @@ def parse_args(args=None, config_file_contents=None):
     )
 
     parser.add(
+        '--session-dir',
+        '--sessiondir',
+        '--rate-limit-dir',
+        metavar='FOLDER',
+        help=_(
+            'location where to store user session information and rate-limit information. When undefined, the data are kept in memory.'
+        ),
+    )
+
+    parser.add(
         '--rate-limit',
         metavar='LIMIT',
         type=int,
         default=20,
         help=_(
-            'maximum number of requests per hours that can be made on sensitive endpoint. When this limit is reached, an HTTP 429 message is returned to the user or user get logged out. This security measure is used to limit brute force attacks on the login page and the RESTful API.'
+            'maximum number of requests per hours that can be made on sensitive endpoint. When this limit is reached, an HTTP 429 message is returned to the user or user get logged out. This security measure is used to limit brute force attacks on the login page and the RESTful API. Default: 20'
         ),
+    )
+
+    parser.add(
+        '--session-idle-timeout',
+        metavar='MINUTES',
+        help='This timeout defines the amount of time a session will remain active in case there is no activity in the session. User Session will be revoke after this period of inactivity, unless the user selected "remember me". Default 5 minutes.',
+        default=10,
+    )
+
+    parser.add(
+        '--session-absolute-timeout',
+        metavar='MINUTES',
+        help='This timeout defines the maximum amount of time a session can be active. After this period, user is forced to (re)authenticate, unless the user selected "remember me". Default 20 minutes.',
+        default=30,
+    )
+
+    parser.add(
+        '--session-persistent-timeout',
+        metavar='MINUTES',
+        help='This timeout defines the maximum amount of time to remember and trust a user device. This timeout is used when user select "remember me". Default 30 days.',
+        default=43200,
     )
 
     # Database

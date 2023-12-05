@@ -1,15 +1,17 @@
+image: python:3.11
+
 variables:
   CONTAINER_IMAGE: ${CI_PROJECT_PATH}:${CI_COMMIT_SHORT_SHA}
 
 stages:
   - test
   - package
+  - doc
   - test-package
   - upload
   - deploy
 
 .tox: &tox
-  image: python:3.11
   script:
     - pip install tox
     - tox -e ${TOXENV:-$CI_JOB_NAME}
@@ -71,6 +73,16 @@ sonar:
   stage: test
   variables:
     SONAR_PROJECT_BASE_DIR: "${CI_PROJECT_DIR}"
+
+doc:
+  <<: *tox
+  stage: doc
+  needs: []
+  dependencies: []
+  artifacts:
+    paths:
+      - .tox/doc/tmp/html
+    expire_in: 1 day
 
 bdist:deb:
   stage: package
@@ -142,6 +154,22 @@ upload:deb:
     sleep 2
     curl --fail ${APT_URL}/dists/$DIST/main/binary-all/Packages | grep "$(basename $FILE)"
   stage: upload
+
+upload:doc:
+  stage: upload
+  only:
+    variables:
+      - $NEXUS_USR
+      - $NEXUS_PWD
+      - $NEXUS_URL
+  needs:
+    - doc
+  script:
+    - pip install setuptools-scm
+    - export VERSION=$(python -m setuptools_scm)
+    - cd .tox/doc/tmp/html
+    # publish to nexus
+    - find * -type f -exec curl --fail -u "$NEXUS_USR:$NEXUS_PWD" --upload-file "{}" $NEXUS_URL/repository/archive/udb/$VERSION/doc/{} \;
 
 deploy:dev:
   allow_failure: True

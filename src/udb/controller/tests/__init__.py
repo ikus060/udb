@@ -249,6 +249,7 @@ class WebCase(BaseClass):
         if user:
             user.commit()
         # Authenticate
+        self.getPage("/logout", method="POST")
         self.getPage("/login/", method='POST', body={'username': username, 'password': password, 'redirect': redirect})
         self.assertStatus('303 See Other')
 

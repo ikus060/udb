@@ -83,6 +83,9 @@ class IpTest(WebCase):
         self.assertEqual(objs[1].ip, '192.0.2.23')
         self.assertEqual(objs[2].ip, '192.0.2.24')
         self.assertEqual(objs[3].ip, '192.0.2.25')
+        # Then IP record history hold changes for 'vrf' instead of 'vrf_id'
+        self.assertIn('vrf', objs[0].messages[0].changes)
+        self.assertNotIn('vrf_id', objs[0].messages[0].changes)
 
     def test_ip_with_dhcp_deleted_status(self):
         # Given valid DnsZone with subnet
@@ -437,7 +440,7 @@ class IpTest(WebCase):
             {
                 'ip': [None, '192.0.2.24'],
                 'related_dhcp_records': [[], ['192.0.2.24 (00:00:5e:00:53:bf)']],
-                'vrf_id': [None, 1],
+                'vrf': [None, 'default'],
             },
             new_ip.messages[-1].changes,
         )
@@ -470,7 +473,7 @@ class IpTest(WebCase):
             {
                 'ip': [None, '192.0.2.24'],
                 'related_dns_records': [[], ['bar.example.com = 192.0.2.24 (A)']],
-                'vrf_id': [None, 1],
+                'vrf': [None, 'default'],
             },
             new_ip.messages[-1].changes,
         )

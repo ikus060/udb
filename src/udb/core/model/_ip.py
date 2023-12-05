@@ -52,11 +52,11 @@ class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, 
         return cls.ip.host() + " " + cls.notes
 
     @classmethod
-    def unique_ip(cls, session, ip_value, vrf_id):
+    def unique_ip(cls, session, ip_value, vrf):
         """
         Using a session cache, make sure to return unique IP object.
         """
-        assert ip_value and vrf_id
+        assert ip_value and vrf
         cache = getattr(session, '_unique_ip_cache', None)
         if cache is None:
             session._unique_ip_cache = cache = {}
@@ -65,9 +65,9 @@ class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, 
             return cache[ip_value]
         else:
             with session.no_autoflush:
-                obj = session.query(Ip).filter_by(ip=ip_value, vrf_id=vrf_id).first()
+                obj = session.query(Ip).filter_by(ip=ip_value, vrf_id=vrf.id).first()
                 if not obj:
-                    obj = Ip(ip=ip_value, vrf_id=vrf_id)
+                    obj = Ip(ip=ip_value, vrf=vrf)
                     session.add(obj)
             cache[ip_value] = obj
             return obj

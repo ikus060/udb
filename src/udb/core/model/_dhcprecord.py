@@ -248,7 +248,7 @@ def dhcprecord_assign_subnetrange(session, flush_context, instances):
             # Update relation to IP when vrf_id or ip get updated
             if obj.attr_has_changes('vrf', 'ip') and obj.ip is not None and obj.vrf is not None:
                 obj._ip  # Fetch record for history tracking
-                obj._ip = Ip.unique_ip(session, obj.ip, obj.vrf.id)
+                obj._ip = Ip.unique_ip(session, obj.ip, obj.vrf)
             if obj.attr_has_changes('mac'):
                 obj._mac  # Fetch record for history tracking
                 obj._mac = Mac.unique_mac(session, obj.mac)
