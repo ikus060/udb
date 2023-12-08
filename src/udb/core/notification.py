@@ -102,7 +102,7 @@ class NotifiationPlugin(SimplePlugin):
 
             # For each recipients send the messages
             for recipient, messages in final_recipients.items():
-                self._send_notification(messages, recipient)
+                self.send_mail(recipient, 'email_notification.html', header_name=self.header_name, messages=messages)
 
             # Update the "sent" flag
             for message in all_messages:
@@ -142,7 +142,7 @@ class NotifiationPlugin(SimplePlugin):
         # Changes made to user object should always be send to the user it-self.
         if (
             message.model_name == User.__tablename__
-            and any(attr in message.changes for attr in ['status', 'password', 'email', 'role'])
+            and any(attr in message.changes for attr in ['status', 'password', 'email', 'role', 'mfa'])
             and message.user_object
             and message.user_object.email
         ):
@@ -157,25 +157,31 @@ class NotifiationPlugin(SimplePlugin):
             bcc += [Recipient(self.catch_all_email, None, None)]
         return bcc
 
-    def _send_notification(self, messages, recipient):
-        assert recipient
+    def send_mail(self, user_recipient, template, queue=False, **kwargs):
+        assert (
+            user_recipient
+            and hasattr(user_recipient, 'lang')
+            and hasattr(user_recipient, 'timezone')
+            and hasattr(user_recipient, 'email')
+        )
         # Get jinja2 template to generate email body
-        template = self.env.get_template('mail/notification.html')
-        values = {
-            'header_name': self.header_name,
-            'messages': messages,
-        }
+        tmpl = self.env.get_template(template)
         # Renger message using user lang and timezone
-        with preferred_lang(recipient.lang):
-            with preferred_timezone(recipient.timezone):
-                message_body = template.render(**values)
+        with preferred_lang(user_recipient.lang):
+            with preferred_timezone(user_recipient.timezone):
+                message_body = tmpl.render(**kwargs)
         # Extract title and use it as subject
         m = re.search(r'<title>(.*)</title>', message_body, re.DOTALL)
         if m:
             subject = m.group(1).replace('\n', '').strip()
         else:
             subject = _('Notification')
-        self.bus.publish('send_mail', to=recipient.email, subject=subject, message=message_body)
+        self.bus.publish(
+            'queue_mail' if queue else 'send_mail', to=user_recipient.email, subject=subject, message=message_body
+        )
+
+    def queue_mail(self, *args, **kwargs):
+        return self.send_mail(*args, queue=True, **kwargs)
 
 
 cherrypy.notification = NotifiationPlugin(cherrypy.engine)

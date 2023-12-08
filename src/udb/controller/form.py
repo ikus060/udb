@@ -18,10 +18,8 @@
 
 import cherrypy
 from markupsafe import Markup
-from wtforms.fields import Field, SelectField, SelectMultipleField, StringField
+from wtforms.fields import SelectField, SelectMultipleField
 from wtforms.form import Form
-from wtforms.validators import StopValidation, ValidationError
-from wtforms.widgets import TextInput
 
 from udb.tools.i18n import gettext as _
 
@@ -296,66 +294,3 @@ class SelectObjectField(SelectField):
             assert hasattr(self.object_query, '__call__'), "object_query should be callable"
             q = self.object_query()
         return q
-
-
-class StringFieldSetWidget(JinjaWidget):
-    filename = 'widgets/StringFieldSetWidget.html'
-
-
-class StringFieldSet(Field):
-
-    widget = StringFieldSetWidget()
-
-    inner_widget = TextInput()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, default=[], **kwargs)
-
-    def process_formdata(self, valuelist):
-        if valuelist:
-            self.data = [v for v in set(valuelist) if v.strip()]
-
-    def _run_validation_chain(self, form, validators):
-        """
-        Run a validation chain, stopping if any validator raises StopValidation.
-
-        :param form: The Form instance this field belongs to.
-        :param validators: a sequence or iterable of validator callables.
-        :return: True if validation was stopped, False otherwise.
-        """
-        f = StringField()
-        for value in self.data:
-            f.data = value
-            for validator in validators:
-                try:
-                    validator(form, f)
-                except StopValidation as e:
-                    if e.args and e.args[0]:
-                        self.errors.append(e.args[0])
-                    return True
-                except ValidationError as e:
-                    self.errors.append(e.args[0])
-        return False
-
-    def populate_obj(self, obj, name):
-        proxy = getattr(obj, name)
-        if hasattr(proxy, 'append'):
-            for value in list(proxy):
-                if value not in self.data:
-                    proxy.remove(value)
-            for value in self.data:
-                if value not in proxy:
-                    proxy.append(value)
-        else:
-            setattr(obj, name, self.data)
-
-
-class Strip:
-    """
-    Field filter to remove leading or ending spaces.
-    """
-
-    def __call__(self, value):
-        if not value:
-            return value
-        return str(value).strip()

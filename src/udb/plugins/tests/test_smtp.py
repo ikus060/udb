@@ -78,8 +78,8 @@ class SmtpPluginTest(helper.CPWebCase):
         html = """<html>
   <head></head>
   <body>
-    <p>Hi!<br>
-       How are you?<br>
+    <p>Hi!<br />
+       How are you?<br />
        Here is the <a href="https://www.python.org">link</a> you wanted.
     </p>
   </body>
@@ -88,7 +88,11 @@ class SmtpPluginTest(helper.CPWebCase):
 
         expected = """Hi!
 How are you?
-Here is the link you wanted."""
+Here is the link [1] you wanted.
+
+
+
+[1] https://www.python.org"""
         self.assertEqual(expected, smtp._html2plaintext(html))
 
     def test_formataddr(self):

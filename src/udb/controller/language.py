@@ -21,6 +21,7 @@ from udb.tools.i18n import preferred_lang
 
 
 @cherrypy.tools.auth_form(on=False)
+@cherrypy.tools.auth_mfa(on=False)
 @cherrypy.tools.currentuser(on=False)
 @cherrypy.tools.db(on=False)
 @cherrypy.tools.i18n(on=False)
@@ -48,7 +49,10 @@ class Language:
                     "hours": _('%d hours ago'),
                     "minutes": _('%d minutes ago'),
                     "seconds": _('%d seconds ago'),
-                    "status": {"deleted": _('Deleted'), "disabled": _('Disabled')},
+                    "status": {
+                        "deleted": _('Deleted'),
+                        "disabled": _('Disabled'),
+                    },
                     "value": {
                         "type": {
                             "new": _('Created by'),
@@ -63,6 +67,10 @@ class Language:
                         "severity": {
                             "0": _("No"),
                             "1": _("Yes"),
+                        },
+                        "mfa": {
+                            "0": _("Disabled"),
+                            "1": _("Enabled"),
                         },
                     },
                     "field": {
@@ -97,6 +105,7 @@ class Language:
                         "email": _("Email"),
                         "lang": _("Preferred Language"),
                         "timezone": _("Preferred Time zone"),
+                        "mfa": _("Two-Factor authentication"),
                     },
                 },
                 "info": _('Showing total of _TOTAL_'),

@@ -31,12 +31,16 @@ from udb.tools.i18n import gettext_lazy as _
 from ._json import JsonMixin
 from ._message import MessageMixin
 from ._status import StatusMixing
+from ._update import column_add, column_exists
 
 Base = cherrypy.tools.db.get_base()
 
 
 class User(JsonMixin, StatusMixing, MessageMixin, Base):
     __tablename__ = 'user'
+
+    MFA_DISABLED = 0
+    MFA_ENABLED = 1
 
     # Define permissions.
     PERM_USER_MGMT = 1
@@ -72,6 +76,7 @@ class User(JsonMixin, StatusMixing, MessageMixin, Base):
     role = Column(String, nullable=False, default='guest')
     lang = Column(String, nullable=False, default='')
     timezone = Column(String, nullable=False, default='', server_default='')
+    mfa = Column(Integer, nullable=False, default=MFA_DISABLED, server_default=str(MFA_DISABLED))
 
     @classmethod
     def create_default_admin(cls, default_username, default_password):
@@ -192,3 +197,9 @@ def user_before_update(mapper, connection, instance):
         # Raise exception when current user try to updated it's own role
         if state.attrs['role'].history.has_changes():
             raise ValueError('role', _('A user cannot update his own role.'))
+
+
+@event.listens_for(Base.metadata, 'after_create')
+def create_mfa_field(target, conn, **kw):
+    if not column_exists(conn, User.mfa):
+        column_add(conn, User.mfa)

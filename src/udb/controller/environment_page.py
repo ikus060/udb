@@ -90,7 +90,7 @@ class DeployForm(CherryForm):
     """
 
     last_change = HiddenField(validators=[DataRequired()])
-    deploy = SubmitField(_('Deploy pending changes'))
+    deploy = SubmitField(_('Deploy pending changes'), render_kw={"class": "btn-secondary"})
 
     def validate_last_change(self, field):
         # On submit, make sure the last_change ID is identical to the default one.

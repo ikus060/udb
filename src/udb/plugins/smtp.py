@@ -28,7 +28,7 @@ from cherrypy.process.plugins import SimplePlugin
 from . import scheduler  # noqa: This plugin required scheduler
 
 
-def _html2plaintext(html, body_id=None, encoding='utf-8'):
+def _html2plaintext(html, encoding='utf-8'):
     """From an HTML text, convert the HTML to plain text.
     If @param body_id is provided then this is the tag where the
     body (not necessarily <body>) starts.
@@ -40,14 +40,7 @@ def _html2plaintext(html, body_id=None, encoding='utf-8'):
     url_index = []
     try:
         tree = fromstring(html)
-
-        if body_id is not None:
-            source = tree.xpath('//*[@id=%s]' % (body_id,))
-        else:
-            source = tree.xpath('//body')
-        if len(source):
-            tree = source[0]
-
+        tree = tree.find('body')
         i = 0
         for link in tree.findall('.//a'):
             url = link.get('href')
@@ -56,8 +49,7 @@ def _html2plaintext(html, body_id=None, encoding='utf-8'):
                 link.tag = 'span'
                 link.text = '%s [%s]' % (link.text, i)
                 url_index.append(url)
-
-        html = tostring(tree, encoding=encoding)
+        html = tostring(tree, encoding=encoding).decode(encoding)
     except Exception:
         # Don't fail if the html is invalid.
         pass

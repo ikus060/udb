@@ -45,8 +45,8 @@ selenium:
     - apt update && apt -y --no-install-recommends install xvfb xauth chromium-driver
   artifacts:
     paths:
-      - coverage.xml
-      - xunit.xml
+      - coverage-selenium.xml
+      - xunit-selenium.xml
 
 bookworm:
   <<: *tox
@@ -68,8 +68,9 @@ sonar:
   image: sonarsource/sonar-scanner-cli
   needs:
     - py3
+    - selenium
   script:
-    - sonar-scanner -X -Dsonar.python.coverage.reportPaths=coverage.xml -Dsonar.python.xunit.reportPaths=xunit.xml -Dsonar.host.url=$SONAR_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=$CI_PROJECT_NAME -Dsonar.projectVersion=$(git describe) -Dsonar.qualitygate.wait=true
+    - sonar-scanner -X -Dsonar.python.coverage.reportPaths=coverage*.xml -Dsonar.python.xunit.reportPaths=xunit*.xml -Dsonar.host.url=$SONAR_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=$CI_PROJECT_NAME -Dsonar.projectVersion=$(git describe) -Dsonar.qualitygate.wait=true
   stage: test
   variables:
     SONAR_PROJECT_BASE_DIR: "${CI_PROJECT_DIR}"

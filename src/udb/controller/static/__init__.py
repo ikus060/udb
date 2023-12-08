@@ -19,6 +19,7 @@ import pkg_resources
 
 
 @cherrypy.tools.auth_form(on=False)
+@cherrypy.tools.auth_mfa(on=False)
 @cherrypy.tools.currentuser(on=False)
 @cherrypy.tools.db(on=False)
 @cherrypy.tools.i18n(on=False)

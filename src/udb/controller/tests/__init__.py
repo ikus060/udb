@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import fnmatch
 import json
 import os
 import shutil
@@ -47,6 +48,22 @@ from udb.core.model import (
 
 BaseClass = cherrypy.test.helper.CPWebCase
 del BaseClass.test_gc
+
+
+class MATCH(object):
+    "A helper object that compares equal using wildcard."
+
+    def __init__(self, pattern):
+        self.pattern = pattern
+
+    def __eq__(self, other):
+        return fnmatch.fnmatch(other, self.pattern)
+
+    def __ne__(self, other):
+        return not fnmatch.fnmatch(other, self.pattern)
+
+    def __repr__(self):
+        return '<MATCH %s>' % self.pattern
 
 
 class WebCase(BaseClass):
@@ -187,13 +204,6 @@ class WebCase(BaseClass):
             line = self.body.splitlines()[row - 1].decode('utf8', errors='replace')
             msg = msg or ('URL %s contains invalid HTML: %s on line %s: %s' % (self.url, e, row, line))
             self.fail(msg)
-
-    @property
-    def app(self):
-        """
-        Return reference to application.
-        """
-        return cherrypy.tree.apps[''].root
 
     @property
     def session(self):

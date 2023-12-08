@@ -282,12 +282,12 @@ $.fn.dataTable.render.changes = function () {
                     for (const [key, values] of Object.entries(data)) {
                         const field_name = safe(api.settings().i18n(`udb.field.${key}`, key));
                         const new_value = safe(api.settings().i18n(`udb.value.${key}.${values[1]}`, `${values[1]}`));
-                        html += '<li><b>' + field_name + '</b>: ' + new_value + ' </li>';
+                        html += '<li><strong>' + field_name + '</strong>: ' + new_value + ' </li>';
                     }
                 } else {
                     for (const [key, values] of Object.entries(data)) {
                         const field_name = safe(api.settings().i18n(`udb.field.${key}`, key));
-                        html += '<li><b>' + field_name + '</b>: '
+                        html += '<li><strong>' + field_name + '</strong>: '
                         if (Array.isArray(values[0])) {
                             for (const deleted of values[0]) {
                                 html += '<br/> - ' + safe(deleted);

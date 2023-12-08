@@ -34,3 +34,63 @@
   {%- endif -%}
   {{ display_name_table.get(model_name, model_name) }}
 {%- endmacro -%}
+{% macro show_field(key) %}
+  {%- set display_name_field = {
+    "status": _("Status"),
+    "vrf": _("VRF"),
+    "owner": _("Owner"),
+    "name": _("Name"),
+    "type": _("Type"),
+    "ttl": _("TTL"),
+    "value": _("Value"),
+    "notes": _("Notes"),
+    "subnet_ranges": _("IP Ranges"),
+    "l3vni": _("L3VNI"),
+    "l2vni": _("L2VNI"),
+    "vlan": _("VLAN"),
+    "rir_status": _("RIR Status"),
+    "dnszones": _("Allowed DNS zone(s)"),
+    "related_dns_records": _("Related DNS Records"),
+    "related_dhcp_records": _("Related DHCP Reservations"),
+    "related_subnets": _("Supernets"),
+    "subnets": _("Allowed subnets"),
+    "ip": _("IP"),
+    "mac": _("MAC"),
+    "statement": _("SQL Statement"),
+    "model_name": _("Data Type"),
+    "builtin": _("Built-in"),
+    "severity": _("Enforced"),
+    "username": _("Username"),
+    "password": _("Password"),
+    "role": _("Role"),
+    "fullname": _("Fullname"),
+    "email": _("Email"),
+    "lang": _("Preferred Language"),
+    "timezone": _("Preferred Time zone"),
+    "mfa": _("Two-Factor authentication")
+    } -%}
+  {{ display_name_field.get(key, key) }}
+{% endmacro %}
+{% macro show_value(key, value) %}
+  {% set display_name_value = {
+      "type": {
+        "new": _('Created by'),
+        "dirty": _('Modified by'),
+        "comment": _('Comment on'),
+      },
+      "status": {
+        "0": _("Deleted"),
+        "1": _("Disabled"),
+        "2": _("Enabled"),
+      },
+      "severity": {
+        "0": _("No"),
+        "1": _("Yes"),
+      },
+      "mfa": {
+        "0": _("Disabled"),
+        "1": _("Enabled"),
+      },
+    } %}
+  {%- if value is none -%}<i>{% trans %}Undefined{% endtrans %}</i>{%- else -%}{{ display_name_value.get(key, {}) .get(value|string, value) }}{%- endif -%}
+{% endmacro %}
