@@ -121,7 +121,9 @@
             <hr class="dropdown-divider">
           </li>
           <li>
-            <a class="dropdown-item" href="{{ url_for("logout") }}">{% trans %}Sign out{% endtrans %}</a>
+            <form action="{{ url_for("logout") }}" method="post">
+              <button type="submit" class="dropdown-item">{% trans %}Sign out{% endtrans %}</button>
+            </form>
           </li>
         </ul>
       </div>

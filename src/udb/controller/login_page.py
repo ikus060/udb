@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
-from wtforms.fields import BooleanField, PasswordField, StringField
+from wtforms.fields import BooleanField, PasswordField, StringField, SubmitField
 from wtforms.fields.simple import HiddenField
 from wtforms.validators import InputRequired, Length, Regexp
 
@@ -27,6 +27,7 @@ from udb.tools.i18n import gettext_lazy as _
 
 
 class LoginForm(CherryForm):
+    redirect = HiddenField(default='/', validators=[Regexp('^/', message=_('invalid redirect url'))])
     username = StringField(
         _('Username'),
         default=lambda: cherrypy.session.get(SESSION_KEY, None),
@@ -47,8 +48,12 @@ class LoginForm(CherryForm):
     persistent = BooleanField(
         _('Remember me'),
         default=lambda: cherrypy.session.get(LOGIN_PERSISTENT, False),
+        render_kw={'width': '1/2'},
     )
-    redirect = HiddenField(default='/', validators=[Regexp('^/', message=_('invalid redirect url'))])
+    submit = SubmitField(
+        _('Sign in'),
+        render_kw={"class": "btn-primary float-end", 'width': '1/2'},
+    )
 
 
 class LoginPage:
@@ -57,6 +62,7 @@ class LoginPage:
     """
 
     @cherrypy.expose
+    @cherrypy.tools.auth_mfa(on=False)
     @cherrypy.tools.jinja2(template='login.html')
     @cherrypy.tools.ratelimit(methods=['POST'])
     def index(self, **kwargs):

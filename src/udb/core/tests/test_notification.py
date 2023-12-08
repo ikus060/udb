@@ -20,7 +20,7 @@ from unittest import mock
 import cherrypy
 from parameterized import parameterized
 
-from udb.controller.tests import WebCase
+from udb.controller.tests import MATCH, WebCase
 from udb.core.model import DnsRecord, DnsZone, Follower, Message, Subnet, SubnetRange, User, Vrf
 
 
@@ -303,11 +303,11 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         vrf.commit()
         # Then wait for task to get processed
         self.wait_for_tasks()
-        # Then the follower get notified.
+        # Then the follower get notified in english
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
             subject='VRF default created by System',
-            message=mock.ANY,
+            message=MATCH('*Name*'),
         )
 
     def test_preferred_lang(self):
@@ -323,7 +323,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         self.listener.send_mail.assert_called_once_with(
             to='follower@test.com',
             subject='VRF default créé par Système',
-            message=mock.ANY,
+            message=MATCH('*Nom*'),
         )
 
     @parameterized.expand(

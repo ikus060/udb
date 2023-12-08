@@ -293,11 +293,7 @@ def gettext_lazy(message):
     :returns: A proxy for the translation object.
     :rtype: LazyProxy
     """
-
-    def func():
-        return get_translation().ugettext(message)
-
-    return LazyProxy(func, enable_cache=False)
+    return LazyProxy(gettext, message, enable_cache=False)
 
 
 def format_datetime(datetime=None, format='medium', tzinfo=None):

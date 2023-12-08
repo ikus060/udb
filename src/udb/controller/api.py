@@ -34,6 +34,7 @@ def checkpassword(realm, username, password):
 @cherrypy.tools.json_in()
 @cherrypy.tools.sessions(on=False)
 @cherrypy.tools.auth_form(on=False)
+@cherrypy.tools.auth_mfa(on=False)
 @cherrypy.tools.ratelimit(scope='udb-api', hit=0, priority=69)
 @cherrypy.tools.auth_basic(on=True, realm='udb-api', checkpassword=checkpassword, priority=70)
 class Api:

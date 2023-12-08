@@ -53,7 +53,7 @@ class NewUserForm(CherryForm):
         ),
     )
 
-    clear_password = SubmitField(_('Clear password'))
+    clear_password = SubmitField(_('Clear password'), render_kw={"class": "btn-secondary"})
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

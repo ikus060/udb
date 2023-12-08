@@ -1,0 +1,83 @@
+{% extends 'email_layout.html' %}
+{% from "macro.html" import show_field, show_value, display_name %}
+{% set msg_type_table = {'new':_('Created by'), 'dirty':_('Modified by'), 'comment':_('Comment by') } %}
+{% macro show_message(message) %}
+  <small>{{ msg_type_table.get(message.type) }} {{ message.author_name }} •
+    <time datetime="{{ message.date }}">
+      {{ message.date|format_datetime(format='full') }}
+    </time>
+  </small>
+  {# Message Comment #}
+  {% if message.body %}<p>{{ message.body }}</p>{% endif %}
+  {% if message.type == 'new' and message.changes %}
+    {# New record created #}
+    <ul class="mb-0">
+      {% for key, values in message.changes.items() -%}
+        <li>
+          <strong>{{ show_field(key) }}</strong>:
+          {% if values[1] is not string and values[1] is sequence %}
+            {% for added in values[1] %}
+              <br />
+              {{ show_value(key, added) }}
+            {% endfor %}
+          {% else %}
+            {{ show_value(key,values[1]) }}
+          {% endif %}
+        </li>
+      {%- endfor %}
+    </ul>
+  {% elif message.type == 'dirty' and message.changes %}
+    {# Existing record Updated #}
+    <ul class="mb-0">
+      {% for key, values in message.changes.items() %}
+        <li>
+          <strong>{{ show_field(key) }}</strong>:
+          {% if values[0] is not string and values[0] is sequence %}
+            {% for deleted in values[0] %}
+              <br />
+              {% trans %}Removed:{% endtrans %} {{ show_value(key,deleted) }}
+            {% endfor %}
+            {% for added in values[1] %}
+              <br />
+              {% trans %}Added:{% endtrans %} {{ show_value(key,added) }}
+            {% endfor %}
+          {% else %}
+            {{ show_value(key,values[0]) }} → {{ show_value(key,values[1]) }}
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endmacro %}
+{% block title %}
+  {%- if messages[0].changes is none -%}
+    {% set model_name = display_name(messages[0].model_name) %}
+    {% set summary = messages[0].model_object.summary %}
+    {% set author_name = messages[0].author_name %}
+    {% trans %}Comment on {{ model_name }} {{ summary }} by {{ author_name }}{% endtrans %}
+  {%- else -%}
+    {%- for msg in messages[:5] %}{{ display_name(msg.model_name) }} {{ msg.model_object.summary }}{{ ", " if not loop.last else " " }}
+    {% endfor -%}
+    {{ _("modified by") if messages[0].type == 'dirty' else _('created by') }} {{ messages[0].author_name }}
+    {%- if messages[5] -%}
+      {{ ' ' }}
+      {%- set change_count = (messages|length) - 5 -%}
+      {%- trans n=change_count %}And {{ n }} more changes{% endtrans -%}
+    {%- endif -%}
+  {%- endif -%}
+{% endblock title %}
+{% block body %}
+  {% for message in messages[:5] %}
+    {% if not loop.first %}<hr />{% endif %}
+    <div class="space-y-3">
+      <h2>{{ display_name(message.model_name) }} {{ message.model_object.summary }}</h2>
+      {{ show_message(message) }}
+    </div>
+    <a href="{{ url_for(message.model_object, 'edit#history') }}">{% trans %}View in browser{% endtrans %}</a>
+  {% endfor %}
+  {% if messages[5] %}
+    <hr />
+    {% set change_count = (messages|length) - 5 %}
+    {% trans n=change_count %}And {{ n }} more changes{% endtrans %}
+  {% endif %}
+{% endblock body %}

@@ -22,6 +22,7 @@ from wtforms.validators import DataRequired, Email, EqualTo, InputRequired, Leng
 
 from udb.controller import flash
 from udb.controller.form import CherryForm
+from udb.controller.profile_mfa_page import ProfileMfaPage
 from udb.tools.i18n import get_timezone_name
 from udb.tools.i18n import gettext_lazy as _
 from udb.tools.i18n import list_available_locales, list_available_timezones
@@ -128,6 +129,8 @@ class PasswordForm(CherryForm):
 
 
 class ProfilePage:
+    mfa = ProfileMfaPage()
+
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['profile.html'])
     @cherrypy.tools.ratelimit(methods=['POST'], logout=True)

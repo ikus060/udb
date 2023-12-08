@@ -25,6 +25,7 @@ import udb.core.notification  # noqa
 import udb.plugins.ldap  # noqa
 import udb.plugins.smtp  # noqa
 import udb.tools.auth_form  # noqa: import cherrypy.tools.auth_form
+import udb.tools.auth_mfa  # noqa: import cherrypy.tools.auth_mfa
 import udb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
 import udb.tools.db  # noqa: import cherrypy.tools.db
 import udb.tools.errors  # noqa
@@ -46,6 +47,7 @@ from udb.controller.language import Language
 from udb.controller.load_page import LoadPage
 from udb.controller.login_page import LoginPage
 from udb.controller.mac_page import MacPage
+from udb.controller.mfa_page import MfaPage
 from udb.controller.notifications_page import NotificationsPage
 from udb.controller.profile_page import ProfilePage
 from udb.controller.rule_page import RuleApi, RulePage
@@ -76,9 +78,7 @@ env = jinja2.Environment(
     autoescape=True,
     trim_blocks=True,
     lstrip_blocks=True,
-    extensions=[
-        'jinja2.ext.i18n',
-    ],
+    extensions=['jinja2.ext.i18n'],
 )
 env.install_gettext_callables(gettext_lazy, ngettext, newstyle=True)
 env.globals['url_for'] = url_for
@@ -129,6 +129,9 @@ def json_handler(*args, **kwargs):
 @cherrypy.tools.proxy(local=None, remote='X-Real-IP')
 @cherrypy.tools.sessions()
 @cherrypy.tools.auth_form()
+@cherrypy.tools.auth_mfa(
+    mfa_enabled=lambda username: User.query_user(username).mfa,
+)
 @cherrypy.tools.currentuser(userobj=User.query_user)
 @cherrypy.tools.i18n(func=lambda: getattr(cherrypy.request, 'currentuser', False) and cherrypy.request.currentuser.lang)
 @cherrypy.tools.secure_headers(
@@ -253,6 +256,7 @@ class Root(object):
         self.ip = IpPage()
         self.user = UserPage()
         self.mac = MacPage()
+        self.mfa = MfaPage()
         self.environment = EnvironmentPage()
         self.deployment = DeploymentPage()
         # Api

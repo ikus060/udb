@@ -32,4 +32,36 @@
       </form>
     </div>
   </div>
+  <hr />
+  {# MFA #}
+  <div class="row">
+    <div class="col-md">
+      <h4>{% trans %}Two-Factor Authentication{% endtrans %}</h4>
+      <p>
+        {% trans %}You can enhance the security of your account by enabling two-factor authentication (2FA).{% endtrans %}
+        {% trans %}When enabled, a verification code is sent to your email address each time you log in from a new
+        location to verify that it is you.{% endtrans %}
+      </p>
+    </div>
+    <div class="col-md-9">
+      <form method="POST" action="{{ url_for("./mfa") }}">
+        {% if currentuser.mfa %}
+          <p>
+            {% trans %}Two-Factor Authentication is <strong>enabled</strong> for your account.{% endtrans %}
+          </p>
+          <button name="disable_mfa"
+                  value="1"
+                  type="submit"
+                  class="btn btn-outline-info">{% trans %}Disable Two-Factor Authentication{% endtrans %}</button>
+        {% else %}
+          <p>
+            {% trans %}Two-Factor Authentication is <strong>disabled</strong> for your account.{% endtrans %}
+          </p>
+          <button name="enable_mfa" value="1" type="submit" class="btn btn-primary">
+            {% trans %}Enable Two-Factor Authentication{% endtrans %}
+          </button>
+        {% endif %}
+      </form>
+    </div>
+  </div>
 {% endblock %}
