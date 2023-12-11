@@ -1,22 +1,35 @@
 {% extends 'common/edit.html' %}
 {% import "macro.html" as macro %}
 {% block extra_actions %}
+  {# Parent Subnet #}
+  {% if obj._ip %}
+    <div class="col mb-2">
+      <a href="{{ url_for('subnet', obj.subnet_id, 'edit') }}"
+         class="btn btn-outline-primary text-nowrap w-100">
+        {{ macro.icon("subnet") }} {% trans %}Show parent Subnet{% endtrans %}
+      </a>
+    </div>
+  {% endif %}
   {# Related IP #}
   {% if obj._ip %}
     <div class="col mb-2">
       <a href="{{ url_for(obj._ip, 'edit') }}"
-         class="btn btn-outline-primary text-nowrap w-100">{% trans %}Show Related IP{% endtrans %}</a>
+         class="btn btn-outline-primary text-nowrap w-100">
+        {{ macro.icon("ip") }} {% trans %}Show related IP{% endtrans %}
+      </a>
     </div>
   {% endif %}
   {# Related MAC #}
   {% if obj._mac %}
     <div class="col mb-2">
       <a href="{{ url_for(obj._mac, 'edit') }}"
-         class="btn btn-outline-primary text-nowrap w-100">{% trans %}Show Related MAC{% endtrans %}</a>
+         class="btn btn-outline-primary text-nowrap w-100">
+        {{ macro.icon("mac") }} {% trans %}Show related MAC{% endtrans %}
+      </a>
     </div>
   {% endif %}
   {# Related PTR desktop #}
-  <div class="col mb-2 d-none d-xl-block">
+  <div class="col-12 mb-2 d-none d-xl-block">
     <h5>{% trans %}Related DNS Record{% endtrans %}</h5>
     <div class="list-group">
       {% for record in obj.related_dnsrecord %}
@@ -29,7 +42,7 @@
   </div>
   {# Related PTR mobile #}
   <div class="col mb-2 d-block d-xl-none">
-    <div class="btn-group">
+    <div class="btn-group w-100">
       <button type="button"
               class="btn btn-outline-primary dropdown-toggle"
               data-bs-toggle="dropdown"

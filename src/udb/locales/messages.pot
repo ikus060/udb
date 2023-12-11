@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-12-07 10:44-0500\n"
+"POT-Creation-Date: 2023-12-11 08:29-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -785,8 +785,8 @@ msgstr ""
 #: src/udb/controller/language.py:117
 #: src/udb/templates/common/followers.html:39
 #: src/udb/templates/components/table.html:34
-#: src/udb/templates/dhcprecord/edit.html:26
-#: src/udb/templates/dhcprecord/edit.html:44
+#: src/udb/templates/dhcprecord/edit.html:39
+#: src/udb/templates/dhcprecord/edit.html:57
 #: src/udb/templates/widgets/TableWidget.html:41
 msgid "List is empty"
 msgstr ""
@@ -1945,38 +1945,47 @@ msgstr ""
 msgid "Output of command line executed by this deployment."
 msgstr ""
 
-#: src/udb/templates/dhcprecord/edit.html:8
-#: src/udb/templates/dnsrecord/edit.html:26
-msgid "Show Related IP"
+#: src/udb/templates/dhcprecord/edit.html:9
+#: src/udb/templates/dnsrecord/edit.html:28
+msgid "Show parent Subnet"
 msgstr ""
 
-#: src/udb/templates/dhcprecord/edit.html:15
-msgid "Show Related MAC"
+#: src/udb/templates/dhcprecord/edit.html:18
+#: src/udb/templates/dnsrecord/edit.html:46
+msgid "Show related IP"
 msgstr ""
 
-#: src/udb/templates/dhcprecord/edit.html:20
-#: src/udb/templates/dhcprecord/edit.html:36
-#: src/udb/templates/dnsrecord/edit.html:36
+#: src/udb/templates/dhcprecord/edit.html:27
+msgid "Show related MAC"
+msgstr ""
+
+#: src/udb/templates/dhcprecord/edit.html:33
+#: src/udb/templates/dhcprecord/edit.html:49
+#: src/udb/templates/dnsrecord/edit.html:57
 msgid "Related DNS Record"
 msgstr ""
 
-#: src/udb/templates/dnsrecord/edit.html:11
+#: src/udb/templates/dnsrecord/edit.html:12
 msgid "Show Reverse Record"
 msgstr ""
 
-#: src/udb/templates/dnsrecord/edit.html:11
+#: src/udb/templates/dnsrecord/edit.html:12
 msgid "Show Forward Record"
 msgstr ""
 
-#: src/udb/templates/dnsrecord/edit.html:17
+#: src/udb/templates/dnsrecord/edit.html:18
 msgid "Create Reverse Record"
 msgstr ""
 
-#: src/udb/templates/dnsrecord/edit.html:17
+#: src/udb/templates/dnsrecord/edit.html:18
 msgid "Create Forward Record"
 msgstr ""
 
-#: src/udb/templates/dnsrecord/edit.html:47
+#: src/udb/templates/dnsrecord/edit.html:37
+msgid "Show parent DNS Zone"
+msgstr ""
+
+#: src/udb/templates/dnsrecord/edit.html:68
 msgid "No DNS record for the same hostname."
 msgstr ""
 
@@ -2030,6 +2039,10 @@ msgstr ""
 
 #: src/udb/templates/rule/list.html:10
 msgid "Check Constraint"
+msgstr ""
+
+#: src/udb/templates/subnet/edit.html:9
+msgid "Show parent VRF"
 msgstr ""
 
 #: src/udb/templates/subnet/list.html:9
