@@ -38,7 +38,7 @@ from ._json import JsonMixin
 from ._message import Message, MessageMixin
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
-from ._subnet import Subnet, SubnetRange
+from ._subnet import Subnet
 from ._vrf import Vrf
 
 Base = cherrypy.tools.db.get_base()
@@ -174,10 +174,9 @@ class Deployment(CommonMixin, JsonMixin, Base):
                     Subnet.l3vni,
                     Subnet.l2vni,
                     Subnet.vlan,
-                    func.group_concat(SubnetRange.range.text()),
+                    func.group_concat(Subnet.range.text()),
                 )
                 .join(Subnet.vrf)
-                .join(Subnet.subnet_ranges)
                 .filter(Subnet.estatus == Subnet.STATUS_ENABLED)
                 .group_by(Subnet.id, Vrf.name)
                 .all()
@@ -201,37 +200,28 @@ class Deployment(CommonMixin, JsonMixin, Base):
             # TODO using relationship or similar.
 
             # Return DHCP member of a Subnet with DHCP enabled.
-            subnet_query = (
-                select(
-                    SubnetRange.id,
-                    Subnet.name,
-                    Subnet.l2vni,
-                    Subnet.l3vni,
-                    Subnet.vlan,
-                    SubnetRange.range,
-                    SubnetRange.start_ip,
-                    SubnetRange.end_ip,
-                    SubnetRange.version,
-                    SubnetRange.dhcp,
-                    SubnetRange.dhcp_start_ip,
-                    SubnetRange.dhcp_end_ip,
-                )
-                .join(Subnet.subnet_ranges)
-                .filter(
-                    SubnetRange.dhcp.is_(True),
-                    Subnet.estatus == Subnet.STATUS_ENABLED,
-                )
+            subnet_query = select(
+                Subnet.id,
+                Subnet.name,
+                Subnet.l2vni,
+                Subnet.l3vni,
+                Subnet.vlan,
+                Subnet.range,
+                Subnet.dhcp,
+                Subnet.dhcp_start_ip,
+                Subnet.dhcp_end_ip,
+            ).filter(
+                Subnet.dhcp.is_(True),
+                Subnet.estatus == Subnet.STATUS_ENABLED,
             )
             # Identify the subnet related for each dhcp record.
             related_subnet_query = (
-                select(SubnetRange.id)
-                .join(Subnet.subnet_ranges)
+                select(Subnet.id)
                 .filter(
-                    SubnetRange.dhcp.is_(True),
+                    Subnet.dhcp.is_(True),
                     Subnet.estatus == Subnet.STATUS_ENABLED,
-                    SubnetRange.version == func.family(DhcpRecord.ip),
-                    SubnetRange.dhcp_start_ip <= DhcpRecord.ip,
-                    SubnetRange.dhcp_end_ip >= DhcpRecord.ip,
+                    Subnet.dhcp_start_ip <= DhcpRecord.ip,
+                    Subnet.dhcp_end_ip >= DhcpRecord.ip,
                 )
                 .scalar_subquery()
             )
@@ -257,7 +247,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
             )
             self.data = {
                 'dhcprecord': [s._asdict() for s in DhcpRecord.session.execute(dhcp_query).all()],
-                'subnet_range': [s._asdict() for s in Subnet.session.execute(subnet_query).all()],
+                'slave_subnets': [s._asdict() for s in Subnet.session.execute(subnet_query).all()],
             }
         else:
             raise ValueError('unsupported model_name: %s' % self.model_name)

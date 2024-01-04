@@ -18,7 +18,7 @@
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, Ip, Subnet, SubnetRange, User, Vrf
+from udb.core.model import DhcpRecord, Ip, Subnet, User, Vrf
 
 
 class IPTest(WebCase):
@@ -27,25 +27,17 @@ class IPTest(WebCase):
         # Given a database with a subnet.
         self.vrf = Vrf(name='default')
         Subnet(
-            subnet_ranges=[
-                SubnetRange(
-                    '1.2.3.0/24',
-                    dhcp=True,
-                    dhcp_start_ip='1.2.3.1',
-                    dhcp_end_ip='1.2.3.254',
-                )
-            ],
+            range='1.2.3.0/24',
+            dhcp=True,
+            dhcp_start_ip='1.2.3.1',
+            dhcp_end_ip='1.2.3.254',
             vrf=self.vrf,
         ).add()
         Subnet(
-            subnet_ranges=[
-                SubnetRange(
-                    '2.3.4.5/24',
-                    dhcp=True,
-                    dhcp_start_ip='2.3.4.1',
-                    dhcp_end_ip='2.3.4.254',
-                )
-            ],
+            range='2.3.4.5/24',
+            dhcp=True,
+            dhcp_start_ip='2.3.4.1',
+            dhcp_end_ip='2.3.4.254',
             vrf=self.vrf,
         ).add().commit()
 

@@ -21,7 +21,7 @@ import cherrypy
 from parameterized import parameterized
 
 from udb.controller.tests import MATCH, WebCase
-from udb.core.model import DnsRecord, DnsZone, Follower, Message, Subnet, SubnetRange, User, Vrf
+from udb.core.model import DnsRecord, DnsZone, Follower, Message, Subnet, User, Vrf
 
 
 class AbstractNotificationPluginTest(WebCase):
@@ -107,7 +107,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         follower1 = User.create(username='follower1', email='follower1@test.com').add()
         follower2 = User.create(username='follower2', email='follower2@test.com').add()
         vrf = Vrf(name='default')
-        subnet = Subnet(subnet_ranges=[SubnetRange('192.168.0.0/24')], name='home', vrf=vrf).add().flush()
+        subnet = Subnet(range='192.168.0.0/24', name='home', vrf=vrf).add().flush()
         subnet.add_follower(follower1)
         record = DnsZone(name='my.zone.com').add().flush()
         record.add_follower(follower1)
@@ -142,7 +142,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         # When making multiple changes
         vrf = Vrf(name='default')
         for i in range(1, 24):
-            subnet = Subnet(subnet_ranges=[SubnetRange(f'192.168.{i}.0/24')], name=f'subnet {i}', vrf=vrf).add().flush()
+            subnet = Subnet(range=f'192.168.{i}.0/24', name=f'subnet {i}', vrf=vrf).add().flush()
             subnet.add_follower(follower1)
         subnet.commit()
         # Then wait for task to get processed
@@ -203,7 +203,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
     def test_with_dns_record_notify_dns_zone_followers(self):
         follower = User.create(username='follower', email='follower@test.com').add()
         vrf = Vrf(name='default').add()
-        subnet = Subnet(subnet_ranges=[SubnetRange('147.87.250.0/24')], name='its-main-4', vrf=vrf).add().commit()
+        subnet = Subnet(range='147.87.250.0/24', name='its-main-4', vrf=vrf).add().commit()
         self.wait_for_tasks()
         self.listener.send_mail.reset_mock()
         # Given a DNS Zone follower
@@ -236,9 +236,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         vrf = Vrf(name='default')
         zone1 = DnsZone(name='my.zone.com').add()
         zone2 = DnsZone.query.filter(DnsZone.name == 'in-addr.arpa').first()
-        Subnet(
-            subnet_ranges=[SubnetRange('147.87.250.0/24')], name='its-main-4', vrf=vrf, dnszones=[zone1, zone2]
-        ).add().commit()
+        Subnet(range='147.87.250.0/24', name='its-main-4', vrf=vrf, dnszones=[zone1, zone2]).add().commit()
         self.wait_for_tasks()
         self.listener.send_mail.reset_mock()
         # Given a DNS Record follower

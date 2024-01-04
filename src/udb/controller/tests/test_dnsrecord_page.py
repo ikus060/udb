@@ -20,7 +20,7 @@ from parameterized import parameterized
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DnsRecord, DnsZone, Subnet, SubnetRange, Vrf
+from udb.core.model import DnsRecord, DnsZone, Subnet, Vrf
 
 from .test_common_page import CommonTest
 
@@ -42,7 +42,8 @@ class DnsRecordPageTest(WebCase, CommonTest):
         all_zones = DnsZone.query.all()
         self.subnet = (
             Subnet(
-                subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('2001:db8:85a3::/64')],
+                range="192.168.1.0/24",
+                slave_subnets=[Subnet(range='2001:db8:85a3::/64')],
                 vrf=self.vrf,
                 dnszones=all_zones,
             )
@@ -191,7 +192,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
 
     def test_new_create_reverse_record_with_error(self):
         # Given a database with a record
-        Subnet(subnet_ranges=[SubnetRange('10.255.0.0/24')], vrf=self.vrf, dnszones=[self.zone]).add().commit()
+        Subnet(range='10.255.0.0/24', vrf=self.vrf, dnszones=[self.zone]).add().commit()
         obj = DnsRecord(name='foo.example.com', type='A', value='10.255.0.101', vrf=self.vrf).add().commit()
         self.assertIsNone(obj.get_reverse_dns_record())
         # When creating a new reverse record without proper subnet in DNS Zone
@@ -476,8 +477,8 @@ class DnsRecordPageTest(WebCase, CommonTest):
             method='POST',
             body={
                 'dnszones': self.zone.id,
-                'subnet_ranges-0-range': '2001:db8:85a3::/64',
-                'subnet_ranges-1-range': '192.168.1.0/30',
+                'ranges-0-range': '192.168.1.0/30',
+                'ranges-1-range': '2001:db8:85a3::/64',
             },
         )
         # Then an exception is raised.
@@ -490,28 +491,23 @@ class DnsRecordPageTest(WebCase, CommonTest):
 
     def test_update_parent_subnet_range_deleted(self):
         # Given a database with a Subnet and a DnsRecord
-        dns = DnsRecord(name='foo.example.com', type='A', value='192.168.1.25').add().commit()
-        # When updating the Subnet range.
+        dns = DnsRecord(name='foo.example.com', type='AAAA', value='2001:db8:85a3::1').add().commit()
+        # When updating the Subnet range. (removing secondary range)
         self.getPage(
             url_for(self.subnet, 'edit'),
             method='POST',
             body={
                 'dnszones': self.zone.id,
-                'subnet_ranges-0-range': '2001:db8:85a3::/64',
+                'ranges-0-range': '192.168.1.0/30',
             },
         )
-        # Then an exception is raised.
-        self.assertStatus(200)
-        # Make sure the constraint of dnsrecord is shown.
-        is_sqlite = 'sqlite' in str(self.session.bind)
-        if is_sqlite:
-            self.assertInBody('Database integrity error:')
-            self.assertInBody('FOREIGN KEY constraint failed')
-        else:
-            self.assertInBody(
-                'Once DNS records have been created for a subnet range, it is not possible to remove that subnet range.'
-            )
-            self.assertInBody(url_for(dns, 'edit'))
+        # Then slave subnet get soft-delete
+        self.assertStatus(303)
+        self.subnet.expire()
+        self.assertEqual(Subnet.STATUS_DELETED, self.subnet.slave_subnets[0].status)
+        # Then DNS Record get soft-delete
+        dns.expire()
+        self.assertEqual(DnsRecord.STATUS_DELETED, dns.estatus)
 
     def test_update_parent_subnet_dnszones(self):
         # Given a database with a Subnet and a DnsRecord
@@ -520,7 +516,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
         self.getPage(
             url_for(self.subnet, 'edit'),
             method='POST',
-            body={'subnet_ranges-0-range': '2001:db8:85a3::/64', 'subnet_ranges-1-range': '192.168.1.0/24'},
+            body={'ranges-0-range': '192.168.1.0/24', 'ranges-1-range': '2001:db8:85a3::/64'},
         )
         # Then an exception is raised.
         self.assertStatus(200)
@@ -562,7 +558,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
         self.getPage(
             url_for(self.subnet, 'edit'),
             method='POST',
-            body={'subnet_ranges-1-range': '192.168.1.0/24', 'vrf_id': vrf2.id, 'dnszones': self.zone.id},
+            body={'ranges-1-range': '192.168.1.0/24', 'vrf_id': vrf2.id, 'dnszones': self.zone.id},
         )
         # Then an exception is raised.
         self.assertStatus(200)
@@ -582,11 +578,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
         dns = DnsRecord(name='foo.example.com', type='A', value='192.168.1.25').add().commit()
         vrf2 = Vrf(name='new')
         Subnet(
-            subnet_ranges=[
-                SubnetRange(
-                    '192.168.1.0/24',
-                )
-            ],
+            range='192.168.1.0/24',
             vrf=vrf2,
             dnszones=[self.zone],
         ).add().commit()

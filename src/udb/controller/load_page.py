@@ -27,7 +27,7 @@ from wtforms import validators
 from wtforms.fields import FileField, SelectField
 
 from udb.controller import flash, show_exception, url_for
-from udb.core.model import DnsRecord, DnsZone, Subnet, SubnetRange, Vrf
+from udb.core.model import DnsRecord, DnsZone, Subnet, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .form import CherryForm
@@ -82,7 +82,8 @@ class LoadPage:
                     if row.get('Secondary IP Range(s)'):
                         ranges.extend(row.get('Secondary IP Range(s)').split(', '))
                     Subnet(
-                        subnet_ranges=[SubnetRange(range=r) for r in ranges],
+                        range=ranges[0],
+                        slave_subnets=[Subnet(range=r) for r in ranges[1:]],
                         name=row.get('Name'),
                         vrf=vrf,
                         l3vni=self.get_int(row.get('L3VNI')),

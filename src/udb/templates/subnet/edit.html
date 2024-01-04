@@ -10,4 +10,13 @@
       </a>
     </div>
   {% endif %}
+  {# Parent Subnet #}
+  {% if obj.parent_id %}
+    <div class="col mb-2">
+      <a href="{{ url_for('subnet', obj.parent_id, 'edit') }}"
+         class="btn btn-outline-primary text-nowrap w-100">
+        {{ macro.icon("subnet") }} {% trans %}Show parent Subnet{% endtrans %}
+      </a>
+    </div>
+  {% endif %}
 {% endblock %}

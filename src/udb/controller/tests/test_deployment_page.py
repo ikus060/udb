@@ -20,18 +20,7 @@ from unittest.mock import ANY
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import (
-    Deployment,
-    DhcpRecord,
-    DnsRecord,
-    DnsZone,
-    Environment,
-    Message,
-    Subnet,
-    SubnetRange,
-    User,
-    Vrf,
-)
+from udb.core.model import Deployment, DhcpRecord, DnsRecord, DnsZone, Environment, Message, Subnet, User, Vrf
 
 
 class DeploymentPageTest(WebCase):
@@ -49,9 +38,10 @@ class DeploymentPageTest(WebCase):
         # Generate a changes
         vrf = Vrf(name='default')
         Subnet(
-            subnet_ranges=[
-                SubnetRange('192.168.45.0/24', dhcp=True, dhcp_start_ip='192.168.45.1', dhcp_end_ip='192.168.45.100')
-            ],
+            range='192.168.45.0/24',
+            dhcp=True,
+            dhcp_start_ip='192.168.45.1',
+            dhcp_end_ip='192.168.45.100',
             vrf=vrf,
         ).add().commit()
         DhcpRecord(ip='192.168.45.67', mac='E5:D3:56:7B:22:A3', vrf=vrf).add().commit()
@@ -163,7 +153,14 @@ class DeploymentPageTest(WebCase):
                     ANY,
                     'new',
                     '',
-                    {'ip': [None, '192.168.45.67'], 'mac': [None, 'E5:D3:56:7B:22:A3'], 'vrf': [None, 'default']},
+                    {
+                        'vrf': [None, 'default'],
+                        'ip': [None, '192.168.45.67'],
+                        'mac': [None, 'E5:D3:56:7B:22:A3'],
+                        'subnet_id': [None, 1],
+                        'subnet_estatus': [None, 2],
+                        'subnet_range': [None, '192.168.45.0/24'],
+                    },
                     '/dhcprecord/1/edit',
                 ],
                 [
@@ -221,9 +218,7 @@ class DeploymentPageTest(WebCase):
         builtin_zones = DnsZone.query.all()
         zone1 = DnsZone(name='test.ca').add()
         zone2 = DnsZone(name='example.com').add()
-        Subnet(
-            subnet_ranges=[SubnetRange('192.0.2.0/24')], dnszones=[zone1, zone2, *builtin_zones], vrf=vrf
-        ).add().commit()
+        Subnet(range='192.0.2.0/24', dnszones=[zone1, zone2, *builtin_zones], vrf=vrf).add().commit()
         DnsRecord(name='test.ca', type='A', value='192.0.2.45', vrf=vrf).add().commit()
         DnsRecord(name='example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
         DnsRecord(name='23.2.0.192.in-addr.arpa', type='PTR', value='example.com', vrf=vrf).add().commit()

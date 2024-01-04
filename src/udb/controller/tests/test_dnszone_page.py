@@ -18,7 +18,7 @@
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DnsRecord, DnsZone, Subnet, SubnetRange, Vrf
+from udb.core.model import DnsRecord, DnsZone, Subnet, Vrf
 
 from .test_common_page import CommonTest
 
@@ -46,7 +46,7 @@ class DnsZonePageTest(WebCase, CommonTest):
     def test_edit_with_subnet(self):
         # Given a database with a record
         vrf = Vrf(name='default').add()
-        subnet = Subnet(subnet_ranges=[SubnetRange('192.168.0.1/24')], vrf=vrf).add()
+        subnet = Subnet(range='192.168.0.1/24', vrf=vrf).add()
         obj = self.obj_cls(**{'name': 'examples.com', 'subnets': [subnet]}).add()
         obj.commit()
         # When editing the record
@@ -58,7 +58,7 @@ class DnsZonePageTest(WebCase, CommonTest):
     def test_edit_add_subnet(self):
         # Given a database with a record
         vrf = Vrf(name='default').add()
-        subnet = Subnet(subnet_ranges=[SubnetRange('192.168.0.1/24')], vrf=vrf).add()
+        subnet = Subnet(range='192.168.0.1/24', vrf=vrf).add()
         obj = self.obj_cls(**{'name': 'examples.com', 'subnets': []}).add()
         obj.commit()
         # When editing the record
@@ -72,7 +72,7 @@ class DnsZonePageTest(WebCase, CommonTest):
     def test_zonefile(self):
         # Given a database with a record
         vrf = Vrf(name='default').add()
-        subnet = Subnet(subnet_ranges=[SubnetRange('192.168.0.1/24')], vrf=vrf).add()
+        subnet = Subnet(range='192.168.0.1/24', vrf=vrf).add()
         obj = self.obj_cls(**{'name': 'examples.com', 'subnets': [subnet]}).add().commit()
         DnsRecord(name='foo.examples.com', type='A', value='192.168.0.54', vrf=vrf).add().commit()
         # When downloading the zonefile

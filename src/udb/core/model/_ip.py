@@ -31,7 +31,7 @@ from ._follower import FollowerMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
 from ._search_string import SearchableMixing
-from ._subnet import Subnet, SubnetRange
+from ._subnet import Subnet
 from ._vrf import Vrf
 
 Base = cherrypy.tools.db.get_base()
@@ -45,7 +45,7 @@ class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, 
     vrf_id = Column(Integer, ForeignKey("vrf.id"), nullable=False)
     vrf = relationship(Vrf)
     related_dhcp_records = relationship("DhcpRecord", back_populates="_ip", lazy=True, overlaps="vrf")
-    related_dns_records = relationship("DnsRecord", back_populates="_ip", lazy=True, overlaps="vrf,_subnetrange")
+    related_dns_records = relationship("DnsRecord", back_populates="_ip", lazy=True, overlaps="vrf,_subnet")
 
     @classmethod
     def _search_string(cls):
@@ -61,15 +61,16 @@ class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, 
         if cache is None:
             session._unique_ip_cache = cache = {}
 
-        if ip_value in cache:
-            return cache[ip_value]
+        chache_key = (ip_value, vrf.id)
+        if chache_key in cache:
+            return cache[chache_key]
         else:
             with session.no_autoflush:
                 obj = session.query(Ip).filter_by(ip=ip_value, vrf_id=vrf.id).first()
                 if not obj:
                     obj = Ip(ip=ip_value, vrf=vrf)
                     session.add(obj)
-            cache[ip_value] = obj
+            cache[chache_key] = obj
             return obj
 
     @hybrid_property
@@ -91,17 +92,11 @@ class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, 
 
     @property
     def related_subnets(self):
-        return (
-            Subnet.query.join(Subnet.subnet_ranges)
-            .filter(
-                SubnetRange.version == func.family(self.ip),
-                SubnetRange.start_ip <= self.ip,
-                SubnetRange.end_ip > self.ip,
-                Subnet.vrf_id == self.vrf_id,
-                Subnet.estatus != Subnet.STATUS_DELETED,
-            )
-            .all()
-        )
+        return Subnet.query.filter(
+            func.subnet_of(self.ip, Subnet.range),
+            Subnet.vrf_id == self.vrf_id,
+            Subnet.estatus != Subnet.STATUS_DELETED,
+        ).all()
 
     @property
     def reverse_pointer(self):

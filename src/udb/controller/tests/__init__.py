@@ -33,18 +33,7 @@ from sqlalchemy.orm import close_all_sessions
 
 from udb.app import Root
 from udb.config import parse_args
-from udb.core.model import (
-    Deployment,
-    DhcpRecord,
-    DnsRecord,
-    DnsZone,
-    Environment,
-    Message,
-    Subnet,
-    SubnetRange,
-    User,
-    Vrf,
-)
+from udb.core.model import Deployment, DhcpRecord, DnsRecord, DnsZone, Environment, Message, Subnet, User, Vrf
 
 BaseClass = cherrypy.test.helper.CPWebCase
 del BaseClass.test_gc
@@ -77,7 +66,7 @@ class WebCase(BaseClass):
     username = 'admin'
     password = 'admin'
 
-    default_config = {'debug': False}
+    default_config = {'debug': True}
 
     @classmethod
     def setup_class(cls):
@@ -91,9 +80,9 @@ class WebCase(BaseClass):
 
     def wait_for_tasks(self):
         count = 0
-        time.sleep(0.25)
+        time.sleep(0.02)
         while count < 20 and len(cherrypy.scheduler.list_tasks()) or cherrypy.scheduler.is_job_running():
-            time.sleep(0.5)
+            time.sleep(0.02)
             count += 1
         self.assertFalse(cherrypy.scheduler.list_tasks())
         self.assertFalse(cherrypy.scheduler.is_job_running())
@@ -142,33 +131,25 @@ class WebCase(BaseClass):
         self.user = User(username='test')
         self.vrf = Vrf(name='(default)')
         self.subnet = Subnet(
-            subnet_ranges=[
-                SubnetRange(
-                    '147.87.250.0/24',
-                    dhcp=True,
-                    dhcp_start_ip='147.87.250.100',
-                    dhcp_end_ip='147.87.250.200',
-                )
-            ],
+            range='147.87.250.0/24',
+            dhcp=True,
+            dhcp_start_ip='147.87.250.100',
+            dhcp_end_ip='147.87.250.200',
             name='DMZ',
             vrf=self.vrf,
             notes='public',
             owner=self.user,
         ).add()
         self.subnet.add_message(Message(body='Message on subnet', author=self.user))
+        Subnet(range='147.87.0.0/16', name='its-main-4', vrf=self.vrf, notes='main', owner=self.user).add()
         Subnet(
-            subnet_ranges=[SubnetRange('147.87.0.0/16')], name='its-main-4', vrf=self.vrf, notes='main', owner=self.user
-        ).add()
-        Subnet(
-            subnet_ranges=[SubnetRange('2002::1234:abcd:ffff:c0a8:101/64')],
+            range='2002::1234:abcd:ffff:c0a8:101/64',
             name='its-main-6',
             vrf=self.vrf,
             notes='main',
             owner=self.user,
         ).add()
-        Subnet(
-            subnet_ranges=[SubnetRange('147.87.208.0/24')], name='ARZ', vrf=self.vrf, notes='BE.net', owner=self.user
-        ).add()
+        Subnet(range='147.87.208.0/24', name='ARZ', vrf=self.vrf, notes='BE.net', owner=self.user).add()
         self.zone = DnsZone(name='bfh.ch', notes='DMZ Zone', subnets=[self.subnet], owner=self.user).add()
         self.zone.add_message(Message(body='Here is a message', author=self.user))
         self.zone.flush()

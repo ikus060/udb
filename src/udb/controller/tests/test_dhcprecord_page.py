@@ -18,7 +18,7 @@
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, Subnet, SubnetRange, User, Vrf
+from udb.core.model import DhcpRecord, Subnet, User, Vrf
 
 from .test_common_page import CommonTest
 
@@ -39,14 +39,10 @@ class DhcpRecordPageTest(WebCase, CommonTest):
         self.vrf = Vrf(name='default')
         self.subnet = (
             Subnet(
-                subnet_ranges=[
-                    SubnetRange(
-                        '1.2.3.0/24',
-                        dhcp=True,
-                        dhcp_start_ip='1.2.3.1',
-                        dhcp_end_ip='1.2.3.254',
-                    )
-                ],
+                range='1.2.3.0/24',
+                dhcp=True,
+                dhcp_start_ip='1.2.3.1',
+                dhcp_end_ip='1.2.3.254',
                 vrf=self.vrf,
             )
             .add()
@@ -125,7 +121,7 @@ class DhcpRecordPageTest(WebCase, CommonTest):
     def test_dhcprecord_new_invalid_subnet_rule(self):
         # Given a subnet with DHCP Disabled.
         subnet = Subnet.query.first()
-        subnet.subnet_ranges[0].dhcp = False
+        subnet.dhcp = False
         subnet.add().commit()
         # When creating a DHCP Reservation.
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=self.new_data)
@@ -145,7 +141,7 @@ class DhcpRecordPageTest(WebCase, CommonTest):
         record = DhcpRecord(ip='1.2.3.4', mac='02:42:d7:e4:aa:67', vrf=self.vrf).add().commit()
         # Given DHCP get disable on the subnet
         subnet = Subnet.query.first()
-        subnet.subnet_ranges[0].dhcp = False
+        subnet.dhcp = False
         subnet.add().commit()
         # When editing the DHCP reservation.
         self.getPage(url_for(record, 'edit'))
@@ -169,32 +165,42 @@ class DhcpRecordPageTest(WebCase, CommonTest):
         self.assertInBody('Multiple DHCP Reservation for the same IP address within the same VRF.')
 
     def test_update_parent_subnet_range_deleted(self):
+        # Given a subnet with primary and secondary
+        slave = Subnet(range='192.168.1.0/24')
+        self.subnet = (
+            Subnet(
+                range='192.168.0.0/24',
+                dhcp=True,
+                dhcp_start_ip='192.168.0.5',
+                dhcp_end_ip='192.168.0.150',
+                vrf=self.vrf,
+                slave_subnets=[slave],
+            )
+            .add()
+            .commit()
+        )
         # Given a database with a Subnet and a DnsRecord
-        dhcp = DhcpRecord(ip='1.2.3.4', mac='00:00:5e:00:53:af').add().commit()
-        # When updating the Subnet range.
+        dhcp = DhcpRecord(ip='192.168.1.4', mac='00:00:5e:00:53:af').add().commit()
+        self.assertEqual(dhcp.subnet_id, slave.id)
+        # When updating the Subnet primary range.
         self.getPage(
             url_for(self.subnet, 'edit'),
             method='POST',
             body={
-                'subnet_ranges-0-range': '192.168.0.0/24',
-                'subnet_ranges-0-dhcp': 'on',
-                'subnet_ranges-0-dhcp_start_ip': '192.168.0.5',
-                'subnet_ranges-0-dhcp_end_ip': '192.168.0.150',
+                'ranges-0-range': '192.168.0.0/24',
+                'ranges-0-dhcp': 'on',
+                'ranges-0-dhcp_start_ip': '192.168.0.5',
+                'ranges-0-dhcp_end_ip': '192.168.0.150',
             },
         )
-        # Then an exception is raised.
-        self.assertStatus(200)
-        # Make sure the constraint of dnsrecord is not shown.
-        is_sqlite = 'sqlite' in str(self.session.bind)
-        if is_sqlite:
-            self.assertInBody('Database integrity error:')
-            self.assertInBody('FOREIGN KEY constraint failed')
-        else:
-            self.assertInBody(
-                'Once DHCP reservation have been created for a subnet range, it is not possible to remove that range.'
-            )
-            # Then a link to the related DHCP Record is provided.
-            self.assertInBody(url_for(dhcp, 'edit'))
+        # Then slave subnet get soft-delete
+        self.assertStatus(303)
+        self.subnet.expire()
+        slave.expire()
+        self.assertEqual(Subnet.STATUS_DELETED, self.subnet.slave_subnets[0].status)
+        # Then DNS Record get soft-delete
+        dhcp.expire()
+        self.assertEqual(DhcpRecord.STATUS_DELETED, dhcp.estatus)
 
     def test_update_parent_subnet_range_modified(self):
         # Given a database with a Subnet and a DnsRecord
@@ -204,10 +210,10 @@ class DhcpRecordPageTest(WebCase, CommonTest):
             url_for(self.subnet, 'edit'),
             method='POST',
             body={
-                'subnet_ranges-0-range': '1.2.3.0/30',
-                'subnet_ranges-0-dhcp': 'on',
-                'subnet_ranges-0-dhcp_start_ip': '1.2.3.1',
-                'subnet_ranges-0-dhcp_end_ip': '1.2.3.2',
+                'ranges-0-range': '1.2.3.0/30',
+                'ranges-0-dhcp': 'on',
+                'ranges-0-dhcp_start_ip': '1.2.3.1',
+                'ranges-0-dhcp_end_ip': '1.2.3.2',
             },
         )
         # Then an exception is raised.
@@ -228,10 +234,10 @@ class DhcpRecordPageTest(WebCase, CommonTest):
             url_for(self.subnet, 'edit'),
             method='POST',
             body={
-                'subnet_ranges-0-range': '1.2.3.0/24',
-                'subnet_ranges-0-dhcp': 'on',
-                'subnet_ranges-0-dhcp_start_ip': '1.2.3.1',
-                'subnet_ranges-0-dhcp_end_ip': '1.2.3.254',
+                'ranges-0-range': '1.2.3.0/24',
+                'ranges-0-dhcp': 'on',
+                'ranges-0-dhcp_start_ip': '1.2.3.1',
+                'ranges-0-dhcp_end_ip': '1.2.3.254',
                 'vrf_id': new_vrf.id,
             },
         )
@@ -253,14 +259,10 @@ class DhcpRecordPageTest(WebCase, CommonTest):
         dhcp = DhcpRecord(ip='1.2.3.4', mac='00:00:5e:00:53:af').add().commit()
         vrf2 = Vrf(name='new')
         Subnet(
-            subnet_ranges=[
-                SubnetRange(
-                    '1.2.3.0/24',
-                    dhcp=True,
-                    dhcp_start_ip='1.2.3.1',
-                    dhcp_end_ip='1.2.3.254',
-                )
-            ],
+            range='1.2.3.0/24',
+            dhcp=True,
+            dhcp_start_ip='1.2.3.1',
+            dhcp_end_ip='1.2.3.254',
             vrf=vrf2,
         ).add().commit()
         # When updating the VRF of an existing DHCP Record

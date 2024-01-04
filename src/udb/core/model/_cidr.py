@@ -51,6 +51,8 @@ def _sqlite_inet(value):
     """
     Convert value into exploded ip_address.
     """
+    if value is None:
+        return None
     if isinstance(value, bytes):
         return value
     return _ip_network_to_bytes(ipaddress.ip_network(value, strict=False))
@@ -124,7 +126,18 @@ def _sqlite_subnet_of(value, other):
     Return True if this `value` network is a subnet of `other`.
     """
     if value is None or other is None:
-        return None
+        return False
+    n = _bytes_to_ip_network(value) if isinstance(value, bytes) else ipaddress.ip_network(value)
+    o = _bytes_to_ip_network(other) if isinstance(other, bytes) else ipaddress.ip_network(other)
+    return n.version == o.version and n != o and n.subnet_of(o)
+
+
+def _sqlite_subnet_of_or_equals(value, other):
+    """
+    Return True if this `value` network is a subnet of `other`.
+    """
+    if value is None or other is None:
+        return False
     n = _bytes_to_ip_network(value) if isinstance(value, bytes) else ipaddress.ip_network(value)
     o = _bytes_to_ip_network(other) if isinstance(other, bytes) else ipaddress.ip_network(other)
     return n.version == o.version and n.subnet_of(o)
@@ -136,10 +149,25 @@ class subnet_of(GenericFunction):
     inherit_cache = True
 
 
+class subnet_of_or_equals(GenericFunction):
+    type = Boolean
+    name = "subnet_of_or_equals"
+    inherit_cache = True
+
+
 @compiles(subnet_of, "postgresql")
 def _render_subnet_of_postgresql(element, compiler, **kw):
     """
-    On Postgresql, `subnet_of` is implemented with operator '<<='.
+    On Postgresql, `subnet_of` is implemented with operator '<<'.
+    """
+    left, right = element.clauses
+    return "%s << %s" % (compiler.process(left, **kw), compiler.process(right, **kw))
+
+
+@compiles(subnet_of_or_equals, "postgresql")
+def _render_subnet_of_or_equals_postgresql(element, compiler, **kw):
+    """
+    On Postgresql, `subnet_of_or_equals` is implemented with operator '<<='.
     """
     left, right = element.clauses
     return "%s <<= %s" % (compiler.process(left, **kw), compiler.process(right, **kw))
@@ -159,6 +187,7 @@ def _register_sqlite_cidr_functions(dbapi_con, unused):
         dbapi_con.create_function("text", 1, _sqlite_text, deterministic=True)
         dbapi_con.create_function("masklen", 1, _sqlite_masklen, deterministic=True)
         dbapi_con.create_function("subnet_of", 2, _sqlite_subnet_of, deterministic=True)
+        dbapi_con.create_function("subnet_of_or_equals", 2, _sqlite_subnet_of_or_equals, deterministic=True)
 
 
 class CidrType(TypeDecorator):

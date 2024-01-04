@@ -1,7 +1,7 @@
 {% import "common/status.html" as _status %}
 {% import "components/table.html" as _table with context %}
 {# Macros to create each row with a button#}
-{% macro add_delete_btn(first) %}
+{% macro add_btn(first) %}
   {% if first %}
     <button class="btn btn-outline-primary"
             type="button"
@@ -19,14 +19,14 @@
   {% endif %}
 {% endmacro %}
 {% macro html_row(row, first) %}
-  <tr>
+  <tr class="{% if row.status.data == 0 %}bg-light-danger{% endif %}">
     {% for subfield in row %}
       <td>
         {{ subfield }}
         {% for error in subfield.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
       </td>
     {% endfor %}
-    <td>{{ add_delete_btn(first) }}</td>
+    <td>{{ add_btn(first) }}</td>
   </tr>
 {% endmacro %}
 {# Generate HTML for new row #}
