@@ -48,6 +48,9 @@ class StatusMixing(object):
 
     @validates('status')
     def validate_status(self, key, value):
+        # Support default status none.
+        if value is None:
+            return StatusMixing.STATUS_ENABLED
         if value not in [StatusMixing.STATUS_ENABLED, StatusMixing.STATUS_DISABLED, StatusMixing.STATUS_DELETED]:
             raise ValueError(value)
         return value

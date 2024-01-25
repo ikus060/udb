@@ -66,7 +66,7 @@ class WebCase(BaseClass):
     username = 'admin'
     password = 'admin'
 
-    default_config = {'debug': True}
+    default_config = {'debug': False}
 
     @classmethod
     def setup_class(cls):

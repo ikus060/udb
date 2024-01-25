@@ -151,15 +151,15 @@ def parse_args(args=None, config_file_contents=None):
     parser.add(
         '--session-idle-timeout',
         metavar='MINUTES',
-        help='This timeout defines the amount of time a session will remain active in case there is no activity in the session. User Session will be revoke after this period of inactivity, unless the user selected "remember me". Default 5 minutes.',
-        default=10,
+        help='This timeout defines the amount of time a session will remain active in case there is no activity in the session. User Session will be revoke after this period of inactivity, unless the user selected "remember me". Default 60 minutes.',
+        default=60,
     )
 
     parser.add(
         '--session-absolute-timeout',
         metavar='MINUTES',
-        help='This timeout defines the maximum amount of time a session can be active. After this period, user is forced to (re)authenticate, unless the user selected "remember me". Default 20 minutes.',
-        default=30,
+        help='This timeout defines the maximum amount of time a session can be active. After this period, user is forced to (re)authenticate, unless the user selected "remember me". Default 1440 minutes or 1 day.',
+        default=1440,
     )
 
     parser.add(

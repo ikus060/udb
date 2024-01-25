@@ -46,7 +46,7 @@ class SubnetPageTest(WebCase, CommonTest):
             'range': '192.168.0.0/24',
             'vrf_id': self.vrf.id,
         }
-        self.edit_post = {'notes': 'test', 'vlan': 3, 'ranges-0-range': '192.168.0.0/24'}
+        self.edit_post = {'notes': 'test', 'vlan': 3, 'ranges-0-id': 1, 'ranges-0-range': '192.168.0.0/24'}
 
     def test_edit_dnszone_selenium(self):
         # Given a database with a record
@@ -241,6 +241,7 @@ class SubnetPageTest(WebCase, CommonTest):
         obj = self.obj_cls(**self.new_data).add().commit()
         # Given a new subnet
         payload = {
+            'ranges-0-id': obj.id,
             'ranges-0-range': obj.range,
             'ranges-1-range': '192.168.14.0/24',
         }
@@ -258,9 +259,11 @@ class SubnetPageTest(WebCase, CommonTest):
             Subnet(vrf=self.vrf, range='192.168.0.0/24', slave_subnets=[Subnet(range='192.168.1.0/24')]).add().commit()
         )
         subnetrange_id = obj.slave_subnets[0].id
-        # Given a new subnet
+        # Given an updated slave range
         payload = {
+            'ranges-0-id': obj.id,
             'ranges-0-range': '192.168.0.0/24',
+            'ranges-1-id': obj.slave_subnets[0].id,
             'ranges-1-range': '192.168.14.0/24',
         }
         # When creating the subnet with DHCP ranges
@@ -270,10 +273,8 @@ class SubnetPageTest(WebCase, CommonTest):
         # Then a new subnetrange was created (previous range get soft-delete)
         obj.expire()
         self.assertEqual(subnetrange_id, obj.slave_subnets[0].id)
-        self.assertEqual('192.168.1.0/24', obj.slave_subnets[0].range)
-        self.assertEqual(Subnet.STATUS_DELETED, obj.slave_subnets[0].status)
-        self.assertNotEqual(subnetrange_id, obj.slave_subnets[1].id)
-        self.assertEqual('192.168.14.0/24', obj.slave_subnets[1].range)
+        self.assertEqual('192.168.14.0/24', obj.slave_subnets[0].range)
+        self.assertEqual(Subnet.STATUS_ENABLED, obj.slave_subnets[0].status)
 
     def test_edit_update_range_with_children(self):
         # Given a Subnet with Children DNS Record and DHCP Record
@@ -314,7 +315,7 @@ class SubnetPageTest(WebCase, CommonTest):
         self.assertInBody('DHCP Enabled')
         self.assertInBody('DHCP Start')
         self.assertInBody('DHCP Stop')
-        self.assertInBody('Add row')
+        self.assertInBody('Add Range')
 
     def test_new_duplicate(self):
         # Given a database with a record

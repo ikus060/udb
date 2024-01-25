@@ -477,7 +477,9 @@ class DnsRecordPageTest(WebCase, CommonTest):
             method='POST',
             body={
                 'dnszones': self.zone.id,
+                'ranges-0-id': self.subnet.id,
                 'ranges-0-range': '192.168.1.0/30',
+                'ranges-1-id': self.subnet.slave_subnets[0].id,
                 'ranges-1-range': '2001:db8:85a3::/64',
             },
         )
@@ -498,7 +500,11 @@ class DnsRecordPageTest(WebCase, CommonTest):
             method='POST',
             body={
                 'dnszones': self.zone.id,
+                'ranges-0-id': self.subnet.id,
                 'ranges-0-range': '192.168.1.0/30',
+                'ranges-1-id': self.subnet.slave_subnets[0].id,
+                'ranges-1-range': self.subnet.slave_subnets[0].range,
+                'ranges-1-status': Subnet.STATUS_DELETED,
             },
         )
         # Then slave subnet get soft-delete
@@ -516,7 +522,12 @@ class DnsRecordPageTest(WebCase, CommonTest):
         self.getPage(
             url_for(self.subnet, 'edit'),
             method='POST',
-            body={'ranges-0-range': '192.168.1.0/24', 'ranges-1-range': '2001:db8:85a3::/64'},
+            body={
+                'ranges-0-id': self.subnet.id,
+                'ranges-0-range': '192.168.1.0/24',
+                'ranges-1-id': self.subnet.slave_subnets[0].id,
+                'ranges-1-range': '2001:db8:85a3::/64',
+            },
         )
         # Then an exception is raised.
         self.assertStatus(200)

@@ -1,0 +1,97 @@
+{% import "common/status.html" as _status %}
+{% import "components/table.html" as _table with context %}
+{# Macros to create each row with a button#}
+{% macro add_btn() %}
+  <button class="btn btn-outline-primary"
+          type="button"
+          title="{% trans %}Add Range{% endtrans %}"
+          onclick="$(this).parent().parent().parent().append('{{ html_widget }}'.replaceAll('TOKEN', Math.floor(Math.random() * 65365) + 100))">
+    <i class="bi bi-plus" aria-hidden="true"></i>
+  </button>
+{% endmacro %}
+{% macro remove_btn(row_id) %}
+  <button class="btn btn-outline-danger btn-delete"
+          type="button"
+          title="{% trans %}Remove Range{% endtrans %}"
+          onclick="$('#{{ row_id }}').addClass('deleted'); $('#{{ row_id }}-status').val(0)">
+    <i class="bi bi-trash" aria-hidden="true"></i>
+  </button>
+  <button class="btn btn-outline-primary btn-enable"
+          type="button"
+          title="{% trans %}Enable Range{% endtrans %}"
+          onclick="$('#{{ row_id }}').removeClass('deleted'); $('#{{ row_id }}-status').val(2)">
+    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+  </button>
+{% endmacro %}
+{% macro html_row(row, first) %}
+  <tr id="{{ row.id }}"
+      {% if row.status.data == 0 %}class="deleted"{% endif %}>
+    {# Create each field #}
+    <td>
+      {{ row.range }}
+      {% for error in row.range.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+    </td>
+    <td>
+      {{ row.dhcp }}
+      {% for error in row.dhcp.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+    </td>
+    <td>
+      {{ row.dhcp_start_ip }}
+      {% for error in row.dhcp_start_ip.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+    </td>
+    <td>
+      {{ row.dhcp_end_ip }}
+      {% for error in row.dhcp_end_ip.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+    </td>
+    <td>
+      {# Create hidden field in this column #}
+      {{ row.status }}
+      {{ row._fields['id'] }}
+      {# Create Add or remove button #}
+      {% if first %}
+        {{ add_btn() }}
+      {% else %}
+        {{ remove_btn(row.id) }}
+      {% endif %}
+    </td>
+  </tr>
+{% endmacro %}
+{# Generate HTML for new row #}
+{% set empty_row = field.append_entry() %}
+{% set html_widget = html_row(empty_row, False).replace('-%s-' % (field|length-1), '-TOKEN-').replace('\n','').__str__() %}
+{% set unused = field.pop_entry() %}
+{# Create table to hold each row #}
+<div class="card bg-light mb-2 p-2 {{ class }}">
+  {# Show/Hide deleted button place outside the table.#}
+  <a class="btn btn-sm btn-outline-secondary udb-btn-filter"
+     style="position:absolute;
+            right:0;
+            top: -36px"
+     onclick="$('#{{ field.id }}-table').toggleClass('hide-deleted'); $(this).toggleClass('active')">
+    {% trans %}Show deleted{% endtrans %}
+  </a>
+  <table id="{{ field.id }}-table"
+         class="table table-sm table-hover mb-0 hide-deleted"
+         aria-label="{{ field.name }}">
+    <thead>
+      <tr>
+        <th scope="col">{{ field[0].range.label.text }}</th>
+        <th scope="col">{{ field[0].dhcp.label.text }}</th>
+        <th scope="col">{{ field[0].dhcp_start_ip.label.text }}</th>
+        <th scope="col" colspan="2">{{ field[0].dhcp_end_ip.label.text }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in field %}{{ html_row(row, loop.first) }}{% endfor %}
+    </tbody>
+  </table>
+</div>
+{# Some CSS to handle deleted #}
+<style>
+
+tr.deleted { background: rgba(var(--bs-danger-rgb), 0.2); }
+tr .btn-enable { display: none; }
+tr.deleted .btn-delete { display: none; }
+tr.deleted .btn-enable { display: block; }
+table.hide-deleted tr.deleted { display:none; }
+</style>

@@ -20,23 +20,15 @@ import ipaddress
 import cherrypy
 from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import aliased
-from wtforms.fields import (
-    BooleanField,
-    FieldList,
-    FormField,
-    HiddenField,
-    IntegerField,
-    SelectField,
-    StringField,
-    TextAreaField,
-)
+from wtforms.fields import BooleanField, FieldList, FormField, IntegerField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, StopValidation, ValidationError
+from wtforms.widgets import HiddenInput
 
 from udb.core.model import DnsZone, Subnet, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, EditableTableWidget, SelectMultipleObjectField, SelectObjectField, SwitchWidget
+from .form import CherryForm, JinjaWidget, SelectMultipleObjectField, SelectObjectField, SwitchWidget
 
 
 def _subnet_of(range1, range2):
@@ -83,6 +75,10 @@ def _norm_ipaddress(value):
         return value
 
 
+class SubnetTableWidget(JinjaWidget):
+    filename = 'widgets/SubnetTableWidget.html'
+
+
 class SubnetRangeform(CherryForm):
     range = StringField(
         label=_('IP Ranges'),
@@ -109,7 +105,8 @@ class SubnetRangeform(CherryForm):
         filters=[_norm_ipaddress],
         render_kw={"placeholder": _("Leave blank for default")},
     )
-    status = HiddenField()
+    status = IntegerField(widget=HiddenInput())
+    id = IntegerField(widget=HiddenInput())
 
     def validate_range(self, field):
         try:
@@ -184,7 +181,7 @@ class SubnetForm(CherryForm):
     ranges = FieldList(
         FormField(SubnetRangeform, default=Subnet),
         label=_('IP Ranges'),
-        widget=EditableTableWidget(),
+        widget=SubnetTableWidget(),
         min_entries=1,
         max_entries=100,
     )
@@ -296,39 +293,22 @@ class SubnetForm(CherryForm):
                 continue
             field.populate_obj(obj, name)
         # Populate subnet ranges with a custom implementation to avoid unwanted effect.
-        obj_slave_subnets = list(obj.slave_subnets)
-        for idx, form_subnet_range in enumerate(self.ranges):
-            if idx == 0:
-                # First range correspond to our primary range.
-                match = obj
-                if match.range != form_subnet_range.range.data:
-                    match.range = form_subnet_range.range.data
+        # Lookup subnet by id.
+        obj_slave_subnets = list(obj.slave_subnets) + [obj]
+        for form_subnet_range in self.ranges:
+            range_id = form_subnet_range.data.get('id')
+            match = [r for r in obj_slave_subnets if r.id == range_id]
+            if match:
+                match = match[0]
+                obj_slave_subnets.remove(match)
+            elif range_id:
+                raise ValueError('subnet range cannot be found in database')
             else:
-                # Search for corresponding range in database. Either an exact match or similar subnet.
-                exact_matches = [r for r in obj_slave_subnets if r.range == form_subnet_range.range.data]
-                similar_matches = [
-                    r
-                    for r in obj_slave_subnets
-                    if _subnet_of(r.range, form_subnet_range.range.data)
-                    or _subnet_of(form_subnet_range.range.data, r.range)
-                ]
-                if exact_matches:
-                    match = exact_matches[0]
-                    obj_slave_subnets.remove(match)
-                elif similar_matches:
-                    match = similar_matches[0]
-                    match.range = form_subnet_range.range.data
-                    obj_slave_subnets.remove(match)
-                else:
-                    match = Subnet(range=form_subnet_range.range.data).add()
-                    obj.slave_subnets.append(match)
-            match.dhcp = form_subnet_range.dhcp.data
-            match.dhcp_start_ip = form_subnet_range.dhcp_start_ip.data
-            match.dhcp_end_ip = form_subnet_range.dhcp_end_ip.data
-        # Soft delete unused slave
-        for r in obj_slave_subnets:
-            r.status = Subnet.STATUS_DELETED
-            r.add()
+                # Row without ID are new row.
+                match = Subnet(range=form_subnet_range.range.data).add()
+                obj.slave_subnets.append(match)
+            # Then use default implementation to populate the subnet range.
+            form_subnet_range.form.populate_obj(match)
 
 
 class SubnetPage(CommonPage):

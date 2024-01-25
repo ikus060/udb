@@ -187,10 +187,10 @@ class DhcpRecordPageTest(WebCase, CommonTest):
             url_for(self.subnet, 'edit'),
             method='POST',
             body={
-                'ranges-0-range': '192.168.0.0/24',
-                'ranges-0-dhcp': 'on',
-                'ranges-0-dhcp_start_ip': '192.168.0.5',
-                'ranges-0-dhcp_end_ip': '192.168.0.150',
+                'ranges-0-id': self.subnet.id,
+                'ranges-1-id': slave.id,
+                'ranges-1-status': Subnet.STATUS_DELETED,
+                'ranges-1-range': '192.168.1.0/24',
             },
         )
         # Then slave subnet get soft-delete
@@ -210,6 +210,7 @@ class DhcpRecordPageTest(WebCase, CommonTest):
             url_for(self.subnet, 'edit'),
             method='POST',
             body={
+                'ranges-0-id': self.subnet.id,
                 'ranges-0-range': '1.2.3.0/30',
                 'ranges-0-dhcp': 'on',
                 'ranges-0-dhcp_start_ip': '1.2.3.1',
@@ -234,6 +235,7 @@ class DhcpRecordPageTest(WebCase, CommonTest):
             url_for(self.subnet, 'edit'),
             method='POST',
             body={
+                'ranges-0-id': self.subnet.id,
                 'ranges-0-range': '1.2.3.0/24',
                 'ranges-0-dhcp': 'on',
                 'ranges-0-dhcp_start_ip': '1.2.3.1',
