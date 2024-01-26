@@ -20,7 +20,7 @@ from unittest import mock
 from sqlalchemy import func, select
 
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Environment, Message, Subnet, SubnetRange, User, Vrf
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Environment, Message, Subnet, User, Vrf
 
 
 class DeploymentTest(WebCase):
@@ -29,7 +29,7 @@ class DeploymentTest(WebCase):
         subnet_env = Environment(name='subnet_env', model_name='subnet').add()
         # Given a database with changes
         vrf = Vrf(name='default').add().flush()
-        Subnet(name='LAN', subnet_ranges=[SubnetRange('192.168.14.0/24')], vrf=vrf).add().flush()
+        Subnet(name='LAN', range='192.168.14.0/24', vrf=vrf).add().flush()
         DhcpRecord(ip='192.168.14.10', mac='5e:4b:85:7b:b4:2b', vrf=vrf).add().commit()
         # When creating a deployment
         user = User.query.first()
@@ -43,7 +43,7 @@ class DeploymentTest(WebCase):
         # Given a database with changes
         vrf = Vrf(name='default').add().flush()
         zone = DnsZone(name='example.com')
-        Subnet(name='LAN', subnet_ranges=[SubnetRange('192.168.14.0/24')], vrf=vrf, dnszones=[zone]).add().flush()
+        Subnet(name='LAN', range='192.168.14.0/24', vrf=vrf, dnszones=[zone]).add().flush()
         DnsRecord(name='example.com', type='A', value='192.168.14.15', vrf=vrf).add().commit()
         # When creating a deployment
         user = User.query.first()
@@ -57,10 +57,13 @@ class DeploymentTest(WebCase):
         self.assertEqual(
             deployment.changes[1].changes,
             {
+                'vrf': [None, 'default'],
                 'name': [None, 'example.com'],
                 'type': [None, 'A'],
                 'value': [None, '192.168.14.15'],
-                'vrf': [None, 'default'],
+                'subnet_id': [None, 1],
+                'subnet_estatus': [None, 2],
+                'subnet_range': [None, '192.168.14.0/24'],
             },
         )
 
@@ -70,7 +73,7 @@ class DeploymentTest(WebCase):
         # Given a database with changes
         vrf = Vrf(name='default').add().flush()
         zone = DnsZone(name='example.com')
-        Subnet(name='LAN', subnet_ranges=[SubnetRange('192.168.14.0/24')], vrf=vrf, dnszones=[zone]).add().flush()
+        Subnet(name='LAN', range='192.168.14.0/24', vrf=vrf, dnszones=[zone]).add().flush()
         DhcpRecord(ip='192.168.14.10', mac='5e:4b:85:7b:b4:2b', vrf=vrf).add().commit()
         # When creating a deployment
         user = User.query.first()
@@ -83,7 +86,14 @@ class DeploymentTest(WebCase):
         )
         self.assertEqual(
             deployment.changes[1].changes,
-            {'ip': [None, '192.168.14.10'], 'mac': [None, '5e:4b:85:7b:b4:2b'], 'vrf': [None, 'default']},
+            {
+                'vrf': [None, 'default'],
+                'ip': [None, '192.168.14.10'],
+                'mac': [None, '5e:4b:85:7b:b4:2b'],
+                'subnet_id': [None, 1],
+                'subnet_estatus': [None, 2],
+                'subnet_range': [None, '192.168.14.0/24'],
+            },
         )
 
 
@@ -94,7 +104,7 @@ class EnvironmentTest(WebCase):
         dhcp_env = Environment(name='dhcp_env', model_name='dhcprecord').add().commit()
         # Given a database with changes
         vrf = Vrf(name='default').add().flush()
-        Subnet(name='LAN', subnet_ranges=[SubnetRange('192.168.14.0/24')], vrf=vrf).add().flush()
+        Subnet(name='LAN', range='192.168.14.0/24', vrf=vrf).add().flush()
         DhcpRecord(ip='192.168.14.10', mac='5e:4b:85:7b:b4:2b', vrf=vrf).add().commit()
         # When querying the pending changes
         # Then it return the changes

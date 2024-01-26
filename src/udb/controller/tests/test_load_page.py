@@ -22,7 +22,7 @@ import requests
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DnsRecord, DnsZone, Subnet, SubnetRange, Vrf
+from udb.core.model import DnsRecord, DnsZone, Subnet, Vrf
 
 SUBNET1 = """IPv6,IPv4,VRF,L3VNI,L2VNI,VLAN,TLD,Name,Description
 2a07:6b40::/32 ,,infra,,,,,Infra,
@@ -58,7 +58,7 @@ class LoadPageTest(WebCase):
         # Given a database with a VRF and Subnet
         vrf = Vrf(name='default').add()
         zone = DnsZone(name='bfh.ch').add()
-        Subnet(subnet_ranges=[SubnetRange('147.87.0.0/24')], name='DMZ', vrf=vrf, dnszones=[zone]).add().commit()
+        Subnet(range='147.87.0.0/24', name='DMZ', vrf=vrf, dnszones=[zone]).add().commit()
         # When importing subnet
         r = requests.post(
             url_for('load', ''),

@@ -30,13 +30,12 @@ from sqlalchemy import (
     and_,
     event,
     func,
-    literal,
     or_,
     select,
     tuple_,
     update,
 )
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from sqlalchemy.orm import aliased, declared_attr, foreign, relationship, remote, validates
 from sqlalchemy.types import String
 
@@ -54,7 +53,7 @@ from ._message import MessageMixin
 from ._rule import RuleConstraint
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
-from ._subnet import Subnet, SubnetRange
+from ._subnet import Subnet
 from ._vrf import Vrf
 
 Base = cherrypy.tools.db.get_base()
@@ -74,15 +73,14 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
     # A DHCP Record must be asigned to a specific VRF
     vrf_id = Column(Integer, ForeignKey('vrf.id'), nullable=True)
     vrf = relationship(Vrf, overlaps="_ip", foreign_keys="[DhcpRecord.vrf_id]")
-    # A DHCP Record must be created within a SubnetRange.
-    subnetrange_id = Column(Integer)
+    # A DHCP Record must be created within a Subnet.
     subnet_id = Column(Integer)
     subnet_estatus = Column(Integer)
-    subnetrange_range = Column(CidrType)
-    _subnetrange = relationship(
-        SubnetRange,
+    subnet_range = Column(CidrType)
+    _subnet = relationship(
+        Subnet,
         overlaps="related_dhcp_records,vrf",
-        foreign_keys="[DhcpRecord.subnetrange_id, DhcpRecord.subnet_id, DhcpRecord.subnet_estatus, DhcpRecord.subnetrange_range]",
+        foreign_keys="[DhcpRecord.subnet_id, DhcpRecord.subnet_estatus, DhcpRecord.subnet_range]",
     )
 
     __table_args__ = (
@@ -103,20 +101,18 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
         # Use onupdate CASCADE to automatically update the status based on subnet and vrf status.
         ForeignKeyConstraint(
             [
-                "subnetrange_id",
                 "vrf_id",
                 "subnet_id",
                 "subnet_estatus",
-                "subnetrange_range",
+                "subnet_range",
             ],
             [
-                "subnetrange.id",
-                "subnetrange.vrf_id",
-                "subnetrange.subnet_id",
-                "subnetrange.subnet_estatus",
-                "subnetrange.range",
+                "subnet.vrf_id",
+                "subnet.id",
+                "subnet.estatus",
+                "subnet.range",
             ],
-            name='dhcprecord_subnetrange_fk',
+            name='dhcprecord_subnet_fk',
             onupdate="CASCADE",
             info={
                 'subnet': {
@@ -177,25 +173,23 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
             viewonly=True,
         )
 
-    def find_subnetrange(self):
+    @hybrid_method
+    def _find_parent_subnet(cls, not_id=None):
         """
         Lookup database to find the best subnet range to be linked with this DHCP record.
         """
-        # FIXME Should we filter base on status
-        q = (
-            SubnetRange.query.join(Subnet)
-            .filter(
-                SubnetRange.version == func.family(literal(self.ip)),
-                SubnetRange.start_ip <= func.inet(literal(self.ip)),
-                SubnetRange.end_ip >= func.inet(literal(self.ip)),
-                Subnet.estatus != DnsRecord.STATUS_DELETED,
-            )
-            .order_by(func.masklen(SubnetRange.range).desc())
+        query = Subnet.query.with_entities(Subnet.id, Subnet.estatus, Subnet.range).filter(
+            func.subnet_of_or_equals(func.inet(cls.ip), Subnet.range),
+            Subnet.estatus != DnsRecord.STATUS_DELETED,
         )
-        # If define, filter by VRF
-        if self.vrf:
-            q = q.filter(Subnet.vrf == self.vrf)
-        return q.first()
+        # VRF is optional. Will pick first matching subnet.
+        if isinstance(cls, type):
+            query = query.filter(Subnet.vrf_id == cls.vrf_id)
+        elif cls.vrf and cls.vrf.id:
+            query = query.filter(Subnet.vrf_id == cls.vrf.id)
+        if not_id:
+            query = query.filter(Subnet.id != not_id)
+        return query.order_by(Subnet.range.desc()).limit(1)
 
 
 Index(
@@ -228,94 +222,18 @@ def dns_reload_mac(self, new_value, old_value, initiator):
         self._mac
 
 
-# `insert=True` is required to run before messages hook.
-@event.listens_for(Session, 'before_flush', insert=True)
-def dhcprecord_assign_subnetrange(session, flush_context, instances):
-
-    for obj in itertools.chain(session.new, session.dirty):
-        # When creating new DHCP Record, make sure to asign a SubnetRange and an IP
-        if isinstance(obj, DhcpRecord):
-            # Disosiate the record from it's parent when getting deleted.
-            if obj.status == DhcpRecord.STATUS_DELETED:
-                obj._subnetrange = None
-            else:
-                # Update subnetrange when vrf_id or IP address get updated.
-                if obj.attr_has_changes('vrf', 'ip', 'status'):
-                    obj._subnetrange = obj.find_subnetrange()
-            if obj._subnetrange is not None and obj.vrf != obj._subnetrange.vrf:
-                obj.vrf = obj._subnetrange.vrf
-
-            # Update relation to IP when vrf_id or ip get updated
-            if obj.attr_has_changes('vrf', 'ip') and obj.ip is not None and obj.vrf is not None:
-                obj._ip  # Fetch record for history tracking
-                obj._ip = Ip.unique_ip(session, obj.ip, obj.vrf)
-            if obj.attr_has_changes('mac'):
-                obj._mac  # Fetch record for history tracking
-                obj._mac = Mac.unique_mac(session, obj.mac)
-
-
-# `insert=True` is required to run before messages hook.
-@event.listens_for(Session, 'after_flush', insert=True)
-def dhcprecord_reassign_subnetrange(session, flush_context):
-
-    for obj in itertools.chain(session.new, session.dirty):
-        # When subnet-range get update or created, make sure to re-assign the DHCP accordingly.
-        if isinstance(obj, Subnet) and obj.estatus != Subnet.STATUS_DELETED:
-            for range in obj.subnet_ranges:
-                child = session.execute(
-                    select(SubnetRange.id)
-                    .filter(
-                        SubnetRange.id != obj.id,
-                        SubnetRange.vrf_id == obj.vrf_id,
-                        func.subnet_of(SubnetRange.range, func.inet(range.range)),
-                        SubnetRange.subnet_estatus != Subnet.STATUS_DELETED,
-                    )
-                    .limit(1)
-                ).first()
-                if child:
-                    # Our current subnet range is not a "leaf" so we don't have anything to re-assign.
-                    continue
-                # Our current subnet range is a new "leaf" we need to resign.
-                subquery = (
-                    select(SubnetRange.id, SubnetRange.subnet_id, SubnetRange.subnet_estatus, SubnetRange.range)
-                    .filter(SubnetRange.id == range.id)
-                    .scalar_subquery()
-                )
-                session.execute(
-                    update(DhcpRecord)
-                    .filter(
-                        DhcpRecord.vrf_id == obj.vrf_id,
-                        DhcpRecord.subnetrange_id != range.id,
-                        func.subnet_of(func.inet(DhcpRecord.ip), func.inet(range.range)),
-                        DhcpRecord.estatus != DhcpRecord.STATUS_DELETED,
-                    )
-                    .values(
-                        {
-                            tuple_(
-                                DhcpRecord.subnetrange_id,
-                                DhcpRecord.subnet_id,
-                                DhcpRecord.subnet_estatus,
-                                DhcpRecord.subnetrange_range,
-                            ).self_group(): subquery
-                        }
-                    ),
-                    execution_options={'synchronize_session': False},
-                )
-
-
 CheckConstraint(
     or_(
         DhcpRecord.status == DhcpRecord.STATUS_DELETED,
         and_(
             DhcpRecord.vrf_id.is_not(None),
-            DhcpRecord.subnetrange_id.is_not(None),
             DhcpRecord.subnet_id.is_not(None),
             DhcpRecord.subnet_estatus.is_not(None),
-            DhcpRecord.subnetrange_range.is_not(None),
-            func.subnet_of(DhcpRecord.ip, DhcpRecord.subnetrange_range),
+            DhcpRecord.subnet_range.is_not(None),
+            func.subnet_of_or_equals(DhcpRecord.ip, DhcpRecord.subnet_range),
         ),
     ),
-    name="dhcprecord_subnetrange_required_ck",
+    name="dhcprecord_subnet_required_ck",
     info={
         'description': _("The IP address {obj.ip} is not allowed in any subnet."),
         'field': 'ip',
@@ -323,21 +241,21 @@ CheckConstraint(
             'description': _(
                 'Once DHCP reservation have been created for a subnet range, it is not possible to modify that range.'
             ),
-            'field': 'subnet_ranges',
+            'field': 'slave_subnets',
             'related': lambda obj: DhcpRecord.query.filter(DhcpRecord.subnet_id == obj.id).limit(10).all(),
         },
     },
 )
 
 RuleConstraint(
-    name="dhcprecord_invalid_subnetrange_rule",
+    name="dhcprecord_invalid_subnet_rule",
     model=DhcpRecord,
     statement=select(
         DhcpRecord.id.label('id'),
         DhcpRecord.summary.label('name'),
     )
-    .join(DhcpRecord._subnetrange)
-    .filter(SubnetRange.dhcp.is_(False), DhcpRecord.estatus == DhcpRecord.STATUS_ENABLED),
+    .join(DhcpRecord._subnet)
+    .filter(Subnet.dhcp.is_(False), DhcpRecord.estatus == DhcpRecord.STATUS_ENABLED),
     info={
         'description': _("The subnet for this DHCP is currently disabled."),
         'field': 'ip',
@@ -368,3 +286,59 @@ RuleConstraint(
         'field': 'ip',
     },
 )
+
+
+# `insert=True` is required to run before messages hook.
+@event.listens_for(Session, 'before_flush', insert=True)
+def dhcprecord_before_flush(session, flush_context, instances):
+    for obj in itertools.chain(session.new, session.dirty):
+        # When creating new DHCP Record, make sure to assign a Subnet range and an IP
+        if not isinstance(obj, DhcpRecord):
+            continue
+
+        # Dissosiate the record from it's parent when getting deleted.
+        if obj.status == DhcpRecord.STATUS_DELETED:
+            obj._subnet = None
+        elif obj.attr_has_changes('vrf', 'ip', 'status'):
+            # Update subnetrange when vrf_id or IP address get updated.
+            parent = obj._find_parent_subnet().add_columns(Subnet.vrf_id).first()
+            obj.subnet_id = parent.id if parent else None
+            obj.subnet_estatus = parent.estatus if parent else None
+            obj.subnet_range = parent.range if parent else None
+            obj.vrf = Vrf.query.filter(Vrf.id == parent.vrf_id).first() if parent else None
+
+        # Update relation to IP when vrf_id or ip get updated
+        if obj.attr_has_changes('vrf', 'ip') and obj.ip is not None and obj.vrf is not None:
+            obj._ip  # Fetch record for history tracking
+            obj._ip = Ip.unique_ip(session, obj.ip, obj.vrf)
+
+        if obj.attr_has_changes('mac'):
+            obj._mac  # Fetch record for history tracking
+            obj._mac = Mac.unique_mac(session, obj.mac)
+
+
+@event.listens_for(Subnet, 'after_update')
+@event.listens_for(Subnet, 'after_insert')
+def dhcprecord_subnet_after_update(mapper, conn, obj):
+    # When subnet-range get update or created, make sure to re-assign the DHCP accordingly.
+    if obj.estatus != Subnet.STATUS_DELETED:
+        assign_dhcprecord = (
+            update(DhcpRecord)
+            .filter(
+                DhcpRecord.vrf_id == obj.vrf_id,
+                func.subnet_of_or_equals(DhcpRecord.ip, obj.range),
+                DhcpRecord.estatus != Subnet.STATUS_DELETED,
+            )
+            .values(
+                {
+                    tuple_(
+                        DhcpRecord.subnet_id,
+                        DhcpRecord.subnet_estatus,
+                        DhcpRecord.subnet_range,
+                    )
+                    .self_group(): DhcpRecord._find_parent_subnet()
+                    .scalar_subquery(),
+                }
+            )
+        )
+        conn.execute(assign_dhcprecord, execution_options={'synchronize_session': False})

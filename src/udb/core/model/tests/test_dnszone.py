@@ -21,7 +21,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from udb.controller.tests import WebCase
-from udb.core.model import DnsZone, Message, Subnet, SubnetRange, User, Vrf
+from udb.core.model import DnsZone, Message, Subnet, User, Vrf
 
 
 class DnsZoneTest(WebCase):
@@ -147,7 +147,7 @@ class DnsZoneTest(WebCase):
         zone.commit()
         # When trying to add an allowed subnet to the dns zone
         vrf = Vrf(name='default')
-        subnet = Subnet(name='test', subnet_ranges=[SubnetRange('192.168.1.0/24')], vrf=vrf).add().commit()
+        subnet = Subnet(name='test', range='192.168.1.0/24', vrf=vrf).add().commit()
         zone.subnets.append(subnet)
         zone.add()
         zone.commit()
@@ -160,7 +160,7 @@ class DnsZoneTest(WebCase):
         self.assertEqual(zone, zone.subnets[0].dnszones[0])
         # Then an audit message is created for both objects
         self.assertEqual(2, len(zone.messages))
-        self.assertEqual(zone.messages[-1].changes, {'subnets': [[], ['192.168.1.0/24 (test)']]})
+        self.assertEqual(zone.messages[-1].changes, {'subnets': [[], ['192.168.1.0/24']]})
         self.assertEqual(2, len(subnet.messages))
         self.assertEqual(subnet.messages[-1].changes, {'dnszones': [[], ['bfh.ch']]})
         # Then subnets_count is updated
@@ -169,9 +169,7 @@ class DnsZoneTest(WebCase):
     def test_subnets_deleted(self):
         # Given a database with a deleted subnet
         vrf = Vrf(name='default').add()
-        subnet = Subnet(
-            name='test', subnet_ranges=[SubnetRange('192.168.1.0/24')], status=Subnet.STATUS_DELETED, vrf=vrf
-        ).add()
+        subnet = Subnet(name='test', range='192.168.1.0/24', status=Subnet.STATUS_DELETED, vrf=vrf).add()
         zone = DnsZone(name='bfh.ch', subnets=[subnet]).add().commit()
         # When querying the list of subnets within a zone
         subnets = zone.subnets

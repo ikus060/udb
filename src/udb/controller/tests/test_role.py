@@ -76,7 +76,7 @@ class RoleTest(WebCase):
                 {
                     'url': '/subnet/1/edit',
                     'method': 'POST',
-                    'body': {'dnszones': '3', 'notes': 'newvalue', 'subnet_ranges-1-range': '147.87.250.0/24'},
+                    'body': {'dnszones': '3', 'notes': 'newvalue', 'ranges-1-range': '147.87.250.0/24'},
                 },
                 False,
             ),

@@ -150,10 +150,6 @@ class SwitchWidget(JinjaWidget):
     filename = 'widgets/SwitchWidget.html'
 
 
-class EditableTableWidget(JinjaWidget):
-    filename = 'widgets/EditableTableWidget.html'
-
-
 class SelectMultipleObjectField(SelectMultipleField):
     """
     Field to select one or more sqlalchemy object.

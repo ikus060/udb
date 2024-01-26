@@ -38,7 +38,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.engine import Engine
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from sqlalchemy.orm import aliased, declared_attr, foreign, relationship, remote, validates
 from sqlalchemy.types import Integer, String
 
@@ -54,8 +54,7 @@ from ._message import MessageMixin
 from ._rule import Rule, RuleConstraint
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
-from ._subnet import Subnet, SubnetRange
-from ._update import constraint_add, constraint_exists
+from ._subnet import Subnet
 from ._vrf import Vrf
 
 Base = cherrypy.tools.db.get_base()
@@ -63,9 +62,9 @@ Base = cherrypy.tools.db.get_base()
 Session = cherrypy.tools.db.get_session()
 
 
-def _collapse_subnet_ranges(obj):
+def _collapse_slave_subnets(obj):
     """
-    Collect list of available subnetrange that could be used for the dns record.
+    Collect list of available subnet range that could be used for the dns record.
     """
     if not obj:
         return None
@@ -73,13 +72,12 @@ def _collapse_subnet_ranges(obj):
     # Collect list of subnet range (separated by comma) matching the dnsrecord zone name
     a1 = aliased(DnsZone)
     ranges_subquery = (
-        SubnetRange.query.with_entities(func.group_concat(SubnetRange.range.text()))
-        .join(SubnetRange.parent)
+        Subnet.query.with_entities(func.group_concat(Subnet.range.text()))
         .join(Subnet.dnszones)
         .filter(
             DnsZone.id == a1.id,
             Subnet.estatus != Subnet.STATUS_DELETED,
-            SubnetRange.version == (6 if obj.type == 'AAAA' or obj.name.endswith('.ip6.arpa') else 4),
+            func.family(Subnet.range) == (6 if obj.type == 'AAAA' or obj.name.endswith('.ip6.arpa') else 4),
         )
         .scalar_subquery()
     )
@@ -218,15 +216,14 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
     dnszone_estatus = Column(Integer)
     _dnszone = relationship(DnsZone)
 
-    # A DNS Record must be created within a SubnetRange (A, AAAA, PTR)
-    subnetrange_id = Column(Integer)
+    # A DNS Record must be created within a Subnet range (A, AAAA, PTR)
     subnet_id = Column(Integer)
     subnet_estatus = Column(Integer)
-    subnetrange_range = Column(CidrType)
-    _subnetrange = relationship(
-        SubnetRange,
+    subnet_range = Column(CidrType)
+    _subnet = relationship(
+        Subnet,
         overlaps="vrf",
-        foreign_keys="[DnsRecord.subnetrange_id, DnsRecord.subnet_id, DnsRecord.subnet_estatus, DnsRecord.subnetrange_range]",
+        foreign_keys="[DnsRecord.subnet_id, DnsRecord.subnet_estatus, DnsRecord.subnet_range]",
     )
 
     __table_args__ = (
@@ -253,21 +250,19 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
         # Use onupdate CASCADE to automatically update the status based on subnet and vrf status.
         ForeignKeyConstraint(
             [
-                "subnetrange_id",
-                "vrf_id",
                 "subnet_id",
+                "vrf_id",
                 "subnet_estatus",
-                "subnetrange_range",
+                "subnet_range",
             ],
             [
-                "subnetrange.id",
-                "subnetrange.vrf_id",
-                "subnetrange.subnet_id",
-                "subnetrange.subnet_estatus",
-                "subnetrange.range",
+                "subnet.id",
+                "subnet.vrf_id",
+                "subnet.estatus",
+                "subnet.range",
             ],
             onupdate="CASCADE",
-            name="dnsrecord_subnetrange_fk",
+            name="dnsrecord_subnet_fk",
             info={
                 'subnet': {
                     'description': _(
@@ -594,27 +589,30 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
         ).order_by(-func.length(DnsZone.name))
         return q.first()
 
-    def find_subnetrange(self):
+    @hybrid_method
+    def _find_parent_subnet(cls, not_id=None):
         """
         Lookup database to find the best matching Subnet for this record.
         """
-        q = (
-            SubnetRange.query.join(SubnetRange.parent)
+        query = (
+            Subnet.query.with_entities(Subnet.id, Subnet.estatus, Subnet.range)
             .join(Subnet.dnszones)
             .filter(
-                SubnetRange.version == func.family(literal(self.ip_value)),
-                SubnetRange.start_ip <= func.inet(literal(self.ip_value)),
-                SubnetRange.end_ip >= func.inet(literal(self.ip_value)),
-                SubnetRange.subnet_estatus != Subnet.STATUS_DELETED,
+                func.subnet_of_or_equals(func.inet(cls.generated_ip or literal(cls.ip_value)), Subnet.range),
+                Subnet.estatus != DnsRecord.STATUS_DELETED,
             )
         )
-        # If define, filter by VRF
-        if self.vrf:
-            q = q.filter(Subnet.vrf == self.vrf)
+        # VRF is optional. Will pick first matching subnet.
+        if isinstance(cls, type):
+            query = query.filter(Subnet.vrf_id == cls.vrf_id)
+        elif cls.vrf and cls.vrf.id:
+            query = query.filter(Subnet.vrf_id == cls.vrf.id)
         # Filter by DNSZone
-        if self._dnszone:
-            q = q.filter(DnsZone.id == self._dnszone.id)
-        return q.first()
+        if cls.dnszone_id or (cls._dnszone and cls._dnszone.id):
+            query = query.filter(DnsZone.id == (cls.dnszone_id or cls._dnszone.id))
+        if not_id:
+            query = query.filter(Subnet.id != not_id)
+        return query.order_by(Subnet.range.desc()).limit(1)
 
 
 @event.listens_for(DnsRecord.ip_value, 'set')
@@ -626,106 +624,80 @@ def dns_reload_ip(self, new_value, old_value, initiator):
 
 # insert=True is required to run before messages hook.
 @event.listens_for(Session, 'before_flush', insert=True)
-def dnsrecord_assign_subnetrange(session, flush_context, instances):
+def dnsrecord_before_flush(session, flush_context, instances):
 
-    # When creating new DHCP Record, make sure to asign a SubnetRange and an IP
+    # When creating or updating DNS Record, make sure to assign a Subnet and an IP
     for obj in itertools.chain(session.new, session.dirty):
-        if isinstance(obj, DnsRecord):
-            # Run default validation of field.
-            obj._validate()
-
-            # Dissociate the record from it's parent when getting deleted.
-            if obj.status == DnsRecord.STATUS_DELETED:
-                obj._dnszone = None
-            elif obj.attr_has_changes(obj.hostname_field, 'status'):
-                # Lookup dnszone
-                obj._dnszone = obj.find_dnszone()
-
-            # Disosiate the record from it's parent when getting deleted.
-            if obj.status == DnsRecord.STATUS_DELETED:
-                obj._subnetrange = None
-            elif obj._dnszone and obj.ip_field:
-                # Update subnetrange when vrf_id or IP address get updated.
-                if obj.attr_has_changes('vrf', obj.ip_field, 'status'):
-                    obj._subnetrange = obj.find_subnetrange()
-            if obj._subnetrange is not None and obj.vrf != obj._subnetrange.vrf:
-                obj.vrf = obj._subnetrange.vrf
-
-            # Update relation to IP when vrf_id or ip get updated
-            if obj.vrf and obj.ip_field and obj.attr_has_changes('vrf', obj.ip_field):
-                from ._ip import Ip
-
-                obj._ip  # Fetch record for history tracking
-                obj._ip = Ip.unique_ip(session, obj.ip_value, obj.vrf)
-            else:
-                obj._ip = None
-
-
-# `insert=True` is required to run before messages hook.
-@event.listens_for(Session, 'after_flush', insert=True)
-def dnsrecord_reassign_subnetrange(session, flush_context):
-    # Collect all pair of subnet range & zone.
-    pairs = set()
-    for obj in itertools.chain(session.new, session.dirty):
-        if isinstance(obj, Subnet) and obj.estatus != Subnet.STATUS_DELETED:
-            for range in inspect(obj).attrs['subnet_ranges'].history.added or []:
-                for zone in obj.dnszones:
-                    pairs.add((range, zone))
-            for zone in inspect(obj).attrs['dnszones'].history.added or []:
-                for range in obj.subnet_ranges:
-                    pairs.add((range, zone))
-        elif isinstance(obj, DnsZone) and obj.estatus != DnsZone.STATUS_DELETED:
-            # Use history tracker to get list of subnet added to the dns zone.
-            for subnet in inspect(obj).attrs['subnets'].history.added or []:
-                for range in subnet.subnet_ranges:
-                    pairs.add((range, obj))
-
-    # When subnet-range get update or created, make sure to re-assign the DNS Record accordingly.
-    for range, zone in pairs:
-        child = session.execute(
-            select(SubnetRange.id)
-            .join(SubnetRange.parent)
-            .join(Subnet.dnszones)
-            .filter(
-                SubnetRange.id != range.id,
-                SubnetRange.vrf_id == range.vrf_id,
-                DnsZone.id == zone.id,
-                func.subnet_of(SubnetRange.range, func.inet(range.range)),
-                SubnetRange.subnet_estatus != Subnet.STATUS_DELETED,
-            )
-            .limit(1)
-        ).first()
-        if child:
-            # Our current subnet range is not a "leaf" so we don't have anything to re-assign.
+        if not isinstance(obj, DnsRecord):
             continue
-        # Our current subnet range is a new "leaf" we need to resign.
-        subquery = (
-            select(SubnetRange.id, SubnetRange.subnet_id, SubnetRange.subnet_estatus, SubnetRange.range)
-            .filter(SubnetRange.id == range.id)
-            .scalar_subquery()
-        )
-        session.execute(
+
+        # Run default validation of field.
+        obj._validate()
+
+        if obj.status == DnsRecord.STATUS_DELETED:
+            # Dissociate the record from it's parent when getting deleted.
+            obj._dnszone = None
+            obj._subnet = None
+        elif obj.attr_has_changes(obj.hostname_field, 'status'):
+            # Lookup dnszone based on hostname
+            obj._dnszone = obj.find_dnszone()
+
+        # This is required for Json API.
+        if obj.attr_has_changes('vrf_id'):
+            obj.vrf = Vrf.query.filter(Vrf.id == obj.vrf_id).first()
+
+        if obj._dnszone and obj.ip_field and obj.attr_has_changes('vrf_id', 'vrf', obj.ip_field, 'status'):
+            # Update subnet when vrf_id or IP address get updated.
+            parent = obj._find_parent_subnet().add_columns(Subnet.vrf_id).first()
+            obj.subnet_id = parent.id if parent else None
+            obj.subnet_estatus = parent.estatus if parent else None
+            obj.subnet_range = parent.range if parent else None
+            obj.vrf = Vrf.query.filter(Vrf.id == parent.vrf_id).first() if parent else None
+
+        # Update relation to IP when vrf_id or ip get updated
+        if obj.vrf and obj.ip_field and obj.attr_has_changes('vrf', obj.ip_field):
+            from ._ip import Ip
+
+            obj._ip  # Fetch record for history tracking
+            obj._ip = Ip.unique_ip(session, obj.ip_value, obj.vrf)
+        else:
+            obj._ip = None
+
+
+@event.listens_for(Session, "after_flush")
+def dnsrecord_after_flush(session, flush_context):
+    inserts = set()
+    # Collect any changes made to subnet and dnszones
+    for obj in list(session.new) + list(session.dirty):
+        if isinstance(obj, Subnet) and obj.attr_has_changes('dnszones'):
+            for related in inspect(obj).attrs.dnszones.history.added:
+                inserts.add((obj, related))
+        elif isinstance(obj, DnsZone) and obj.attr_has_changes('subnets'):
+            for related in inspect(obj).attrs.subnets.history.added:
+                inserts.add((related, obj))
+    # Then update all dns record
+    for subnet, dnszone in inserts:
+        assign_dnsrecord = (
             update(DnsRecord)
             .filter(
-                DnsRecord.vrf_id == range.vrf_id,
-                DnsRecord.dnszone_id == zone.id,
-                DnsRecord.subnetrange_id != range.id,
-                func.subnet_of(func.inet(DnsRecord.generated_ip), func.inet(range.range)),
-                DnsRecord.type.in_(['A', 'AAAA', 'PTR']),
-                DnsRecord.estatus != DnsRecord.STATUS_DELETED,
+                DnsRecord.vrf_id == subnet.vrf_id,
+                DnsRecord.dnszone_id == dnszone.id,
+                func.subnet_of_or_equals(DnsRecord.generated_ip, subnet.range),
+                DnsRecord.estatus != Subnet.STATUS_DELETED,
             )
             .values(
                 {
                     tuple_(
-                        DnsRecord.subnetrange_id,
                         DnsRecord.subnet_id,
                         DnsRecord.subnet_estatus,
-                        DnsRecord.subnetrange_range,
-                    ).self_group(): subquery
+                        DnsRecord.subnet_range,
+                    )
+                    .self_group(): DnsRecord._find_parent_subnet()
+                    .scalar_subquery(),
                 }
-            ),
-            execution_options={'synchronize_session': False},
+            )
         )
+        session.execute(assign_dnsrecord, execution_options={'synchronize_session': False})
 
 
 # Make sure `type` only matches supported types.
@@ -760,31 +732,30 @@ dnsrecord_dnszone_required_ck = CheckConstraint(
     },
 )
 
-dnsrecord_subnetrange_required_ck = CheckConstraint(
+dnsrecord_subnet_required_ck = CheckConstraint(
     or_(
         DnsRecord.status == DnsRecord.STATUS_DELETED,
         DnsRecord.type.not_in(['A', 'AAAA', 'PTR']),
         and_(
             DnsRecord.vrf_id.is_not(None),
-            DnsRecord.subnetrange_id.is_not(None),
             DnsRecord.subnet_id.is_not(None),
             DnsRecord.subnet_estatus.is_not(None),
-            DnsRecord.subnetrange_range.is_not(None),
-            func.subnet_of(DnsRecord.generated_ip, DnsRecord.subnetrange_range),
+            DnsRecord.subnet_range.is_not(None),
+            func.subnet_of_or_equals(DnsRecord.generated_ip, DnsRecord.subnet_range),
         ),
     ),
-    name="dnsrecord_subnetrange_required_ck",
+    name="dnsrecord_subnet_required_ck",
     info={
         'description': _(
             'The IP address {obj.ip_value} is not allowed in the DNS zone {obj.dnszone_name}. Consider modifying the list of authorized subnets for this zone.'
         ),
         'field': 'value',
-        'related': _collapse_subnet_ranges,
+        'related': _collapse_slave_subnets,
         'subnet': {
             'description': _(
                 "Once DNS records have been created for a subnet range, it is not possible to modify this range."
             ),
-            'field': 'subnet_ranges',
+            'field': 'slave_subnets',
             'related': lambda obj: DnsRecord.query.filter(DnsRecord.subnet_id == obj.id).limit(10).all(),
         },
     },
@@ -974,12 +945,3 @@ RuleConstraint(
         ).first(),
     },
 )
-
-
-@event.listens_for(Base.metadata, 'after_create')
-def create_missing_constraints(target, conn, **kw):
-    if not constraint_exists(conn, dnsrecord_subnetrange_required_ck):
-        constraint_add(conn, dnsrecord_subnetrange_required_ck)
-    # Create new constraint.
-    if not constraint_exists(conn, dnsrecord_dnszone_required_ck):
-        constraint_add(conn, dnsrecord_subnetrange_required_ck)

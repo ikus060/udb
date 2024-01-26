@@ -9,7 +9,7 @@
   {% endif %}
 {% endmacro %}
 {% macro bg_color(obj) %}
-  {%- if obj.status != 2 or force -%}
-    bg-light-{{ status_bs_cls.get(obj.status, 'secondary') }}
+  {%- if obj.estatus != 2 or force -%}
+    bg-light-{{ status_bs_cls.get(obj.estatus, 'secondary') }}
   {%- endif -%}
 {% endmacro %}

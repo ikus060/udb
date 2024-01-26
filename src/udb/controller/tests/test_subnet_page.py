@@ -21,7 +21,7 @@ from selenium.webdriver.common.keys import Keys
 
 from udb.controller import url_for
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, SubnetRange, Vrf
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, Vrf
 
 from .test_common_page import CommonTest
 
@@ -37,13 +37,16 @@ class SubnetPageTest(WebCase, CommonTest):
     def setUp(self):
         super().setUp()
         self.vrf = Vrf(name='default').add().commit()
-        self.new_data = {'subnet_ranges': [SubnetRange('192.168.0.0/24')], 'vrf_id': self.vrf.id}
-        self.new_post = {'subnet_ranges-0-range': '192.168.0.0/24', 'vrf_id': self.vrf.id}
+        self.new_data = {'range': '192.168.0.0/24', 'vrf': self.vrf}
+        self.new_post = {'ranges-0-range': '192.168.0.0/24', 'vrf_id': self.vrf.id}
         self.new_json = {
-            'subnet_ranges': [{'dhcp': False, 'dhcp_end_ip': None, 'dhcp_start_ip': None, 'range': '192.168.0.0/24'}],
+            'dhcp': False,
+            'dhcp_end_ip': None,
+            'dhcp_start_ip': None,
+            'range': '192.168.0.0/24',
             'vrf_id': self.vrf.id,
         }
-        self.edit_post = {'notes': 'test', 'vlan': 3, 'subnet_ranges-0-range': '192.168.0.0/24'}
+        self.edit_post = {'notes': 'test', 'vlan': 3, 'ranges-0-id': 1, 'ranges-0-range': '192.168.0.0/24'}
 
     def test_edit_dnszone_selenium(self):
         # Given a database with a record
@@ -71,9 +74,7 @@ class SubnetPageTest(WebCase, CommonTest):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add().commit()
         # When trying to update it's name
-        self.getPage(
-            url_for(self.base_url, obj.id, 'edit'), method='POST', body={'subnet_ranges-0-range': ['invalid cidr']}
-        )
+        self.getPage(url_for(self.base_url, obj.id, 'edit'), method='POST', body={'ranges-0-range': ['invalid cidr']})
         # Then edit page is displayed with an error message
         self.assertStatus(200)
         self.assertInBody('invalid cidr is not a valid IPv4 or IPv6 range')
@@ -81,7 +82,7 @@ class SubnetPageTest(WebCase, CommonTest):
     def test_edit_with_dnszone(self):
         # Given a database with a record
         zone = DnsZone(name='examples.com').add()
-        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[zone], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(range='192.168.0.1/24', dnszones=[zone], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         # Then the zone is selected
@@ -91,12 +92,12 @@ class SubnetPageTest(WebCase, CommonTest):
     def test_edit_add_dnszone(self):
         # Given a database with a record
         zone = DnsZone(name='examples.com').add().flush()
-        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(range='192.168.0.1/24', dnszones=[], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(
             url_for(self.base_url, obj.id, 'edit'),
             method='POST',
-            body={'dnszones': zone.id, 'subnet_ranges-0-range': '192.168.0.0/24'},
+            body={'dnszones': zone.id, 'ranges-0-range': '192.168.0.0/24'},
         )
         self.assertStatus(303)
         # Then the zone is selected
@@ -107,7 +108,7 @@ class SubnetPageTest(WebCase, CommonTest):
     def test_edit_with_disabled_vrf(self):
         # Given a Subnet associated to deleted VRF
         self.vrf.status = Vrf.STATUS_DISABLED
-        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(range='192.168.0.1/24', dnszones=[], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
@@ -117,7 +118,7 @@ class SubnetPageTest(WebCase, CommonTest):
     def test_edit_assign_deleted_vrf(self):
         # Given a Subnet associated to VRF
         deleted_vrf = Vrf(name='MyVrf', status=Vrf.STATUS_DELETED).add()
-        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.0/24')], dnszones=[], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(range='192.168.0.0/24', dnszones=[], vrf=self.vrf).add().commit()
         # When editing the Subnet
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
@@ -127,7 +128,7 @@ class SubnetPageTest(WebCase, CommonTest):
         self.getPage(
             url_for(self.base_url, obj.id, 'edit'),
             method='POST',
-            body={'vrf_id': deleted_vrf.id, 'subnet_ranges-0-range': '192.168.0.0/24'},
+            body={'vrf_id': deleted_vrf.id, 'ranges-0-range': '192.168.0.0/24'},
         )
         self.assertStatus(303)
         obj.expire()
@@ -140,7 +141,7 @@ class SubnetPageTest(WebCase, CommonTest):
     def test_edit_with_disabled_zone(self):
         # Given a Subnet associated to deleted VRF
         zone = DnsZone(name='examples.com', status=DnsZone.STATUS_DISABLED).add().flush()
-        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.1/24')], dnszones=[zone], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(range='192.168.0.1/24', dnszones=[zone], vrf=self.vrf).add().commit()
         # When editing the record
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
@@ -151,7 +152,7 @@ class SubnetPageTest(WebCase, CommonTest):
         # Given a Subnet associated to VRF
         zone = DnsZone(name='examples.com').add().flush()
         deleted_zone = DnsZone(name='foo.com', status=DnsZone.STATUS_DELETED).add().flush()
-        obj = self.obj_cls(subnet_ranges=[SubnetRange('192.168.0.0/24')], dnszones=[zone], vrf=self.vrf).add().commit()
+        obj = self.obj_cls(range='192.168.0.0/24', dnszones=[zone], vrf=self.vrf).add().commit()
         # When editing the Subnet
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
@@ -162,7 +163,7 @@ class SubnetPageTest(WebCase, CommonTest):
         self.getPage(
             url_for(self.base_url, obj.id, 'edit'),
             method='POST',
-            body={'dnszones': [zone.id, deleted_zone.id], 'subnet_ranges-0-range': '192.168.0.0/24'},
+            body={'dnszones': [zone.id, deleted_zone.id], 'ranges-0-range': '192.168.0.0/24'},
         )
         self.assertStatus(303)
         obj.expire()
@@ -176,9 +177,10 @@ class SubnetPageTest(WebCase, CommonTest):
     @parameterized.expand(
         [
             ('minus', -1, False),
-            ('zero', 0, True),
-            ('max', 2147483647, True),
-            ('overlimit', 2147483648, False),
+            ('zero', 0, False),
+            ('min', 1, True),
+            ('max', 4095, True),
+            ('overlimit', 16777216, False),
         ]
     )
     def test_edit_l3vni_l2vni_vlan(self, unused, value, expect_succes):
@@ -192,7 +194,7 @@ class SubnetPageTest(WebCase, CommonTest):
                 'l3vni': str(value),
                 'l2vni': str(value),
                 'vlan': str(value),
-                'subnet_ranges-0-range': '192.168.0.0/24',
+                'ranges-0-range': '192.168.0.0/24',
             },
         )
         if expect_succes:
@@ -205,9 +207,9 @@ class SubnetPageTest(WebCase, CommonTest):
             self.assertEqual(value, obj.vlan)
         else:
             self.assertStatus(200)
-            self.assertInBody('L3VNI must be at least 0.')
-            self.assertInBody('L2VNI must be at least 0.')
-            self.assertInBody('VLAN must be at least 0.')
+            self.assertInBody('The Layer 2 Virtual Network Identifier can range from 1 to 16777215.')
+            self.assertInBody('The Layer 3 Virtual Network Identifier can range from 1 to 16777215.')
+            self.assertInBody('The VLAN ID can range from 1 to 4095.')
 
     @parameterized.expand(
         [
@@ -223,25 +225,25 @@ class SubnetPageTest(WebCase, CommonTest):
             url_for(self.base_url, obj.id, 'edit'),
             method='POST',
             body={
-                'subnet_ranges-0-range': '192.168.0.0/24',
-                'subnet_ranges-0-dhcp': new_value,
-                'subnet_ranges-0-dhcp_start_ip': '192.168.0.1',
-                'subnet_ranges-0-dhcp_end_ip': '192.168.0.100',
+                'ranges-0-range': '192.168.0.0/24',
+                'ranges-0-dhcp': new_value,
+                'ranges-0-dhcp_start_ip': '192.168.0.1',
+                'ranges-0-dhcp_end_ip': '192.168.0.100',
             },
         )
         self.assertStatus(303)
         # Then object is updated.
         obj.expire()
-        self.assertEqual(expected_value, obj.subnet_ranges[0].dhcp)
+        self.assertEqual(expected_value, obj.dhcp)
 
     def test_edit_add_range(self):
         # Given a database with a record
         obj = self.obj_cls(**self.new_data).add().commit()
-        subnetrange_id = obj.subnet_ranges[0].id
         # Given a new subnet
         payload = {
-            'subnet_ranges-0-range': obj.subnet_ranges[0].range,
-            'subnet_ranges-1-range': '192.168.14.0/24',
+            'ranges-0-id': obj.id,
+            'ranges-0-range': obj.range,
+            'ranges-1-range': '192.168.14.0/24',
         }
         # When creating the subnet with DHCP ranges
         self.getPage(url_for(obj, 'edit'), method='POST', body=payload)
@@ -249,29 +251,42 @@ class SubnetPageTest(WebCase, CommonTest):
         self.assertStatus(303)
         # Then subnetrange was updated too
         obj.expire()
-        self.assertEqual(subnetrange_id, obj.subnet_ranges[0].id)
+        self.assertEqual('192.168.14.0/24', obj.slave_subnets[0].range)
 
     def test_edit_update_range(self):
         # Given a database with a record
-        obj = self.obj_cls(**self.new_data).add().commit()
-        subnetrange_id = obj.subnet_ranges[0].id
-        # Given a new subnet
+        obj = (
+            Subnet(vrf=self.vrf, range='192.168.0.0/24', slave_subnets=[Subnet(range='192.168.1.0/24')]).add().commit()
+        )
+        subnetrange_id = obj.slave_subnets[0].id
+        # Given an updated slave range
         payload = {
-            'subnet_ranges-0-range': '192.168.14.0/24',
+            'ranges-0-id': obj.id,
+            'ranges-0-range': '192.168.0.0/24',
+            'ranges-1-id': obj.slave_subnets[0].id,
+            'ranges-1-range': '192.168.14.0/24',
         }
         # When creating the subnet with DHCP ranges
         self.getPage(url_for(obj, 'edit'), method='POST', body=payload)
         # Then subnet get updated
         self.assertStatus(303)
-        # Then a new subnetrange was created
+        # Then a new subnetrange was created (previous range get soft-delete)
         obj.expire()
-        self.assertNotEqual(subnetrange_id, obj.subnet_ranges[0].id)
+        self.assertEqual(subnetrange_id, obj.slave_subnets[0].id)
+        self.assertEqual('192.168.14.0/24', obj.slave_subnets[0].range)
+        self.assertEqual(Subnet.STATUS_ENABLED, obj.slave_subnets[0].status)
 
     def test_edit_update_range_with_children(self):
         # Given a Subnet with Children DNS Record and DHCP Record
         zone = DnsZone(name='example.com').add()
-        subnet = Subnet(dnszones=[zone], **self.new_data).add().commit()
-        subnetrange_id = subnet.subnet_ranges[0].id
+        subnet = (
+            Subnet(
+                vrf=self.vrf, dnszones=[zone], range='192.168.1.0/24', slave_subnets=[Subnet(range='192.168.0.0/24')]
+            )
+            .add()
+            .commit()
+        )
+        subnetrange_id = subnet.slave_subnets[0].id
         DnsRecord(name='foo.example.com', type='A', value='192.168.0.25').add().commit()
         DhcpRecord(ip='192.168.0.50', mac='FF:40:23:5D:5D:9F').add().commit()
         # When editing the subnet range with a similar range.
@@ -279,15 +294,17 @@ class SubnetPageTest(WebCase, CommonTest):
             url_for(subnet, 'edit'),
             method='POST',
             body={
-                'subnet_ranges-0-range': '192.168.0.0/22',
+                'ranges-0-range': '192.168.1.0/24',
+                'ranges-1-range': '192.168.0.0/25',
                 'dnszones': zone.id,
             },
         )
         # Then the record get updatd without error.
         self.assertStatus(303)
         subnet.expire()
-        self.assertEqual(subnetrange_id, subnet.subnet_ranges[0].id)
-        self.assertEqual('192.168.0.0/22', subnet.subnet_ranges[0].range)
+        self.assertEqual('192.168.1.0/24', subnet.range)
+        self.assertEqual('192.168.0.0/25', subnet.slave_subnets[0].range)
+        self.assertEqual(subnetrange_id, subnet.slave_subnets[0].id)
 
     def test_new_ranges(self):
         # Given a data without records
@@ -298,7 +315,7 @@ class SubnetPageTest(WebCase, CommonTest):
         self.assertInBody('DHCP Enabled')
         self.assertInBody('DHCP Start')
         self.assertInBody('DHCP Stop')
-        self.assertInBody('Add row')
+        self.assertInBody('Add Range')
 
     def test_new_duplicate(self):
         # Given a database with a record
@@ -428,10 +445,10 @@ class SubnetPageTest(WebCase, CommonTest):
         # Given a new subnet
         payload = {
             'name': 'My Subnet',
-            'subnet_ranges-0-range': range,
-            'subnet_ranges-0-dhcp': 'on' if dhcp_enabled else '',
-            'subnet_ranges-0-dhcp_start_ip': dhcp_start_ip,
-            'subnet_ranges-0-dhcp_end_ip': dhcp_end_ip,
+            'ranges-0-range': range,
+            'ranges-0-dhcp': 'on' if dhcp_enabled else '',
+            'ranges-0-dhcp_start_ip': dhcp_start_ip,
+            'ranges-0-dhcp_end_ip': dhcp_end_ip,
             'vrf_id': self.vrf.id,
         }
         # When creating the subnet with DHCP ranges
@@ -446,9 +463,12 @@ class SubnetPageTest(WebCase, CommonTest):
     def test_list_dhcp_enabled(self):
         # Given a subnet with multiple range with DHCP enabled
         Subnet(
-            subnet_ranges=[
-                SubnetRange('192.168.1.0/24', dhcp=True, dhcp_start_ip='192.168.1.1', dhcp_end_ip='192.168.1.254'),
-                SubnetRange('192.168.2.0/24', dhcp=True, dhcp_start_ip='192.168.2.1', dhcp_end_ip='192.168.2.254'),
+            range='192.168.1.0/24',
+            dhcp=True,
+            dhcp_start_ip='192.168.1.1',
+            dhcp_end_ip='192.168.1.254',
+            slave_subnets=[
+                Subnet(range='192.168.2.0/24', dhcp=True, dhcp_start_ip='192.168.2.1', dhcp_end_ip='192.168.2.254'),
             ],
             name='foo',
             vrf=self.vrf,
@@ -483,7 +503,7 @@ class SubnetPageTest(WebCase, CommonTest):
         # Given a subnet associated with a deleted DNS Zone.
         zone = DnsZone(name='deleted.com', status=DnsZone.STATUS_DELETED).add()
         Subnet(
-            subnet_ranges=[SubnetRange('192.168.1.0/24')],
+            range='192.168.1.0/24',
             name='foo',
             vrf=self.vrf,
             dnszones=[zone],
@@ -500,7 +520,7 @@ class SubnetPageTest(WebCase, CommonTest):
                     1,
                     0,
                     '192.168.1.0/24',
-                    '',
+                    None,
                     'foo',
                     'default',
                     None,
@@ -516,14 +536,19 @@ class SubnetPageTest(WebCase, CommonTest):
 
     def test_depth(self):
         # Given a database with an existing record
-        subnet1 = Subnet(
-            subnet_ranges=[
-                SubnetRange('192.168.1.0/24', dhcp=True, dhcp_start_ip='192.168.1.1', dhcp_end_ip='192.168.1.254')
-            ],
-            name='foo',
-            vrf=self.vrf,
-        ).add()
-        subnet2 = Subnet(subnet_ranges=[SubnetRange('192.168.1.128/30')], name='bar', vrf=self.vrf).add().commit()
+        subnet1 = (
+            Subnet(
+                range='192.168.1.0/24',
+                dhcp=True,
+                dhcp_start_ip='192.168.1.1',
+                dhcp_end_ip='192.168.1.254',
+                name='foo',
+                vrf=self.vrf,
+            )
+            .add()
+            .flush()
+        )
+        subnet2 = Subnet(range='192.168.1.128/30', name='bar', vrf=self.vrf).add().commit()
         self.assertEqual(1, len(subnet1.messages))
         self.assertEqual(1, len(subnet2.messages))
         # When querying depth
@@ -538,7 +563,7 @@ class SubnetPageTest(WebCase, CommonTest):
                     1,
                     0,
                     '192.168.1.0/24',
-                    '',
+                    None,
                     'foo',
                     'default',
                     None,
@@ -555,7 +580,7 @@ class SubnetPageTest(WebCase, CommonTest):
                     2,
                     1,
                     '192.168.1.128/30',
-                    '',
+                    None,
                     'bar',
                     'default',
                     None,
@@ -571,11 +596,11 @@ class SubnetPageTest(WebCase, CommonTest):
 
     def test_depth_index_ipv4(self):
         # Given a database with an existing record
-        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/16')], name='bar1', vrf=self.vrf).add()
-        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/24')], name='bar2', vrf=self.vrf).add()
-        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/26')], name='bar3', vrf=self.vrf).add()
-        Subnet(subnet_ranges=[SubnetRange('192.168.0.64/26')], name='bar4', vrf=self.vrf).add()
-        Subnet(subnet_ranges=[SubnetRange('192.168.14.0/24')], name='bar5', vrf=self.vrf).add().commit()
+        Subnet(range='192.168.0.0/16', name='bar1', vrf=self.vrf).add().flush()
+        Subnet(range='192.168.0.0/24', name='bar2', vrf=self.vrf).add().flush()
+        Subnet(range='192.168.0.0/26', name='bar3', vrf=self.vrf).add().flush()
+        Subnet(range='192.168.0.64/26', name='bar4', vrf=self.vrf).add().flush()
+        Subnet(range='192.168.14.0/24', name='bar5', vrf=self.vrf).add().commit()
         # When listing subnet with depth
         data = self.getJson(url_for(self.base_url, 'data.json'))
         # Then depth is updated
@@ -588,7 +613,7 @@ class SubnetPageTest(WebCase, CommonTest):
                     1,
                     0,
                     '192.168.0.0/16',
-                    '',
+                    None,
                     'bar1',
                     'default',
                     None,
@@ -605,7 +630,7 @@ class SubnetPageTest(WebCase, CommonTest):
                     2,
                     1,
                     '192.168.0.0/24',
-                    '',
+                    None,
                     'bar2',
                     'default',
                     None,
@@ -622,7 +647,7 @@ class SubnetPageTest(WebCase, CommonTest):
                     3,
                     2,
                     '192.168.0.0/26',
-                    '',
+                    None,
                     'bar3',
                     'default',
                     None,
@@ -639,7 +664,7 @@ class SubnetPageTest(WebCase, CommonTest):
                     4,
                     2,
                     '192.168.0.64/26',
-                    '',
+                    None,
                     'bar4',
                     'default',
                     None,
@@ -656,7 +681,7 @@ class SubnetPageTest(WebCase, CommonTest):
                     5,
                     1,
                     '192.168.14.0/24',
-                    '',
+                    None,
                     'bar5',
                     'default',
                     None,
@@ -672,13 +697,11 @@ class SubnetPageTest(WebCase, CommonTest):
 
     def test_depth_index_deleted(self):
         # Given a database with an existing record
-        Subnet(
-            subnet_ranges=[SubnetRange('192.168.0.0/16')], name='bar1', vrf=self.vrf, status=Subnet.STATUS_DELETED
-        ).add()
-        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/24')], name='bar2', vrf=self.vrf).add()
-        Subnet(subnet_ranges=[SubnetRange('192.168.0.0/26')], name='bar3', vrf=self.vrf).add()
-        Subnet(subnet_ranges=[SubnetRange('192.168.0.64/26')], name='bar4', vrf=self.vrf).add()
-        Subnet(subnet_ranges=[SubnetRange('192.168.14.0/24')], name='bar5', vrf=self.vrf).add().commit()
+        Subnet(range='192.168.0.0/16', name='bar1', vrf=self.vrf, status=Subnet.STATUS_DELETED).add().flush()
+        Subnet(range='192.168.0.0/24', name='bar2', vrf=self.vrf).add().flush()
+        Subnet(range='192.168.0.0/26', name='bar3', vrf=self.vrf).add().flush()
+        Subnet(range='192.168.0.64/26', name='bar4', vrf=self.vrf).add().flush()
+        Subnet(range='192.168.14.0/24', name='bar5', vrf=self.vrf).add().commit()
         # When listing subnet with depth
         data = self.getJson(url_for(self.base_url, 'data.json'))
         # Then depth is updated
@@ -691,7 +714,7 @@ class SubnetPageTest(WebCase, CommonTest):
                     1,
                     0,
                     '192.168.0.0/16',
-                    '',
+                    None,
                     'bar1',
                     'default',
                     None,
@@ -708,7 +731,7 @@ class SubnetPageTest(WebCase, CommonTest):
                     2,
                     0,
                     '192.168.0.0/24',
-                    '',
+                    None,
                     'bar2',
                     'default',
                     None,
@@ -725,7 +748,7 @@ class SubnetPageTest(WebCase, CommonTest):
                     3,
                     1,
                     '192.168.0.0/26',
-                    '',
+                    None,
                     'bar3',
                     'default',
                     None,
@@ -742,7 +765,7 @@ class SubnetPageTest(WebCase, CommonTest):
                     4,
                     1,
                     '192.168.0.64/26',
-                    '',
+                    None,
                     'bar4',
                     'default',
                     None,
@@ -759,7 +782,7 @@ class SubnetPageTest(WebCase, CommonTest):
                     5,
                     0,
                     '192.168.14.0/24',
-                    '',
+                    None,
                     'bar5',
                     'default',
                     None,
@@ -781,23 +804,24 @@ class SubnetPageTest(WebCase, CommonTest):
         zone2 = DnsZone(name='foo.com')
         # Default VRF
         Subnet(
-            subnet_ranges=[SubnetRange('192.168.1.0/24'), SubnetRange('192.168.2.0/24')],
+            range='192.168.1.0/24',
+            slave_subnets=[Subnet(range='192.168.2.0/24')],
             name='foo',
             vrf=self.vrf,
             dnszones=[zone1, zone2],
-        ).add()
-        Subnet(subnet_ranges=[SubnetRange('192.168.1.128/30')], name='bar', vrf=self.vrf).add()
-        Subnet(subnet_ranges=[SubnetRange('10.255.0.0/16')], name='tor', vrf=self.vrf).add()
-        Subnet(subnet_ranges=[SubnetRange('192.0.2.23')], name='fin', vrf=self.vrf).add()
+        ).add().flush()
+        Subnet(range='192.168.1.128/30', name='bar', vrf=self.vrf).add().flush()
+        Subnet(range='10.255.0.0/16', name='tor', vrf=self.vrf).add().flush()
+        Subnet(range='192.0.2.23', name='fin', vrf=self.vrf).add().flush()
         # VRF2
-        Subnet(subnet_ranges=[SubnetRange('2a07:6b40::/32'), SubnetRange('10.10.0.0/16')], name='infra', vrf=vrf2).add()
-        Subnet(subnet_ranges=[SubnetRange('2a07:6b40:0::/48')], name='infra-any-cast', vrf=vrf2).add()
         Subnet(
-            subnet_ranges=[SubnetRange('2a07:6b40:0:0::/64')], name='infra-any-cast', vrf=vrf2, dnszones=[zone1, zone2]
-        ).add()
-        Subnet(subnet_ranges=[SubnetRange('2a07:6b40:1::/48')], name='all-anycast-infra-test', vrf=vrf2).add()
+            range='2a07:6b40::/32', slave_subnets=[Subnet(range='10.10.0.0/16')], name='infra', vrf=vrf2
+        ).add().flush()
+        Subnet(range='2a07:6b40:0::/48', name='infra-any-cast', vrf=vrf2).add().flush()
+        Subnet(range='2a07:6b40:0:0::/64', name='infra-any-cast', vrf=vrf2, dnszones=[zone1, zone2]).add().flush()
+        Subnet(range='2a07:6b40:1::/48', name='all-anycast-infra-test', vrf=vrf2).add().flush()
         # VRF1
-        Subnet(subnet_ranges=[SubnetRange('192.168.1.128/30')], name='bar', vrf=vrf1).add().commit()
+        Subnet(range='192.168.1.128/30', name='bar', vrf=vrf1).add().commit()
         # When listing subnet with depth
         data = self.getJson(url_for(self.base_url, 'data.json'))
         # Then depth is updated
@@ -805,12 +829,12 @@ class SubnetPageTest(WebCase, CommonTest):
             data['data'],
             [
                 [
-                    3,
+                    4,
                     2,
                     1,
                     0,
                     '10.255.0.0/16',
-                    '',
+                    None,
                     'tor',
                     'default',
                     None,
@@ -819,15 +843,15 @@ class SubnetPageTest(WebCase, CommonTest):
                     None,
                     '0 on 1',
                     None,
-                    '/subnet/3/edit',
+                    '/subnet/4/edit',
                 ],
                 [
-                    4,
+                    5,
                     2,
                     2,
                     0,
                     '192.0.2.23/32',
-                    '',
+                    None,
                     'fin',
                     'default',
                     None,
@@ -836,7 +860,7 @@ class SubnetPageTest(WebCase, CommonTest):
                     None,
                     '0 on 1',
                     None,
-                    '/subnet/4/edit',
+                    '/subnet/5/edit',
                 ],
                 [
                     1,
@@ -852,16 +876,16 @@ class SubnetPageTest(WebCase, CommonTest):
                     None,
                     None,
                     '0 on 2',
-                    'example.com, foo.com',
+                    'example.com,foo.com',
                     '/subnet/1/edit',
                 ],
                 [
-                    2,
+                    3,
                     2,
                     4,
                     1,
                     '192.168.1.128/30',
-                    '',
+                    None,
                     'bar',
                     'default',
                     None,
@@ -870,15 +894,15 @@ class SubnetPageTest(WebCase, CommonTest):
                     None,
                     '0 on 1',
                     None,
-                    '/subnet/2/edit',
+                    '/subnet/3/edit',
                 ],
                 [
-                    9,
+                    11,
                     2,
                     5,
                     0,
                     '192.168.1.128/30',
-                    '',
+                    None,
                     'bar',
                     'test1',
                     None,
@@ -887,10 +911,10 @@ class SubnetPageTest(WebCase, CommonTest):
                     None,
                     '0 on 1',
                     None,
-                    '/subnet/9/edit',
+                    '/subnet/11/edit',
                 ],
                 [
-                    5,
+                    6,
                     2,
                     6,
                     0,
@@ -904,50 +928,16 @@ class SubnetPageTest(WebCase, CommonTest):
                     None,
                     '0 on 2',
                     None,
-                    '/subnet/5/edit',
+                    '/subnet/6/edit',
                 ],
                 [
-                    6,
+                    8,
                     2,
                     7,
                     1,
                     '2a07:6b40::/48',
-                    '',
+                    None,
                     'infra-any-cast',
-                    'test2',
-                    None,
-                    None,
-                    None,
-                    None,
-                    '0 on 1',
-                    None,
-                    '/subnet/6/edit',
-                ],
-                [
-                    7,
-                    2,
-                    8,
-                    2,
-                    '2a07:6b40::/64',
-                    '',
-                    'infra-any-cast',
-                    'test2',
-                    None,
-                    None,
-                    None,
-                    None,
-                    '0 on 1',
-                    'example.com, foo.com',
-                    '/subnet/7/edit',
-                ],
-                [
-                    8,
-                    2,
-                    9,
-                    1,
-                    '2a07:6b40:1::/48',
-                    '',
-                    'all-anycast-infra-test',
                     'test2',
                     None,
                     None,
@@ -956,6 +946,40 @@ class SubnetPageTest(WebCase, CommonTest):
                     '0 on 1',
                     None,
                     '/subnet/8/edit',
+                ],
+                [
+                    9,
+                    2,
+                    8,
+                    2,
+                    '2a07:6b40::/64',
+                    None,
+                    'infra-any-cast',
+                    'test2',
+                    None,
+                    None,
+                    None,
+                    None,
+                    '0 on 1',
+                    'example.com,foo.com',
+                    '/subnet/9/edit',
+                ],
+                [
+                    10,
+                    2,
+                    9,
+                    1,
+                    '2a07:6b40:1::/48',
+                    None,
+                    'all-anycast-infra-test',
+                    'test2',
+                    None,
+                    None,
+                    None,
+                    None,
+                    '0 on 1',
+                    None,
+                    '/subnet/10/edit',
                 ],
             ],
         )

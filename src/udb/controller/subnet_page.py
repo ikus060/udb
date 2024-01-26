@@ -16,19 +16,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import ipaddress
-from collections import namedtuple
 
 import cherrypy
-from sqlalchemy import case, func
+from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import aliased
 from wtforms.fields import BooleanField, FieldList, FormField, IntegerField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, StopValidation, ValidationError
+from wtforms.widgets import HiddenInput
 
-from udb.core.model import DnsZone, Subnet, SubnetRange, User, Vrf
+from udb.core.model import DnsZone, Subnet, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, EditableTableWidget, SelectMultipleObjectField, SelectObjectField, SwitchWidget
+from .form import CherryForm, JinjaWidget, SelectMultipleObjectField, SelectObjectField, SwitchWidget
 
 
 def _subnet_of(range1, range2):
@@ -37,17 +37,6 @@ def _subnet_of(range1, range2):
     range1 = ipaddress.ip_network(range1)
     range2 = ipaddress.ip_network(range2)
     return range1.version == range2.version and range1.subnet_of(range2)
-
-
-def _sort_ranges(ranges):
-    """
-    Sort the ranges fields to place ipv6 first, then ipv4.
-    """
-    if not ranges:
-        return None
-    ranges = [ipaddress.ip_network(r) for r in ranges]
-    ranges = sorted(ranges, key=lambda r: (-r.version, r.network_address.packed))
-    return [r.compressed for r in ranges]
 
 
 def _norm_range(value):
@@ -86,6 +75,10 @@ def _norm_ipaddress(value):
         return value
 
 
+class SubnetTableWidget(JinjaWidget):
+    filename = 'widgets/SubnetTableWidget.html'
+
+
 class SubnetRangeform(CherryForm):
     range = StringField(
         label=_('IP Ranges'),
@@ -112,6 +105,8 @@ class SubnetRangeform(CherryForm):
         filters=[_norm_ipaddress],
         render_kw={"placeholder": _("Leave blank for default")},
     )
+    status = IntegerField(widget=HiddenInput())
+    id = IntegerField(widget=HiddenInput())
 
     def validate_range(self, field):
         try:
@@ -183,10 +178,10 @@ class SubnetForm(CherryForm):
         validators=[Length(max=256)],
         render_kw={"placeholder": _("Enter a description"), "autofocus": True},
     )
-    subnet_ranges = FieldList(
-        FormField(SubnetRangeform, default=SubnetRange),
+    ranges = FieldList(
+        FormField(SubnetRangeform, default=Subnet),
         label=_('IP Ranges'),
-        widget=EditableTableWidget(),
+        widget=SubnetTableWidget(),
         min_entries=1,
         max_entries=100,
     )
@@ -198,29 +193,46 @@ class SubnetForm(CherryForm):
     )
     l3vni = IntegerField(
         _('L3VNI'),
-        validators=[Optional(), NumberRange(min=0, max=2147483647, message=_('L3VNI must be at least %(min)s.'))],
+        validators=[
+            Optional(),
+            NumberRange(
+                min=1,
+                max=16777215,
+                message=_('The Layer 3 Virtual Network Identifier can range from %(min)s to %(max)s.'),
+            ),
+        ],
         render_kw={
             'width': '1/4',
             "pattern": "\\d+",
-            "title": _('L3VNI number.'),
+            "title": _('Layer 3 Virtual Network Identifier'),
         },
     )
     l2vni = IntegerField(
         _('L2VNI'),
-        validators=[Optional(), NumberRange(min=0, max=2147483647, message=_('L2VNI must be at least %(min)s.'))],
+        validators=[
+            Optional(),
+            NumberRange(
+                min=1,
+                max=16777215,
+                message=_('The Layer 2 Virtual Network Identifier can range from %(min)s to %(max)s.'),
+            ),
+        ],
         render_kw={
             'width': '1/4',
             "pattern": "\\d+",
-            "title": _('L2VNI number.'),
+            "title": _('Layer 2 Virtual Network Identifier'),
         },
     )
     vlan = IntegerField(
         _('VLAN'),
-        validators=[Optional(), NumberRange(min=0, max=2147483647, message=_('VLAN must be at least %(min)s.'))],
+        validators=[
+            Optional(),
+            NumberRange(min=1, max=4095, message=_('The VLAN ID can range from %(min)s to %(max)s.')),
+        ],
         render_kw={
             'width': '1/4',
             "pattern": "\\d+",
-            "title": _('VLAN number.'),
+            "title": _('Virtual Local Area Network ID'),
         },
     )
     rir_status = SelectField(
@@ -259,142 +271,119 @@ class SubnetForm(CherryForm):
         default=lambda: cherrypy.serving.request.currentuser.id,
     )
 
+    def process(self, formdata=None, obj=None, data=None, **kwargs):
+        # Populate fields from object data. Except ranges
+        formdata = self.meta.wrap_formdata(self, formdata)
+        if data is not None:
+            kwargs = dict(data, **kwargs)
+        for (name, field) in self._fields.items():
+            if obj is not None and field.name == 'ranges':
+                field.process(formdata, [obj] + list(obj.slave_subnets))
+            elif obj is not None and hasattr(obj, name):
+                field.process(formdata, getattr(obj, name))
+            elif name in kwargs:
+                field.process(formdata, kwargs[name])
+            else:
+                field.process(formdata)
+
     def populate_obj(self, obj):
-        # Populate object from form data. Except subnet_ranges
+        # Populate object from form data. Except slave_subnets
         for name, field in self._fields.items():
-            if field.name == 'subnet_ranges' or (field.render_kw and field.render_kw.get('readonly')):
+            if field.name == 'ranges' or (field.render_kw and field.render_kw.get('readonly')):
                 continue
             field.populate_obj(obj, name)
         # Populate subnet ranges with a custom implementation to avoid unwanted effect.
-        obj_subnet_ranges = list(obj.subnet_ranges)
-        for form_subnet_range in self.subnet_ranges:
-            # Search for corresponding range in database. Either an exact match or similar subnet.
-            exact_matches = [r for r in obj_subnet_ranges if r.range == form_subnet_range.range.data]
-            similar_matches = [
-                r
-                for r in obj_subnet_ranges
-                if _subnet_of(r.range, form_subnet_range.range.data)
-                or _subnet_of(form_subnet_range.range.data, r.range)
-            ]
-            if exact_matches:
-                match = exact_matches[0]
-                obj_subnet_ranges.remove(match)
-            elif similar_matches:
-                match = similar_matches[0]
-                match.range = form_subnet_range.range.data
-                obj_subnet_ranges.remove(match)
+        # Lookup subnet by id.
+        obj_slave_subnets = list(obj.slave_subnets) + [obj]
+        for form_subnet_range in self.ranges:
+            range_id = form_subnet_range.data.get('id')
+            match = [r for r in obj_slave_subnets if r.id == range_id]
+            if match:
+                match = match[0]
+                obj_slave_subnets.remove(match)
+            elif range_id:
+                raise ValueError('subnet range cannot be found in database')
             else:
-                match = SubnetRange(form_subnet_range.range.data).add()
-                obj.subnet_ranges.append(match)
-            match.dhcp = form_subnet_range.dhcp.data
-            match.dhcp_start_ip = form_subnet_range.dhcp_start_ip.data
-            match.dhcp_end_ip = form_subnet_range.dhcp_end_ip.data
-        for r in obj_subnet_ranges:
-            obj.subnet_ranges.remove(r)
-
-
-SubnetRow = namedtuple(
-    'SubnetRow',
-    [
-        'id',
-        'estatus',
-        'order',
-        'depth',
-        'primary_range',
-        'secondary_ranges',
-        'name',
-        'vrf_name',
-        'l3vni',
-        'l2vni',
-        'vlan',
-        'rir_status',
-        'dhcp',
-        'dnszone_names',
-    ],
-)
+                # Row without ID are new row.
+                match = Subnet(range=form_subnet_range.range.data).add()
+                obj.slave_subnets.append(match)
+            # Then use default implementation to populate the subnet range.
+            form_subnet_range.form.populate_obj(match)
 
 
 class SubnetPage(CommonPage):
     def __init__(self):
         super().__init__(Subnet, SubnetForm, new_perm=User.PERM_SUBNET_CREATE)
 
+    @cherrypy.expose
+    @cherrypy.tools.jinja2(template=['subnet/edit.html'])
+    def edit(self, key, **kwargs):
+        """
+        Make slave subnet not editable.
+        """
+        values = super().edit(key, **kwargs)
+        obj = values['obj']
+        if obj.slave:
+            values['edit_perm'] = False
+        return values
+
     def _list_query(self):
+        # This implementation must return the list of subnets with
+        # 1. `order` field based on range
+        # 2. `secondary_range` that contains all range but the primary
+        # 3. `dhcp` field with "1 on 2" to show the number of range with enabled DHCP
+        # 4. `dnszone_names` with all supported zone.
         a1 = aliased(Subnet)
+        slave_ranges = (
+            a1.query.with_entities(func.group_concat(a1.range.text()))
+            .filter(a1.parent_id == Subnet.id, a1.slave.is_(True), a1.estatus != Subnet.STATUS_DELETED)
+            .scalar_subquery()
+        )
+        a2 = aliased(Subnet)
+        dhcp = (
+            a2.query.with_entities(
+                func.format(
+                    str(_('%s on %s')),
+                    func.count(case((a2.dhcp.is_(True), a2.id)).distinct()),
+                    func.count(a2.id.distinct()),
+                )
+            )
+            .filter(or_(a2.id == Subnet.id, and_(a2.parent_id == Subnet.id, a2.slave.is_(True))))
+            .scalar_subquery()
+        )
+        a3 = aliased(Subnet)
         dnszone_names = (
-            DnsZone.query.with_entities(func.group_concat(DnsZone.name).label('dnszone_names'))
-            .join(a1, DnsZone.subnets)
-            .filter(DnsZone.estatus != DnsZone.STATUS_DELETED, Subnet.id == a1.id)
+            DnsZone.query.with_entities(func.group_concat(DnsZone.name))
+            .join(a3, DnsZone.subnets)
+            .filter(DnsZone.estatus != DnsZone.STATUS_DELETED, a3.id == Subnet.id)
             .scalar_subquery()
         )
         query = (
-            Subnet.query.join(Subnet.subnet_ranges)
-            .join(Subnet.vrf)
-            .group_by(Subnet.id, SubnetRange.vrf_id, Vrf.name)
+            Subnet.query.join(Subnet.vrf)
+            .filter(Subnet.slave.is_(False))
             .with_entities(
                 Subnet.id,
                 Subnet.estatus,
+                func.row_number()
+                .over(
+                    order_by=(
+                        Subnet.vrf_id,
+                        -func.family(Subnet.range),
+                        Subnet.range,
+                    )
+                )
+                .label('order'),
+                Subnet.depth,
+                Subnet.range,
+                slave_ranges.label('slave_ranges'),
                 Subnet.name,
-                SubnetRange.vrf_id,
                 Vrf.name.label('vrf_name'),
-                Subnet.l3vni,
-                Subnet.l2vni,
-                Subnet.vlan,
+                Subnet.el3vni,
+                Subnet.el2vni,
+                Subnet.evlan,
                 Subnet.rir_status,
-                func.format(
-                    str(_('%s on %s')),
-                    func.count(case((SubnetRange.dhcp.is_(True), SubnetRange.id)).distinct()),
-                    func.count(SubnetRange.id.distinct()),
-                ).label('dhcp'),
-                func.group_concat(SubnetRange.range.text().distinct()).label('ranges'),
+                dhcp.label('dhcp'),
                 dnszone_names.label('dnszone_names'),
             )
-            .order_by(
-                SubnetRange.vrf_id,
-                func.min(case((SubnetRange.version == 6, SubnetRange.range), else_=None)),
-                func.min(case((SubnetRange.version == 4, SubnetRange.range), else_=None)),
-            )
         )
-        rows = query.all()
-
-        # Update depth & orer
-        order = 0
-        prev_row = []
-        for i in range(0, len(rows)):
-            row = rows[i]
-            # SQLite and Postgresql behave differently when ordering, so let re-order the subnet range in python.
-            ranges = _sort_ranges(row.ranges.split(','))
-            primary_range = ranges[0] if ranges else None
-            secondary_ranges = ', '.join(ranges[1:]) if ranges else None
-            # Replace single comma
-            dnszone_names = ', '.join(row.dnszone_names.split(',')) if row.dnszone_names else None
-            # Re-create a new row
-            order = order + 1
-            # Compute depth
-            while prev_row and (
-                row.vrf_id != prev_row[-1]['vrf_id'] or not _subnet_of(primary_range, prev_row[-1]['primary_range'])
-            ):
-                prev_row.pop()
-            yield SubnetRow(
-                id=row.id,
-                estatus=row.estatus,
-                order=order,
-                depth=len(prev_row),
-                primary_range=primary_range,
-                secondary_ranges=secondary_ranges,
-                name=row.name,
-                vrf_name=row.vrf_name,
-                l3vni=row.l3vni,
-                l2vni=row.l2vni,
-                vlan=row.vlan,
-                rir_status=row.rir_status,
-                dhcp=row.dhcp,
-                dnszone_names=dnszone_names,
-            )
-            # Keep reference of previous row for depth calculation
-            if row.estatus != Subnet.STATUS_DELETED:
-                prev_row.append(
-                    {
-                        'vrf_id': row.vrf_id,
-                        'primary_range': primary_range,
-                    }
-                )
+        return query

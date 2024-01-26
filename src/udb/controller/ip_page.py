@@ -44,10 +44,10 @@ class RelatedDhcpRecordForm(Form):
 
 class RelatedSubnetForm(Form):
     name = StringField(_('Name'), render_kw={"readonly": True})
-    subnet_ranges = StringField(
+    slave_subnets = StringField(
         _('IP Ranges'),
         render_kw={"readonly": True},
-        filters=[lambda subnet_ranges: ', '.join([str(r.range) for r in subnet_ranges])],
+        filters=[lambda slave_subnets: ', '.join([str(r.range) for r in slave_subnets])],
     )
     vrf = IntegerField(_('VRF'), render_kw={"readonly": True})
     dhcp = StringField(
@@ -65,7 +65,7 @@ class RelatedSubnetForm(Form):
         super().process(formdata=formdata, obj=obj, data=data, **kwargs)
         # Populate dhcp field from subnet range
         if obj:
-            self.dhcp.process(formdata, data=any(r.dhcp for r in obj.subnet_ranges))
+            self.dhcp.process(formdata, data=any(r.dhcp for r in obj.slave_subnets))
 
 
 class IpForm(CherryForm):

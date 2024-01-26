@@ -16,13 +16,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cherrypy
-from sqlalchemy import case, func
+from sqlalchemy import func
 from sqlalchemy.orm import aliased
 from wtforms.fields import StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length
 
-from udb.core.model import DnsRecord, DnsZone, Subnet, SubnetRange, User
+from udb.core.model import DnsRecord, DnsZone, Subnet, User
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
@@ -31,22 +31,17 @@ from .form import CherryForm, SelectMultipleObjectField, SelectObjectField
 
 def _subnet_query():
     """
-    Adjust the original query to list the subnet name and subnet ranges.
+    Adjust the original query to list the subnet name and subnet ranges. Hide slave subnets
     """
     return (
         Subnet.query.with_entities(
             Subnet.id,
-            (func.group_concat(SubnetRange.range.text(), order_by=SubnetRange.range.desc()) + " " + Subnet.name).label(
-                'summary'
-            ),
+            (func.group_concat(Subnet.range.text(), order_by=Subnet.range.desc()) + " " + Subnet.name).label('summary'),
             Subnet.estatus,
         )
-        .join(Subnet.subnet_ranges)
+        .filter(Subnet.slave.is_(False))
         .group_by(Subnet.id)
-        .order_by(
-            func.min(case((SubnetRange.version == 6, SubnetRange.range), else_=None)),
-            func.min(case((SubnetRange.version == 4, SubnetRange.range), else_=None)),
-        )
+        .order_by(func.family(Subnet.range).desc(), Subnet.range)
     )
 
 
@@ -99,7 +94,7 @@ class DnsZonePage(CommonPage):
         subnet_count = (
             Subnet.query.with_entities(func.count(Subnet.id))
             .join(a1.subnets)
-            .filter(a1.id == DnsZone.id, Subnet.estatus != Subnet.STATUS_DELETED)
+            .filter(a1.id == DnsZone.id, Subnet.slave.is_(False), Subnet.estatus != Subnet.STATUS_DELETED)
             .scalar_subquery()
         )
         dnsrecord_count = (

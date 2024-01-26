@@ -17,7 +17,7 @@
 
 
 from udb.controller.tests import WebCase
-from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, SubnetRange, Vrf
+from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Subnet, Vrf
 
 
 class IpTest(WebCase):
@@ -25,9 +25,10 @@ class IpTest(WebCase):
         # Given a database with a subnet.
         vrf = Vrf(name='default')
         Subnet(
-            subnet_ranges=[
-                SubnetRange('192.0.2.0/24', dhcp=True, dhcp_start_ip='192.0.2.1', dhcp_end_ip='192.0.2.254')
-            ],
+            range='192.0.2.0/24',
+            dhcp=True,
+            dhcp_start_ip='192.0.2.1',
+            dhcp_end_ip='192.0.2.254',
             vrf=vrf,
         ).add().commit()
         # When creating multiple DHCP Record with the same IP
@@ -45,7 +46,7 @@ class IpTest(WebCase):
     def test_duplicate_with_dns_records(self):
         # Given a Vrf, Subnet and DnsZone
         vrf = Vrf(name='default')
-        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf).add()
+        subnet = Subnet(range='192.0.2.0/24', vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # When creating multiple Dns Record with the same IP
         dns_record1 = DnsRecord(name='foo.example.com', type='A', value='192.0.2.20', vrf=vrf).add()
@@ -63,9 +64,10 @@ class IpTest(WebCase):
         # Given valid DnsZone with subnet
         vrf = Vrf(name='default')
         subnet = Subnet(
-            subnet_ranges=[
-                SubnetRange('192.0.2.0/24', dhcp=True, dhcp_start_ip='192.0.2.1', dhcp_end_ip='192.0.2.254')
-            ],
+            range='192.0.2.0/24',
+            dhcp=True,
+            dhcp_start_ip='192.0.2.1',
+            dhcp_end_ip='192.0.2.254',
             vrf=vrf,
         ).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
@@ -91,9 +93,10 @@ class IpTest(WebCase):
         # Given valid DnsZone with subnet
         vrf = Vrf(name='default')
         Subnet(
-            subnet_ranges=[
-                SubnetRange('192.0.2.0/24', dhcp=True, dhcp_start_ip='192.0.2.1', dhcp_end_ip='192.0.2.254')
-            ],
+            range='192.0.2.0/24',
+            dhcp=True,
+            dhcp_start_ip='192.0.2.1',
+            dhcp_end_ip='192.0.2.254',
             vrf=vrf,
         ).add().commit()
         # Given a deleted DhcpRecord
@@ -107,9 +110,10 @@ class IpTest(WebCase):
         # Given valid DnsZone with subnet
         vrf = Vrf(name='default')
         subnet = Subnet(
-            subnet_ranges=[
-                SubnetRange('192.0.2.0/24', dhcp=True, dhcp_start_ip='192.0.2.1', dhcp_end_ip='192.0.2.254')
-            ],
+            range='192.0.2.0/24',
+            dhcp=True,
+            dhcp_start_ip='192.0.2.1',
+            dhcp_end_ip='192.0.2.254',
             vrf=vrf,
         ).add()
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
@@ -126,9 +130,10 @@ class IpTest(WebCase):
         # Given valid DnsZone with subnet
         vrf = Vrf(name='default')
         subnet = Subnet(
-            subnet_ranges=[
-                SubnetRange('192.0.2.0/24', dhcp=True, dhcp_start_ip='192.0.2.1', dhcp_end_ip='192.0.2.254')
-            ],
+            range='192.0.2.0/24',
+            dhcp=True,
+            dhcp_start_ip='192.0.2.1',
+            dhcp_end_ip='192.0.2.254',
             vrf=vrf,
         ).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
@@ -146,9 +151,10 @@ class IpTest(WebCase):
         # Given valid DnsZone with subnet
         vrf = Vrf(name='default')
         subnet = Subnet(
-            subnet_ranges=[
-                SubnetRange('192.0.2.0/24', dhcp=True, dhcp_start_ip='192.0.2.1', dhcp_end_ip='192.0.2.254')
-            ],
+            range='192.0.2.0/24',
+            dhcp=True,
+            dhcp_start_ip='192.0.2.1',
+            dhcp_end_ip='192.0.2.254',
             vrf=vrf,
         ).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
@@ -166,14 +172,10 @@ class IpTest(WebCase):
         # Given a DnsZone with valid subnet
         vrf = Vrf(name='default')
         subnet = Subnet(
-            subnet_ranges=[
-                SubnetRange(
-                    '2001:db8:85a3::/64',
-                    dhcp=True,
-                    dhcp_start_ip='2001:0db8:85a3::0001',
-                    dhcp_end_ip='2001:0db8:85a3:0000:ffff:ffff:ffff:fffe',
-                )
-            ],
+            range='2001:db8:85a3::/64',
+            dhcp=True,
+            dhcp_start_ip='2001:0db8:85a3::0001',
+            dhcp_end_ip='2001:0db8:85a3:0000:ffff:ffff:ffff:fffe',
             vrf=vrf,
         ).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
@@ -192,7 +194,7 @@ class IpTest(WebCase):
     def test_dns_aaaa_ipv6(self):
         # Given a DnsZone with valid subnet
         vrf = Vrf(name='default')
-        subnet = Subnet(subnet_ranges=[SubnetRange('2001:db8:85a3::/64')], vrf=vrf).add()
+        subnet = Subnet(range='2001:db8:85a3::/64', vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
         # Given a DnsRecords with ipv6
         DnsRecord(
@@ -208,14 +210,10 @@ class IpTest(WebCase):
         # Given a valid subnet
         vrf = Vrf(name='default')
         Subnet(
-            subnet_ranges=[
-                SubnetRange(
-                    '2001:db8:85a3::/64',
-                    dhcp=True,
-                    dhcp_start_ip='2001:0db8:85a3::0001',
-                    dhcp_end_ip='2001:0db8:85a3:0000:0fff:ffff:ffff:fffe',
-                )
-            ],
+            range='2001:db8:85a3::/64',
+            dhcp=True,
+            dhcp_start_ip='2001:0db8:85a3::0001',
+            dhcp_end_ip='2001:0db8:85a3:0000:0fff:ffff:ffff:fffe',
             vrf=vrf,
         ).add().commit()
         # Given a DhcpRecord with ipv6
@@ -230,7 +228,7 @@ class IpTest(WebCase):
         # Given a valid PTR record in DNS Zone
         vrf = Vrf(name='default')
         zone = DnsZone.query.filter(DnsZone.name == 'in-addr.arpa').first()
-        Subnet(subnet_ranges=[SubnetRange('192.168.2.0/24')], dnszones=[zone], vrf=vrf).add().flush()
+        Subnet(range='192.168.2.0/24', dnszones=[zone], vrf=vrf).add().flush()
         DnsRecord(name='254.2.168.192.in-addr.arpa', type='PTR', value='bar.example.com', vrf=vrf).add().commit()
         # When querying list of IP
         obj = Ip.query.order_by('ip').first()
@@ -242,7 +240,7 @@ class IpTest(WebCase):
         # Given a valid PTR record in DNS Zone
         vrf = Vrf(name='default')
         zone = DnsZone.query.filter(DnsZone.name == 'ip6.arpa').first()
-        Subnet(subnet_ranges=[SubnetRange('4321:0:1:2:3:4:567:0/112')], dnszones=[zone], vrf=vrf).add().flush()
+        Subnet(range='4321:0:1:2:3:4:567:0/112', dnszones=[zone], vrf=vrf).add().flush()
         DnsRecord(
             name='b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa',
             type='PTR',
@@ -261,14 +259,10 @@ class IpTest(WebCase):
         zone1 = DnsZone(name='example.com').add()
         zone2 = DnsZone.query.filter(DnsZone.name == 'ip6.arpa').first()
         Subnet(
-            subnet_ranges=[
-                SubnetRange(
-                    '2001:db8:85a3::8a2e:370:7330/124',
-                    dhcp=True,
-                    dhcp_start_ip='2001:0db8:85a3:0000:0000:8a2e:0370:7331',
-                    dhcp_end_ip='2001:0db8:85a3:0000:0000:8a2e:0370:733e',
-                )
-            ],
+            range='2001:db8:85a3::8a2e:370:7330/124',
+            dhcp=True,
+            dhcp_start_ip='2001:0db8:85a3:0000:0000:8a2e:0370:7331',
+            dhcp_end_ip='2001:0db8:85a3:0000:0000:8a2e:0370:733e',
             dnszones=[zone1, zone2],
             vrf=vrf,
         ).add().flush()
@@ -298,14 +292,10 @@ class IpTest(WebCase):
         zone1 = DnsZone(name='example.com').add().flush()
         zone2 = DnsZone.query.filter(DnsZone.name == 'ip6.arpa').first()
         Subnet(
-            subnet_ranges=[
-                SubnetRange(
-                    '2001:db8:85a3::/64',
-                    dhcp=True,
-                    dhcp_start_ip='2001:0db8:85a3::0001',
-                    dhcp_end_ip='2001:0db8:85a3:0000:0fff:ffff:ffff:fffe',
-                )
-            ],
+            range='2001:db8:85a3::/64',
+            dhcp=True,
+            dhcp_start_ip='2001:0db8:85a3::0001',
+            dhcp_end_ip='2001:0db8:85a3:0000:0fff:ffff:ffff:fffe',
             vrf=vrf,
             dnszones=[zone1, zone2],
         ).add().commit()
@@ -330,14 +320,10 @@ class IpTest(WebCase):
         zone1 = DnsZone(name='example.com').add().flush()
         zone2 = DnsZone.query.filter(DnsZone.name == 'ip6.arpa').first()
         Subnet(
-            subnet_ranges=[
-                SubnetRange(
-                    '2001:db8:85a3::8a2e:370:7334/126',
-                    dhcp=True,
-                    dhcp_start_ip='2001:0db8:85a3:0000:0000:8a2e:0370:7335',
-                    dhcp_end_ip='2001:0db8:85a3:0000:0000:8a2e:0370:7336',
-                )
-            ],
+            range='2001:db8:85a3::8a2e:370:7334/126',
+            dhcp=True,
+            dhcp_start_ip='2001:0db8:85a3:0000:0000:8a2e:0370:7335',
+            dhcp_end_ip='2001:0db8:85a3:0000:0000:8a2e:0370:7336',
             vrf=vrf,
             dnszones=[zone1, zone2],
         ).add().flush()
@@ -366,26 +352,18 @@ class IpTest(WebCase):
         zone1 = DnsZone(name='example.com').add().flush()
         zone2 = DnsZone.query.filter(DnsZone.name == 'ip6.arpa').first()
         subnet1 = Subnet(
-            subnet_ranges=[
-                SubnetRange(
-                    '2001:db8:85a3::/68',
-                    dhcp=True,
-                    dhcp_start_ip='2001:0db8:85a3::0001',
-                    dhcp_end_ip='2001:0db8:85a3:0000:0fff:ffff:ffff:fffe',
-                )
-            ],
+            range='2001:db8:85a3::/68',
+            dhcp=True,
+            dhcp_start_ip='2001:0db8:85a3::0001',
+            dhcp_end_ip='2001:0db8:85a3:0000:0fff:ffff:ffff:fffe',
             vrf=vrf,
         ).add()
         subnet2 = (
             Subnet(
-                subnet_ranges=[
-                    SubnetRange(
-                        '2001:db8:85a3::8a2e:370:7334/126',
-                        dhcp=True,
-                        dhcp_start_ip='2001:0db8:85a3:0000:0000:8a2e:0370:7335',
-                        dhcp_end_ip='2001:0db8:85a3:0000:0000:8a2e:0370:7336',
-                    )
-                ],
+                range='2001:db8:85a3::8a2e:370:7334/126',
+                dhcp=True,
+                dhcp_start_ip='2001:0db8:85a3:0000:0000:8a2e:0370:7335',
+                dhcp_end_ip='2001:0db8:85a3:0000:0000:8a2e:0370:7336',
                 vrf=vrf,
                 dnszones=[zone1, zone2],
             )
@@ -407,8 +385,8 @@ class IpTest(WebCase):
     def test_related_subnets_2(self):
         # Given a DNS Record in DNS Zone
         vrf = Vrf(name='default')
-        Subnet(subnet_ranges=[SubnetRange('2a07:6b40::/32')], vrf=vrf).add()
-        subnet2 = Subnet(subnet_ranges=[SubnetRange('192.168.14.0/24')], vrf=vrf).add()
+        Subnet(range='2a07:6b40::/32', vrf=vrf).add()
+        subnet2 = Subnet(range='192.168.14.0/24', vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet2]).add().flush()
         DnsRecord(name='example.com', type='A', value='192.168.14.1', vrf=vrf).add().commit()
         # When querying the related subnets
@@ -419,9 +397,10 @@ class IpTest(WebCase):
         # Given a DhcpRecord
         vrf = Vrf(name='default')
         Subnet(
-            subnet_ranges=[
-                SubnetRange('192.0.2.0/24', dhcp=True, dhcp_start_ip='192.0.2.1', dhcp_end_ip='192.0.2.254')
-            ],
+            range='192.0.2.0/24',
+            dhcp=True,
+            dhcp_start_ip='192.0.2.1',
+            dhcp_end_ip='192.0.2.254',
             vrf=vrf,
         ).add().commit()
         record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:bf', vrf=vrf).add().commit()
@@ -449,7 +428,7 @@ class IpTest(WebCase):
         # Given a DnsRecord
         # Given a DNS Record in DNS Zone
         vrf = Vrf(name='default')
-        subnet = Subnet(subnet_ranges=[SubnetRange('192.0.2.0/24')], vrf=vrf).add()
+        subnet = Subnet(range='192.0.2.0/24', vrf=vrf).add()
         DnsZone(name='example.com', subnets=[subnet]).add().flush()
         record = DnsRecord(
             name='bar.example.com',
@@ -481,9 +460,10 @@ class IpTest(WebCase):
     def test_update_dhcp_record_status(self):
         vrf = Vrf(name='default')
         Subnet(
-            subnet_ranges=[
-                SubnetRange('192.0.2.0/24', dhcp=True, dhcp_start_ip='192.0.2.1', dhcp_end_ip='192.0.2.254')
-            ],
+            range='192.0.2.0/24',
+            dhcp=True,
+            dhcp_start_ip='192.0.2.1',
+            dhcp_end_ip='192.0.2.254',
             vrf=vrf,
         ).add().commit()
         # Given a DhcpRecord creating an IP Record
