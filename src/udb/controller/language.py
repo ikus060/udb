@@ -72,6 +72,7 @@ class Language:
                             "0": _("Disabled"),
                             "1": _("Enabled"),
                         },
+                        "password": {"unknown": _("unknown")},
                     },
                     "field": {
                         "status": _("Status"),

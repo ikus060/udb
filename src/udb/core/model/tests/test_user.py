@@ -51,3 +51,14 @@ class UserTest(WebCase):
         # When trying to add another user with empty email
         # Then user is created without error.
         User(username='user2', email=None).add().commit()
+
+    def test_update_password(self):
+        # When creating a new user
+        user1 = User(username='user1', email=None, password='my-password').add().commit()
+        # Then the password is hidden in history
+        self.assertEqual(user1.messages[-1].changes['password'], ['unknown', '•••••••'])
+        # When updating password
+        user1.password = 'my-new-password'
+        user1.add().commit()
+        # Then the password is hidden in history
+        self.assertEqual(user1.messages[-1].changes['password'], ['unknown', '•••••••'])
