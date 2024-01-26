@@ -171,6 +171,16 @@ class User(JsonMixin, StatusMixing, MessageMixin, Base):
             raise ValueError('invalid role')
         return value
 
+    def add_change(self, new_message):
+        """
+        Hide changes made to password field.
+        """
+        changes = new_message.changes
+        if 'password' in changes:
+            changes['password'] = ['unknown', '•••••••']
+            new_message.changes = changes
+        super().add_change(new_message)
+
 
 # Create a unique index for username
 Index(
