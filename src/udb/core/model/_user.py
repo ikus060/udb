@@ -142,7 +142,7 @@ class User(JsonMixin, StatusMixing, MessageMixin, Base):
             raise ValueError('new_password', _("New password cannot be empty."))
 
         # Verify password score using zxcvbn
-        cfg = cherrypy.tree.apps[''].root.cfg
+        cfg = cherrypy.tree.apps[''].cfg
         stats = zxcvbn(new_password)
         if stats.get('score') < cfg.password_score:
             msg = _('Password too weak.')

@@ -157,6 +157,7 @@ class DeploymentPage:
 DeploymentPage._cp_dispatch = cherrypy.popargs('id', handler=DeploymentPage())
 
 
+@cherrypy.popargs('id')  # Popargs to support zonefile and data_json
 class DeploymentApi(CommonApi):
     """
     API To access deployment data.
@@ -164,6 +165,7 @@ class DeploymentApi(CommonApi):
 
     def __init__(self):
         super().__init__(Deployment, list_perm=User.PERM_NETWORK_LIST, edit_perm=-1, new_perm=-1)
+        setattr(self, 'data.json', self.data_json)
 
     @cherrypy.expose()
     @cherrypy.tools.auth_basic(on=True, checkpassword=checkpassword_or_token)
@@ -207,6 +209,3 @@ class DeploymentApi(CommonApi):
         # Then simply sort the dnsrecords
         # Make sure SOA record are first.
         return {'dnsrecords': dnsrecords, 'dnsrecord_sort_key': DnsRecord.dnsrecord_sort_key}
-
-
-DeploymentApi._cp_dispatch = cherrypy.popargs('id', handler=DeploymentApi())

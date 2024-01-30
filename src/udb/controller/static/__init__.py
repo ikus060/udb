@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
 import pkg_resources
+from cherrypy.lib.static import serve_file
 
 
 @cherrypy.tools.auth_form(on=False)
@@ -64,3 +65,23 @@ class Static:
     @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'popper.js'))
     def popper_js(self):
         raise cherrypy.HTTPError(400)
+
+    @cherrypy.expose
+    def header_logo(self, **kwargs):
+        cfg = cherrypy.tree.apps[''].cfg
+        filename = (
+            cfg.header_logo
+            if cfg.header_logo
+            else pkg_resources.resource_filename('udb.controller.static', 'udb-logo.png')
+        )
+        return serve_file(filename)
+
+    @cherrypy.expose
+    def favicon(self, **kwargs):
+        cfg = cherrypy.tree.apps[''].cfg
+        filename = (
+            cfg.favicon if cfg.favicon else pkg_resources.resource_filename('udb.controller.static', 'udb_16.svg')
+        )
+        return serve_file(filename)
+
+    favicon_ico = favicon
