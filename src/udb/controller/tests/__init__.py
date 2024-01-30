@@ -31,7 +31,7 @@ import html5lib
 from selenium import webdriver
 from sqlalchemy.orm import close_all_sessions
 
-from udb.app import Root
+from udb.app import UdbApplication
 from udb.config import parse_args
 from udb.core.model import Deployment, DhcpRecord, DnsRecord, DnsZone, Environment, Message, Subnet, User, Vrf
 
@@ -97,7 +97,7 @@ class WebCase(BaseClass):
         if 'rate-limit' not in default_config:
             default_config['rate-limit'] = -1
         cfg = parse_args(args=[], config_file_contents='\n'.join('%s=%s' % (k, v) for k, v in default_config.items()))
-        app = Root(cfg)
+        app = UdbApplication(cfg)
         cherrypy.tree.mount(app)
 
     def setUp(self):

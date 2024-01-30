@@ -305,13 +305,13 @@ class CommonPage(object):
         raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
 
 
+@cherrypy.expose
 @cherrypy.tools.errors(
     error_table={
         ValueError: 400,
         DatabaseError: 400,
     }
 )
-@cherrypy.popargs('id')
 class CommonApi(object):
     def __init__(
         self,
@@ -325,23 +325,6 @@ class CommonApi(object):
         self.list_perm = list_perm
         self.edit_perm = edit_perm
         self.new_perm = new_perm
-
-    @cherrypy.expose()
-    def default(self, id=None, **kwargs):
-        verify_perm(self.list_perm)
-        with cherrypy.HTTPError.handle(405):
-            method = cherrypy.request.method
-            assert method in ['GET', 'PUT', 'POST', 'DELETE']
-        if method == 'GET' and id is None:
-            return self.list(**kwargs)
-        elif method == 'GET':
-            return self.get(id, **kwargs)
-        elif method == 'PUT':
-            return self.put(id, **kwargs)
-        elif method == 'DELETE':
-            return self.delete(id, **kwargs)
-        elif method == 'POST':
-            return self.post(**kwargs)
 
     def _get_or_404(self, id):
         """

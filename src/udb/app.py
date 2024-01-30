@@ -19,10 +19,12 @@ import cherrypy
 import jinja2
 import pkg_resources
 import ujson
+from cherrypy import Application
 
 import udb.core.login  # noqa
 import udb.core.notification  # noqa
 import udb.plugins.ldap  # noqa
+import udb.plugins.restapi
 import udb.plugins.smtp  # noqa
 import udb.tools.auth_form  # noqa: import cherrypy.tools.auth_form
 import udb.tools.auth_mfa  # noqa: import cherrypy.tools.auth_mfa
@@ -142,6 +144,47 @@ class Root(object):
     Root entry point exposed using cherrypy.
     """
 
+    def __init__(self):
+        self.api = Api()
+        self.audit = AuditPage()
+        self.dashboard = DashboardPage()
+        self.login = LoginPage()
+        self.notifications = NotificationsPage()
+        self.profile = ProfilePage()
+        self.search = SearchPage()
+        self.load = LoadPage()
+        self.static = Static()
+        self.language = Language()
+        # Import modules to be added to this app.
+        self.vrf = VrfPage()
+        self.rule = RulePage()
+        self.dnszone = DnsZonePage()
+        self.subnet = SubnetPage()
+        self.dnsrecord = DnsRecordPage()
+        self.dhcprecord = DhcpRecordPage()
+        self.ip = IpPage()
+        self.user = UserPage()
+        self.mac = MacPage()
+        self.mfa = MfaPage()
+        self.environment = EnvironmentPage()
+        self.deployment = DeploymentPage()
+        # Api
+        self.api.dnszone = CommonApi(DnsZone, new_perm=User.PERM_DNSZONE_CREATE)
+        self.api.subnet = CommonApi(Subnet, new_perm=User.PERM_SUBNET_CREATE)
+        self.api.dnsrecord = CommonApi(DnsRecord)
+        self.api.dhcprecord = CommonApi(DhcpRecord)
+        self.api.vrf = CommonApi(Vrf)
+        self.api.deployment = DeploymentApi()
+        self.api.environment = EnvironmentApi()
+        self.api.rule = RuleApi()
+
+    @cherrypy.expose
+    @cherrypy.tools.jinja2(template='index.html')
+    def index(self):
+        raise cherrypy.HTTPRedirect(url_for('dashboard', ''))
+
+
+class UdbApplication(Application):
     def __init__(self, cfg):
         self.cfg = cfg
         # Pick the right implementation for storage
@@ -231,57 +274,16 @@ class Root(object):
         )
         # Create database if required
         cherrypy.tools.db.create_all()
+
+        config = {
+            '/api': {'request.dispatch': udb.plugins.restapi.Dispatcher()},
+        }
+
+        # Initialize the application
+        Application.__init__(self, root=Root(), config=config)
+
         # Create default admin if missing
         User.create_default_admin(cfg.admin_user, cfg.admin_password)
 
         # Commit changes to database.
         cherrypy.tools.db.get_session().commit()
-        self.api = Api()
-        self.audit = AuditPage()
-        self.dashboard = DashboardPage()
-        self.login = LoginPage()
-        self.notifications = NotificationsPage()
-        self.profile = ProfilePage()
-        self.search = SearchPage()
-        self.load = LoadPage()
-        self.static = Static()
-        self.language = Language()
-        # Import modules to be added to this app.
-        self.vrf = VrfPage()
-        self.rule = RulePage()
-        self.dnszone = DnsZonePage()
-        self.subnet = SubnetPage()
-        self.dnsrecord = DnsRecordPage()
-        self.dhcprecord = DhcpRecordPage()
-        self.ip = IpPage()
-        self.user = UserPage()
-        self.mac = MacPage()
-        self.mfa = MfaPage()
-        self.environment = EnvironmentPage()
-        self.deployment = DeploymentPage()
-        # Api
-        self.api.dnszone = CommonApi(DnsZone, new_perm=User.PERM_DNSZONE_CREATE)
-        self.api.subnet = CommonApi(Subnet, new_perm=User.PERM_SUBNET_CREATE)
-        self.api.dnsrecord = CommonApi(DnsRecord)
-        self.api.dhcprecord = CommonApi(DhcpRecord)
-        self.api.vrf = CommonApi(Vrf)
-        self.api.deployment = DeploymentApi()
-        self.api.environment = EnvironmentApi()
-        self.api.rule = RuleApi()
-        # Configure logos
-        self.static.header_logo = cherrypy.tools.staticfile.handler(
-            filename=cfg.header_logo
-            if cfg.header_logo
-            else pkg_resources.resource_filename('udb.controller.static', 'udb-logo.png')
-        )
-        self.static.favicon = cherrypy.tools.staticfile.handler(
-            filename=cfg.favicon
-            if cfg.favicon
-            else pkg_resources.resource_filename('udb.controller.static', 'udb_16.svg')
-        )
-        self.favicon_ico = self.static.favicon
-
-    @cherrypy.expose
-    @cherrypy.tools.jinja2(template='index.html')
-    def index(self):
-        raise cherrypy.HTTPRedirect(url_for('dashboard', ''))

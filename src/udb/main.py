@@ -22,7 +22,7 @@ import sys
 import cherrypy
 from cherrypy.process.plugins import DropPrivileges
 
-from udb.app import Root
+from udb.app import UdbApplication
 from udb.config import parse_args
 
 
@@ -110,7 +110,7 @@ def main(args=None):
     cherrypy.drop_privileges.subscribe()
 
     # start app
-    cherrypy.quickstart(Root(cfg=cfg), '/')
+    cherrypy.quickstart(UdbApplication(cfg=cfg))
 
 
 if __name__ == "__main__":

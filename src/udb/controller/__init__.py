@@ -109,8 +109,8 @@ def url_for(*args, relative=None, **kwargs):
     # Outside a request, use the external_url as base if defined
     base = None
     if not cherrypy.request.app:
-        app = cherrypy.tree.apps[''].root
-        base = app.cfg.external_url
+        cfg = cherrypy.tree.apps[''].cfg
+        base = cfg.external_url
     return cherrypy.url(path=path, qs=qs, relative=relative, base=base)
 
 
@@ -124,12 +124,12 @@ def verify_perm(perm):
 
 
 def template_processor(request):
-    app = cherrypy.tree.apps[''].root
+    cfg = cherrypy.tree.apps[''].cfg
     values = {
         'lang': str(get_translation().locale),
-        'header_name': app.cfg.header_name,
-        'footer_url': app.cfg.footer_url,
-        'footer_name': app.cfg.footer_name,
+        'header_name': cfg.header_name,
+        'footer_url': cfg.footer_url,
+        'footer_name': cfg.footer_name,
         'get_flashed_messages': get_flashed_messages,
         'current_url': cherrypy.url(path=cherrypy.request.path_info),
         'cache_invalidate': _cache_invalidate,
