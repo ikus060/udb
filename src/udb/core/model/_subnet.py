@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import ipaddress
-import itertools
 
 import cherrypy
 from sqlalchemy import (
@@ -42,6 +41,7 @@ from udb.tools.i18n import gettext_lazy as _
 
 from ._cidr import CidrType, InetType
 from ._common import CommonMixin
+from ._events import listens_for_after_flush, listens_for_before_flush
 from ._follower import FollowerMixin
 from ._json import JsonMixin
 from ._message import MessageMixin
@@ -239,10 +239,14 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
         else:
             self._subnet_string = ''
 
-    def __str__(self):
-        if self.dhcp:
-            return '%s DHCP: %s - %s' % (self.range, self.dhcp_start_ip, self.dhcp_end_ip)
-        return str(self.range)
+    def _format(self, old=False):
+        dhcp = self.attr_get_previous('dhcp') if old else self.dhcp
+        range = self.attr_get_previous('range') if old else self.range
+        dhcp_start_ip = self.attr_get_previous('dhcp_start_ip') if old else self.dhcp_start_ip
+        dhcp_end_ip = self.attr_get_previous('dhcp_end_ip') if old else self.dhcp_end_ip
+        return '%s DHCP: %s - %s' % (range, dhcp_start_ip, dhcp_end_ip) if dhcp else str(range)
+
+    __str__ = _format
 
     @hybrid_property
     def summary(self):
@@ -318,25 +322,17 @@ class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, 
 
     def add_change(self, new_message):
         """
-        When slave subnet get modified, add the message to it's parent subnet.
+        Specific implementation to handle parent slave modification.
         """
-        if new_message.type != 'new' and self.slave and self.master:
-            # Format an old representation of the range
-            old_values = {k: v[0] for k, v in new_message.changes.items()}
-            if old_values.get('dhcp', self.dhcp):
-                old = '%s DHCP: %s - %s' % (
-                    old_values.get('range', self.range),
-                    old_values.get('dhcp_start_ip', self.dhcp_start_ip),
-                    old_values.get('dhcp_end_ip', self.dhcp_end_ip),
-                )
-            else:
-                old = str(old_values.get('range', self.range))
-            if self.dhcp:
-                new = '%s DHCP: %s - %s' % (self.range, self.dhcp_start_ip, self.dhcp_end_ip)
-            else:
-                new = str(self.range)
+        if new_message.type == 'dirty' and self.slave and self.master is not None:
+            # Propagate changes of slaves to parent.
+            old = self._format(old=True)
+            new = self._format()
             # Update message to be added to the parent.
-            if old != new:
+            if self.attr_has_changes('status') and self.status == Subnet.STATUS_DELETED:
+                new_message.changes = {'slave_subnets': [[old], []]}
+                self.master.add_change(new_message)
+            elif old != new:
                 new_message.changes = {'slave_subnets': [[old], [new]]}
                 self.master.add_change(new_message)
         else:
@@ -387,21 +383,19 @@ CheckConstraint(
 )
 
 
-@event.listens_for(Session, 'before_flush', insert=True)
-def subnet_before_flush(session, flush_context, instances):
-    for obj in itertools.chain(session.new, session.dirty):
-        if isinstance(obj, Subnet):
-            # Trigger update of subnet search string.
-            obj._update_subnet_string()
-            # Update VRF relationship from vrf_id - This is required for JSON API
-            if obj.attr_has_changes('vrf_id'):
-                obj.vrf = Vrf.query.filter(Vrf.id == obj.vrf_id).first()
-            # Copy some of parent attributes to slaves.
-            for slave in obj.slave_subnets:
-                slave.name = obj.name
-                slave.vrf = obj.vrf
-                slave.slave = True
-                slave.dnszones = obj.dnszones
+@listens_for_before_flush(Subnet)
+def subnet_before_flush(session, flush_context, obj):
+    # Trigger update of subnet search string.
+    obj._update_subnet_string()
+    # Update VRF relationship from vrf_id - This is required for JSON API
+    if obj.attr_has_changes('vrf_id'):
+        obj.vrf = Vrf.query.filter(Vrf.id == obj.vrf_id).first()
+    # Copy some of parent attributes to slaves.
+    for slave in obj.slave_subnets:
+        slave.name = obj.name
+        slave.vrf = obj.vrf
+        slave.slave = True
+        slave.dnszones = obj.dnszones
 
 
 @event.listens_for(Subnet, 'before_insert')
@@ -452,38 +446,38 @@ def subnet_before_insert(mapper, conn, obj):
             conn.execute(unassign_children, execution_options={'synchronize_session': False})
 
 
-@event.listens_for(Session, 'after_flush', insert=True)
-def subnet_after_flush(session, flush_context):
-    for obj in itertools.chain(session.new, session.dirty):
-        if isinstance(obj, Subnet) and obj.estatus != Subnet.STATUS_DELETED and obj.attr_has_changes('vrf', 'range'):
-            #
-            # 1. When a subnet get inserted or updated, we need to re-assign children subnet to our new subnet.
-            #
-            assign_children = (
-                update(Subnet)
-                .filter(
-                    Subnet.id != obj.id,
-                    Subnet.slave.is_(False),
-                    Subnet.vrf_id == obj.vrf_id,
-                    func.subnet_of(Subnet.range, obj.range),
-                    Subnet.estatus != Subnet.STATUS_DELETED,
-                    # TODO Is this required ? Determine if the parent is our new/updated record.
-                    # literal_column('new.id') == find_parent.with_entities(p1.id),
+@listens_for_after_flush(Subnet)
+def subnet_after_flush(session, flush_context, obj):
+    if obj.estatus == Subnet.STATUS_DELETED or not obj.attr_has_changes('vrf', 'range'):
+        return
+    #
+    # 1. When a subnet get inserted or updated, we need to re-assign children subnet to our new subnet.
+    #
+    assign_children = (
+        update(Subnet)
+        .filter(
+            Subnet.id != obj.id,
+            Subnet.slave.is_(False),
+            Subnet.vrf_id == obj.vrf_id,
+            func.subnet_of(Subnet.range, obj.range),
+            Subnet.estatus != Subnet.STATUS_DELETED,
+            # TODO Is this required ? Determine if the parent is our new/updated record.
+            # literal_column('new.id') == find_parent.with_entities(p1.id),
+        )
+        .values(
+            {
+                tuple_(
+                    Subnet.parent_id,
+                    Subnet.parent_evlan,
+                    Subnet.parent_el2vni,
+                    Subnet.parent_el3vni,
+                    Subnet.parent_estatus,
+                    Subnet.parent_range,
+                    Subnet.parent_depth,
                 )
-                .values(
-                    {
-                        tuple_(
-                            Subnet.parent_id,
-                            Subnet.parent_evlan,
-                            Subnet.parent_el2vni,
-                            Subnet.parent_el3vni,
-                            Subnet.parent_estatus,
-                            Subnet.parent_range,
-                            Subnet.parent_depth,
-                        )
-                        .self_group(): Subnet._find_parent()
-                        .scalar_subquery()
-                    }
-                )
-            )
-            session.execute(assign_children, execution_options={'synchronize_session': False})
+                .self_group(): Subnet._find_parent()
+                .scalar_subquery()
+            }
+        )
+    )
+    session.execute(assign_children, execution_options={'synchronize_session': False})

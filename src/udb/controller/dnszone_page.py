@@ -31,7 +31,7 @@ from .form import CherryForm, SelectMultipleObjectField, SelectObjectField
 
 def _subnet_query():
     """
-    Adjust the original query to list the subnet name and subnet ranges. Hide slave subnets
+    Adjust the original query to list the subnet name and subnet ranges and Hide slave subnets.
     """
     return (
         Subnet.query.with_entities(
@@ -83,6 +83,25 @@ class DnsZoneForm(CherryForm):
         object_cls=User,
         default=lambda: cherrypy.serving.request.currentuser.id,
     )
+
+    def populate_obj(self, obj):
+        self.name.populate_obj(obj, 'name')
+        self.notes.populate_obj(obj, 'notes')
+        self.owner_id.populate_obj(obj, 'owner_id')
+
+        # To update subnets, we ignore slaves.
+        obj_subnets = list([s for s in obj.subnets if not s.slave])
+        for subnet_id in self.subnets.data:
+            match = [s for s in obj_subnets if s.id == subnet_id]
+            if match:
+                obj_subnets.remove(match[0])
+            else:
+                # Add master subnet
+                new_subnet = Subnet.query.filter(Subnet.id == subnet_id).first()
+                obj.subnets.append(new_subnet)
+        for not_found in obj_subnets:
+            if not not_found.slave:
+                obj.subnets.remove(not_found)
 
 
 class DnsZonePage(CommonPage):

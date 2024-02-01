@@ -395,3 +395,26 @@ class SubnetTest(WebCase):
         self.assertEqual(subnet1.parent_id, None)
         self.assertEqual(subnet2.parent_id, None)
         self.assertEqual(subnet3.parent_id, subnet1.id)
+
+    def test_add_subnet_slave(self):
+        # Given a subnet
+        vrf = Vrf(name='default')
+        subnet = Subnet(vrf=vrf, range='10.255.1.0/24', slave_subnets=[Subnet(range='192.168.1.0/24')]).add().commit()
+        # When adding slave range to the existing subnet
+        subnet.slave_subnets.append(Subnet(range='192.168.2.0/24'))
+        subnet.add().commit()
+        # Then a message is added in history.
+        self.assertEqual(subnet.messages[-1].changes, {'slave_subnets': [[], ['192.168.2.0/24']]})
+
+    def test_delete_subnet_slave(self):
+        # Given a subnet with a slave range
+        vrf = Vrf(name='default')
+        slave = Subnet(range='192.168.2.0/24')
+        subnet = (
+            Subnet(vrf=vrf, range='10.255.1.0/24', slave_subnets=[Subnet(range='192.168.1.0/24'), slave]).add().commit()
+        )
+        # When soft-deleting range.
+        slave.status = Subnet.STATUS_DELETED
+        subnet.add().commit()
+        # Then a message is added in history.
+        self.assertEqual(subnet.messages[-1].changes, {'slave_subnets': [['192.168.2.0/24'], []]})
