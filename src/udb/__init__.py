@@ -14,10 +14,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+try:
+    from importlib.metadata import distribution as get_distribution
+except ImportError:
+    # For Python 2 or Python 3 with older setuptools
+    from pkg_resources import get_distribution
 
 try:
-    import pkg_resources
-
-    __version__ = pkg_resources.get_distribution("udb").version
+    __version__ = get_distribution("udb").version
 except Exception:
     __version__ = 'DEV'

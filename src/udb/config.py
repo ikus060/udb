@@ -26,9 +26,13 @@ from udb.tools.i18n import gettext as _
 
 # Get package version
 try:
-    import pkg_resources
+    from importlib.metadata import distribution as get_distribution
+except ImportError:
+    # For Python 2 or Python 3 with older setuptools
+    from pkg_resources import get_distribution
 
-    __version__ = pkg_resources.get_distribution("udb").version
+try:
+    __version__ = get_distribution("udb").version
 except Exception:
     __version__ = 'DEV'
 
