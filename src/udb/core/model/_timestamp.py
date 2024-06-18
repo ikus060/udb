@@ -23,13 +23,13 @@ from sqlalchemy.sql.sqltypes import DateTime
 class Timestamp(TypeDecorator):
     cache_ok = True
     impl = DateTime
-    LOCAL_TIMEZONE = datetime.utcnow().astimezone().tzinfo
+    LOCAL_TIMEZONE = datetime.now().astimezone().tzinfo
 
     def process_bind_param(self, value: datetime, dialect):
         if value is None:
             return None
         if value.tzinfo is None:
-            value = value.astimezone(self.LOCAL_TIMEZONE)
+            raise ValueError('datetime without tzinfo: %s' % value)
         return value.astimezone(timezone.utc)
 
     def process_result_value(self, value, dialect):

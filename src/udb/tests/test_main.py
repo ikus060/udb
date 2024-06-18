@@ -20,7 +20,11 @@ import io
 import unittest
 from unittest.mock import patch
 
-import pkg_resources
+try:
+    from importlib.resources import resource_filename
+except ImportError:
+    # For Python 2 or Python 3 with older setuptools
+    from pkg_resources import resource_filename
 
 from udb.main import main
 
@@ -28,7 +32,7 @@ from udb.main import main
 @patch('cherrypy.quickstart')
 class Test(unittest.TestCase):
     def test_main_with_config(self, *args):
-        config = pkg_resources.resource_filename('udb.tests', 'udb.conf')
+        config = resource_filename('udb.tests', 'udb.conf')
         main(['-f', config])
 
     def test_main_without_config(self, *args):

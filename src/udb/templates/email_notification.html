@@ -1,6 +1,6 @@
 {% extends 'email_layout.html' %}
 {% from "macro.html" import show_field, show_value, display_name %}
-{% set msg_type_table = {'new':_('Created by'), 'dirty':_('Modified by'), 'comment':_('Comment by') } %}
+{% set msg_type_table = {'new':_('Created by'), 'dirty':_('Modified by'), 'comment':_('Comment by'), 'parent': _('Parent modified by') } %}
 {% macro show_message(message) %}
   <small>{{ msg_type_table.get(message.type) }} {{ message.author_name }} •
     <time datetime="{{ message.date }}">
@@ -26,7 +26,7 @@
         </li>
       {%- endfor %}
     </ul>
-  {% elif message.type == 'dirty' and message.changes %}
+  {% elif message.type in ['dirty', 'parent'] and message.changes %}
     {# Existing record Updated #}
     <ul class="mb-0">
       {% for key, values in message.changes.items() %}
@@ -58,7 +58,7 @@
   {%- else -%}
     {%- for msg in messages[:5] %}{{ display_name(msg.model_name) }} {{ msg.model_object.summary }}{{ ", " if not loop.last else " " }}
     {% endfor -%}
-    {{ _("modified by") if messages[0].type == 'dirty' else _('created by') }} {{ messages[0].author_name }}
+    {{ msg_type_table.get(messages[0].type) | lower }} {{ messages[0].author_name }}
     {%- if messages[5] -%}
       {{ ' ' }}
       {%- set change_count = (messages|length) - 5 -%}

@@ -15,8 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import cherrypy
-import pkg_resources
 from cherrypy.lib.static import serve_file
+
+try:
+    from importlib.resources import resource_filename
+except ImportError:
+    # For Python 2 or Python 3 with older setuptools
+    from pkg_resources import resource_filename
 
 
 @cherrypy.tools.auth_form(on=False)
@@ -28,60 +33,52 @@ from cherrypy.lib.static import serve_file
 @cherrypy.tools.secure_headers(on=False)
 @cherrypy.tools.sessions(on=False)
 class Static:
-    @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'bootstrap5'))
+    @cherrypy.tools.staticdir(section="", dir=resource_filename(__name__, 'bootstrap5'))
     def bootstrap5(*args, **kwargs):
         raise cherrypy.HTTPError(400)
 
-    @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'datatables'))
+    @cherrypy.tools.staticdir(section="", dir=resource_filename(__name__, 'datatables'))
     def datatables(*args, **kwargs):
         raise cherrypy.HTTPError(400)
 
-    @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'jquery'))
+    @cherrypy.tools.staticdir(section="", dir=resource_filename(__name__, 'jquery'))
     def jquery(*args, **kwargs):
         raise cherrypy.HTTPError(400)
 
-    @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'typeahead'))
+    @cherrypy.tools.staticdir(section="", dir=resource_filename(__name__, 'typeahead'))
     def typeahead(*args, **kwargs):
         raise cherrypy.HTTPError(400)
 
-    @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'multi'))
+    @cherrypy.tools.staticdir(section="", dir=resource_filename(__name__, 'multi'))
     def multi(*args, **kwargs):
         raise cherrypy.HTTPError(400)
 
-    @cherrypy.tools.staticfile(
-        filename=pkg_resources.resource_filename(__name__, 'taylor-vick-M5tzZtFCOfs-unsplash.jpg')
-    )
+    @cherrypy.tools.staticfile(filename=resource_filename(__name__, 'taylor-vick-M5tzZtFCOfs-unsplash.jpg'))
     def login_bg_jpg(self):
         raise cherrypy.HTTPError(400)
 
-    @cherrypy.tools.staticfile(filename=pkg_resources.resource_filename(__name__, 'main.css'))
+    @cherrypy.tools.staticfile(filename=resource_filename(__name__, 'main.css'))
     def main_css(self):
         raise cherrypy.HTTPError(400)
 
-    @cherrypy.tools.staticfile(filename=pkg_resources.resource_filename(__name__, 'main.js'))
+    @cherrypy.tools.staticfile(filename=resource_filename(__name__, 'main.js'))
     def main_js(self):
         raise cherrypy.HTTPError(400)
 
-    @cherrypy.tools.staticdir(section="", dir=pkg_resources.resource_filename(__name__, 'popper.js'))
+    @cherrypy.tools.staticdir(section="", dir=resource_filename(__name__, 'popper.js'))
     def popper_js(self):
         raise cherrypy.HTTPError(400)
 
     @cherrypy.expose
     def header_logo(self, **kwargs):
         cfg = cherrypy.tree.apps[''].cfg
-        filename = (
-            cfg.header_logo
-            if cfg.header_logo
-            else pkg_resources.resource_filename('udb.controller.static', 'udb-logo.png')
-        )
+        filename = cfg.header_logo if cfg.header_logo else resource_filename('udb.controller.static', 'udb-logo.png')
         return serve_file(filename)
 
     @cherrypy.expose
     def favicon(self, **kwargs):
         cfg = cherrypy.tree.apps[''].cfg
-        filename = (
-            cfg.favicon if cfg.favicon else pkg_resources.resource_filename('udb.controller.static', 'udb_16.svg')
-        )
+        filename = cfg.favicon if cfg.favicon else resource_filename('udb.controller.static', 'udb_16.svg')
         return serve_file(filename)
 
     favicon_ico = favicon

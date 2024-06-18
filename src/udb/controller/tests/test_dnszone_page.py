@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from selenium.webdriver.common.keys import Keys
+
 from udb.controller import url_for
 from udb.controller.tests import WebCase
 from udb.core.model import DnsRecord, DnsZone, Subnet, Vrf
@@ -68,6 +70,63 @@ class DnsZonePageTest(WebCase, CommonTest):
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
         self.assertInBody('<option selected value="%s">' % subnet.id)
+
+    def test_edit_add_subnet_selenium(self):
+        # Given a database with a record
+        vrf = Vrf(name='default').add()
+        slave = Subnet(range='192.168.1.0/24')
+        subnet = Subnet(range='192.168.0.1/24', vrf=vrf, slave_subnets=[slave]).add()
+        zone = DnsZone(name='examples.com').add()
+        zone.commit()
+        # When adding subnet using the side-by-side widget
+        with self.selenium() as driver:
+            # When getting web page.
+            driver.get(url_for(self.base_url, zone.id, 'edit'))
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
+            # Then the web page contains a save button
+            save_btn = driver.find_element('id', 'save-changes')
+            # Then the web page contains out subnet item
+            subnet_item = driver.find_element('css selector', '[data-value="%s"]' % subnet.id)
+            # When selecting the subnet item and saving
+            subnet_item.click()
+            save_btn.send_keys(Keys.ENTER)
+            # Then the page get refresh
+            driver.implicitly_wait(10)
+            driver.find_element('xpath', "//*[contains(text(), 'Modified by')]")
+            # Then the database get updated with changes.
+            zone.expire()
+            self.assertEqual(2, len(zone.subnets))
+            self.assertIn(subnet, zone.subnets)
+            self.assertIn(slave, zone.subnets)
+
+    def test_edit_remove_subnet_selenium(self):
+        # Given a database with a record
+        vrf = Vrf(name='default').add()
+        slave = Subnet(range='192.168.1.0/24')
+        subnet = Subnet(range='192.168.0.1/24', vrf=vrf, slave_subnets=[slave]).add()
+        zone = DnsZone(name='examples.com', subnets=[subnet]).add().commit()
+        self.assertEqual(2, len(zone.subnets))
+
+        # When adding subnet using the side-by-side widget
+        with self.selenium() as driver:
+            # When getting web page.
+            driver.get(url_for(self.base_url, zone.id, 'edit'))
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
+            # Then the web page contains a save button
+            save_btn = driver.find_element('id', 'save-changes')
+            # Then the web page contains out subnet item
+            subnet_item = driver.find_element('css selector', '[data-value="%s"]' % subnet.id)
+            # When selecting the subnet item and saving
+            subnet_item.click()
+            save_btn.send_keys(Keys.ENTER)
+            # Then the page get refresh
+            driver.implicitly_wait(10)
+            driver.find_element('xpath', "//*[contains(text(), 'Modified by')]")
+            # Then the database get updated with changes.
+            zone.expire()
+            self.assertEqual(0, len(zone.subnets))
 
     def test_zonefile(self):
         # Given a database with a record

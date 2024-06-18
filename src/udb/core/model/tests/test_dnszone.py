@@ -176,6 +176,22 @@ class DnsZoneTest(WebCase):
         # Then the list include the deleted subnet
         self.assertEqual([subnet], subnets)
 
+    def test_assign_subnet_with_slaves(self):
+        # Given a Subnets with salves
+        vrf = Vrf(name='default').add()
+        slave = Subnet(range='192.168.2.0/24')
+        subnet = Subnet(name='test', range='192.168.1.0/24', vrf=vrf, slave_subnets=[slave]).add()
+        # Given a DNS Zone
+        zone = DnsZone(name='bfh.ch').add().commit()
+        # When adding subnet to the DNS Zone
+        zone.subnets.append(subnet)
+        zone.add()
+        zone.commit()
+        # Then all the salves are added too.
+        self.assertEqual(2, len(zone.subnets))
+        self.assertIn(subnet, zone.subnets)
+        self.assertIn(slave, zone.subnets)
+
     def test_get_messages(self):
         # Given a database with an existing record
         d = DnsZone(name='bfh.ch').add().commit()

@@ -51,7 +51,7 @@ class SubnetPageTest(WebCase, CommonTest):
     def test_edit_dnszone_selenium(self):
         # Given a database with a record
         zone = DnsZone(name='examples.com').add()
-        obj = self.obj_cls(**self.new_data).add().commit()
+        obj = Subnet(range='192.168.0.0/24', vrf=self.vrf).add().commit()
         # Then editing that record
         with self.selenium() as driver:
             # When making a query to audit log
@@ -69,6 +69,53 @@ class SubnetPageTest(WebCase, CommonTest):
         # Then record got updated.
         obj.expire()
         self.assertEqual([zone], obj.dnszones)
+
+    def test_edit_range_selenium(self):
+        # Given a database with a record
+        DnsZone(name='examples.com').add()
+        obj = Subnet(range='192.168.0.0/24', vrf=self.vrf).add().commit()
+        self.assertEqual(0, len(obj.slave_subnets))
+        # Then editing that record
+        with self.selenium() as driver:
+            # When making a query to edit
+            driver.get(url_for(self.base_url, obj.id, 'edit'))
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
+            # When user click plus (+) button to add a range
+            plus_btn = driver.find_element('id', 'ranges-add-row-btn')
+            plus_btn.click()
+            # Then user enter ip range,
+            range = driver.find_element('id', 'ranges-1-range')
+            range.send_keys('147.87.0.0/24')
+            # When saving the form
+            save_change_btn = driver.find_element('id', 'save-changes')
+            save_change_btn.send_keys(Keys.ENTER)
+        # Then record got updated with new range
+        obj.expire()
+        self.assertEqual(1, len(obj.slave_subnets))
+        self.assertEqual('147.87.0.0/24', obj.slave_subnets[0].range)
+
+    def test_edit_remove_range_selenium(self):
+        # Given a database with a record
+        obj = Subnet(range='192.168.0.0/24', vrf=self.vrf, slave_subnets=[Subnet(range='147.87.0.0/24')]).add().commit()
+        self.assertEqual(1, len(obj.slave_subnets))
+        # Then editing that record
+        with self.selenium() as driver:
+            # When making a query to edit
+            driver.get(url_for(self.base_url, obj.id, 'edit'))
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
+            # When user click plus (delete) button
+            delete_btn = driver.find_element('css selector', '#ranges-1 .btn-delete')
+            delete_btn.click()
+            # When saving the form
+            save_change_btn = driver.find_element('id', 'save-changes')
+            save_change_btn.send_keys(Keys.ENTER)
+        # Then record got deleted
+        obj.expire()
+        self.assertEqual(1, len(obj.slave_subnets))
+        self.assertEqual('147.87.0.0/24', obj.slave_subnets[0].range)
+        self.assertEqual(Subnet.STATUS_DELETED, obj.slave_subnets[0].status)
 
     def test_edit_invalid(self):
         # Given a database with a record

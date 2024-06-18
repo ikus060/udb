@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import ipaddress
-import itertools
 
 import cherrypy
 import validators
@@ -30,6 +29,9 @@ from sqlalchemy import (
     and_,
     event,
     func,
+    insert,
+    literal,
+    literal_column,
     or_,
     select,
     tuple_,
@@ -45,15 +47,17 @@ from udb.tools.i18n import gettext_lazy as _
 from ._cidr import CidrType, InetType
 from ._common import CommonMixin
 from ._dnsrecord import DnsRecord
+from ._events import listens_for_before_flush
 from ._follower import FollowerMixin
 from ._ip import Ip
 from ._json import JsonMixin
 from ._mac import Mac
-from ._message import MessageMixin
+from ._message import Message, MessageMixin
 from ._rule import RuleConstraint
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._subnet import Subnet
+from ._update import trigger_on_update
 from ._vrf import Vrf
 
 Base = cherrypy.tools.db.get_base()
@@ -191,6 +195,12 @@ class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMix
             query = query.filter(Subnet.id != not_id)
         return query.order_by(Subnet.range.desc()).limit(1)
 
+    def add_change(self, new_message):
+        # Strip subnet_id from history because we only want to display subnet's name.
+        if 'subnet_id' in new_message.changes:
+            new_message.changes = {key: value for key, value in new_message.changes.items() if key != 'subnet_id'}
+        super().add_change(new_message)
+
 
 Index(
     'dhcprecord_mac_unique_ix',
@@ -288,45 +298,41 @@ RuleConstraint(
 )
 
 
-# `insert=True` is required to run before messages hook.
-@event.listens_for(Session, 'before_flush', insert=True)
-def dhcprecord_before_flush(session, flush_context, instances):
-    for obj in itertools.chain(session.new, session.dirty):
-        # When creating new DHCP Record, make sure to assign a Subnet range and an IP
-        if not isinstance(obj, DhcpRecord):
-            continue
+@listens_for_before_flush(DhcpRecord)
+def dhcprecord_before_flush(session, flush_context, obj):
+    # When creating new DHCP Record, make sure to assign a Subnet range and an IP
+    # Dissosiate the record from it's parent when getting deleted.
+    if obj.status == DhcpRecord.STATUS_DELETED:
+        obj._subnet = None
+    elif obj.attr_has_changes('vrf', 'ip', 'status'):
+        # Update subnetrange when vrf_id or IP address get updated.
+        parent = obj._find_parent_subnet().add_columns(Subnet.vrf_id).first()
+        obj.subnet_id = parent.id if parent else None
+        obj.subnet_estatus = parent.estatus if parent else None
+        obj.subnet_range = parent.range if parent else None
+        obj.vrf = Vrf.query.filter(Vrf.id == parent.vrf_id).first() if parent else None
 
-        # Dissosiate the record from it's parent when getting deleted.
-        if obj.status == DhcpRecord.STATUS_DELETED:
-            obj._subnet = None
-        elif obj.attr_has_changes('vrf', 'ip', 'status'):
-            # Update subnetrange when vrf_id or IP address get updated.
-            parent = obj._find_parent_subnet().add_columns(Subnet.vrf_id).first()
-            obj.subnet_id = parent.id if parent else None
-            obj.subnet_estatus = parent.estatus if parent else None
-            obj.subnet_range = parent.range if parent else None
-            obj.vrf = Vrf.query.filter(Vrf.id == parent.vrf_id).first() if parent else None
+    # Update relation to IP when vrf_id or ip get updated
+    if obj.attr_has_changes('vrf', 'ip') and obj.ip is not None and obj.vrf is not None:
+        obj._ip  # Fetch record for history tracking
+        obj._ip = Ip.unique_ip(session, obj.ip, obj.vrf)
 
-        # Update relation to IP when vrf_id or ip get updated
-        if obj.attr_has_changes('vrf', 'ip') and obj.ip is not None and obj.vrf is not None:
-            obj._ip  # Fetch record for history tracking
-            obj._ip = Ip.unique_ip(session, obj.ip, obj.vrf)
-
-        if obj.attr_has_changes('mac'):
-            obj._mac  # Fetch record for history tracking
-            obj._mac = Mac.unique_mac(session, obj.mac)
+    if obj.attr_has_changes('mac'):
+        obj._mac  # Fetch record for history tracking
+        obj._mac = Mac.unique_mac(session, obj.mac)
 
 
 @event.listens_for(Subnet, 'after_update')
 @event.listens_for(Subnet, 'after_insert')
-def dhcprecord_subnet_after_update(mapper, conn, obj):
-    # When subnet-range get update or created, make sure to re-assign the DHCP accordingly.
-    if obj.estatus != Subnet.STATUS_DELETED:
+def dhcprecord_subnet_after_update(mapper, conn, subnet):
+    if subnet.estatus != Subnet.STATUS_DELETED:
+        # When subnet-range get update or created, make sure to re-assign the DHCP accordingly.
         assign_dhcprecord = (
             update(DhcpRecord)
+            .inline()
             .filter(
-                DhcpRecord.vrf_id == obj.vrf_id,
-                func.subnet_of_or_equals(DhcpRecord.ip, obj.range),
+                DhcpRecord.vrf_id == subnet.vrf_id,
+                func.subnet_of_or_equals(DhcpRecord.ip, subnet.range),
                 DhcpRecord.estatus != Subnet.STATUS_DELETED,
             )
             .values(
@@ -342,3 +348,57 @@ def dhcprecord_subnet_after_update(mapper, conn, obj):
             )
         )
         conn.execute(assign_dhcprecord, execution_options={'synchronize_session': False})
+
+
+@event.listens_for(Base.metadata, 'after_create')
+def dhcprecord_subnet_range_trigger(target, conn, **kw):
+    """
+    This create a trigger for dhcprecord to keep track when parent get updated.
+    """
+    insert_message = (
+        insert(Message)
+        .inline()
+        .values(
+            {
+                Message.model_name: 'dhcprecord',
+                Message.model_id: literal_column('new.id'),
+                Message.type: 'parent',
+                Message.body: '',
+                Message._changes: literal('{"subnet_range": ["')
+                + func.text(literal_column('old.subnet_range'))
+                + literal('", "')
+                + func.text(literal_column('new.subnet_range'))
+                + literal('"]}'),
+                Message.author_id: None,
+            }
+        )
+    )
+    trigger_on_update(conn, 'dhcprecord_subnet_range_trigger', columns=[DhcpRecord.subnet_range], sql=insert_message)
+
+
+@event.listens_for(Base.metadata, 'after_create')
+def dhcprecord_subnet_estatus_trigger(target, conn, **kw):
+    """
+    This create a trigger for dhcprecord to keep track of changes made on parent subnet.
+    """
+    insert_message = (
+        insert(Message)
+        .inline()
+        .values(
+            {
+                Message.model_name: 'dhcprecord',
+                Message.model_id: literal_column('new.id'),
+                Message.type: 'parent',
+                Message.body: '',
+                Message._changes: literal('{"subnet_estatus": [')
+                + literal_column('old.subnet_estatus')
+                + literal(',')
+                + literal_column('new.subnet_estatus')
+                + literal(']}'),
+                Message.author_id: None,
+            }
+        )
+    )
+    trigger_on_update(
+        conn, 'dhcprecord_subnet_estatus_trigger', columns=[DhcpRecord.subnet_estatus], sql=insert_message
+    )

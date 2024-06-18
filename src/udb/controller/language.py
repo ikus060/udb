@@ -36,6 +36,11 @@ class Language:
         Return the language file to be loaded by datatable.
         """
         with preferred_lang(lang):
+            status_map = {
+                "0": _("Deleted"),
+                "1": _("Disabled"),
+                "2": _("Enabled"),
+            }
             return {
                 "aria": {
                     "sortAscending": _('activate to sort column ascending'),
@@ -53,20 +58,24 @@ class Language:
                         "deleted": _('Deleted'),
                         "disabled": _('Disabled'),
                     },
+                    "null": _('undefined'),
                     "value": {
                         "type": {
                             "new": _('Created by'),
                             "dirty": _('Modified by'),
                             "comment": _('Comment on'),
+                            "parent": _('Parent modified by'),
                         },
-                        "status": {
-                            "0": _("Deleted"),
-                            "1": _("Disabled"),
-                            "2": _("Enabled"),
-                        },
+                        "status": status_map,
+                        "subnet_estatus": status_map,
+                        "dnszone_estatus": status_map,
                         "severity": {
                             "0": _("No"),
                             "1": _("Yes"),
+                        },
+                        "dhcp": {
+                            "false": _("No"),
+                            "true": _("Yes"),
                         },
                         "mfa": {
                             "0": _("Disabled"),
@@ -108,6 +117,12 @@ class Language:
                         "lang": _("Preferred Language"),
                         "timezone": _("Preferred Time zone"),
                         "mfa": _("Two-Factor authentication"),
+                        "subnet_range": _("Parent Subnet"),
+                        "subnet_estatus": _("Parent Subnet status"),
+                        "dhcp": _("DHCP Enabled"),
+                        "dhcp_start_ip": _("DHCP Start Range"),
+                        "dhcp_end_ip": _("DHCP End Range"),
+                        "dnszone_estatus": _("Parent DNS Zone status"),
                     },
                 },
                 "info": _('Showing total of _TOTAL_'),

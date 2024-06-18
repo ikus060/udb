@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import cherrypy
 from sqlalchemy import desc, func
@@ -29,7 +29,7 @@ class DashboardPage:
     @cherrypy.tools.jinja2(template=['dashboard.html'])
     def index(self, **kwargs):
         # Most active users
-        week_ago = datetime.now() - timedelta(days=7)
+        week_ago = datetime.now(timezone.utc) - timedelta(days=7)
         user_activities = (
             Message.query.with_entities(User, func.count(Message.author_id).label('count'))
             .filter(Message.author_id.is_not(None), Message.date >= week_ago)

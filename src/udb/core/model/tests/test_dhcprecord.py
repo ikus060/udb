@@ -157,6 +157,26 @@ class DhcpRecordTest(WebCase):
         # Then DHCP effective status is deleted.
         record.expire()
         self.assertEqual(DhcpRecord.STATUS_DELETED, record.estatus)
+        # Then a record is created in history
+        self.assertEqual(
+            record.messages[-1].changes, {'subnet_estatus': [DhcpRecord.STATUS_ENABLED, DhcpRecord.STATUS_DELETED]}
+        )
+
+    def test_estatus_with_subnet_status(self):
+        # Given an enabled VRF and enabled DHCP
+        vrf = Vrf(name='default').add()
+        subnet = Subnet(range='192.0.2.0/24', vrf=vrf).add().commit()
+        record = DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+        # When deleting parent VRF.
+        subnet.status = Vrf.STATUS_DELETED
+        subnet.add().commit()
+        # Then DHCP effective status is deleted.
+        record.expire()
+        self.assertEqual(DhcpRecord.STATUS_DELETED, record.estatus)
+        # Then a record is created in history
+        self.assertEqual(
+            record.messages[-1].changes, {'subnet_estatus': [DhcpRecord.STATUS_ENABLED, DhcpRecord.STATUS_DELETED]}
+        )
 
     def test_update_parent_subnet_range(self):
         # Given a database with a Subnet and a DHCP Record
@@ -240,6 +260,8 @@ class DhcpRecordTest(WebCase):
         dhcp.expire()
         self.assertEqual(dhcp.subnet_id, subnet2.id)
         self.assertEqual(dhcp.subnet_range, '192.168.2.0/24')
+        # Then a message is added in history
+        self.assertEqual(dhcp.messages[-1].changes, {'subnet_range': ['192.168.0.0/16', '192.168.2.0/24']})
 
     def test_update_vrf_id(self):
         # Given a DHCP Record
@@ -261,3 +283,17 @@ class DhcpRecordTest(WebCase):
         # Then the VRF get updated.
         dhcp.expire()
         self.assertEqual(dhcp.vrf_id, vrf2.id)
+
+    def test_update_ip_value(self):
+        # Given a DHCP Record for a specific subnet.
+        # When updating the IP Value to be in a different subnet.
+        vrf = Vrf(name='default').add()
+        subnet1 = Subnet(range='192.168.0.0/24', vrf=vrf).add().flush()
+        subnet2 = Subnet(range='192.168.1.0/24', vrf=vrf).add().commit()
+        dhcp = DhcpRecord(ip='192.168.0.23', mac='00:00:5e:00:53:af').add().commit()
+        self.assertEqual(subnet1.id, dhcp.subnet_id)
+        # Then the record get updated.
+        dhcp.ip = '192.168.1.25'
+        dhcp.add().commit()
+        # Then the subnet parent get updated.
+        self.assertEqual(subnet2.id, dhcp.subnet_id)

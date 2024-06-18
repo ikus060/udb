@@ -105,8 +105,8 @@ class SubnetRangeform(CherryForm):
         filters=[_norm_ipaddress],
         render_kw={"placeholder": _("Leave blank for default")},
     )
-    status = IntegerField(widget=HiddenInput())
-    id = IntegerField(widget=HiddenInput())
+    status = IntegerField(widget=HiddenInput(), validators=[Optional()])
+    id = IntegerField(widget=HiddenInput(), validators=[Optional()])
 
     def validate_range(self, field):
         try:

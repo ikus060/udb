@@ -117,9 +117,22 @@ class DnsRecordTest(WebCase):
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
         self.assertEqual(0, DnsRecord.query.count())
         # When adding a DnsRecord
-        DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
+        dns = DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
         # Then a new record is created
         self.assertEqual(1, DnsRecord.query.count())
+        # Then a new history is created.
+        dns.expire()
+        self.assertEqual(
+            dns.messages[-1].changes,
+            {
+                'vrf': [None, 'default'],
+                'name': [None, 'foo.example.com'],
+                'type': [None, 'A'],
+                'value': [None, '192.0.2.23'],
+                'subnet_estatus': [None, 2],
+                'subnet_range': [None, '192.0.2.0/24'],
+            },
+        )
 
     def test_add_a_record_with_invalid_value(self):
         # Given an empty database
@@ -482,6 +495,10 @@ class DnsRecordTest(WebCase):
         # Then DHCP effective status is deleted.
         record.expire()
         self.assertEqual(DnsRecord.STATUS_DELETED, record.estatus)
+        # Then a record get added to history
+        self.assertEqual(
+            record.messages[-1].changes, {'subnet_estatus': [Subnet.STATUS_ENABLED, Subnet.STATUS_DELETED]}
+        )
 
     def test_estatus_with_subnet_status(self):
         # Given an enabled VRF and enabled DHCP
@@ -490,11 +507,32 @@ class DnsRecordTest(WebCase):
         DnsZone(name='example.com', subnets=[subnet]).add().commit()
         record = DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
         # When deleting parent VRF.
-        subnet.status = Vrf.STATUS_DELETED
+        subnet.status = Subnet.STATUS_DELETED
         subnet.add().commit()
         # Then DHCP effective status is deleted.
         record.expire()
         self.assertEqual(DnsRecord.STATUS_DELETED, record.estatus)
+        # Then a record get added to history
+        self.assertEqual(
+            record.messages[-1].changes, {'subnet_estatus': [Subnet.STATUS_ENABLED, Subnet.STATUS_DELETED]}
+        )
+
+    def test_estatus_with_subnet_slave_status(self):
+        # Given an enabled VRF and enabled DHCP
+        vrf = Vrf(name='default')
+        subnet = Subnet(range='192.168.1.0/24', vrf=vrf, slave_subnets=[Subnet(range='192.168.2.0/24')])
+        DnsZone(name='example.com', subnets=[subnet]).add().commit()
+        record = DnsRecord(name='foo.example.com', type='A', value='192.168.2.23', vrf=vrf).add().commit()
+        # When deleting parent VRF.
+        subnet.status = Subnet.STATUS_DELETED
+        subnet.add().commit()
+        # Then DHCP effective status is deleted.
+        record.expire()
+        self.assertEqual(DnsRecord.STATUS_DELETED, record.estatus)
+        # Then a record get added to history
+        self.assertEqual(
+            record.messages[-1].changes, {'subnet_estatus': [Subnet.STATUS_ENABLED, Subnet.STATUS_DELETED]}
+        )
 
     def test_estatus_with_zone_status(self):
         # Given an enabled VRF and enabled DHCP
@@ -503,11 +541,15 @@ class DnsRecordTest(WebCase):
         zone = DnsZone(name='example.com', subnets=[subnet]).add().commit()
         record = DnsRecord(name='foo.example.com', type='CNAME', value='example.com').add().commit()
         # When deleting parent VRF.
-        zone.status = Vrf.STATUS_DELETED
+        zone.status = DnsZone.STATUS_DELETED
         zone.add().commit()
         # Then DHCP effective status is deleted.
         record.expire()
         self.assertEqual(DnsRecord.STATUS_DELETED, record.estatus)
+        # Then a record get added to history
+        self.assertEqual(
+            record.messages[-1].changes, {'dnszone_estatus': [Subnet.STATUS_ENABLED, Subnet.STATUS_DELETED]}
+        )
 
     def test_update_parent_dnszone_name(self):
         # Given a database with a DNS Zone and a DnsRecord
@@ -640,10 +682,12 @@ class DnsRecordTest(WebCase):
         # When updating the Subnet with DNS Zone
         zone.subnets.append(subnet2)
         zone.add().commit()
-        # Then DNS Record is not reassigned.
+        # Then DNS Record is reassigned.
         dns.expire()
         self.assertEqual(dns.subnet_id, subnet2.id)
         self.assertEqual(dns.subnet_range, '192.168.2.0/24')
+        # Then a message is history get created
+        self.assertEqual(dns.messages[-1].changes, {'subnet_range': ['192.168.0.0/16', '192.168.2.0/24']})
 
     def test_update_vrf_id(self):
         # Given a DNS Record
@@ -660,3 +704,17 @@ class DnsRecordTest(WebCase):
         # Then change are commited
         dns.expire()
         self.assertEqual(dns.vrf_id, vrf2.id)
+
+    def test_update_ip_value(self):
+        # Given a DNS Record for a specific subnet.
+        # When updating the IP Value to be in a different subnet.
+        vrf = Vrf(name='default').add()
+        subnet1 = Subnet(range='192.168.0.0/24', vrf=vrf).add().flush()
+        subnet2 = Subnet(range='192.168.1.0/24', vrf=vrf).add().commit()
+        DnsZone(name='example.com', subnets=[subnet1, subnet2]).add().commit()
+        dns = DnsRecord(name='foo.example.com', type='A', value='192.168.0.25').add().commit()
+        # Then the record get updated.
+        dns.value = '192.168.1.25'
+        dns.add().commit()
+        # Then the subnet parent get updated.
+        self.assertEqual(subnet2.id, dns.subnet_id)

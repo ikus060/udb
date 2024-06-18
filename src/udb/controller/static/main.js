@@ -266,6 +266,9 @@ $.fn.dataTable.render.datetime = function () {
     };
 }
 
+/**
+ * Render for record history.
+ */
 $.fn.dataTable.render.changes = function () {
     return {
         display: function (data, type, row, meta) {
@@ -277,14 +280,19 @@ $.fn.dataTable.render.changes = function () {
             }
             const type_idx = api.column('type:name').index();
             if (data) {
+                const null_value = api.settings().i18n(`udb.field.null`, 'undefined')
                 html += '<ul class="mb-0">';
                 if (row[type_idx] === 'new') {
+                    /* For new record display only the new value. */
                     for (const [key, values] of Object.entries(data)) {
                         const field_name = safe(api.settings().i18n(`udb.field.${key}`, key));
-                        const new_value = safe(api.settings().i18n(`udb.value.${key}.${values[1]}`, `${values[1]}`));
-                        html += '<li><strong>' + field_name + '</strong>: ' + new_value + ' </li>';
+                        if(values[1] !== null ) {
+                            const new_value = safe(api.settings().i18n(`udb.value.${key}.${values[1]}`, `${values[1]}` )) ;
+                            html += '<li><strong>' + field_name + '</strong>: ' + new_value + ' </li>';
+                        }
                     }
                 } else {
+                    /* For updates, display old and new value */
                     for (const [key, values] of Object.entries(data)) {
                         const field_name = safe(api.settings().i18n(`udb.field.${key}`, key));
                         html += '<li><strong>' + field_name + '</strong>: '
@@ -296,8 +304,8 @@ $.fn.dataTable.render.changes = function () {
                                 html += '<br/> + ' + safe(added);
                             }
                         } else {
-                            const old_value = safe(api.settings().i18n(`udb.value.${key}.${values[0]}`, `${values[0]}`));
-                            const new_value = safe(api.settings().i18n(`udb.value.${key}.${values[1]}`, `${values[1]}`));
+                            const old_value = safe(api.settings().i18n(`udb.value.${key}.${values[0]}`, `${values[0] !== null ? values[0] : undefined }`)) ;
+                            const new_value = safe(api.settings().i18n(`udb.value.${key}.${values[1]}`, `${values[1] !== null ? values[1] : undefined }`)) ;
                             html += old_value + ' → ' + new_value + '</li>';
                         }
                     }

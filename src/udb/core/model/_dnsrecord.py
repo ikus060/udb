@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import ipaddress
-import itertools
 from collections import namedtuple
 
 import cherrypy
@@ -30,8 +29,10 @@ from sqlalchemy import (
     case,
     event,
     func,
+    insert,
     inspect,
     literal,
+    literal_column,
     or_,
     select,
     tuple_,
@@ -48,13 +49,15 @@ from udb.tools.i18n import gettext_lazy as _
 from ._cidr import CidrType, InetType
 from ._common import CommonMixin
 from ._dnszone import NAME_PATTERN, DnsZone
+from ._events import listens_for_after_flush, listens_for_before_flush
 from ._follower import FollowerMixin
 from ._json import JsonMixin
-from ._message import MessageMixin
+from ._message import Message, MessageMixin
 from ._rule import Rule, RuleConstraint
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._subnet import Subnet
+from ._update import trigger_on_update
 from ._vrf import Vrf
 
 Base = cherrypy.tools.db.get_base()
@@ -594,11 +597,12 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
         """
         Lookup database to find the best matching Subnet for this record.
         """
+        ip_field = cls.generated_ip if isinstance(cls, type) else func.inet(literal(cls.ip_value))
         query = (
             Subnet.query.with_entities(Subnet.id, Subnet.estatus, Subnet.range)
             .join(Subnet.dnszones)
             .filter(
-                func.subnet_of_or_equals(func.inet(cls.generated_ip or literal(cls.ip_value)), Subnet.range),
+                func.subnet_of_or_equals(ip_field, Subnet.range),
                 Subnet.estatus != DnsRecord.STATUS_DELETED,
             )
         )
@@ -614,6 +618,12 @@ class DnsRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixi
             query = query.filter(Subnet.id != not_id)
         return query.order_by(Subnet.range.desc()).limit(1)
 
+    def add_change(self, new_message):
+        # Strip subnet_id from history because we only want to display subnet's name.
+        if 'subnet_id' in new_message.changes:
+            new_message.changes = {key: value for key, value in new_message.changes.items() if key != 'subnet_id'}
+        super().add_change(new_message)
+
 
 @event.listens_for(DnsRecord.ip_value, 'set')
 def dns_reload_ip(self, new_value, old_value, initiator):
@@ -623,58 +633,60 @@ def dns_reload_ip(self, new_value, old_value, initiator):
 
 
 # insert=True is required to run before messages hook.
-@event.listens_for(Session, 'before_flush', insert=True)
-def dnsrecord_before_flush(session, flush_context, instances):
+@listens_for_before_flush(DnsRecord)
+def dnsrecord_before_flush(session, flush_context, obj):
+    # Run default validation of field.
+    obj._validate()
 
-    # When creating or updating DNS Record, make sure to assign a Subnet and an IP
-    for obj in itertools.chain(session.new, session.dirty):
-        if not isinstance(obj, DnsRecord):
-            continue
+    if obj.status == DnsRecord.STATUS_DELETED:
+        # Dissociate the record from it's parent when getting deleted.
+        obj._dnszone = None
+        obj._subnet = None
+    elif obj.attr_has_changes(obj.hostname_field, 'status'):
+        # Lookup dnszone based on hostname
+        obj._dnszone = obj.find_dnszone()
 
-        # Run default validation of field.
-        obj._validate()
+    # This is required for Json API.
+    if obj.attr_has_changes('vrf_id'):
+        obj.vrf = Vrf.query.filter(Vrf.id == obj.vrf_id).first()
 
-        if obj.status == DnsRecord.STATUS_DELETED:
-            # Dissociate the record from it's parent when getting deleted.
-            obj._dnszone = None
-            obj._subnet = None
-        elif obj.attr_has_changes(obj.hostname_field, 'status'):
-            # Lookup dnszone based on hostname
-            obj._dnszone = obj.find_dnszone()
-
-        # This is required for Json API.
-        if obj.attr_has_changes('vrf_id'):
-            obj.vrf = Vrf.query.filter(Vrf.id == obj.vrf_id).first()
-
-        if obj._dnszone and obj.ip_field and obj.attr_has_changes('vrf_id', 'vrf', obj.ip_field, 'status'):
-            # Update subnet when vrf_id or IP address get updated.
-            parent = obj._find_parent_subnet().add_columns(Subnet.vrf_id).first()
-            obj.subnet_id = parent.id if parent else None
-            obj.subnet_estatus = parent.estatus if parent else None
-            obj.subnet_range = parent.range if parent else None
-            obj.vrf = Vrf.query.filter(Vrf.id == parent.vrf_id).first() if parent else None
-
-        # Update relation to IP when vrf_id or ip get updated
-        if obj.vrf and obj.ip_field and obj.attr_has_changes('vrf', obj.ip_field):
-            from ._ip import Ip
-
-            obj._ip  # Fetch record for history tracking
-            obj._ip = Ip.unique_ip(session, obj.ip_value, obj.vrf)
+    if obj._dnszone and obj.ip_field and obj.attr_has_changes('vrf_id', 'vrf', obj.ip_field, 'status'):
+        # Update subnet when vrf_id or IP address get updated.
+        parent = obj._find_parent_subnet().add_columns(Subnet.vrf_id).first()
+        if parent:
+            obj.subnet_id = parent.id
+            obj.subnet_estatus = parent.estatus
+            obj.subnet_range = parent.range
+            obj.vrf = Vrf.query.filter(Vrf.id == parent.vrf_id).first()
         else:
-            obj._ip = None
+            obj.subnet_id = None
+            obj.subnet_estatus = None
+            obj.subnet_range = None
+            obj.vrf = None
+
+    # Update relation to IP when vrf_id or ip get updated
+    if obj.vrf and obj.ip_field and obj.attr_has_changes('vrf', obj.ip_field):
+        from ._ip import Ip
+
+        obj._ip  # Fetch record for history tracking
+        obj._ip = Ip.unique_ip(session, obj.ip_value, obj.vrf)
+    else:
+        obj._ip = None
 
 
-@event.listens_for(Session, "after_flush")
-def dnsrecord_after_flush(session, flush_context):
+@listens_for_after_flush((Subnet, DnsZone))
+def dnsrecord_after_flush(session, flush_context, obj):
+    """
+    When Allowed Subnet or Allowed DnsZone get updated, we need to update the parent of DNS Record.
+    """
     inserts = set()
     # Collect any changes made to subnet and dnszones
-    for obj in list(session.new) + list(session.dirty):
-        if isinstance(obj, Subnet) and obj.attr_has_changes('dnszones'):
-            for related in inspect(obj).attrs.dnszones.history.added:
-                inserts.add((obj, related))
-        elif isinstance(obj, DnsZone) and obj.attr_has_changes('subnets'):
-            for related in inspect(obj).attrs.subnets.history.added:
-                inserts.add((related, obj))
+    if isinstance(obj, Subnet) and obj.attr_has_changes('dnszones'):
+        for related in inspect(obj).attrs.dnszones.history.added:
+            inserts.add((obj, related))
+    elif isinstance(obj, DnsZone) and obj.attr_has_changes('subnets'):
+        for related in inspect(obj).attrs.subnets.history.added:
+            inserts.add((related, obj))
     # Then update all dns record
     for subnet, dnszone in inserts:
         assign_dnsrecord = (
@@ -684,6 +696,7 @@ def dnsrecord_after_flush(session, flush_context):
                 DnsRecord.dnszone_id == dnszone.id,
                 func.subnet_of_or_equals(DnsRecord.generated_ip, subnet.range),
                 DnsRecord.estatus != Subnet.STATUS_DELETED,
+                DnsRecord.subnet_id != subnet.id,
             )
             .values(
                 {
@@ -698,6 +711,86 @@ def dnsrecord_after_flush(session, flush_context):
             )
         )
         session.execute(assign_dnsrecord, execution_options={'synchronize_session': False})
+
+
+@event.listens_for(Base.metadata, 'after_create')
+def dnsrecord_subnet_range_trigger(target, conn, **kw):
+    """
+    This create a trigger for dnsrecord to keep track when parent get updated.
+    """
+    insert_message = (
+        insert(Message)
+        .inline()
+        .values(
+            {
+                Message.model_name: 'dnsrecord',
+                Message.model_id: literal_column('new.id'),
+                Message.type: 'parent',
+                Message.body: '',
+                Message._changes: literal('{"subnet_range": ["')
+                + func.text(literal_column('old.subnet_range'))
+                + literal('", "')
+                + func.text(literal_column('new.subnet_range'))
+                + literal('"]}'),
+                Message.author_id: None,
+            }
+        )
+    )
+    trigger_on_update(conn, 'dnsrecord_subnet_range_trigger', columns=[DnsRecord.subnet_range], sql=insert_message)
+
+
+@event.listens_for(Base.metadata, 'after_create')
+def dnsrecord_subnet_estatus_trigger(target, conn, **kw):
+    """
+    This create a trigger for dnsrecord to keep track of changes made on parent subnet.
+    """
+    insert_message = (
+        insert(Message)
+        .inline()
+        .values(
+            {
+                Message.model_name: 'dnsrecord',
+                Message.model_id: literal_column('new.id'),
+                Message.type: 'parent',
+                Message.body: '',
+                Message._changes: literal('{"subnet_estatus": [')
+                + literal_column('old.subnet_estatus')
+                + literal(',')
+                + literal_column('new.subnet_estatus')
+                + literal(']}'),
+                Message.author_id: None,
+            }
+        )
+    )
+    trigger_on_update(conn, 'dnsrecord_subnet_estatus_trigger', columns=[DnsRecord.subnet_estatus], sql=insert_message)
+
+
+@event.listens_for(Base.metadata, 'after_create')
+def dnsrecord_dnszone_estatus_trigger(target, conn, **kw):
+    """
+    This create a trigger for dnsrecord to keep track of changes made on parent dnszone.
+    """
+    insert_message = (
+        insert(Message)
+        .inline()
+        .values(
+            {
+                Message.model_name: 'dnsrecord',
+                Message.model_id: literal_column('new.id'),
+                Message.type: 'parent',
+                Message.body: '',
+                Message._changes: literal('{"dnszone_estatus": [')
+                + literal_column('old.dnszone_estatus')
+                + literal(',')
+                + literal_column('new.dnszone_estatus')
+                + literal(']}'),
+                Message.author_id: None,
+            }
+        )
+    )
+    trigger_on_update(
+        conn, 'dnsrecord_dnszone_estatus_trigger', columns=[DnsRecord.dnszone_estatus], sql=insert_message
+    )
 
 
 # Make sure `type` only matches supported types.

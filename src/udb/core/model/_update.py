@@ -146,3 +146,49 @@ def table_exists(conn, table):
     else:
         row = conn.execute(text("SELECT 1 FROM information_schema.tables WHERE table_name = '%s'" % table.name)).first()
     return row is not None
+
+
+def trigger_on_update(conn, name, before_or_after='AFTER', columns=[], sql=None):
+    """
+    Create a simple trigger.
+    sql could be an sql statement or an array of sql statement.
+    """
+    assert ' ' not in name
+    assert before_or_after in ['BEFORE', 'AFTER'], 'expect BEFORE or AFTER'
+    assert columns, 'at least one column is required'
+    table_name = columns[0].table.name
+    column_names = ','.join([column.name for column in columns])
+    update_condition = ' OR '.join(['new.%s <> old.%s' % (column.name, column.name) for column in columns])
+
+    # Compile the statements
+    if not isinstance(sql, list):
+        sql = [sql]
+    sql_body = ';\n'.join(str(stmt.compile(conn.engine, compile_kwargs={"literal_binds": True})) for stmt in sql)
+
+    if is_sqlite(conn):
+        # SQLite doesn't support multiple event type, so we need to create individual trigger with different name
+        conn.execute(text(f"DROP TRIGGER IF EXISTS '{name}'"))
+        conn.execute(
+            text(
+                f"CREATE TRIGGER '{name}' {before_or_after} UPDATE OF {column_names} ON '{table_name}' FOR EACH ROW WHEN {update_condition} BEGIN {sql_body}; END"
+            )
+        )
+    else:
+        # Postgresql required the creation of a function to be executed as a trigger.
+        conn.execute(
+            text(
+                f'CREATE OR REPLACE FUNCTION {name}_func() RETURNS TRIGGER LANGUAGE PLPGSQL AS $$ BEGIN\n'
+                f'IF {update_condition} THEN\n'
+                f'{sql_body};\n'
+                f'END IF;\n'
+                f'RETURN NEW;\n'
+                f'END $$'
+            )
+        )
+        # Postgresql support multiple event. build the event string.
+        conn.execute(text(f'DROP TRIGGER IF EXISTS "{name}" ON "{table_name}" CASCADE'))
+        conn.execute(
+            text(
+                f'CREATE TRIGGER "{name}" {before_or_after} UPDATE OF {column_names} ON "{table_name}" FOR EACH ROW EXECUTE PROCEDURE {name}_func();'
+            )
+        )

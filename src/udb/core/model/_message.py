@@ -93,6 +93,7 @@ class Message(JsonMixin, SearchableMixing, Base):
     TYPE_COMMENT = 'comment'
     TYPE_NEW = 'new'
     TYPE_DIRTY = 'dirty'
+    TYPE_PARENT = "parent"  # For parent changes
 
     __tablename__ = 'message'
     id = Column(Integer, primary_key=True)
@@ -240,7 +241,7 @@ class MessageMixin:
             primaryjoin=lambda: and_(
                 cls.__tablename__ == remote(foreign(Message.model_name)),
                 cls.id == remote(foreign(Message.model_id)),
-                Message.type.in_([Message.TYPE_NEW, Message.TYPE_DIRTY]),
+                Message.type != Message.TYPE_COMMENT,
             ),
             order_by=Message.date,
             viewonly=True,

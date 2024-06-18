@@ -157,7 +157,6 @@ class DeploymentPageTest(WebCase):
                         'vrf': [None, 'default'],
                         'ip': [None, '192.168.45.67'],
                         'mac': [None, 'E5:D3:56:7B:22:A3'],
-                        'subnet_id': [None, 1],
                         'subnet_estatus': [None, 2],
                         'subnet_range': [None, '192.168.45.0/24'],
                     },

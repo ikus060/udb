@@ -17,7 +17,6 @@
 
 import cherrypy
 import jinja2
-import pkg_resources
 import ujson
 from cherrypy import Application
 
@@ -60,6 +59,12 @@ from udb.controller.user_page import UserPage
 from udb.controller.vrf_page import VrfPage
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User, Vrf
 from udb.tools.i18n import format_datetime, gettext_lazy, ngettext
+
+try:
+    from importlib.resources import resource_filename
+except ImportError:
+    # For Python 2 or Python 3 with older setuptools
+    from pkg_resources import resource_filename
 
 # Define cherrypy development environment
 cherrypy.config.environments['development'] = {
@@ -268,7 +273,7 @@ class UdbApplication(Application):
                 # Configure locales
                 'tools.i18n.default': cfg.default_lang,
                 'tools.i18n.default_timezone': cfg.default_timezone,
-                'tools.i18n.mo_dir': pkg_resources.resource_filename('udb', 'locales'),
+                'tools.i18n.mo_dir': resource_filename('udb', 'locales'),
                 'tools.i18n.domain': 'messages',
             }
         )

@@ -56,3 +56,14 @@ class CommonMixin(object):
             if hist.has_changes():
                 return True
         return False
+
+    def attr_get_previous(self, attr):
+        """
+        Return previous if available.
+        """
+        state = inspect(self)
+        attr_state = state.attrs[attr]
+        hist = attr_state.history
+        if hist.has_changes():
+            return hist.deleted[0]
+        return attr_state.value
