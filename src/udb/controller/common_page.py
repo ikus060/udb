@@ -20,7 +20,7 @@ from collections import namedtuple
 import cherrypy
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.inspection import inspect
-from wtforms.fields import HiddenField, TextAreaField
+from wtforms.fields import TextAreaField
 from wtforms.validators import InputRequired, Length
 
 from udb.controller import flash, show_exception, url_for, verify_perm
@@ -46,23 +46,6 @@ class MessageForm(CherryForm):
     )
 
 
-class RefererField(HiddenField):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, default=lambda: cherrypy.request.headers.get('Referer'), **kwargs)
-
-    def process_formdata(self, valuelist):
-        """
-        Process value received from form data. Validate the URL.
-        """
-        # Make sure the Referer is our web application.
-        if valuelist and valuelist[0].startswith(cherrypy.request.base):
-            self.data = valuelist[0]
-
-    def populate_obj(self, obj, name):
-        # Do nothing
-        pass
-
-
 @cherrypy.popargs('key')
 class CommonPage(object):
     def __init__(
@@ -79,9 +62,7 @@ class CommonPage(object):
         assert edit_form
         self.model = model
         self.edit_form = edit_form
-        self.edit_form.referer = RefererField()
         self.new_form = new_form if new_form else edit_form
-        self.new_form.referer = RefererField()
         self.list_perm = list_perm
         self.edit_perm = edit_perm
         self.new_perm = new_perm
@@ -196,11 +177,9 @@ class CommonPage(object):
                 show_exception(e, form=form, obj=obj)
             else:
                 flash(_('Record created successfully.'))
-                # Redirect user to same record on soft-rule
-                for unused in Rule.verify(obj):
-                    raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
-                # Redirect user to previous page or model page.
-                raise cherrypy.HTTPRedirect(form.referer.data or url_for(self.model))
+                # Redirect user to same record
+                Rule.verify(obj)
+                raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
         elif not form.is_submitted():
             # Apply the default value from params
             # Every query string starting with "d-" are used to define default value to pre-populate the fields.
@@ -253,9 +232,8 @@ class CommonPage(object):
                 cherrypy.tools.db.get_session().rollback()
             else:
                 flash(_('Record updated successfully'))
-                for unused in Rule.verify(obj):
-                    raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
-                raise cherrypy.HTTPRedirect(form.referer.data or url_for(obj, 'edit'))
+                Rule.verify(obj)
+                raise cherrypy.HTTPRedirect(url_for(obj, 'edit'))
         else:
             # Run Soft Rules
             for row in Rule.verify(obj):
