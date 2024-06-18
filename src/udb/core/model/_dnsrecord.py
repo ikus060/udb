@@ -653,10 +653,16 @@ def dnsrecord_before_flush(session, flush_context, obj):
     if obj._dnszone and obj.ip_field and obj.attr_has_changes('vrf_id', 'vrf', obj.ip_field, 'status'):
         # Update subnet when vrf_id or IP address get updated.
         parent = obj._find_parent_subnet().add_columns(Subnet.vrf_id).first()
-        obj.subnet_id = parent.id if parent else None
-        obj.subnet_estatus = parent.estatus if parent else None
-        obj.subnet_range = parent.range if parent else None
-        obj.vrf = Vrf.query.filter(Vrf.id == parent.vrf_id).first() if parent else None
+        if parent:
+            obj.subnet_id = parent.id
+            obj.subnet_estatus = parent.estatus
+            obj.subnet_range = parent.range
+            obj.vrf = Vrf.query.filter(Vrf.id == parent.vrf_id).first()
+        else:
+            obj.subnet_id = None
+            obj.subnet_estatus = None
+            obj.subnet_range = None
+            obj.vrf = None
 
     # Update relation to IP when vrf_id or ip get updated
     if obj.vrf and obj.ip_field and obj.attr_has_changes('vrf', obj.ip_field):
