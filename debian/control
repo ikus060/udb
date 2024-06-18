@@ -9,6 +9,7 @@ Build-Depends:
  python3,
  python3-all-dev,
  python3-apscheduler,
+ python3-argon2,
  python3-babel,
  python3-cherrypy3,
  python3-configargparse,

@@ -27,8 +27,11 @@ from udb.core.passwd import check_password, hash_password
 
 class Test(unittest.TestCase):
     def test_check_password(self):
+        self.assertTrue(hash_password('admin12').startswith('$argon2'))
+        self.assertTrue(
+            check_password('admin123', '$argon2id$v=19$m=102400,t=2,p=8$/mDhOg8wyZeMTUjcbIC7mg$3pxRSfYgUXmKEKNtasP1Og')
+        )
         self.assertTrue(check_password('admin123', '{SSHA}/LAr7zGT/Rv/CEsbrEndyh27h+4fLb9h'))
         self.assertFalse(check_password('admin12', '{SSHA}/LAr7zGT/Rv/CEsbrEndyh27h+4fLb9h'))
-        self.assertTrue(hash_password('admin12').startswith('{SSHA}'))
         self.assertTrue(check_password('admin12', hash_password('admin12')))
         self.assertTrue(check_password('admin123', hash_password('admin123')))
