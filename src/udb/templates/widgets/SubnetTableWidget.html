@@ -64,12 +64,13 @@
 {# Create table to hold each row #}
 <div class="card bg-light mb-2 p-2 {{ class }}">
   {# Show/Hide deleted button place outside the table.#}
-  <a id="{{ field.id }}-toggle"
-     class="btn btn-sm btn-outline-secondary udb-btn-filter"
-     style="position:absolute;
-            right:0;
-            top: -36px"
-     onclick="{{ field.id }}_toggle_show_deleted()">{% trans %}Show deleted{% endtrans %}</a>
+  <button id="{{ field.id }}-toggle"
+          type="button"
+          class="btn btn-sm btn-outline-secondary udb-btn-filter"
+          style="position:absolute;
+                 right:0;
+                 top: -36px"
+          onclick="{{ field.id }}_toggle_show_deleted()">{% trans %}Show deleted{% endtrans %}</button>
   <table id="{{ field.id }}-table"
          class="table table-sm table-hover mb-0 hide-deleted"
          aria-label="{{ field.name }}">
