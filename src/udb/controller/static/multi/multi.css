@@ -36,9 +36,20 @@
     cursor: pointer;
     display: block;
     padding: 5px 10px;
+    background: none;
+    border:none;
+    text-decoration: underline;
+    width: 100%;
+    text-align: left;
+    color: var(--bs-link-color);
 }
 
-.multi-wrapper .item:hover {
+.multi-wrapper .item:disabled {
+    cursor: initial;
+    background-color: transparent;
+}
+
+.multi-wrapper .item:hover:enabled {
     background: #ececec;
     border-radius: 2px;
 }

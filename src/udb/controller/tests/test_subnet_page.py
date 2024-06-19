@@ -59,10 +59,12 @@ class SubnetPageTest(WebCase, CommonTest):
             # Then the web page is loaded without error.
             self.assertFalse(driver.get_log('browser'))
             # When user click on item
-            available = driver.find_element('css selector', '.non-selected-wrapper a.item[data-value="%s"]' % zone.id)
+            available = driver.find_element(
+                'css selector', '.non-selected-wrapper button.item[data-value="%s"]' % zone.id
+            )
             available.click()
             # Then element is transfer to selected list
-            driver.find_element('css selector', '.selected-wrapper a.item[data-value="%s"]' % zone.id)
+            driver.find_element('css selector', '.selected-wrapper button.item[data-value="%s"]' % zone.id)
             # When saving the form
             save_change_btn = driver.find_element('id', 'save-changes')
             save_change_btn.send_keys(Keys.ENTER)
