@@ -51,19 +51,18 @@ class DeploymentTest(WebCase):
         # Then it contains our changes.
         self.assertEqual(len(deployment.changes), 2)
         self.assertEqual(
-            deployment.changes[0].changes,
-            {'name': [None, 'dnsrecord_env'], 'model_name': [None, 'dnsrecord']},
-        )
-        self.assertEqual(
-            deployment.changes[1].changes,
-            {
-                'vrf': [None, 'default'],
-                'name': [None, 'example.com'],
-                'type': [None, 'A'],
-                'value': [None, '192.168.14.15'],
-                'subnet_estatus': [None, 2],
-                'subnet_range': [None, '192.168.14.0/24'],
-            },
+            [f.changes for f in sorted(deployment.changes, key=lambda c: c.date)],
+            [
+                {'name': [None, 'dnsrecord_env'], 'model_name': [None, 'dnsrecord']},
+                {
+                    'vrf': [None, 'default'],
+                    'name': [None, 'example.com'],
+                    'type': [None, 'A'],
+                    'value': [None, '192.168.14.15'],
+                    'subnet_estatus': [None, 2],
+                    'subnet_range': [None, '192.168.14.0/24'],
+                },
+            ],
         )
 
     def test_changes_dhcprecord(self):
@@ -80,18 +79,17 @@ class DeploymentTest(WebCase):
         # Then it contains our changes.
         self.assertEqual(len(deployment.changes), 2)
         self.assertEqual(
-            deployment.changes[0].changes,
-            {'name': [None, 'dhcprecord_env'], 'model_name': [None, 'dhcprecord']},
-        )
-        self.assertEqual(
-            deployment.changes[1].changes,
-            {
-                'vrf': [None, 'default'],
-                'ip': [None, '192.168.14.10'],
-                'mac': [None, '5e:4b:85:7b:b4:2b'],
-                'subnet_estatus': [None, 2],
-                'subnet_range': [None, '192.168.14.0/24'],
-            },
+            [f.changes for f in sorted(deployment.changes, key=lambda c: c.date)],
+            [
+                {'name': [None, 'dhcprecord_env'], 'model_name': [None, 'dhcprecord']},
+                {
+                    'vrf': [None, 'default'],
+                    'ip': [None, '192.168.14.10'],
+                    'mac': [None, '5e:4b:85:7b:b4:2b'],
+                    'subnet_estatus': [None, 2],
+                    'subnet_range': [None, '192.168.14.0/24'],
+                },
+            ],
         )
 
 
