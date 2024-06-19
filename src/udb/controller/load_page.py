@@ -149,7 +149,7 @@ class LoadPage:
             try:
                 # Write attachment to a temporary file on filesystem
                 (fd, temp_filename) = tempfile.mkstemp(
-                    prefix='ekwos-upload-', suffix=os.path.basename(form.upload_file.data.filename)
+                    prefix='udb-upload-', suffix=os.path.basename(form.upload_file.data.filename)
                 )
                 with open(fd, 'wb') as f:
                     shutil.copyfileobj(form.upload_file.data.file, f, length=65365)

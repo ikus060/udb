@@ -13,3 +13,5 @@ data.db
 /build
 .sass-cache
 .vscode
+.venv
+.pytest_cache
