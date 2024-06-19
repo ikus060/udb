@@ -461,8 +461,6 @@ def subnet_after_flush(session, flush_context, obj):
             Subnet.vrf_id == obj.vrf_id,
             func.subnet_of(Subnet.range, obj.range),
             Subnet.estatus != Subnet.STATUS_DELETED,
-            # TODO Is this required ? Determine if the parent is our new/updated record.
-            # literal_column('new.id') == find_parent.with_entities(p1.id),
         )
         .values(
             {
