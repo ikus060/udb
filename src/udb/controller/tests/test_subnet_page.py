@@ -355,6 +355,22 @@ class SubnetPageTest(WebCase, CommonTest):
         self.assertEqual('192.168.0.0/25', subnet.slave_subnets[0].range)
         self.assertEqual(subnetrange_id, subnet.slave_subnets[0].id)
 
+    def test_edit_slave_subnet(self):
+        # Given a Subnet with multiple ranges
+        zone = DnsZone(name='example.com').add()
+        subnet = (
+            Subnet(
+                vrf=self.vrf, dnszones=[zone], range='192.168.1.0/24', slave_subnets=[Subnet(range='192.168.0.0/24')]
+            )
+            .add()
+            .commit()
+        )
+        # When browsing the edit page.
+        self.getPage(url_for(subnet.slave_subnets[0], 'edit'))
+        # Then user is redirected to
+        self.assertStatus(303)
+        self.assertHeaderItemValue('Location', url_for(subnet, 'edit'))
+
     def test_new_ranges(self):
         # Given a data without records
         # When creating a subnet for the first time
