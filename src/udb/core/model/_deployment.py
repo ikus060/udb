@@ -190,6 +190,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
                     DnsRecord.name,
                     DnsRecord.ttl,
                     DnsRecord.value,
+                    DnsRecord.dnszone_name,
                 )
                 .filter(DnsRecord.estatus == DnsRecord.STATUS_ENABLED)
                 .all()
