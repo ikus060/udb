@@ -245,7 +245,7 @@ CheckConstraint(
     ),
     name="dhcprecord_subnet_required_ck",
     info={
-        'description': _("The IP address {obj.ip} is not allowed in any subnet."),
+        'description': _("The IP address {obj.ip} is not allowed in selected VRF {obj.vrf}"),
         'field': 'ip',
         'subnet': {
             'description': _(
