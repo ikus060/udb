@@ -118,7 +118,10 @@ def preferred_lang(lang):
     prev_trans = getattr(_current, 'translation', None)
     try:
         # Update prefered lang and clear translation.
-        _current.preferred_lang = [lang] + prev_lang
+        if lang:
+            _current.preferred_lang = [lang]
+        elif hasattr(_current, 'preferred_lang'):
+            del _current.preferred_lang
         _current.translation = None
         yield
     finally:
@@ -293,7 +296,11 @@ def gettext_lazy(message):
     :returns: A proxy for the translation object.
     :rtype: LazyProxy
     """
-    return LazyProxy(gettext, message, enable_cache=False)
+
+    def func():
+        return get_translation().ugettext(message)
+
+    return LazyProxy(func, enable_cache=False)
 
 
 def format_datetime(datetime=None, format='medium', tzinfo=None):
@@ -311,6 +318,13 @@ def format_datetime(datetime=None, format='medium', tzinfo=None):
         locale=get_translation().locale,
         tzinfo=tzinfo or get_timezone(),
     )
+
+
+def format_date(datetime=None, format='medium', tzinfo=None):
+    """
+    Wraper arround babel format_date to provide a default locale.
+    """
+    return format_datetime(datetime=datetime, format=dates.get_date_format(format), tzinfo=tzinfo)
 
 
 def get_timezone_name(tzinfo):
