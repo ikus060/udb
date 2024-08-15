@@ -1,22 +1,11 @@
 {% extends 'common/edit.html' %}
-{% import "macro.html" as macro %}
-{% block extra_actions %}
+{% block buttonbox_actions %}
   {# Parent VRF #}
   {% if obj.vrf_id %}
-    <div class="col mb-2">
-      <a href="{{ url_for('vrf', obj.vrf_id, 'edit') }}"
-         class="btn btn-outline-primary text-nowrap w-100">
-        {{ macro.icon("vrf") }} {% trans %}Show parent VRF{% endtrans %}
-      </a>
-    </div>
+    <ButtonboxRef label={ _("Parent VRF") } model_name="vrf" model_id={ obj.vrf_id } summary={ obj.vrf.name } />
   {% endif %}
   {# Parent Subnet #}
   {% if obj.parent_id %}
-    <div class="col mb-2">
-      <a href="{{ url_for('subnet', obj.parent_id, 'edit') }}"
-         class="btn btn-outline-primary text-nowrap w-100">
-        {{ macro.icon("subnet") }} {% trans %}Show parent Subnet{% endtrans %}
-      </a>
-    </div>
+    <ButtonboxRef label={ _("Parent Subnet") } model_name="subnet" model_id={ obj.parent_id } summary={ obj.parent_range } />
   {% endif %}
 {% endblock %}

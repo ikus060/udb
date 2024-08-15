@@ -1,0 +1,9 @@
+{# def label, model_name, model_id, summary=None #}
+<li class="nav-item">
+  <a class="nav-link" href="{{ url_for(model_name, model_id, 'edit') }}"><Icon value={ model_name } class="me-2" /><span>{{ label }}
+    {% if summary %}
+      <br />
+      {{ summary }}
+    {% endif %}
+  </span></a>
+</li>

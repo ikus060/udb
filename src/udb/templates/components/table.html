@@ -2,8 +2,8 @@
 {# djlint:off #}
 {% set dom_without_header = "<'row'<'col-sm-12'rt>><'row'<'mt-2'p>>" %}
 {% set dom_without_paging = "<'row'<'col-sm-12'rt>>" %}
-{% set dom_without_length_change = "<'d-sm-flex align-items-center'<'mb-1 flex-grow-1'i><'mb-1'f><B>><'row'<'col-sm-12'rt>><'row'<'mt-2'p>>" %}
-{% set dom_all = "<'d-sm-flex align-items-center'<'mb-1 flex-grow-1'li><'mb-1'f><B>><'row'<'col-sm-12'rt>><'row'<'mt-2'p>>" %}
+{% set dom_without_length_change = "<'d-sm-flex align-items-center'<'mb-1 flex-grow-1'i><'mb-1'f><b>><'row'<'col-sm-12'rt>><'row'<'mt-2'p>>"|replace("b>","B>") %}
+{% set dom_all = "<'d-sm-flex align-items-center'<'mb-1 flex-grow-1'li><'mb-1'f><b>><'row'<'col-sm-12'rt>><'row'<'mt-2'p>>"|replace("b>","B>") %}
 {# djlint:on #}
 {% set buttons_cfg_default = {
   "dom": {

@@ -81,4 +81,8 @@ class Static:
         filename = cfg.favicon if cfg.favicon else resource_filename('udb.controller.static', 'udb_16.svg')
         return serve_file(filename)
 
+    @cherrypy.tools.staticdir(section="", match=".*(\\.js|\\.css)$", dir=resource_filename('udb', 'templates/components'))
+    def components(*args, **kwargs):
+        raise cherrypy.HTTPError(400)
+
     favicon_ico = favicon

@@ -1,55 +1,42 @@
 {% extends 'common/edit.html' %}
 {% import "components/table.html" as _table with context %}
 {% import "macro.html" as macro %}
-{% block extra_actions %}
+{% block buttonbox_actions %}
   {# Reverse Record #}
   {% if obj.type in ['A', 'AAAA', 'PTR'] %}
-    <div class="col mb-2">
-      {% set reverse_record = obj.get_reverse_dns_record() %}
-      {% if reverse_record %}
-        <a href="{{ url_for(reverse_record, 'edit') }}"
-           class="btn btn-outline-primary text-nowrap w-100">
-          {{ _("Show Reverse Record") if obj.type in ['A', 'AAAA'] else _('Show Forward Record') }}
-        </a>
-      {% else %}
-        <form action="reverse_record" method="post">
-          <input class="btn btn-outline-primary text-nowrap w-100"
-                 type="submit"
-                 value="{{ _("Create Reverse Record") if obj.type in ['A', 'AAAA'] else _('Create Forward Record') }}">
-        </form>
-      {% endif %}
-    </div>
+    {% set reverse_record = obj.get_reverse_dns_record() %}
+    {% if reverse_record %}
+      <ButtonboxRef label={ _("Show Reverse Record") if obj.type in ['A', 'AAAA'] else _('Show Forward Record') } model_name="dnsrecord" model-id={ reverse_record.id } summary={ reverse_record.summary } />
+    {% endif %}
   {% endif %}
   {# Related Subnet #}
   {% if obj.subnet_id %}
-    <div class="col mb-2">
-      <a href="{{ url_for('subnet', obj.subnet_id, 'edit') }}"
-         class="btn btn-outline-primary text-nowrap w-100">
-        {{ macro.icon("subnet") }} {% trans %}Show parent Subnet{% endtrans %}
-      </a>
-    </div>
+    <ButtonboxRef label={ _("Parent Subnet") } model_name="subnet" model-id={ obj.subnet_id } summary={ obj.subnet_range } />
   {% endif %}
   {# Related DNS Zone #}
   {% if obj.dnszone_id %}
-    <div class="col mb-2">
-      <a href="{{ url_for('dnszone', obj.dnszone_id, 'edit') }}"
-         class="btn btn-outline-primary text-nowrap w-100">
-        {{ macro.icon("dnszone") }} {% trans %}Show parent DNS Zone{% endtrans %}
-      </a>
-    </div>
+    <ButtonboxRef label={ _("Parent DNS Zone") } model_name="dnszone" model_id={ obj.dnszone_id } summary={ obj.dnszone_name } />
   {% endif %}
   {# Related IP #}
   {% if obj._ip %}
-    <div class="col mb-2">
-      <a href="{{ url_for(obj._ip, 'edit') }}"
-         class="btn btn-outline-primary text-nowrap w-100">
-        {{ macro.icon("ip") }} {% trans %}Show related IP{% endtrans %}
-      </a>
-    </div>
+    <ButtonboxRef label={ _("Related IP") } model_name="ip" model_id={ obj._ip.id } summary={ obj._ip.ip } />
   {% endif %}
 {% endblock %}
+{# Create Reverse Record #}
+{% block extra_actions %}
+  {% if obj.type in ['A', 'AAAA', 'PTR'] %}
+    {% set reverse_record = obj.get_reverse_dns_record() %}
+    {% if not reverse_record %}
+      <form action="reverse_record" method="post">
+        <input class="btn btn-secondary text-nowrap"
+               type="submit"
+               value="{{ _("Create Reverse Record") if obj.type in ['A', 'AAAA'] else _('Create Forward Record') }}">
+      </form>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+{# Display related DNS Record #}
 {% block extra_form %}
-  {# Display related DNS Record #}
   <div id="related" class="card udb-card-table-wrapper mb-2">
     {% set columns = [
           {'name':'id', 'visible':False},

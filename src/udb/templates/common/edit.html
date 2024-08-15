@@ -3,41 +3,56 @@
 {% import "common/status.html" as _status with context %}
 {% block title %}{{ macro.display_name(model_name) }} {{(form|first).data }}{% endblock %}
 {% block body %}
-  {# Header #}
   <div class="row">
+    {# Header #}
     <div class="offset-xl-2 col-xl-8">
-      <div class="d-flex mb-4">
-        {# Go Back button #}
-        <button class="btn btn-primary btn-circle me-2 align-self-center"
-                onclick="window.history.back()"
-                type="button"
-                data-bs-toggle="tooltip"
-                data-bs-placement="top"
-                title="{% trans %}Go Back{% endtrans %}">
-          <i class="bi bi-chevron-left" aria-hidden="true"></i>
-          <span class="visually-hidden">{% trans %}Go Back{% endtrans %}</span>
-        </button>
+      <div class="d-flex flex-wrap">
         {# Title #}
-        <h2 class="flex-fill mb-0">
+        <h2 class="mb-2 me-1">
+          {# Go Back button #}
+          <button class="col btn btn-primary btn-circle me-1 align-self-center"
+                  onclick="window.history.back()"
+                  type="button"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  title="{% trans %}Go Back{% endtrans %}">
+            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+            <span class="visually-hidden">{% trans %}Go Back{% endtrans %}</span>
+          </button>
           {% block edit_title %}{{ _("Edit") }} {{ macro.display_name(model_name) }} {{(form|first).data }}{% endblock %}
         </h2>
         {# /Title #}
         {% if has_status %}
           {# Status Badge #}
-          <div class="h5 mb-0 align-self-center">{{ _status.badge(obj, force=True) }}</div>
+          <div class="h5 mb-2 me-1 align-self-center">{{ _status.badge(obj, force=True) }}</div>
           {# /Status Badge #}
+        {% endif %}
+        {# Action Button #}
+        {% if self.extra_actions()|trim %}
+          <div class="mb-2 me-1 text-end flex-fill">
+            {% block extra_actions %}{% endblock %}
+          </div>
+        {% else %}
+          <div class="flex-grow-1">{# Place holder #}</div>
+        {% endif %}
+        {# Followers #}
+        {% if has_followers %}
+          <div class="mb-2 me-1 text-nowrap">{% include "common/followers.html" %}</div>
         {% endif %}
       </div>
     </div>
-  </div>
-  {# /Header #}
-  <div class="row">
-    <div class="col flex-grow-1 order-3 order-xl-0"></div>
-    <div class="col-xl-8 order-1 order-xl-1">
+    {# /Header #}
+    <div class="offset-xl-2 col-xl-8">
       {# Flash messages #}
       {% include "flash.html" %}
       <form method="POST" action="{{ url_for(obj, 'edit') }}">
         <div class="card mb-3 {{ _status.bg_color(obj) }}">
+          {# Display button box at the top.#}
+          {% if self.buttonbox_actions()|trim %}
+            <Buttonbox>
+            {% block buttonbox_actions %}{% endblock %}
+            </Buttonbox>
+          {% endif %}
           <div class="card-body">
             {# Edit Form #}
             <fieldset {% if not edit_perm %}disabled{% endif %}>
@@ -59,7 +74,8 @@
                 <label for="floatingTextarea2">{% trans %}Describe the reason for the changes or leave a message{% endtrans %}</label>
               </div>
             {% endif %}
-            <div class="text-start">
+            <div class="text-end">
+              <a class="btn btn-secondary" href="{{ url_for(model) }}">{% trans %}Cancel{% endtrans %}</a>
               {% if edit_perm and has_status %}
                 {# Submit button with state #}
                 <div class="btn-group">
@@ -94,7 +110,6 @@
                 {# Submit button #}
                 <button type="submit" class="btn btn-primary">{% trans %}Save changes{% endtrans %}</button>
               {% endif %}
-              <a class="btn btn-secondary" href="{{ url_for(model) }}">{% trans %}Cancel{% endtrans %}</a>
             </div>
             {# /Submit Area #}
           </div>
@@ -122,18 +137,6 @@
           length_change=False) }}
         </div>
       {% endif %}
-    </div>
-    <div class="col flex-grow-1 order-0 order-xl-2">
-      <div class="row align-items-baseline">
-        {% if self.extra_actions()|trim %}
-          <h4 class="d-none d-xl-block">{% trans %}Actions{% endtrans %}</h4>
-          {% block extra_actions %}{% endblock %}
-        {% endif %}
-        {% if has_followers %}
-          <h4 class="d-none d-xl-block">{% trans %}Notification{% endtrans %}</h4>
-          {% include "common/followers.html" %}
-        {% endif %}
-      </div>
     </div>
   </div>
 {% endblock %}

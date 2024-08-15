@@ -17,6 +17,7 @@
 
 import cherrypy
 import jinja2
+import jinjax
 import ujson
 from cherrypy import Application
 
@@ -90,6 +91,9 @@ env = jinja2.Environment(
 env.install_gettext_callables(gettext_lazy, ngettext, newstyle=True)
 env.globals['url_for'] = url_for
 env.filters['format_datetime'] = format_datetime
+env.add_extension(jinjax.JinjaX)
+catalog = jinjax.Catalog(jinja_env=env)
+catalog.add_folder(resource_filename('udb', 'templates/components'))
 
 
 def _error_page(**kwargs):

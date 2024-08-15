@@ -1,0 +1,24 @@
+/* Button box layout */
+.udb-buttonbox .nav-link {
+    display : flex;
+    align-items: center !important;
+    height: 100%;
+}
+/* Make icon bigger */
+.udb-buttonbox .nav-link .bi {
+    font-size: 1.5rem;
+}
+@media screen and (min-width: 992px) {
+    /* Add more padding arround navlink */
+    .udb-buttonbox.navbar-expand-lg .navbar-nav .nav-link {
+        padding: var(--bs-nav-link-padding-y) 16px;
+    }
+    /* Add a border between each buttons */
+    .udb-buttonbox .nav-item {
+        border-left: var(--bs-card-border-width) solid var(--bs-card-border-color);
+    }
+    /* Add hover effect for nav-link*/
+    .udb-buttonbox a:hover{
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+}

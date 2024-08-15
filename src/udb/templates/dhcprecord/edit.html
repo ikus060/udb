@@ -1,63 +1,17 @@
 {% extends 'common/edit.html' %}
-{% import "macro.html" as macro %}
-{% block extra_actions %}
+{% block buttonbox_actions %}
   {# Parent Subnet #}
-  {% if obj._ip %}
-    <div class="col mb-2">
-      <a href="{{ url_for('subnet', obj.subnet_id, 'edit') }}"
-         class="btn btn-outline-primary text-nowrap w-100">
-        {{ macro.icon("subnet") }} {% trans %}Show parent Subnet{% endtrans %}
-      </a>
-    </div>
+  {% if obj.subnet_id %}
+    <ButtonboxRef label={ _("Parent Subnet") }  model_name="subnet" model_id={ obj.subnet_id } summary={ obj.subnet_range } />
   {% endif %}
   {# Related IP #}
   {% if obj._ip %}
-    <div class="col mb-2">
-      <a href="{{ url_for(obj._ip, 'edit') }}"
-         class="btn btn-outline-primary text-nowrap w-100">
-        {{ macro.icon("ip") }} {% trans %}Show related IP{% endtrans %}
-      </a>
-    </div>
+    <ButtonboxRef label={ _("Related IP") } model_name="ip" model_id={ obj._ip.id } summary={ obj._ip.ip } />
   {% endif %}
   {# Related MAC #}
   {% if obj._mac %}
-    <div class="col mb-2">
-      <a href="{{ url_for(obj._mac, 'edit') }}"
-         class="btn btn-outline-primary text-nowrap w-100">
-        {{ macro.icon("mac") }} {% trans %}Show related MAC{% endtrans %}
-      </a>
-    </div>
+    <ButtonboxRef label={ _("Related MAC") } model_name="mac" model_id={ obj._mac.id } summary={ obj._mac.mac } />
   {% endif %}
   {# Related PTR desktop #}
-  <div class="col-12 mb-2 d-none d-xl-block">
-    <h5>{% trans %}Related DNS Record{% endtrans %}</h5>
-    <div class="list-group">
-      {% for record in obj.related_dnsrecord %}
-        <a href="{{ url_for(record, 'edit') }}"
-           class="list-group-item list-group-item-action text-nowrap w-100">{{ macro.icon(record) }} {{ record.summary }}</a>
-      {% else %}
-        <a class="list-group-item list-group-item-action" aria-current="true">{% trans %}List is empty{% endtrans %}</a>
-      {% endfor %}
-    </div>
-  </div>
-  {# Related PTR mobile #}
-  <div class="col mb-2 d-block d-xl-none">
-    <div class="btn-group w-100">
-      <button type="button"
-              class="btn btn-outline-primary dropdown-toggle"
-              data-bs-toggle="dropdown"
-              aria-expanded="false">{% trans %}Related DNS Record{% endtrans %}</button>
-      <ul class="dropdown-menu">
-        {% for record in obj.related_dnsrecord %}
-          <li>
-            <a href="{{ url_for(record, 'edit') }}" class="dropdown-item">{{ macro.icon(record) }} {{ record.summary }}</a>
-          </li>
-        {% else %}
-          <li>
-            <a class="dropdown-item">{% trans %}List is empty{% endtrans %}</a>
-          </li>
-        {% endfor %}
-      </ul>
-    </div>
-  </div>
+  <ButtonboxRefs label={ _("Related DNS Record") } model_name="dnsrecord" records={ obj.related_dnsrecord } />
 {% endblock %}
