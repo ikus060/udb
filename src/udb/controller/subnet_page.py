@@ -254,6 +254,7 @@ class SubnetForm(CherryForm):
         _('Allowed DNS zone(s)'),
         object_cls=DnsZone,
         render_kw={
+            "floating": False,
             "class": "multi",
             "data-non_selected_header": _("Available"),
             "data-selected_header": _("Selected"),

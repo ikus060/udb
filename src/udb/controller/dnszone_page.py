@@ -64,6 +64,7 @@ class DnsZoneForm(CherryForm):
         # Completly replace the query to include the subnet ranges in the summary
         object_query=_subnet_query,
         render_kw={
+            "floating": False,
             "class": "multi",
             "data-non_selected_header": _("Available"),
             "data-selected_header": _("Selected"),
