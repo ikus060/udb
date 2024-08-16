@@ -1,4 +1,3 @@
-{% import "components/table.html" as _table with context %}
 <div class="card shadow mb-4">
   {# Card Header - Dropdown #}
   <div class="card-header py-3">
@@ -19,6 +18,6 @@
           {'name':'changes', 'title':_('Changes'), 'orderable':False, 'render':'message_body' },
           {'name':'url', 'visible':False},
         ] %}
-    {{ _table.table(url_for('audit','data.json') , columns=columns, empty_message=_('No modification'), dom_cfg=_table.dom_without_paging, paging=False, scroll_y="354px") }}
+    <Datatable data={ url_for('audit', 'data.json') } columns={ columns } empty-message={ _("No modification") } dom_cfg="without-paging" paging={ False } scroll_y="354px" />
   </div>
 </div>

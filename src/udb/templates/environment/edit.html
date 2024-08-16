@@ -1,5 +1,4 @@
 {% extends 'common/edit.html' %}
-{% import "components/table.html" as _table with context %}
 {% block extra_actions %}
   {# Deployment #}
   <div class="mb-2">
@@ -22,12 +21,6 @@
           {'name':'changes', 'title':_('Pending Changes'), 'orderable':False, 'render':'message_body' },
           {'name':'url', 'visible':False}
         ] %}
-    {{ _table.table('changes.json',
-        columns=columns,
-        order=[[ 0, 'desc' ]],
-        searching=False,
-        dom_cfg=_table.dom_without_header,
-        empty_message=_('No changes since last deployment.') ,
-    page_length=5) }}
+    <Datatable data="changes.json" columns={ columns } order={[[ 0, 'desc' ]]} searching={ False } dom-cfg="without-header" empty-message={ _("No changes since last deployment.") } page-length={ 5 } />
   </div>
 {% endblock %}

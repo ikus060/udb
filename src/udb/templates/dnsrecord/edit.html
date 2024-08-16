@@ -1,5 +1,4 @@
 {% extends 'common/edit.html' %}
-{% import "components/table.html" as _table with context %}
 {% import "macro.html" as macro %}
 {% block buttonbox_actions %}
   {# Reverse Record #}
@@ -47,12 +46,6 @@
           {'name':'value', 'title':form.value.label.text|string, 'orderable':True, 'className':'export'},
           {'name': 'url', 'visible':False}
         ] %}
-    {{ _table.table('related',
-        columns=columns,
-        order=[[ 3, 'asc' ]],
-        searching=False,
-        dom_cfg=_table.dom_without_header,
-        empty_message=_('No DNS record for the same hostname.') ,
-    page_length=5) }}
+    <Datatable data="related" columns={ columns } order={[[ 3, 'asc' ]]} searching={ False } dom-cfg="without-header" empty-message={ _("No DNS record for the same hostname.") } page-length={ 5 } />
   </div>
 {% endblock %}

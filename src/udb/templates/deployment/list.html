@@ -1,5 +1,4 @@
 {% extends 'layout.html' %}
-{% import "components/table.html" as _table with context %}
 {% import "common/status.html" as _status %}
 {% import "macro.html" as macro %}
 {% block title %}
@@ -27,12 +26,7 @@
                       {'name': 'owner', 'title':_('Deployed by'), 'orderable': False},
                       {'name': 'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px'}
                     ] %}
-          {{ _table.table('deployments.json',
-                    empty_message=_('Changes never deployed.') ,
-          searching=False,
-          dom_cfg=_table.dom_without_header,
-          columns = columns,
-          order=[[ 0, 'desc' ]],) }}
+          <Datatable data="deployments.json" empty_message={ _("Changes never deployed.") } searching={ False } dom_cfg="without-header" columns={ columns } order={[[ 0, 'desc' ]]} />
         </div>
       </div>
     </div>

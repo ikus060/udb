@@ -92,7 +92,7 @@ env.install_gettext_callables(gettext_lazy, ngettext, newstyle=True)
 env.globals['url_for'] = url_for
 env.filters['format_datetime'] = format_datetime
 env.add_extension(jinjax.JinjaX)
-catalog = jinjax.Catalog(jinja_env=env)
+catalog = jinjax.Catalog(jinja_env=env, root_url="/static/")
 catalog.add_folder(resource_filename('udb', 'templates/components'))
 
 

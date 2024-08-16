@@ -33,40 +33,23 @@ except ImportError:
 @cherrypy.tools.secure_headers(on=False)
 @cherrypy.tools.sessions(on=False)
 class Static:
-    @cherrypy.tools.staticdir(section="", dir=resource_filename(__name__, 'bootstrap5'))
-    def bootstrap5(*args, **kwargs):
-        raise cherrypy.HTTPError(400)
-
-    @cherrypy.tools.staticdir(section="", dir=resource_filename(__name__, 'datatables'))
-    def datatables(*args, **kwargs):
-        raise cherrypy.HTTPError(400)
-
-    @cherrypy.tools.staticdir(section="", dir=resource_filename(__name__, 'jquery'))
-    def jquery(*args, **kwargs):
-        raise cherrypy.HTTPError(400)
-
-    @cherrypy.tools.staticdir(section="", dir=resource_filename(__name__, 'typeahead'))
-    def typeahead(*args, **kwargs):
-        raise cherrypy.HTTPError(400)
-
-    @cherrypy.tools.staticdir(section="", dir=resource_filename(__name__, 'multi'))
-    def multi(*args, **kwargs):
+    @cherrypy.expose
+    @cherrypy.tools.staticdir(
+        section="", match=".*(\\.js|\\.css|\\.png)$", dir=resource_filename('udb.controller', 'static')
+    )
+    def default(self, *args, **kwargs):
+        """This entry point is used to serve content of /static/ folder and /components/"""
+        # By default, content of /static/ folder get served by the annotation.
+        # Fallback to components css and js
+        handled = cherrypy.lib.static.staticdir(
+            section="static", match=".*(\\.js|\\.css)$", dir=resource_filename('udb', 'templates/components')
+        )
+        if handled:
+            return cherrypy.serving.response.body
         raise cherrypy.HTTPError(400)
 
     @cherrypy.tools.staticfile(filename=resource_filename(__name__, 'taylor-vick-M5tzZtFCOfs-unsplash.jpg'))
     def login_bg_jpg(self):
-        raise cherrypy.HTTPError(400)
-
-    @cherrypy.tools.staticfile(filename=resource_filename(__name__, 'main.css'))
-    def main_css(self):
-        raise cherrypy.HTTPError(400)
-
-    @cherrypy.tools.staticfile(filename=resource_filename(__name__, 'main.js'))
-    def main_js(self):
-        raise cherrypy.HTTPError(400)
-
-    @cherrypy.tools.staticdir(section="", dir=resource_filename(__name__, 'popper.js'))
-    def popper_js(self):
         raise cherrypy.HTTPError(400)
 
     @cherrypy.expose
@@ -80,9 +63,5 @@ class Static:
         cfg = cherrypy.tree.apps[''].cfg
         filename = cfg.favicon if cfg.favicon else resource_filename('udb.controller.static', 'udb_16.svg')
         return serve_file(filename)
-
-    @cherrypy.tools.staticdir(section="", match=".*(\\.js|\\.css)$", dir=resource_filename('udb', 'templates/components'))
-    def components(*args, **kwargs):
-        raise cherrypy.HTTPError(400)
 
     favicon_ico = favicon

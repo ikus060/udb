@@ -1,5 +1,4 @@
 {% extends 'layout.html' %}
-{% import "components/table.html" as _table with context %}
 {% import "common/status.html" as _status %}
 {% import "macro.html" as macro %}
 {% block title %}
@@ -34,5 +33,5 @@
       {'name':'changes', 'title':_('Changes'), 'render':'changes' },
       {'name':'url', 'visible':False},
     ] %}
-  {{ _table.table('data.json', server_side=True, columns=columns, searching=True, buttons=buttons, fixed_header=True) }}
+  <Datatable data="data.json" server-side={ True } columns={ columns } searching={ True } buttons={ buttons } fixed-header={ True }) />
 {% endblock %}

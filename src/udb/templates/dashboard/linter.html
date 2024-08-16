@@ -1,4 +1,3 @@
-{% import "components/table.html" as _table with context %}
 <div class="card shadow mb-4">
   <div class="card-header py-3">
     <span class="h6">{% trans %}Inconsistencies{% endtrans %}</span>
@@ -12,6 +11,6 @@
           {'name':'name', 'title':_('Record'), 'render':'summary'},
           {'name':'url', 'visible':False},
         ] %}
-    {{ _table.table(url_for('rule','linter.json') , columns=columns, empty_message=_('No inconsistencies were discovered.'), dom_cfg=_table.dom_without_paging, paging=False, scroll_y='354px') }}
+    <Datatable data={ url_for('rule', 'linter.json') } columns={ columns } empty_message={ _("No inconsistencies were discovered.") } dom_cfg="without-paging" paging={ False } scroll_y="354px" />
   </div>
 </div>
