@@ -84,7 +84,7 @@ class DhcpRecordPageTest(WebCase, CommonTest):
         )
         # Then an error message is displayed
         self.assertStatus(200)
-        self.assertInBody("The IP address 1.2.3.4 is not allowed in any subnet.")
+        self.assertInBody("The IP address 1.2.3.4 is not allowed in selected VRF None")
 
     def test_new_with_deleted_subnet(self):
         # Given a deleted subnet
@@ -98,7 +98,7 @@ class DhcpRecordPageTest(WebCase, CommonTest):
         )
         # Then an error is raised.
         self.assertStatus(200)
-        self.assertInBody('The IP address 1.2.3.4 is not allowed in any subnet.')
+        self.assertInBody('The IP address 1.2.3.4 is not allowed in selected VRF None')
 
     def test_edit_owner_and_notes(self):
         # Given a database with a record

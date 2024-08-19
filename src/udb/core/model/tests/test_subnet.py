@@ -19,7 +19,7 @@ from unittest import mock
 
 from parameterized import parameterized
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DatabaseError, IntegrityError
 
 from udb.controller.tests import WebCase
 from udb.core.model import DnsZone, Subnet, Vrf
@@ -112,6 +112,18 @@ class SubnetTest(WebCase):
         # Then a message is added to subnet
         self.assertEqual(2, len(subnet.messages))
         self.assertEqual(subnet.messages[-1].changes, {'slave_subnets': [[], ['192.168.12.0/24']]})
+
+    def test_circular_reference(self):
+        # When trying to create a circular reference with subnet ranges.
+        # Then an error is raised.
+        vrf = Vrf(name='test').add()
+        subnet = Subnet(vrf=vrf, range='10.255.1.0/24').add().commit()
+        with self.assertRaises(DatabaseError):
+            subnet.slave_subnets = [Subnet(range='10.255.0.0/16')]
+            subnet.add().commit()
+        self.session.rollback()
+        # Then data was not updated
+        self.assertEqual(1, Subnet.query.count())
 
     def test_update_ranges(self):
         # Given a database with a subnet

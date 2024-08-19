@@ -111,11 +111,11 @@ var multi = (function() {
       var value = option.value;
       var label = option.textContent || option.innerText;
 
-      var row = document.createElement("a");
+      var row = document.createElement("button");
       row.tabIndex = 0;
       row.className = "item";
       row.innerText = label;
-      row.setAttribute("role", "button");
+      row.setAttribute("type", "button");
       row.setAttribute("data-value", value);
       row.setAttribute("multi-index", i);
 

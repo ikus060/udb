@@ -8,14 +8,15 @@
     <div class="offset-xl-2 col-xl-8">
       <div class="d-flex mb-4">
         {# Go Back button #}
-        <a class="btn btn-primary btn-circle me-2 align-self-center"
-           href="{{ form.referer.data or url_for(model) }}"
-           data-bs-toggle="tooltip"
-           data-bs-placement="top"
-           title="{% trans %}Go Back{% endtrans %}">
+        <button class="btn btn-primary btn-circle me-2 align-self-center"
+                onclick="window.history.back()"
+                type="button"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="{% trans %}Go Back{% endtrans %}">
           <i class="bi bi-chevron-left" aria-hidden="true"></i>
           <span class="visually-hidden">{% trans %}Go Back{% endtrans %}</span>
-        </a>
+        </button>
         {# Title #}
         <h2 class="flex-fill mb-0">
           {% block edit_title %}{{ _("Edit") }} {{ macro.display_name(model_name) }} {{(form|first).data }}{% endblock %}

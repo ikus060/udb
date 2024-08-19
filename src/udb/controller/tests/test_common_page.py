@@ -248,9 +248,9 @@ class CommonTest:
         self.getPage(url_for(self.base_url, 'new'), method='POST', body=(self.new_post or self.new_data))
         # Then user is redirected to list page
         self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for(self.base_url) + '/')
-        # Then database is updated
         obj = self.obj_cls.query.all()[-1]
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
+        # Then database is updated
         for k, v in (self.new_json or self.new_data).items():
             self.assertEqual(v, obj.to_json()[k])
         # Then a audit message is created
@@ -454,56 +454,6 @@ class CommonTest:
         obj.expire()
         obj = self.obj_cls.query.filter(self.obj_cls.id == obj.id).one()
         self.assertEqual(self.obj_cls.STATUS_DELETED, obj.status)
-
-    def test_new_with_referer(self):
-        # Given a referer URL
-        referer = url_for("referer-testing")
-        # When redirect to new page with referer
-        self.getPage(
-            url_for(self.base_url, 'new'),
-            headers=[('Referer', referer)],
-        )
-        # Then page contains referer value
-        self.assertInBody('href="%s"' % referer)
-        self.assertInBody('<input id="referer" name="referer" type="hidden" value="%s">' % referer)
-        # When page is submit
-        body = {'referer': referer}
-        body.update(self.new_post or self.new_data)
-        self.getPage(
-            url_for(self.base_url, 'new'),
-            method='POST',
-            body=body,
-        )
-        # Then user is redirected to referer
-        self.assertStatus(303)
-        self.assertHeaderItemValue('Location', referer)
-
-    def test_edit_with_referer(self):
-        # Given a referer URL
-        referer = url_for("referer-testing")
-        # Given a database with a record.
-        obj = self.obj_cls(**self.new_data).add()
-        obj.commit()
-        # When redirect to edit page with referer
-        self.getPage(
-            url_for(self.base_url, obj.id, 'edit'),
-            headers=[('Referer', referer)],
-        )
-        self.assertStatus(200)
-        # Then page contains referer value
-        self.assertInBody('href="%s"' % referer)
-        self.assertInBody('<input id="referer" name="referer" type="hidden" value="%s">' % referer)
-        # When editing the record with a referer
-        body = dict(self.edit_post or self.edit_data)
-        body['referer'] = referer
-        self.getPage(
-            url_for(self.base_url, obj.id, 'edit'),
-            method='POST',
-            body=body,
-        )
-        # Then user is redirected to referer
-        self.assertStatus(303)
-        self.assertHeaderItemValue('Location', referer)
 
     def test_list_as_guest(self):
         # Given a 'guest' user authenticated

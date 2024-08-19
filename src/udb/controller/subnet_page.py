@@ -24,6 +24,7 @@ from wtforms.fields import BooleanField, FieldList, FormField, IntegerField, Sel
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, StopValidation, ValidationError
 from wtforms.widgets import HiddenInput
 
+from udb.controller import url_for
 from udb.core.model import DnsZone, Subnet, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
@@ -323,8 +324,9 @@ class SubnetPage(CommonPage):
         """
         values = super().edit(key, **kwargs)
         obj = values['obj']
+        # Redirect user to parent when editing.
         if obj.slave:
-            values['edit_perm'] = False
+            raise cherrypy.HTTPRedirect(url_for(obj.master, 'edit'))
         return values
 
     def _list_query(self):

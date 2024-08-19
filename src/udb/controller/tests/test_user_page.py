@@ -162,9 +162,9 @@ class UserPageTest(WebCase):
         self.getPage(url_for('user', 'new'), method='POST', body=self.new_data)
         # Then user is redirected to list page
         self.assertStatus(303)
-        self.assertHeaderItemValue('Location', url_for('user') + '/')
-        # Then database is updated
         obj = User.query.filter_by(username=self.new_data['username']).first()
+        self.assertHeaderItemValue('Location', url_for(obj, 'edit'))
+        # Then database is updated
         for k, v in self.new_data.items():
             self.assertEqual(v, getattr(obj, k))
 

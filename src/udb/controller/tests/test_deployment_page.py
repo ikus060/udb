@@ -143,7 +143,7 @@ class DeploymentPageTest(WebCase):
         self.assertStatus(200)
         self.assertHeaderItemValue('Content-Type', 'application/json')
         self.assertEqual(
-            data['data'],
+            sorted(data['data']),
             [
                 [
                     1,

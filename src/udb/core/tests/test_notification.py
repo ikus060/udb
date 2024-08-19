@@ -90,6 +90,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         record.commit()
         # Then wait for task to get processed
         self.wait_for_tasks()
+        self.listener.send_mail.assert_called_once()
         self.listener.send_mail.reset_mock()
         # When a change is made on that record
         record.notes = 'This is a modification to the notes field.'
