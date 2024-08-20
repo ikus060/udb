@@ -152,7 +152,7 @@ class SubnetTableWidget(JinjaWidget):
 
 
 class SwitchWidget(JinjaWidget):
-    filename = 'widgets/SwitchWidget.html'
+    filename = 'SwitchWidget.jinja'
 
 
 class SelectMultipleObjectField(SelectMultipleField):
