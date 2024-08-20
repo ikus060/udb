@@ -84,7 +84,7 @@ class SubnetPageTest(WebCase, CommonTest):
             # Then the web page is loaded without error.
             self.assertFalse(driver.get_log('browser'))
             # When user click plus (+) button to add a range
-            plus_btn = driver.find_element('id', 'ranges-add-row-btn')
+            plus_btn = driver.find_element('css selector', '.udb-stw-add-row')
             plus_btn.click()
             # Then user enter ip range,
             range = driver.find_element('id', 'ranges-1-range')
@@ -96,6 +96,35 @@ class SubnetPageTest(WebCase, CommonTest):
         obj.expire()
         self.assertEqual(1, len(obj.slave_subnets))
         self.assertEqual('147.87.0.0/24', obj.slave_subnets[0].range)
+
+    def test_edit_toggle_range_selenium(self):
+        # Given a database with a record
+        DnsZone(name='examples.com').add()
+        obj = (
+            Subnet(
+                range='192.168.0.0/24',
+                vrf=self.vrf,
+                slave_subnets=[Subnet(range='147.87.0.0/24', status=Subnet.STATUS_DELETED)],
+            )
+            .add()
+            .commit()
+        )
+        self.assertEqual(1, len(obj.slave_subnets))
+        # Then editing that record
+        with self.selenium() as driver:
+            # When making a query to edit
+            driver.get(url_for(self.base_url, obj.id, 'edit'))
+            # Then the web page is loaded without error.
+            self.assertFalse(driver.get_log('browser'))
+            # Then deleted record are hidden
+            deleted_range = driver.find_element('id', 'ranges-1-range')
+            self.assertFalse(deleted_range.is_displayed())
+            # When user click "Show deleted" button to add a range
+            toggle_btn = driver.find_element('css selector', '.udb-stw-toggle')
+            toggle_btn.click()
+            # Then delete record is shown
+            deleted_range = driver.find_element('id', 'ranges-1-range')
+            self.assertTrue(deleted_range.is_displayed())
 
     def test_edit_remove_range_selenium(self):
         # Given a database with a record

@@ -38,14 +38,18 @@ class Static:
         section="", match=".*(\\.js|\\.css|\\.png)$", dir=resource_filename('udb.controller', 'static')
     )
     def default(self, *args, **kwargs):
-        """This entry point is used to serve content of /static/ folder and /components/"""
-        # By default, content of /static/ folder get served by the annotation.
-        # Fallback to components css and js
-        handled = cherrypy.lib.static.staticdir(
-            section="static", match=".*(\\.js|\\.css)$", dir=resource_filename('udb', 'templates/components')
-        )
-        if handled:
-            return cherrypy.serving.response.body
+        """This entry point is used to serve content of /static/ folder and JinjaX static ressources"""
+        # Make use of JinjaX catalog
+        env = cherrypy.request.config.get('tools.jinja2.env')
+        if env is None or 'catalog' not in env.globals:
+            raise cherrypy.HTTPError(400)
+
+        # JinjaX resources could be locaed in multiple path.
+        jinjax_catalog = env.globals['catalog']
+        for path in jinjax_catalog.paths:
+            handled = cherrypy.lib.static.staticdir(section="static", match=".*(\\.js|\\.css)$", dir=path)
+            if handled:
+                return cherrypy.serving.response.body
         raise cherrypy.HTTPError(400)
 
     @cherrypy.tools.staticfile(filename=resource_filename(__name__, 'taylor-vick-M5tzZtFCOfs-unsplash.jpg'))

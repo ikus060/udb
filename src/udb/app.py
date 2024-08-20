@@ -94,6 +94,7 @@ env.filters['format_datetime'] = format_datetime
 env.add_extension(jinjax.JinjaX)
 catalog = jinjax.Catalog(jinja_env=env, root_url="/static/")
 catalog.add_folder(resource_filename('udb', 'templates/components'))
+catalog.add_folder(resource_filename('udb', 'templates/widgets'))
 
 
 def _error_page(**kwargs):

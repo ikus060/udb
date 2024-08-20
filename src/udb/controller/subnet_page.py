@@ -29,7 +29,7 @@ from udb.core.model import DnsZone, Subnet, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, JinjaWidget, SelectMultipleObjectField, SelectObjectField, SwitchWidget
+from .form import CherryForm, SelectMultipleObjectField, SelectObjectField, SubnetTableWidget, SwitchWidget
 
 
 def _subnet_of(range1, range2):
@@ -74,10 +74,6 @@ def _norm_ipaddress(value):
         # If the range is not valid, so we can't normalize the value.
         # Validation error will be raised.
         return value
-
-
-class SubnetTableWidget(JinjaWidget):
-    filename = 'widgets/SubnetTableWidget.html'
 
 
 class SubnetRangeform(CherryForm):

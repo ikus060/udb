@@ -1,25 +1,20 @@
-{% import "common/status.html" as _status %}
-{# Macros to create each row with a button#}
+{# def field #}
 {% macro add_btn() %}
-  <button id="{{ field.id }}-add-row-btn"
-          class="btn btn-outline-primary"
+  <button class="btn btn-outline-primary udb-stw-add-row"
           type="button"
-          title="{% trans %}Add Range{% endtrans %}"
-          onclick="{{ field.id }}_add_row()">
+          title="{% trans %}Add Range{% endtrans %}">
     <i class="bi bi-plus" aria-hidden="true"></i>
   </button>
 {% endmacro %}
 {% macro remove_btn(row_id) %}
-  <button class="btn btn-outline-danger btn-delete"
+  <button class="btn btn-outline-danger btn-delete udb-stw-toggle-row"
           type="button"
-          title="{% trans %}Remove Range{% endtrans %}"
-          onclick="{{ field.id }}_toggle_row_status('{{ row_id }}')">
+          title="{% trans %}Remove Range{% endtrans %}">
     <i class="bi bi-trash" aria-hidden="true"></i>
   </button>
-  <button class="btn btn-outline-primary btn-enable"
+  <button class="btn btn-outline-primary btn-enable udb-stw-toggle-row"
           type="button"
-          title="{% trans %}Enable Range{% endtrans %}"
-          onclick="{{ field.id }}_toggle_row_status('{{ row_id }}')">
+          title="{% trans %}Enable Range{% endtrans %}">
     <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
   </button>
 {% endmacro %}
@@ -61,17 +56,14 @@
 {% set html_widget = html_row(empty_row, False).replace('-%s' % (field|length-1), '-TOKEN').replace('\n','') %}
 {% set unused = field.pop_entry() %}
 {# Create table to hold each row #}
-<div class="card bg-light mb-2 p-2 {{ class }}">
+<div {{ attrs.render(class="udb-stw card bg-light mb-2 p-2") }} data-stw='{{ {'row': html_widget.__html__() } |tojson }}'>
   {# Show/Hide deleted button place outside the table.#}
-  <button id="{{ field.id }}-toggle"
-          type="button"
-          class="btn btn-sm btn-outline-secondary udb-btn-filter"
+  <button type="button"
+          class="btn btn-sm btn-outline-secondary udb-btn-filter udb-stw-toggle"
           style="position:absolute;
                  right:0;
-                 top: -36px"
-          onclick="{{ field.id }}_toggle_show_deleted()">{% trans %}Show deleted{% endtrans %}</button>
-  <table id="{{ field.id }}-table"
-         class="table table-sm table-hover mb-0 hide-deleted"
+                 top: -36px">{% trans %}Show deleted{% endtrans %}</button>
+  <table class="table table-sm table-hover mb-0 hide-deleted"
          aria-label="{{ field.name }}">
     <thead>
       <tr>
@@ -86,36 +78,3 @@
     </tbody>
   </table>
 </div>
-{# Some CSS to handle deleted #}
-<style>
-tr.deleted { background: rgba(var(--bs-danger-rgb), 0.2); }
-tr .btn-enable { display: none; }
-tr.deleted .btn-delete { display: none; }
-tr.deleted .btn-enable { display: block; }
-table.hide-deleted tr.deleted { display:none; }
-</style>
-<script>
-function {{ field.id }}_add_row() {
-  var row_html = {{ html_widget.__html__()|tojson }};
-  var tbody = $('#{{ field.id }}-table').children('tbody');
-  var next_id = parseInt(tbody.children().last().attr('id').split('-')[1]) + 1
-  tbody.append(row_html.replaceAll('TOKEN', next_id));
-}
-function {{ field.id }}_toggle_show_deleted() {
-  $('#{{ field.id }}-table').toggleClass('hide-deleted');
-  $('#{{ field.id }}-toggle').toggleClass('active');
-}
-function {{ field.id }}_toggle_row_status(row_id) {
-  var row = $('#' + row_id);
-  var status = $('#' + row_id + '-status');
-  if(status.val() == '2') {
-    row.addClass('deleted');
-    status.val(0);
-  } else if(status.val()=='0') {
-    row.removeClass('deleted');
-    status.val(2);
-  } else if(status.val()=='') {
-    row.remove();
-  }
-}
-</script>

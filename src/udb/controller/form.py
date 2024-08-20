@@ -132,9 +132,14 @@ class JinjaWidget:
 
     def __call__(self, field, **kwargs):
         env = cherrypy.request.config.get('tools.jinja2.env')
-        tmpl = env.get_template(self.filename)
         kwargs = dict(self.options, **kwargs)
-        return Markup(tmpl.render(field=field, **kwargs))
+        # Support JinjaX
+        if self.filename.endswith('.jinja'):
+            catalog = env.globals['catalog']
+            return catalog.irender(self.filename[0:-6], field=field, **kwargs)
+        else:
+            tmpl = env.get_template(self.filename)
+            return Markup(tmpl.render(field=field, **kwargs))
 
 
 # Widget that could be used with FieldList
@@ -143,7 +148,7 @@ class TableWidget(JinjaWidget):
 
 
 class SubnetTableWidget(JinjaWidget):
-    filename = 'widgets/SubnetTableWidget.html'
+    filename = 'SubnetTableWidget.jinja'
 
 
 class SwitchWidget(JinjaWidget):

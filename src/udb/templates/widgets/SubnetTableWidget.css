@@ -1,0 +1,5 @@
+.udb-stw tr.deleted { background: rgba(var(--bs-danger-rgb), 0.2); }
+.udb-stw tr .btn-enable { display: none; }
+.udb-stw tr.deleted .btn-delete { display: none; }
+.udb-stw tr.deleted .btn-enable { display: block; }
+.udb-stw table.hide-deleted tr.deleted { display:none; }
