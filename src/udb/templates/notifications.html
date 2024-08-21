@@ -43,7 +43,7 @@
               {'name':'summary', 'title':_('Subscribed to'), 'orderable': True, 'render':'summary'},
               {'name':'url', 'visible':False},
             ] %}
-      <Datatable data="data.json" empty_message={ _("You are not following any record.") } page_length={ 10 } length_change={ False } columns={ columns } buttons={ [{'text': _("Reset") , 'extend': 'reset'}] } />
+      <Datatable data="data.json" empty_message={{ _("You are not following any record.") }} page_length={{ 10 }} length_change={{ False }} columns={{ columns }} buttons={{ [{'text': _("Reset") , 'extend': 'reset' }}] } />
     </div>
   </div>
 {% endblock %}

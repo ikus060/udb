@@ -18,6 +18,6 @@
           {'name':'changes', 'title':_('Changes'), 'orderable':False, 'render':'message_body' },
           {'name':'url', 'visible':False},
         ] %}
-    <Datatable data={ url_for('audit', 'data.json') } columns={ columns } empty-message={ _("No modification") } dom_cfg="without-paging" paging={ False } scroll_y="354px" />
+    <Datatable data={{ url_for('audit', 'data.json') }} columns={{ columns }} empty-message={{ _("No modification") }} dom_cfg="without-paging" paging={{ False }} scroll_y="354px" />
   </div>
 </div>

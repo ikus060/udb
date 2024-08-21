@@ -2,10 +2,10 @@
 {% block buttonbox_actions %}
   {# Parent VRF #}
   {% if obj.vrf_id %}
-    <ButtonboxRef label={ _("Parent VRF") } model_name="vrf" model_id={ obj.vrf_id } summary={ obj.vrf.name } />
+    <ButtonboxRef label={{ _("Parent VRF") }} model_name="vrf" model_id={{ obj.vrf_id }} summary={{ obj.vrf.name }} />
   {% endif %}
   {# Parent Subnet #}
   {% if obj.parent_id %}
-    <ButtonboxRef label={ _("Parent Subnet") } model_name="subnet" model_id={ obj.parent_id } summary={ obj.parent_range } />
+    <ButtonboxRef label={{ _("Parent Subnet") }} model_name="subnet" model_id={{ obj.parent_id }} summary={{ obj.parent_range }} />
   {% endif %}
 {% endblock %}

@@ -11,6 +11,6 @@
           {'name':'name', 'title':_('Record'), 'render':'summary'},
           {'name':'url', 'visible':False},
         ] %}
-    <Datatable data={ url_for('rule', 'linter.json') } columns={ columns } empty_message={ _("No inconsistencies were discovered.") } dom_cfg="without-paging" paging={ False } scroll_y="354px" />
+    <Datatable data={{ url_for('rule', 'linter.json') }} columns={{ columns }} empty_message={{ _("No inconsistencies were discovered.") }} dom_cfg="without-paging" paging={{ False }} scroll_y="354px" />
   </div>
 </div>

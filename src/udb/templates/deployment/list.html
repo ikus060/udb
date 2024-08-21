@@ -26,7 +26,7 @@
                       {'name': 'owner', 'title':_('Deployed by'), 'orderable': False},
                       {'name': 'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px'}
                     ] %}
-          <Datatable data="deployments.json" empty_message={ _("Changes never deployed.") } searching={ False } dom_cfg="without-header" columns={ columns } order={[[ 0, 'desc' ]]} />
+          <Datatable data="deployments.json" empty_message={{ _("Changes never deployed.") }} searching={{ False }} dom_cfg="without-header" columns={{ columns }} order={{ [[ 0, 'desc' ]] }} />
         </div>
       </div>
     </div>

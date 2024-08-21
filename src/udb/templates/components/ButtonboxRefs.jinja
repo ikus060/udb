@@ -6,12 +6,12 @@
      role="button"
      data-bs-toggle="dropdown"
      aria-expanded="false">
-    <Icon value={ model_name } class="me-2" /><span>{{ label }}</span>
+    <Icon value={{ model_name }} class="me-2" /><span>{{ label }}</span>
   </a>
   <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
     {% for record in records %}
       <li>
-        <a class="dropdown-item" href="{{ url_for(record, 'edit') }}"><Icon value={ record } /> {{ record.summary }}</a>
+        <a class="dropdown-item" href="{{ url_for(record, 'edit') }}"><Icon value={{ record }} /> {{ record.summary }}</a>
       </li>
     {% else %}
       <li>

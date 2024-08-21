@@ -2,16 +2,16 @@
 {% block buttonbox_actions %}
   {# Parent Subnet #}
   {% if obj.subnet_id %}
-    <ButtonboxRef label={ _("Parent Subnet") }  model_name="subnet" model_id={ obj.subnet_id } summary={ obj.subnet_range } />
+    <ButtonboxRef label={{ _("Parent Subnet") }}  model_name="subnet" model_id={{ obj.subnet_id }} summary={{ obj.subnet_range }} />
   {% endif %}
   {# Related IP #}
   {% if obj._ip %}
-    <ButtonboxRef label={ _("Related IP") } model_name="ip" model_id={ obj._ip.id } summary={ obj._ip.ip } />
+    <ButtonboxRef label={{ _("Related IP") }} model_name="ip" model_id={{ obj._ip.id }} summary={{ obj._ip.ip }} />
   {% endif %}
   {# Related MAC #}
   {% if obj._mac %}
-    <ButtonboxRef label={ _("Related MAC") } model_name="mac" model_id={ obj._mac.id } summary={ obj._mac.mac } />
+    <ButtonboxRef label={{ _("Related MAC") }} model_name="mac" model_id={{ obj._mac.id }} summary={{ obj._mac.mac }} />
   {% endif %}
   {# Related PTR desktop #}
-  <ButtonboxRefs label={ _("Related DNS Record") } model_name="dnsrecord" records={ obj.related_dnsrecord } />
+  <ButtonboxRefs label={{ _("Related DNS Record") }} model_name="dnsrecord" records={{ obj.related_dnsrecord }} />
 {% endblock %}

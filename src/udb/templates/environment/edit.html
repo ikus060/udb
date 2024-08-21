@@ -21,6 +21,6 @@
           {'name':'changes', 'title':_('Pending Changes'), 'orderable':False, 'render':'message_body' },
           {'name':'url', 'visible':False}
         ] %}
-    <Datatable data="changes.json" columns={ columns } order={[[ 0, 'desc' ]]} searching={ False } dom-cfg="without-header" empty-message={ _("No changes since last deployment.") } page-length={ 5 } />
+    <Datatable data="changes.json" columns={{ columns }} order={{ [[ 0, 'desc' ]] }} searching={{ False }} dom-cfg="without-header" empty-message={{ _("No changes since last deployment.") }} page-length={{ 5 }} />
   </div>
 {% endblock %}

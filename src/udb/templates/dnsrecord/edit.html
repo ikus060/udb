@@ -5,20 +5,20 @@
   {% if obj.type in ['A', 'AAAA', 'PTR'] %}
     {% set reverse_record = obj.get_reverse_dns_record() %}
     {% if reverse_record %}
-      <ButtonboxRef label={ _("Show Reverse Record") if obj.type in ['A', 'AAAA'] else _('Show Forward Record') } model_name="dnsrecord" model-id={ reverse_record.id } summary={ reverse_record.summary } />
+      <ButtonboxRef label={{ _("Show Reverse Record") if obj.type in ['A', 'AAAA'] else _('Show Forward Record') }} model_name="dnsrecord" model-id={{ reverse_record.id }} summary={{ reverse_record.summary }} />
     {% endif %}
   {% endif %}
   {# Related Subnet #}
   {% if obj.subnet_id %}
-    <ButtonboxRef label={ _("Parent Subnet") } model_name="subnet" model-id={ obj.subnet_id } summary={ obj.subnet_range } />
+    <ButtonboxRef label={{ _("Parent Subnet") }} model_name="subnet" model-id={{ obj.subnet_id }} summary={{ obj.subnet_range }} />
   {% endif %}
   {# Related DNS Zone #}
   {% if obj.dnszone_id %}
-    <ButtonboxRef label={ _("Parent DNS Zone") } model_name="dnszone" model_id={ obj.dnszone_id } summary={ obj.dnszone_name } />
+    <ButtonboxRef label={{ _("Parent DNS Zone") }} model_name="dnszone" model_id={{ obj.dnszone_id }} summary={{ obj.dnszone_name }} />
   {% endif %}
   {# Related IP #}
   {% if obj._ip %}
-    <ButtonboxRef label={ _("Related IP") } model_name="ip" model_id={ obj._ip.id } summary={ obj._ip.ip } />
+    <ButtonboxRef label={{ _("Related IP") }} model_name="ip" model_id={{ obj._ip.id }} summary={{ obj._ip.ip }} />
   {% endif %}
 {% endblock %}
 {# Create Reverse Record #}
@@ -46,6 +46,6 @@
           {'name':'value', 'title':form.value.label.text|string, 'orderable':True, 'className':'export'},
           {'name': 'url', 'visible':False}
         ] %}
-    <Datatable data="related" columns={ columns } order={[[ 3, 'asc' ]]} searching={ False } dom-cfg="without-header" empty-message={ _("No DNS record for the same hostname.") } page-length={ 5 } />
+    <Datatable data="related" columns={{ columns }} order={{ [[ 3, 'asc' ]] }} searching={{ False }} dom-cfg="without-header" empty-message={{ _("No DNS record for the same hostname.") }} page-length={{ 5 }} />
   </div>
 {% endblock %}

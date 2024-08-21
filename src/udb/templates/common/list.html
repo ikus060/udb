@@ -40,5 +40,5 @@
   {% set export_button = {'text': _('Export') + ' ', 'extend': 'collection', 'align':'button-right', 'autoClose':True, 'background': False, 'popoverTitle': _('Export'), 'buttons': [ csv_button, xsl_button, pdf_button], 'className':'udb-btn-export-menu' } %}
   {% set buttons = buttons + [export_button] %}
   {# Show default table #}
-  <Datatable data="data.json" columns={ columns } buttons={ buttons } fixed-header={ True } />
+  <Datatable data="data.json" columns={{ columns }} buttons={{ buttons }} fixed-header={{ True }} />
 {% endblock body %}

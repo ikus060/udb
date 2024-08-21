@@ -126,7 +126,7 @@
                   {'name':'body', 'visible':False},
                 {'name':'changes', 'title':_('History'), 'render':'message_body' }] %}
         <div id="messages" class="card udb-card-table-wrapper">
-          <Datatable data="messages" columns={ columns } order={[[ 5, 'desc' ]]} searching={ False } empty_message={ _("No history") } dom_cfg="without-header" page_length={ 10 } length_change={ False } />
+          <Datatable data="messages" columns={{ columns }} order={{ [[ 5, 'desc' ]] }} searching={{ False }} empty_message={{ _("No history") }} dom_cfg="without-header" page_length={{ 10 }} length_change={{ False }} />
         </div>
       {% endif %}
     </div>

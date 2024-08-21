@@ -30,7 +30,7 @@ dependencies = [
     "configargparse",
     "email_validator",
     "Jinja2",
-    "jinjax==0.37",
+    "jinjax==0.45",
     "ldap3",
     "requests",
     "ujson",
