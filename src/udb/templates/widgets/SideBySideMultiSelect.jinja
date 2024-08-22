@@ -1,0 +1,9 @@
+{# def field #}
+{# css multi/multi.css #}
+{# js multi/multi.js #}
+<select {{ attrs.render(name=field.name, class="multi", multiple=True, data_non_selected_header=_("Available") , data_selected_header=_("Selected"), data_search_placeholder=_("Filter...")) }}>
+  {% for choice in field.iter_choices() %}
+    {% set val, label, selected = choice[0:3] %}
+    <option {% if selected %}selected{% endif %} value="{{ val }}">{{ label }}</option>
+  {% endfor %}
+</select>

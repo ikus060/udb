@@ -155,10 +155,16 @@ class SwitchWidget(JinjaWidget):
     filename = 'SwitchWidget.jinja'
 
 
+class SideBySideMultiSelect(JinjaWidget):
+    filename = 'SideBySideMultiSelect.jinja'
+
+
 class SelectMultipleObjectField(SelectMultipleField):
     """
     Field to select one or more sqlalchemy object.
     """
+
+    widget = SideBySideMultiSelect()
 
     def __init__(self, label=None, validators=None, object_cls=None, object_query=None, **kwargs):
         assert object_cls
