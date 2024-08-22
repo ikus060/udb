@@ -1,6 +1,4 @@
 {% extends 'layout.html' %}
-{% import "common/status.html" as _status %}
-{% import "macro.html" as macro %}
 {% macro dashboard_card(model_name, count, color) %}
   <div class="col-xl-3 col-md-6 mb-4">
     <div class="card border-left-{{ color }} shadow h-100 py-2">
@@ -9,11 +7,13 @@
           <div class="col mr-2">
             <a href="{{ url_for(model_name, '') }}"
                class="stretched-link text-uppercase mb-1 text-{{ color }} fw-bold">
-              {{ macro.display_name(model_name) }}
+              <DisplayName value={{ model_name }} />
             </a>
             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ count }}</div>
           </div>
-          <div class="col-auto">{{ macro.icon(model_name, 'h1 text-secondary') }}</div>
+          <div class="col-auto">
+            <Icon value={{ model_name }} class='h1 text-secondary') />
+          </div>
         </div>
       </div>
     </div>

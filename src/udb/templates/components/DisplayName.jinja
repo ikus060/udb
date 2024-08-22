@@ -1,0 +1,10 @@
+{# def value #}
+{%- set display_name_table = {'dnszone': _('DNS Zone'), 'subnet': _('Subnet'), 'dnsrecord': _('DNS Record'), 'dhcprecord':_('DHCP Reservation'), 'ip':_('IP'), 'mac':_('MAC'), 'user': _('User'), 'vrf': _('VRF'), 'deployment':_('Deployment'), 'environment':_('Environment'), 'audit':_('Audit log'), 'rule':_('Rule') } -%}
+{%- if value.model_name is defined() -%}
+  {%- set model_name = value.model_name -%}
+{%- elif value._sa_instance_state is defined() -%}
+  {%- set model_name = value.__class__.__name__.lower() -%}
+{%- else -%}
+  {%- set model_name = value -%}
+{%- endif -%}
+{{ display_name_table.get(model_name, model_name) }}

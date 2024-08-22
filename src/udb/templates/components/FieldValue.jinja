@@ -1,0 +1,21 @@
+{# def key, value #}
+{% set display_name_value = {
+  "type": {
+    "new": _('Created by'),
+    "dirty": _('Modified by'),
+    "comment": _('Comment on'),
+  },
+  "status": {
+    "0": _("Deleted"),
+    "1": _("Disabled"),
+    "2": _("Enabled"),
+  },
+  "severity": {
+    "0": _("No"),
+    "1": _("Yes"),
+  },
+  "mfa": {
+    "0": _("Disabled"),
+    "1": _("Enabled"),
+  }} %}
+  <span {{ attrs.render() }}>{%- if value is none -%}<i>{% trans %}Undefined{% endtrans %}</i>{%- else -%}{{ display_name_value.get(key, {}) .get(value|string, value) }}{%- endif -%}</span>

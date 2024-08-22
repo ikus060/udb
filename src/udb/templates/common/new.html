@@ -1,7 +1,6 @@
 {% extends 'layout.html' %}
-{% import "macro.html" as macro %}
 {% block title %}
-  {% trans %}Create a new{% endtrans %} {{ macro.display_name(model_name) }}
+  {% trans %}Create a new{% endtrans %} <DisplayName value={{ model_name }} />
 {% endblock %}
 {% block body %}
   <div class="row">
@@ -18,7 +17,9 @@
           <span class="visually-hidden">{% trans %}Go Back{% endtrans %}</span>
         </button>
         {# Title #}
-        <h2 class="flex-fill mb-0">{% trans %}Create a new{% endtrans %} {{ macro.display_name(model_name) }}</h2>
+        <h2 class="flex-fill mb-0">
+          {% trans %}Create a new{% endtrans %} <DisplayName value={{ model_name }} />
+        </h2>
       </div>
       {% include "flash.html" %}
       <form method="POST" action="{{ url_for(model, 'new') }}">
@@ -34,7 +35,7 @@
                     style="padding-left: 2.5rem;
                            padding-right: 2.5rem">
               {% trans %}Create{% endtrans %}
-              {{ macro.display_name(model_name) }}
+              <DisplayName value={{ model_name }} />
             </button>
           </div>
         </div>

@@ -1,6 +1,4 @@
 {% extends 'layout.html' %}
-{% import "common/status.html" as _status %}
-{% import "macro.html" as macro %}
 {% block body %}
   {# Title #}
   <h2>{% trans %}Edit notification settings{% endtrans %}</h2>
@@ -14,9 +12,12 @@
     <div class="col-md-9">
       <form method="POST" class="mb-2">
         {% for field in form %}
+          {% set text -%}
+            <DisplayName value={{ field.label.text }} />
+          {%- endset %}
           <div class="form-check">
             {{ field(id=False) }}
-            {{ field.label(class="form-check-label", text=macro.display_name(field.label.text) ) }}
+            {{ field.label(class="form-check-label", text=text) }}
           </div>
         {% endfor %}
         <button type="submit" class="btn btn-primary mt-3">{% trans %}Save notification settings{% endtrans %}</button>
