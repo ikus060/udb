@@ -29,12 +29,7 @@
     <div class="col-md">
       <h4>{% trans %}Follow changes made on specific record{% endtrans %}</h4>
       <p>{% trans %}Provide a complete list of record that you are following.{% endtrans %}</p>
-      <form action="{{ url_for("./unfollow") }}" method="post" data-confirm="{% trans %}Are you sure you want to stop following all records ?{% endtrans %}">
-        <input class="btn btn-secondary"
-               type="submit"
-               name="unfollow"
-               value="{% trans %}Unfollow all{% endtrans %}">
-      </form>
+      <ButtonWithConfirmation on_confirm_url={{ url_for("./unfollow") }} label={{ _("Unfollow all") }} description={{ _("Are you sure you want to stop following all records ?") }} />
     </div>
     <div class="col-md-9">
       {% set columns = [

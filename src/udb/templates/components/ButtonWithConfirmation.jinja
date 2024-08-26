@@ -1,0 +1,9 @@
+{# def on_confirm_url, label, description="Are you sure?"#}
+<form action="{{ on_confirm_url }}"
+      method="post"
+      data-confirm="{{ description }}">
+  <input class="btn btn-secondary"
+         type="submit"
+         name="unfollow"
+         value="{{ label }}">
+</form>
