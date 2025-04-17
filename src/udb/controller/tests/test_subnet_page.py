@@ -68,6 +68,8 @@ class SubnetPageTest(WebCase, CommonTest):
             # When saving the form
             save_change_btn = driver.find_element('id', 'save-changes')
             save_change_btn.send_keys(Keys.ENTER)
+            # Then record get saved
+            driver.find_element('css selector', '.alert')
         # Then record got updated.
         obj.expire()
         self.assertEqual([zone], obj.dnszones)
@@ -92,6 +94,8 @@ class SubnetPageTest(WebCase, CommonTest):
             # When saving the form
             save_change_btn = driver.find_element('id', 'save-changes')
             save_change_btn.send_keys(Keys.ENTER)
+            # Then changes get saved
+            driver.find_element('css selector', '.alert')
         # Then record got updated with new range
         obj.expire()
         self.assertEqual(1, len(obj.slave_subnets))
@@ -142,6 +146,8 @@ class SubnetPageTest(WebCase, CommonTest):
             # When saving the form
             save_change_btn = driver.find_element('id', 'save-changes')
             save_change_btn.send_keys(Keys.ENTER)
+            # Then changes get saved
+            driver.find_element('css selector', '.alert')
         # Then record got deleted
         obj.expire()
         self.assertEqual(1, len(obj.slave_subnets))
