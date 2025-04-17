@@ -47,7 +47,7 @@ class NewUserForm(CherryForm):
 
     password = PasswordField(
         _('Password'),
-        validators=[Optional(), Length(max=256)],
+        validators=[Optional(), Length(max=72)],
         description=_(
             'To create a local user, set a password. To create an external user, validating the password with LDAP, do not set a password.'
         ),
@@ -86,7 +86,7 @@ class NewUserForm(CherryForm):
         obj.timezone = self.timezone.data
         if self.clear_password.data:
             obj.password = None
-        elif self.password.data:
+        elif self.password.raw_data:
             obj.set_password(self.password.data)
 
 
