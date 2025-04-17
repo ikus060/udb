@@ -32,6 +32,7 @@ dependencies = [
     "Jinja2",
     "jinjax==0.45",
     "ldap3",
+    "pytz",
     "requests",
     "ujson",
     "sqlalchemy>=1.4,<3",
