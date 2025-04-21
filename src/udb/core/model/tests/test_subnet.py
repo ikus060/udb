@@ -208,6 +208,7 @@ class SubnetTest(WebCase):
         # Then an exception is raised
         with self.assertRaises(IntegrityError):
             Subnet(range=value, name='bar', vrf=vrf).add().commit()
+        Subnet.session.rollback()
 
     @parameterized.expand(['192.168.1.0/24', '2002:0:0:1234::/64'])
     def test_duplicate_cidr_with_vrf(self, value):
@@ -224,6 +225,7 @@ class SubnetTest(WebCase):
         # Then an exception is raised
         with self.assertRaises(IntegrityError):
             Subnet(name='bar', vrf=vrf, range=value).add().commit()
+        Subnet.session.rollback()
 
     def test_add_dnszonesubnet(self):
         # Given a database with an existing record
@@ -311,6 +313,7 @@ class SubnetTest(WebCase):
         else:
             with self.assertRaises(IntegrityError):
                 subnet.add().commit()
+            subnet.rollback()
 
     def test_add_with_disabled_vrf(self):
         # Given a disabled VRF

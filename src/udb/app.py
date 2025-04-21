@@ -23,13 +23,13 @@ from cherrypy import Application
 
 import udb.core.login  # noqa
 import udb.core.notification  # noqa
+import udb.plugins.db  # noqa: import cherrypy.db
 import udb.plugins.ldap  # noqa
 import udb.plugins.restapi
 import udb.plugins.smtp  # noqa
 import udb.tools.auth_form  # noqa: import cherrypy.tools.auth_form
 import udb.tools.auth_mfa  # noqa: import cherrypy.tools.auth_mfa
 import udb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
-import udb.tools.db  # noqa: import cherrypy.tools.db
 import udb.tools.errors  # noqa
 import udb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
 import udb.tools.ratelimit
@@ -137,7 +137,6 @@ def json_handler(*args, **kwargs):
     return ujson.dumps(value).encode('utf-8')
 
 
-@cherrypy.tools.db()
 @cherrypy.tools.proxy(local=None, remote='X-Real-IP')
 @cherrypy.tools.sessions()
 @cherrypy.tools.auth_form()
@@ -210,8 +209,8 @@ class UdbApplication(Application):
                 # Define error page handler.
                 'error_page.default': _error_page,
                 # Configure database plugins
-                'tools.db.uri': cfg.database_uri,
-                'tools.db.debug': cfg.debug,
+                'db.uri': cfg.database_uri,
+                'db.debug': cfg.debug,
                 # Configure session storage
                 'tools.sessions.debug': cfg.debug,
                 'tools.sessions.storage_class': session_storage_class,
@@ -282,8 +281,6 @@ class UdbApplication(Application):
                 'tools.i18n.domain': 'messages',
             }
         )
-        # Create database if required
-        cherrypy.tools.db.create_all()
 
         config = {
             '/api': {'request.dispatch': udb.plugins.restapi.Dispatcher()},
@@ -292,8 +289,17 @@ class UdbApplication(Application):
         # Initialize the application
         Application.__init__(self, root=Root(), config=config)
 
-        # Create default admin if missing
-        User.create_default_admin(cfg.admin_user, cfg.admin_password)
+        # Register a late callback to create admin user when starting
+        cherrypy.engine.subscribe('start', self.on_start, priority=250)
 
-        # Commit changes to database.
-        cherrypy.tools.db.get_session().commit()
+    def on_start(self):
+        # Since we are not a real plugin, let unsubscribe to avoid interference if server get restarted.
+        cherrypy.engine.unsubscribe('start', self.on_start)
+
+        # Create database if required
+        cherrypy.db.create_all()
+
+        # Create default admin if missing
+        user = User.create_default_admin(self.cfg.admin_user, self.cfg.admin_password)
+        if user:
+            user.commit()

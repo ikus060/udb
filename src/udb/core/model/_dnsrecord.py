@@ -43,7 +43,6 @@ from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from sqlalchemy.orm import aliased, declared_attr, foreign, relationship, remote, validates
 from sqlalchemy.types import Integer, String
 
-import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
 
 from ._cidr import CidrType, InetType
@@ -60,9 +59,9 @@ from ._subnet import Subnet
 from ._update import trigger_on_update
 from ._vrf import Vrf
 
-Base = cherrypy.tools.db.get_base()
+Base = cherrypy.db.get_base()
 
-Session = cherrypy.tools.db.get_session()
+Session = cherrypy.db.get_session()
 
 
 def _collapse_slave_subnets(obj):
@@ -966,7 +965,10 @@ RuleConstraint(
     model=DnsRecord,
     statement=(
         lambda: (fwd := aliased(DnsRecord))
-        and select(DnsRecord.id.label('id'), DnsRecord.summary.label('name'),).filter(
+        and select(
+            DnsRecord.id.label('id'),
+            DnsRecord.summary.label('name'),
+        ).filter(
             DnsRecord.type == 'PTR',
             DnsRecord.estatus == DnsRecord.STATUS_ENABLED,
             ~(
@@ -993,7 +995,10 @@ RuleConstraint(
     model=DnsRecord,
     severity=Rule.SEVERITY_ENFORCED,
     statement=(
-        select(DnsRecord.id, DnsRecord.summary.label('name'),).filter(
+        select(
+            DnsRecord.id,
+            DnsRecord.summary.label('name'),
+        ).filter(
             DnsRecord.type == 'CNAME',
             DnsRecord.name == DnsRecord.dnszone_name,
             DnsRecord.estatus == DnsRecord.STATUS_ENABLED,

@@ -92,7 +92,7 @@ class LoadPage:
                         notes=row.get('Description') or row.get('Notes'),
                         dnszones=dnszones,
                     ).add().flush()
-            cherrypy.tools.db.get_session().commit()
+            cherrypy.db.get_session().commit()
         except Exception as e:
             msg = _('Fail to process the given file.')
             if reader.line_num:
@@ -126,7 +126,7 @@ class LoadPage:
                     if type in ['CNAME', 'PTR', 'NS']:
                         value = value.strip('.')
                     DnsRecord(name=name, ttl=ttl, type=type, value=value).add().flush()
-            cherrypy.tools.db.get_session().commit()
+            cherrypy.db.get_session().commit()
         except Exception as e:
             msg = _('Fail to process the given file.')
             if line_num:
@@ -162,9 +162,9 @@ class LoadPage:
                 else:
                     raise ValueError('invalid data type')
             except Exception as e:
-                cherrypy.tools.db.get_session().rollback()
+                cherrypy.db.get_session().rollback()
                 show_exception(e)
-                cherrypy.tools.db.get_session().expire_all()
+                cherrypy.db.get_session().expire_all()
             else:
                 # Redirect user to load page.
                 flash(_('CSV File imported with success !'))

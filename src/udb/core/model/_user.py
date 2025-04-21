@@ -24,7 +24,6 @@ from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
 from zxcvbn import zxcvbn
 
-import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.core.passwd import check_password, hash_password
 from udb.tools.i18n import gettext_lazy as _
 
@@ -33,7 +32,7 @@ from ._message import MessageMixin
 from ._status import StatusMixing
 from ._update import column_add, column_exists
 
-Base = cherrypy.tools.db.get_base()
+Base = cherrypy.db.get_base()
 
 
 class User(JsonMixin, StatusMixing, MessageMixin, Base):

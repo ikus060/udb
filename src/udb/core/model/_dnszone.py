@@ -23,7 +23,6 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import String
 
-import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
 
 from ._common import CommonMixin
@@ -43,7 +42,7 @@ NAME_PATTERN = re.compile(
 )
 
 
-Base = cherrypy.tools.db.get_base()
+Base = cherrypy.db.get_base()
 
 dnszone_subnet = Table(
     'dnszone_subnet',

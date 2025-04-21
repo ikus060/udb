@@ -48,10 +48,9 @@ class AuditPageTest(WebCase):
 
     def test_get_list_page_selenium(self):
         # Given a database with changes
-        with self.selenium() as driver:
+        with self.selenium(implicitly_wait=10) as driver:
             # When making a query to audit log
             driver.get(url_for(self.base_url, ''))
-            driver.implicitly_wait(10)
             # Then the web page contains a table
             driver.find_element('css selector', 'table.table')
             time.sleep(1)
@@ -113,7 +112,6 @@ class AuditPageTest(WebCase):
         with self.selenium() as driver:
             # When making a query to audit log
             driver.get(url_for(self.base_url, ''))
-            driver.implicitly_wait(3)
             # Then all record type are displayed
             # When user click on Type Menu
             type_menu = driver.find_element('css selector', '.udb-btn-collectionfilter')
@@ -133,7 +131,6 @@ class AuditPageTest(WebCase):
         with self.selenium() as driver:
             # When making a query to audit log
             driver.get(url_for(self.base_url, ''))
-            driver.implicitly_wait(3)
             # When user select VRF in the menu
             type_menu = driver.find_element('css selector', '.udb-btn-collectionfilter')
             type_menu.click()

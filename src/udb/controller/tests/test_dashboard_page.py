@@ -34,7 +34,6 @@ class TestDashboardPage(WebCase):
         with self.selenium() as driver:
             # When making a query to audit log
             driver.get(url_for('dashboard'))
-            driver.implicitly_wait(10)
             # Then the web page contains a table
             driver.find_element('css selector', 'table.table')
             # Then the web page is loaded without error.
@@ -45,7 +44,6 @@ class TestDashboardPage(WebCase):
         self.add_records()
         with self.selenium() as driver:
             driver.get(url_for('dashboard'))
-            driver.implicitly_wait(10)
             # When user click on "username" dropdown
             dropdown = driver.find_element('id', 'dropdownUser1')
             dropdown.click()

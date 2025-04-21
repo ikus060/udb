@@ -173,7 +173,7 @@ class CommonPage(object):
                 Rule.verify(obj, errors='raise', severity=Rule.SEVERITY_ENFORCED)
                 obj.commit()
             except Exception as e:
-                cherrypy.tools.db.get_session().rollback()
+                cherrypy.db.get_session().rollback()
                 show_exception(e, form=form, obj=obj)
             else:
                 flash(_('Record created successfully.'))
@@ -223,13 +223,13 @@ class CommonPage(object):
                 Rule.verify(obj, errors='raise', severity=Rule.SEVERITY_ENFORCED)
                 obj.commit()
             except Exception as e:
-                cherrypy.tools.db.get_session().rollback()
+                cherrypy.db.get_session().rollback()
                 # Recreate an object from the copied fields to make sure the message contains the right values.
                 obj_copy.pop('_sa_instance_state')
                 edited_obj = self.model(**obj_copy)
                 show_exception(e, form=form, obj=edited_obj)
                 # Then we need to rollback to clear the sqlalchemy session.
-                cherrypy.tools.db.get_session().rollback()
+                cherrypy.db.get_session().rollback()
             else:
                 flash(_('Record updated successfully'))
                 Rule.verify(obj)

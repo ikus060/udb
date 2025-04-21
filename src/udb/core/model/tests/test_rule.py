@@ -51,6 +51,7 @@ class RuleTest(WebCase):
         if expect_failure:
             with self.assertRaises(ValueError) as context:
                 rule.add().commit()
+            Rule.session.rollback()
             self.assertEqual('statement', context.exception.args[0])
         else:
             rule.add().commit()

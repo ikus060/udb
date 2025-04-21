@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# udb, A web interface to manage IT network
-# Copyright (C) 2022 IKUS Software inc.
+# LDAP Plugins for cherrypy
+# # Copyright (C) 2025 IKUS Software
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,16 +14,26 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 '''
-SQLAlchemy Tool for CherryPy.
+SQLAlchemy plugin for CherryPy.
 '''
 import logging
 
 import cherrypy
+from cherrypy.process.plugins import SimplePlugin
 from sqlalchemy import create_engine, event, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import declarative_base, scoped_session, sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker
+
+try:
+    # SQLAlchemy>=1.4
+    from sqlalchemy.orm import declarative_base
+except ImportError:
+    # SQLAlchmey<=1.3
+    from sqlalchemy.ext.declarative import declarative_base
+
 
 logger = logging.getLogger(__name__)
 
@@ -107,41 +117,53 @@ class Base:
         return self
 
 
-class SQLA(cherrypy.Tool):
-    _name = 'sqla'
+class SQLA(SimplePlugin):
+    uri = None
+    debug = False
+
     _base = None
     _session = None
     _engine = None
 
-    def __init__(self, **kw):
-        cherrypy.Tool.__init__(self, None, None, priority=20)
+    def start(self):
+        # Adjust debug level.
+        if self.debug:
+            logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
+        # Create connection to database
+        self._engine = create_engine(self.uri)
+        # Clean-up previous session.
+        self.clear_sessions()
+        # Associate our session to our engine
+        self.get_session().configure(bind=self._engine)
+        self.bus.log("Database session plugin started.")
 
-    def _setup(self):
-        cherrypy.request.hooks.attach('on_end_resource', self.on_end_resource)
+    def stop(self):
+        if self._session:
+            self.clear_sessions()
+        if self._engine:
+            self._engine.dispose()
+        self.bus.log("Database session plugin stopped.")
 
     def create_all(self):
-        base = self.get_base()
-        # Create a new engine to connect to database
-        if self._engine is None:
-            dburi = cherrypy.config.get('tools.db.uri')
-            self._engine = create_engine(dburi)
-
-            # Configure logging level
-            debug = cherrypy.config.get('tools.db.debug')
-            if debug:
-                logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
-
-            # Associate our session to our engine
-            self.get_session().configure(bind=self._engine)
-
-        # Create tables
-        base.metadata.create_all(self._engine)
-        self.get_session().remove()
+        try:
+            # Create tables
+            base = self.get_base()
+            conn = self.get_session().connection()
+            base.metadata.create_all(bind=conn)
+            self.get_session().commit()
+        finally:
+            # Release opened sessions.
+            self.clear_sessions()
 
     def drop_all(self):
-        # Drop all
-        base = self.get_base()
-        base.metadata.drop_all(bind=self._engine)
+        try:
+            # Drop all
+            base = self.get_base()
+            base.metadata.drop_all(bind=self._engine)
+            self.get_session().commit()
+        finally:
+            # Release opened sessions.
+            self.clear_sessions()
 
     def get_base(self):
         """
@@ -149,6 +171,7 @@ class SQLA(cherrypy.Tool):
         """
         if self._base is None:
             self._base = declarative_base(cls=Base)
+            # Provide a friendly ObjectName.query.
             self._base.session = self.get_session()
             self._base.query = self.get_session().query_property()
         return self._base
@@ -158,12 +181,16 @@ class SQLA(cherrypy.Tool):
         Return a singleton database session.
         """
         if self._session is None:
-            self._session = scoped_session(sessionmaker(autoflush=False, autocommit=False))
+            self._session_factory = sessionmaker(autoflush=False, autocommit=False)
+            self._session = scoped_session(self._session_factory)
         return self._session
 
-    def on_end_resource(self):
+    def after_request(self):
+        self.clear_sessions()
+
+    def clear_sessions(self):
         """
-        Called when HTTP session is completed.
+        Used to clean-up session and raise error if session are not clean.
         """
         if self._session is None:
             return
@@ -182,4 +209,7 @@ class SQLA(cherrypy.Tool):
             self._session.remove()
 
 
-cherrypy.tools.db = SQLA()
+cherrypy.db = SQLA(cherrypy.engine)
+cherrypy.db.subscribe()
+
+cherrypy.config.namespaces['db'] = lambda key, value: setattr(cherrypy.db, key, value)

@@ -25,15 +25,14 @@ from sqlalchemy.sql.functions import func
 from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.sql.sqltypes import Integer
 
-import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext as _
 
 from ._json import JsonMixin
 from ._search_string import SearchableMixing
 from ._timestamp import Timestamp
 
-Base = cherrypy.tools.db.get_base()
-Session = cherrypy.tools.db.get_session()
+Base = cherrypy.db.get_base()
+Session = cherrypy.db.get_session()
 
 
 def _get_model_changes(model, ignore=['messages']):

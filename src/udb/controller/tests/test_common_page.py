@@ -147,7 +147,6 @@ class CommonTest:
             # Then the web page is loaded without error.
             self.assertFalse(driver.get_log('browser'))
             # Then history section contains our modification
-            driver.implicitly_wait(10)
             driver.find_element('xpath', "//*[contains(text(), 'Modified by')]")
 
     def test_get_new_page(self):

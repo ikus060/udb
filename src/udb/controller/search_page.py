@@ -26,7 +26,7 @@ from udb.controller.form import CherryForm
 from udb.core.model import User, searchable_models
 from udb.tools.i18n import gettext as _
 
-Base = cherrypy.tools.db.get_base()
+Base = cherrypy.db.get_base()
 
 SearchableModel = union_all(
     *[
@@ -76,7 +76,7 @@ class SearchPage:
             )
             .group_by(SearchableModel.c.model_name)
         )
-        session = cherrypy.tools.db.get_session()
+        session = cherrypy.db.get_session()
         counts = {row[0]: row[1] for row in session.execute(query).all()}
         # Determine active tab
         active = None
@@ -140,7 +140,7 @@ class SearchPage:
             query = query.filter(SearchableModel.c.model_name == model_name)
 
         # Execute the query
-        session = cherrypy.tools.db.get_session()
+        session = cherrypy.db.get_session()
         filtered = session.execute(select(func.count("*")).select_from(query.subquery())).first()[0]
         data = session.execute(query.offset(start).limit(length)).all()
 
@@ -180,7 +180,7 @@ class SearchPage:
             )
             .order_by(~SearchableModel.c.summary.startswith(q))
         )
-        session = cherrypy.tools.db.get_session()
+        session = cherrypy.db.get_session()
         data = [
             {
                 'model_id': obj.model_id,

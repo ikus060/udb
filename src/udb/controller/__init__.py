@@ -276,7 +276,7 @@ def _find_constraint(error):
     # Use a lookup cache to simplify the search of index and constraints.
     if not getattr(_find_constraint, '_cache', False):
         cache = {}
-        metadata = cherrypy.tools.db.get_base().metadata
+        metadata = cherrypy.db.get_base().metadata
         for table in metadata.tables.values():
             for item in table.constraints:
                 if item.name:

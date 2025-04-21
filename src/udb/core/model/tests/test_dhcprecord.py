@@ -121,6 +121,7 @@ class DhcpRecordTest(WebCase):
         # When adding a DnsRecord with invalid ip address
         with self.assertRaises(IntegrityError) as cm:
             DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af', vrf=vrf).add().commit()
+        DhcpRecord.session.rollback()
         self.assertIn('dhcprecord_subnet_required_ck', str(cm.exception))
 
     def test_add_with_invalid_mac(self):
@@ -188,6 +189,7 @@ class DhcpRecordTest(WebCase):
         with self.assertRaises(IntegrityError) as cm:
             subnet.range = '192.0.10.0/24'
             subnet.commit()
+        subnet.rollback()
         self.assertIn('dhcprecord_subnet_required_ck', str(cm.exception))
 
     def test_update_parent_subnet_vrf(self):
@@ -201,6 +203,7 @@ class DhcpRecordTest(WebCase):
         with self.assertRaises(IntegrityError) as cm:
             subnet.vrf = new_vrf
             subnet.add().commit()
+        subnet.rollback()
         is_sqlite = 'sqlite' in str(self.session.bind)
         if is_sqlite:
             # SQLite doesn't return the name of the constraint.
@@ -248,6 +251,7 @@ class DhcpRecordTest(WebCase):
         # Then an error is raised
         with self.assertRaises(IntegrityError):
             DhcpRecord(ip='192.0.2.23', mac='00:00:5e:00:53:af').add().commit()
+        DhcpRecord.session.rollback()
 
     def test_dhcprecord_reassign_subnet(self):
         # Given a DHCP Record assign to a subnet

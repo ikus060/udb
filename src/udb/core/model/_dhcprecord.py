@@ -41,7 +41,6 @@ from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from sqlalchemy.orm import aliased, declared_attr, foreign, relationship, remote, validates
 from sqlalchemy.types import String
 
-import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
 
 from ._cidr import CidrType, InetType
@@ -60,9 +59,9 @@ from ._subnet import Subnet
 from ._update import trigger_on_update
 from ._vrf import Vrf
 
-Base = cherrypy.tools.db.get_base()
+Base = cherrypy.db.get_base()
 
-Session = cherrypy.tools.db.get_session()
+Session = cherrypy.db.get_session()
 
 
 class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):

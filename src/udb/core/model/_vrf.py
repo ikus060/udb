@@ -21,7 +21,6 @@ from sqlalchemy import Column, Index
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.types import String
 
-import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
 
 from ._common import CommonMixin
@@ -31,7 +30,7 @@ from ._message import MessageMixin
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
 
-Base = cherrypy.tools.db.get_base()
+Base = cherrypy.db.get_base()
 
 
 class Vrf(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):

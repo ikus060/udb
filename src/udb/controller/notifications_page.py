@@ -104,7 +104,7 @@ class NotificationsPage:
                 obj.add()
                 obj.commit()
             except Exception as e:
-                cherrypy.tools.db.get_session().rollback()
+                cherrypy.db.get_session().rollback()
                 show_exception(e, form)
             else:
                 flash(_('Notification settings updated successfully.'))

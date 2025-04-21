@@ -108,6 +108,7 @@ class DnsRecordTest(WebCase):
         DnsZone(name='example.com').add().flush()
         with self.assertRaises(IntegrityError) as cm:
             DnsRecord(name='foo.example.com', type='', value='192.0.2.23').add().commit()
+        DnsRecord.session.rollback()
         self.assertIn('dnsrecord_types_ck', str(cm.exception))
 
     def test_add_a_record(self):
@@ -141,6 +142,7 @@ class DnsRecordTest(WebCase):
         # Then an exception is raised
         with self.assertRaises(ValueError) as cm:
             DnsRecord(name='foo.example.com', type='A', value='invalid').add().commit()
+        DnsRecord.session.rollback()
         self.assertEqual(cm.exception.args[0], 'value')
         self.assertEqual(cm.exception.args[1], 'value must be a valid IPv4 address')
 
@@ -160,6 +162,7 @@ class DnsRecordTest(WebCase):
         # Then an exception is raised
         with self.assertRaises(IntegrityError) as cm:
             record = record.add().commit()
+        record.rollback()
         self.assertIn('dnsrecord_dnszone_required_ck', str(cm.exception))
 
     def test_add_a_record_without_valid_subnet(self):
@@ -171,6 +174,7 @@ class DnsRecordTest(WebCase):
         # Then an exception is raised
         with self.assertRaises(IntegrityError) as cm:
             DnsRecord(name='foo.example.com', type='A', value='192.0.2.23', vrf=vrf).add().commit()
+        DnsRecord.session.rollback()
         self.assertIn('dnsrecord_subnet_required_ck', str(cm.exception))
 
     def test_add_a_record_with_host_subnet(self):
@@ -199,6 +203,7 @@ class DnsRecordTest(WebCase):
         # Then an exception is raised
         with self.assertRaises(ValueError) as cm:
             DnsRecord(name='foo.example.com', type='AAAA', value='invalid').add().commit()
+        DnsRecord.session.rollback()
         self.assertEqual('value', str(cm.exception.args[0]))
         self.assertEqual('value must be a valid IPv6 address', str(cm.exception.args[1]))
 
@@ -213,6 +218,7 @@ class DnsRecordTest(WebCase):
             DnsRecord(
                 name='foo.example.com', type='AAAA', value='2002::1234:abcd:ffff:c0a6:101', vrf=vrf
             ).add().commit()
+        DnsRecord.session.rollback()
         self.assertIn('dnsrecord_subnet_required_ck', str(cm.exception))
 
     def test_add_cname_record(self):
@@ -238,6 +244,7 @@ class DnsRecordTest(WebCase):
         # Then an exception is raised
         with self.assertRaises(IntegrityError) as cm:
             DnsRecord(name='foo.example.com', type='TXT', value='').add().commit()
+        DnsRecord.session.rollback()
         self.assertIn('dnsrecord_value_not_empty', str(cm.exception.args))
 
     def test_add_ipv4_ptr_record(self):
@@ -262,6 +269,7 @@ class DnsRecordTest(WebCase):
         # Then an error is raised
         with self.assertRaises(IntegrityError) as cm:
             DnsRecord(name='255.2.0.192.in-addr.arpa', type='PTR', value='bar.example.com', vrf=vrf).add().commit()
+        DnsRecord.session.rollback()
         self.assertIn('dnsrecord_subnet_required_ck', str(cm.exception))
 
     def test_add_ipv6_ptr_record(self):
@@ -293,6 +301,7 @@ class DnsRecordTest(WebCase):
                 value='bar.example.com',
                 vrf=vrf,
             ).add().commit()
+        DnsRecord.session.rollback()
         self.assertIn('dnsrecord_subnet_required_ck', str(cm.exception))
 
     def test_add_ipv6_ptr_uppercase(self):
@@ -321,6 +330,7 @@ class DnsRecordTest(WebCase):
                 value='192.0.2.23',
                 vrf=vrf,
             ).add().commit()
+        DnsRecord.session.rollback()
         self.assertIn('dnsrecord_value_domain_name', str(cm.exception))
 
     def test_add_ptr_record_with_invalid_name(self):
@@ -332,6 +342,7 @@ class DnsRecordTest(WebCase):
         # Then an exception is raised
         with self.assertRaises(ValueError) as cm:
             DnsRecord(name='foo.example.com', type='PTR', value='foo.example.com', vrf=vrf).add().commit()
+        DnsRecord.session.rollback()
         self.assertEqual('name', str(cm.exception.args[0]))
         self.assertEqual(
             'PTR records must ends with `.in-addr.arpa` or `.ip6.arpa` and define a valid IPv4 or IPv6 address',
@@ -356,6 +367,7 @@ class DnsRecordTest(WebCase):
         # Then an exception is raised by database
         with self.assertRaises(IntegrityError) as cm:
             DnsRecord(name='foo.example.com', type=record_type, value='192.0.2.23').add().commit()
+        DnsRecord.session.rollback()
         self.assertIn('dnsrecord_value_domain_name', str(cm.exception))
 
     def test_get_reverse_dns_record_with_ipv4(self):
@@ -408,6 +420,7 @@ class DnsRecordTest(WebCase):
         DnsRecord(name=name, value=value, type=type).add().flush()
         # Then record get added
         DnsRecord.query.one()
+        DnsRecord.session.rollback()
 
     def test_add_multiple_soa(self):
         # Given an existing SOA record on the DNS Zone
@@ -425,6 +438,7 @@ class DnsRecordTest(WebCase):
                 value='ddns.bfh.info. bfh-linux-sysadmin.lists.bfh.science. 33317735 600 60 36000 3600',
                 type='SOA',
             ).add().commit()
+        DnsRecord.session.rollback()
 
     def test_add_soa_without_dnszone(self):
         # Given a DnsZone
@@ -437,6 +451,7 @@ class DnsRecordTest(WebCase):
                 value='ddns.bfh.info. bfh-linux-sysadmin.lists.bfh.science. 33317735 600 60 36000 3600',
                 type='SOA',
             ).add().commit()
+        DnsRecord.session.rollback()
         self.assertIn('dnsrecord_soa_dnszone_ck', str(cm.exception))
 
     def test_invalid_record_type(self):
@@ -446,6 +461,7 @@ class DnsRecordTest(WebCase):
         # Then an error is raised.
         with self.assertRaises(IntegrityError) as cm:
             DnsRecord(name='bar.example.com', type='INVA', value='testing').add().flush()
+        DnsRecord.session.rollback()
         self.assertIn('dnsrecord_types_ck', str(cm.exception))
 
     def test_dnsrecord_cname_unique_rule(self):
@@ -562,6 +578,7 @@ class DnsRecordTest(WebCase):
         with self.assertRaises(IntegrityError) as cm:
             zone.name = 'test.com'
             zone.add().commit()
+        DnsRecord.session.rollback()
         self.assertIn('dnsrecord_dnszone_required_ck', str(cm.exception))
 
     def test_update_parent_subnet_range(self):
@@ -575,6 +592,7 @@ class DnsRecordTest(WebCase):
         with self.assertRaises(IntegrityError) as cm:
             subnet.range = '192.0.10.0/24'
             subnet.commit()
+        DnsRecord.session.rollback()
         self.assertIn('dnsrecord_subnet_required_ck', str(cm.exception))
 
     def test_update_parent_subnet_vrf(self):
@@ -589,6 +607,7 @@ class DnsRecordTest(WebCase):
         with self.assertRaises(IntegrityError) as cm:
             subnet.vrf = new_vrf
             subnet.add().commit()
+        subnet.rollback()
         is_sqlite = 'sqlite' in str(self.session.bind)
         if is_sqlite:
             # SQLite doesn't return the name of the constraint.
@@ -607,6 +626,7 @@ class DnsRecordTest(WebCase):
         with self.assertRaises(IntegrityError) as cm:
             subnet.dnszones = []
             subnet.commit()
+        subnet.rollback()
         is_sqlite = 'sqlite' in str(self.session.bind)
         if is_sqlite:
             # SQLite doesn't return the name of the constraint.
@@ -667,6 +687,7 @@ class DnsRecordTest(WebCase):
         # Then an integrity error is raised
         with self.assertRaises(IntegrityError):
             DnsRecord(name='foo.example.com', type='A', value='192.0.2.25').add().commit()
+        DnsRecord.session.rollback()
 
     def test_dnsrecord_reassign_subnet(self):
         # Given a DNS Record assign to a subnet

@@ -29,8 +29,6 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declared_attr, foreign, relationship, remote
 from sqlalchemy.types import JSON, Integer, SmallInteger, String, Text
 
-import udb.tools.db  # noqa: import cherrypy.tools.db
-
 from ._common import CommonMixin
 from ._dhcprecord import DhcpRecord
 from ._dnsrecord import DnsRecord
@@ -41,7 +39,7 @@ from ._status import StatusMixing
 from ._subnet import Subnet
 from ._vrf import Vrf
 
-Base = cherrypy.tools.db.get_base()
+Base = cherrypy.db.get_base()
 
 
 def _deploy(deployment_id, base_url):
@@ -80,7 +78,7 @@ def _deploy(deployment_id, base_url):
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            **kwargs
+            **kwargs,
         )
         # Write script using "newline" instead of "cariage return"
         script = deployment.environment.script.replace('\r\n', '\n').encode('utf8')

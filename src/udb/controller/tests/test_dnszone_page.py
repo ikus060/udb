@@ -92,7 +92,6 @@ class DnsZonePageTest(WebCase, CommonTest):
             subnet_item.click()
             save_btn.send_keys(Keys.ENTER)
             # Then the page get refresh
-            driver.implicitly_wait(10)
             driver.find_element('xpath', "//*[contains(text(), 'Modified by')]")
             # Then the database get updated with changes.
             zone.expire()
@@ -122,7 +121,6 @@ class DnsZonePageTest(WebCase, CommonTest):
             subnet_item.click()
             save_btn.send_keys(Keys.ENTER)
             # Then the page get refresh
-            driver.implicitly_wait(10)
             driver.find_element('xpath', "//*[contains(text(), 'Modified by')]")
             # Then the database get updated with changes.
             zone.expire()

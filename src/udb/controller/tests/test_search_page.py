@@ -54,7 +54,6 @@ class TestSearchPage(WebCase):
         # When making a query to index page
         with self.selenium() as driver:
             driver.get(url_for('search'))
-            driver.implicitly_wait(10)
             # Then the web page contains a table
             driver.find_element('css selector', 'table.table')
             # Then the web page is loaded without error.
@@ -97,7 +96,6 @@ class TestSearchPage(WebCase):
         # When making a query to index page
         with self.selenium() as driver:
             driver.get(url_for('search', q='DMZ'))
-            driver.implicitly_wait(3)
             # Then the web page contains a table
             driver.find_element('css selector', 'table.table')
             # Then the web page is loaded without error.
@@ -123,7 +121,6 @@ class TestSearchPage(WebCase):
         # Given a database with records
         with self.selenium() as driver:
             # When typing in search bar
-            driver.implicitly_wait(10)
             driver.get(url_for('profile'))
             search_bar = driver.find_element('css selector', 'input.js-typeahead')
             search_bar.click()
@@ -137,13 +134,11 @@ class TestSearchPage(WebCase):
         # Given a database with records
         # When making a query to the search page with default model_name selected
         with self.selenium() as driver:
-            driver.implicitly_wait(10)
             driver.get(url_for('search', q='147', subnet='1'))
             # Then Subnet Tabs is selected
             active_btn = driver.find_element('css selector', 'button.nav-link.active')
             self.assertEqual("Subnet 3", active_btn.text)
             # Then Matching DNS Record are not shown
-            driver.implicitly_wait(1)
             with self.assertRaises(NoSuchElementException):
                 driver.find_element('xpath', "//*[contains(text(), 'bar.bfh.ch')]")
 

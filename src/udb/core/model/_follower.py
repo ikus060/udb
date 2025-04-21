@@ -22,11 +22,9 @@ from sqlalchemy.orm import declared_attr, relationship
 from sqlalchemy.sql.schema import ForeignKey, Index
 from sqlalchemy.sql.sqltypes import Integer
 
-import udb.tools.db  # noqa: import cherrypy.tools.db
-
 from ._user import User
 
-Base = cherrypy.tools.db.get_base()
+Base = cherrypy.db.get_base()
 
 
 class Follower(Base):

@@ -270,7 +270,7 @@ class SubnetForm(CherryForm):
         formdata = self.meta.wrap_formdata(self, formdata)
         if data is not None:
             kwargs = dict(data, **kwargs)
-        for (name, field) in self._fields.items():
+        for name, field in self._fields.items():
             if obj is not None and field.name == 'ranges':
                 field.process(formdata, [obj] + list(obj.slave_subnets))
             elif obj is not None and hasattr(obj, name):

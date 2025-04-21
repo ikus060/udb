@@ -28,7 +28,7 @@ from udb.core.model import Follower, Message, User
 from udb.tools.i18n import gettext_lazy as _
 from udb.tools.i18n import preferred_lang, preferred_timezone
 
-Session = cherrypy.tools.db.get_session()
+Session = cherrypy.db.get_session()
 
 Recipient = namedtuple('Recipient', 'email,lang,timezone')
 

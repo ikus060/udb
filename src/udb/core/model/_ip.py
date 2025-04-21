@@ -22,7 +22,6 @@ from sqlalchemy import Column, ForeignKey, Index, Integer, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, validates
 
-import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
 
 from ._cidr import InetType
@@ -34,9 +33,9 @@ from ._search_string import SearchableMixing
 from ._subnet import Subnet
 from ._vrf import Vrf
 
-Base = cherrypy.tools.db.get_base()
+Base = cherrypy.db.get_base()
 
-Session = cherrypy.tools.db.get_session()
+Session = cherrypy.db.get_session()
 
 
 class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, Base):

@@ -30,6 +30,7 @@ class UserTest(WebCase):
         # Then an exception is raised
         with self.assertRaises(IntegrityError):
             User(username='myusername').add().commit()
+        User.session.rollback()
 
     def test_duplicate_email(self):
         # Given a database with a User

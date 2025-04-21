@@ -36,7 +36,6 @@ from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from sqlalchemy.orm import aliased, relationship, validates
 from sqlalchemy.types import Boolean, Integer, String
 
-import udb.tools.db  # noqa: import cherrypy.tools.db
 from udb.tools.i18n import gettext_lazy as _
 
 from ._cidr import CidrType, InetType
@@ -50,10 +49,10 @@ from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._vrf import Vrf
 
-Base = cherrypy.tools.db.get_base()
+Base = cherrypy.db.get_base()
 
 
-Session = cherrypy.tools.db.get_session()
+Session = cherrypy.db.get_session()
 
 
 class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
@@ -361,7 +360,7 @@ Index(
             Subnet.vrf_id == obj.vrf_id,
             or_(
                 and_(Subnet.id != obj.id, Subnet.range == obj.range),
-                *[and_(Subnet.id != slave.id, Subnet.range == slave.range) for slave in obj.slave_subnets]
+                *[and_(Subnet.id != slave.id, Subnet.range == slave.range) for slave in obj.slave_subnets],
             ),
         ).first(),
     },

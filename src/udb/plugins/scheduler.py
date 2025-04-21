@@ -45,7 +45,7 @@ def catch_exception(scheduler, func):
         try:
             func(*args, **kwargs)
         finally:
-            cherrypy.tools.db.on_end_resource()
+            cherrypy.db.clear_sessions()
             scheduler._running.remove(ident)
 
     wrapper._func = func

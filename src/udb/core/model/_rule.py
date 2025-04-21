@@ -32,7 +32,7 @@ from ._status import StatusMixing
 
 logger = logging.getLogger(__name__)
 
-Base = cherrypy.tools.db.get_base()
+Base = cherrypy.db.get_base()
 
 
 def _list_constraints():

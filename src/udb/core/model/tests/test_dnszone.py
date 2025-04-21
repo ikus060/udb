@@ -109,6 +109,7 @@ class DnsZoneTest(WebCase):
         # Then an excpetion is raised
         with self.assertRaises(IntegrityError) as cm:
             DnsZone(name='invalid/name').add().commit()
+        DnsZone.session.rollback()
         self.assertIn('dnszone_domain_name', str(cm.exception))
 
     def test_duplicate_name(self):
@@ -118,6 +119,7 @@ class DnsZoneTest(WebCase):
         # Then an exception is raised
         with self.assertRaises(IntegrityError):
             DnsZone(name='bfh.ch').add().commit()
+        DnsZone.session.rollback()
 
     def test_duplicate_name_case_insensitive(self):
         # Given a database with an existing record
@@ -126,6 +128,7 @@ class DnsZoneTest(WebCase):
         # Then an exception is raised
         with self.assertRaises(IntegrityError):
             DnsZone(name='BFH.ch').add().commit()
+        DnsZone.session.rollback()
 
     def test_update_owner(self):
         # Given a database with an existing record
@@ -234,7 +237,7 @@ class DnsZoneTest(WebCase):
         self.assertEqual(science, records[0])
 
         # When searching multiple word with wrong order
-        is_postgresql = 'postgresql' in cherrypy.config.get('tools.db.uri')
+        is_postgresql = 'postgresql' in cherrypy.config.get('db.uri')
         if is_postgresql:
             records = DnsZone.query.filter(func.udb_websearch(DnsZone.search_string, 'exampl science co')).all()
             # Then a single record is returned

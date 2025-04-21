@@ -20,7 +20,7 @@ import itertools
 import cherrypy
 from sqlalchemy import event
 
-Session = cherrypy.tools.db.get_session()
+Session = cherrypy.db.get_session()
 
 _registry = {'after_flush': [], 'before_flush': []}
 

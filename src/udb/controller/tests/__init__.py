@@ -29,7 +29,6 @@ import cherrypy
 import cherrypy.test.helper
 import html5lib
 from selenium import webdriver
-from sqlalchemy.orm import close_all_sessions
 
 from udb.app import UdbApplication
 from udb.config import parse_args
@@ -102,22 +101,18 @@ class WebCase(BaseClass):
 
     def setUp(self):
         super().setUp()
-        # Close all session
-        close_all_sessions()
         # Drop previous tables
-        cherrypy.tools.db.drop_all()
+        cherrypy.db.drop_all()
         # Create new tables.
-        cherrypy.tools.db.create_all()
+        cherrypy.db.create_all()
         if self.login:
             self._login()
 
     def tearDown(self):
         # Need to wait for task before deleting to avoid dead lock in postgresql.
         self.wait_for_tasks()
-        # Close all session
-        close_all_sessions()
         # Drop tables
-        cherrypy.tools.db.drop_all()
+        cherrypy.db.drop_all()
         # Delete selenium download
         if getattr(self, '_selenium_download_dir', False):
             shutil.rmtree(self._selenium_download_dir)
@@ -188,7 +183,7 @@ class WebCase(BaseClass):
 
     @property
     def session(self):
-        return cherrypy.tools.db.get_session()
+        return cherrypy.db.get_session()
 
     @property
     def baseurl(self):
@@ -254,7 +249,7 @@ class WebCase(BaseClass):
                         return value
 
     @contextmanager
-    def selenium(self, headless=True):
+    def selenium(self, headless=True, implicitly_wait=3):
         """
         Decorator to load selenium for a test.
         """
@@ -289,6 +284,8 @@ class WebCase(BaseClass):
             driver.execute_cdp_cmd(
                 'Page.setDownloadBehavior', {'behavior': 'allow', 'downloadPath': self._selenium_download_dir}
             )
+            # Set default wait.
+            driver.implicitly_wait(implicitly_wait)
             yield driver
         finally:
             # Code to release resource, e.g.:
