@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # LDAP Plugins for cherrypy
 # # Copyright (C) 2025 IKUS Software
 #
@@ -13,7 +12,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 '''
 SQLAlchemy plugin for CherryPy.
