@@ -89,7 +89,7 @@ class CommonTest:
             with self.assertRaises(Exception):
                 driver.find_element('xpath', "//span[@class='badge bg-danger' and contains(text(), 'Deleted')]")
             # When user click on "Show Deleted" buttons
-            element = driver.find_element('css selector', 'button.udb-btn-filter')
+            element = driver.find_element('css selector', 'button.dt-btn-filter')
             self.assertEqual("Show Deleted", element.text)
             element.click()
             # Then the web page is loaded without error.

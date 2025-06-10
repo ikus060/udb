@@ -104,7 +104,7 @@ $.fn.dataTable.ext.buttons.filter = {
 };
 $.fn.dataTable.ext.buttons.btnfilter = {
     extend: 'filter',
-    className: 'udb-btn-filter'
+    className: 'dt-btn-filter'
 };
 $.fn.dataTable.ext.buttons.collectionfilter = {
     align: 'button-right',

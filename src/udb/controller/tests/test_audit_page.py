@@ -117,7 +117,7 @@ class AuditPageTest(WebCase):
             type_menu.click()
             # When user select VRF in the menu
             vrf_btn = driver.find_element(
-                'xpath', "//*[contains(@class, 'udb-btn-filter')]/span[contains(text(), 'VRF')]"
+                'xpath', "//*[contains(@class, 'dt-btn-filter')]/span[contains(text(), 'VRF')]"
             )
             vrf_btn.click()
             # Then the table get filtered
@@ -134,7 +134,7 @@ class AuditPageTest(WebCase):
             type_menu = driver.find_element('css selector', '.udb-btn-collectionfilter')
             type_menu.click()
             vrf_btn = driver.find_element(
-                'xpath', "//*[contains(@class, 'udb-btn-filter')]/span[contains(text(), 'VRF')]"
+                'xpath', "//*[contains(@class, 'dt-btn-filter')]/span[contains(text(), 'VRF')]"
             )
             vrf_btn.click()
             # When user select User in the menu
@@ -142,7 +142,7 @@ class AuditPageTest(WebCase):
             type_menu = driver.find_element('css selector', '.udb-btn-collectionfilter')
             type_menu.click()
             user_btn = driver.find_element(
-                'xpath', "//*[contains(@class, 'udb-btn-filter')]/span[contains(text(), 'User')]"
+                'xpath', "//*[contains(@class, 'dt-btn-filter')]/span[contains(text(), 'User')]"
             )
             user_btn.click()
             # Then the table get filtered

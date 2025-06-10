@@ -132,14 +132,14 @@ table.dataTable.sorted-primary_range-asc .depth-9 {
 }
 
 /* Make filter buttons stand out when active*/
-.udb-btn-filter.active {
+.dt-btn-filter.active {
     color: var(--bs-white);
     border-color: var(--bs-secondary);
     background-color: var(--bs-secondary);
 }
 
-.udb-btn-filter::before,
-.udb-btn-download::before,
+.dt-btn-filter::before,
+.dt-btn-download::before,
 .udb-btn-collectionfilter::before {
     /* Apply bootstrap icons */
     padding-right: 5px;
@@ -154,16 +154,16 @@ table.dataTable.sorted-primary_range-asc .depth-9 {
     -webkit-font-smoothing: antialiased;
 }
 
-.udb-btn-filter::before {
+.dt-btn-filter::before {
     content: "\F5D7";
 }
 
-.udb-btn-filter.active::before {
+.dt-btn-filter.active::before {
     content: "\F5D8";
 }
 
 /* Customize the download button */
-.udb-btn-download::before {
+.dt-btn-download::before {
     content: "\F30A";
 }
 
