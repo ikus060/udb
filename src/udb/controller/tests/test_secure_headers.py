@@ -179,7 +179,7 @@ class SecureHeadersTest(WebCase):
         self.assertStatus(200)
         self.assertHeaderItemValue(
             'Content-Security-Policy',
-            "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/; img-src 'self' data: https://cdn.jsdelivr.net/;font-src https://cdn.jsdelivr.net/",
+            "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/; img-src 'self' data: https://cdn.jsdelivr.net/; font-src https://cdn.jsdelivr.net/",
         )
 
     def test_strict_transport_security(self):

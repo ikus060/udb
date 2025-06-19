@@ -145,8 +145,13 @@ def json_handler(*args, **kwargs):
 @cherrypy.tools.proxy(local=None, remote='X-Real-IP')
 @cherrypy.tools.ratelimit(on=False, session_user_key=SESSION_USER_KEY)
 @cherrypy.tools.secure_headers(
-    csp="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/; img-src 'self' data: https://cdn.jsdelivr.net/;font-src https://cdn.jsdelivr.net/"
-)
+    csp={
+    "default-src": "'self'",
+    "script-src": ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net/"),
+    "style-src": ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net/"),
+    "img-src": ("'self'", "data:", "https://cdn.jsdelivr.net/"),
+    "font-src": "https://cdn.jsdelivr.net/",
+})
 @cherrypy.tools.sessions()
 @cherrypy.tools.sessions_timeout()
 class Root(object):
