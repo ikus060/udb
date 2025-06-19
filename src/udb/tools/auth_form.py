@@ -13,127 +13,94 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import datetime
-import time
 import urllib.parse
 
 import cherrypy
-from cherrypy.lib import httputil
 
-SESSION_KEY = '_cp_username'
-LOGIN_TIME = 'login_time'
 LOGIN_REDIRECT_URL = '_auth_form_redirect_url'
-LOGIN_PERSISTENT = 'login_persistent'
 
 
 class CheckAuthForm(cherrypy.Tool):
     def __init__(self, priority=73):
         super().__init__(point='before_handler', callable=self.run, priority=priority)
 
-    def _is_login(self):
-        """
-        Verify if the login expired and we need to prompt the user to authenticated again using either credentials and/or MFA.
-        """
-        # Verify if current user exists
-        request = cherrypy.serving.request
-        if not getattr(request, 'currentuser', None):
-            return False
-
-        # Verify if session is enabled
-        sessions_on = request.config.get('tools.sessions.on', False)
-        if not sessions_on:
-            return False
-
-        # Verify session
-        # We don't need to verify the timeout value since expired session get deleted automatically.
-        session = cherrypy.session
-        return session.get(SESSION_KEY) is not None and session.get(LOGIN_TIME) is not None
-
     def _get_redirect_url(self):
-        """
-        Return the original URL the user browser before getting redirect to login.
-        """
-        return cherrypy.session.get(LOGIN_REDIRECT_URL) or '/'
-
-    def _set_redirect_url(self):
-        # Keep reference to the current URL
+        """Get reference to current URL"""
         request = cherrypy.serving.request
         uri_encoding = getattr(request, 'uri_encoding', 'utf-8')
         original_url = urllib.parse.quote(request.path_info, encoding=uri_encoding)
         qs = request.query_string
-        new_url = cherrypy.url(original_url, qs=qs, base='')
-        cherrypy.session[LOGIN_REDIRECT_URL] = new_url
+        return cherrypy.url(original_url, qs=qs, base='')
 
-    def _update_session_timeout(self, persistent_timeout=43200, absolute_timeout=30):
+    def get_original_url(self):
         """
-        Since we have multiple timeout value (idle, absolute and persistent) We need to update the session timeout and possibly the cookie timeout.
+        Return the original URL browsed by the user before authentication.
         """
-        persistent_timeout = cherrypy.request.config.get('tools.auth_form.persistent_timeout', 43200)
-        absolute_timeout = cherrypy.request.config.get('tools.auth_form.absolute_timeout', 30)
-        # If login is persistent, update the cookie max-age/expires
-        session = cherrypy.session
-        if session.get(LOGIN_PERSISTENT, False):
-            expiration = session[LOGIN_TIME] + datetime.timedelta(minutes=persistent_timeout)
-            session.timeout = int((expiration - session.now()).total_seconds() / 60)
-            cookie = cherrypy.serving.response.cookie
-            cookie['session_id']['max-age'] = session.timeout * 60
-            cookie['session_id']['expires'] = httputil.HTTPDate(time.time() + session.timeout * 60)
-        else:
-            session_idle_timeout = cherrypy.request.config.get('tools.sessions.timeout', 60)
-            expiration1 = session.now() + datetime.timedelta(minutes=session_idle_timeout)
-            expiration2 = session[LOGIN_TIME] + datetime.timedelta(minutes=absolute_timeout)
-            expiration = min(expiration1, expiration2)
-            session.timeout = int((expiration - session.now()).total_seconds() / 60)
+        return cherrypy.serving.session.get(LOGIN_REDIRECT_URL)
+
+    def redirect_to_form_url(self, form_url=None):
+        """
+        Called to redirect user to login form.
+        """
+        session = cherrypy.serving.session
+        session[LOGIN_REDIRECT_URL] = self._get_redirect_url()
+        form_url = form_url or cherrypy.request.config.get('tools.auth_form.form_url', '/login/')
+        raise cherrypy.HTTPRedirect(form_url)
+
 
     def redirect_to_original_url(self):
         # Redirect user to original URL
-        raise cherrypy.HTTPRedirect(self._get_redirect_url())
+        redirect_url = self.get_original_url() or '/'
+        raise cherrypy.HTTPRedirect(redirect_url)
 
-    def run(self, login_url='/login/', logout_url='/logout', persistent_timeout=43200, absolute_timeout=30):
+    def run(self, session_user_key, form_url='/login/'):
         """
         A tool that verify if the session is associated to a user by tracking
         a session key. If session is not authenticated, redirect user to login page.
         """
-        request = cherrypy.serving.request
-        # Skip execution of this tools when browsing the login page.
-        if request.path_info == login_url:
-            if self._is_login():
-                raise cherrypy.HTTPRedirect('/')
+
+        # Verify if session is enabled, if not the user is not authenticated.
+        if not hasattr(cherrypy.serving, 'session'):
+            raise cherrypy.HTTPRedirect(form_url)
+
+        # When session's login is defined, the user is authenticated.
+        session = cherrypy.serving.session
+        login = session.get(session_user_key)
+        if not login and cherrypy.request.path_info != form_url:
+            # Store original URL and redirect to login page
+            self.redirect_to_form_url(form_url)
             return
 
-        # Clear session when browsing /logout
-        if request.path_info == logout_url or request.path_info.startswith(logout_url):
-            if request.method != 'POST':
-                raise cherrypy.HTTPError(405)
-            self.logout()
-            raise cherrypy.HTTPRedirect('/')
+        # When authenticated, store current login name in request.
+        cherrypy.request.login = login
 
-        # Check if login
-        if not self._is_login():
-            # Store original URL
-            self._set_redirect_url()
-            # And redirect to login page
-            raise cherrypy.HTTPRedirect(login_url)
-
-        self._update_session_timeout()
-
-    def login(self, username, persistent=False):
+    def login(self, username):
         """
         Must be called by the page hanlder when the authentication is successful.
         """
         # Store session data
-        cherrypy.session[LOGIN_PERSISTENT] = persistent
-        cherrypy.session[SESSION_KEY] = username
-        cherrypy.session[LOGIN_TIME] = cherrypy.session.now()
+        session_user_key = cherrypy.request.config.get('tools.auth_form.session_user_key')
+        session = cherrypy.serving.session
+        session[session_user_key] = username
         # Generate a new session id
-        cherrypy.session.regenerate()
-        # Update the session timeout
-        self._update_session_timeout()
+        session.regenerate()
 
-    def logout(self):
-        # Clear session date and generate a new session id
-        cherrypy.session.clear()
-        cherrypy.session.regenerate()
+    def clear_login_identity(self):
+        """
+        Clear the loging information, and generate a new session id.
+        """
+        session_user_key = cherrypy.request.config.get('tools.auth_form.session_user_key')
+        session = cherrypy.serving.session
+        session.pop(session_user_key, None)
+        session.regenerate()
+
+    def clear_session(self):
+        """
+        Clear session data and generate a new session id.
+        """
+        session = cherrypy.serving.session
+        session.clear()
+        session.regenerate()
 
 
 cherrypy.tools.auth_form = CheckAuthForm()

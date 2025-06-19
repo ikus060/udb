@@ -83,7 +83,7 @@ class FileRateLimit(_DataStore):
 
     def _path(self, token):
         assert token
-        f = os.path.join(self.storage_path, self.PREFIX + token.strip('/').replace('/', '.'))
+        f = os.path.join(self.storage_path, self.PREFIX + token.strip('/').replace('/', '-'))
         if not os.path.abspath(f).startswith(self.storage_path):
             raise ValueError('invalid token')
         return f
@@ -111,14 +111,15 @@ class FileRateLimit(_DataStore):
 
 
 def check_ratelimit(
-    delay=3600, limit=25, return_status=429, logout=False, scope=None, methods=None, debug=False, hit=1, **conf
+    session_user_key, delay=3600, limit=25, return_status=429, logout=False, scope=None, methods=None, debug=False, hit=1, **conf
 ):
     """
     Verify the ratelimit. By default return a 429 HTTP error code (Too Many Request). After 25 request within the same hour.
 
     Arguments:
-        delay:         Time window for analysis in seconds
-        limit:         Number of request allowed for an entry point
+        session_user_key: Key where the username of the current user is stored in user's session.
+        delay:         Time window for analysis in seconds. Default per hour (3600 seconds)
+        limit:         Number of request allowed for an entry point. Default 25
         return_status: HTTP Error code to return.
         logout:        True to logout user when limit is reached
         scope:         if specify, define the scope of rate limit. Default to path_info.
@@ -149,7 +150,10 @@ def check_ratelimit(
         cherrypy.request.app._ratelimit_datastore = datastore
 
     # If user is authenticated, use the username else use the ip address
-    token = (request.login or request.remote.ip) + '.' + (scope or request.path_info)
+    identifier = request.remote.ip
+    if hasattr(cherrypy.serving, 'session') and session_user_key in cherrypy.serving.session:
+        identifier = cherrypy.serving.session[session_user_key]
+    token = identifier + '.' + (scope or request.path_info)
 
     # Get hits count using datastore.
     hits = datastore.get_and_increment(token, delay, hit)
@@ -160,9 +164,10 @@ def check_ratelimit(
 
     # Verify user has not exceeded rate limit
     if limit <= hits:
+        cherrypy.log('ratelimit access to `%s`' % request.path_info, 'TOOLS.RATELIMIT')
         if logout:
-            if hasattr(cherrypy, 'session'):
-                cherrypy.session.clear()
+            if hasattr(cherrypy.serving, 'session'):
+                cherrypy.serving.session.clear()
             raise cherrypy.HTTPRedirect("/")
 
         raise cherrypy.HTTPError(return_status)

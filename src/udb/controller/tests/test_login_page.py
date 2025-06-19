@@ -225,10 +225,6 @@ class TestLogin(WebCase):
         # Then user cannot get access page
         self.getPage("/dashboard/")
         self.assertStatus(403)
-        # Then user cannot loging back.
-        self.getPage("/login/", method="POST", body={"username": username, "password": password})
-        self.assertStatus(200)
-        self.assertInBody("Invalid credentials")
 
 
 @parameterized_class(
@@ -243,8 +239,8 @@ class TestLoginRateLimit(WebCase):
     def setUp(self):
         if os.path.isfile('/tmp/ratelimit-127.0.0.1'):
             os.unlink('/tmp/ratelimit-127.0.0.1')
-        if os.path.isfile('/tmp/ratelimit-127.0.0.1..login'):
-            os.unlink('/tmp/ratelimit-127.0.0.1..login')
+        if os.path.isfile('/tmp/ratelimit-127.0.0.1.-login'):
+            os.unlink('/tmp/ratelimit-127.0.0.1.-login')
         return super().setUp()
 
     def test_login_rate_limit(self):

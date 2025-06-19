@@ -16,13 +16,12 @@
 import datetime
 import secrets
 import string
-import urllib.parse
 
 import cherrypy
 
 from udb.core.passwd import check_password, hash_password
 
-from .auth_form import LOGIN_PERSISTENT, LOGIN_TIME
+from .sessions_timeout import SESSION_PERSISTENT, SESSION_START_TIME
 
 MFA_USERNAME = '_auth_mfa_username'
 MFA_VERIFICATION_TIME = '_auth_mfa_time'
@@ -37,7 +36,7 @@ MFA_CODE_MAX_ATTEMPT = 3
 
 
 class CheckAuthMfa(cherrypy.Tool):
-    def __init__(self, priority=74):
+    def __init__(self, priority=75):
         super().__init__(point='before_handler', callable=self.run, priority=priority)
 
     def _get_code_length(self):
@@ -46,12 +45,6 @@ class CheckAuthMfa(cherrypy.Tool):
         """
         length = cherrypy.request.config.get('tools.auth_mfa.code_length')
         return MFA_DEFAULT_LENGTH if length is None else int(length)
-
-    def _get_redirect_url(self):
-        """
-        Return the original URL the user browser before getting redirect to mfa.
-        """
-        return cherrypy.session.get(MFA_REDIRECT_URL) or '/'
 
     def generate_code(self):
         """
@@ -65,21 +58,21 @@ class CheckAuthMfa(cherrypy.Tool):
         code = ''.join(secrets.choice(string.digits) for i in range(length))
 
         # Store hash code in session
-        session = cherrypy.session
+        session = cherrypy.serving.session
         session[MFA_USERNAME] = cherrypy.request.login
         session[MFA_CODE] = hash_password(code)
-        session[MFA_CODE_TIME] = cherrypy.session.now()
+        session[MFA_CODE_TIME] = session.now()
         session[MFA_CODE_ATTEMPT] = 0
         return code
 
     def _is_verified(self):
         # Check if user is login
-        assert cherrypy.request.login, 'auth_mfa requires auth_form tools'
+        assert cherrypy.request.login, 'auth_mfa requires login to be set'
         # Verify if session is enabled
-        assert cherrypy.request.config.get('tools.sessions.on', False), 'auth_mfa requires sessions tools'
+        assert hasattr(cherrypy.serving, 'session'), 'auth_mfa requires sessions tools'
 
         # Verify session
-        session = cherrypy.session
+        session = cherrypy.serving.session
         return bool(
             session.get(MFA_USERNAME) == cherrypy.request.login
             and session.get(MFA_VERIFICATION_TIME, None)
@@ -93,7 +86,7 @@ class CheckAuthMfa(cherrypy.Tool):
         Return True if the verification code expired and must be re-generate.
         """
         code_timeout = cherrypy.request.config.get('tools.sessions.timeout', 60)
-        session = cherrypy.session
+        session = cherrypy.serving.session
         return (
             not hasattr(cherrypy.serving, 'session')
             or session.get(MFA_USERNAME) != cherrypy.request.login
@@ -108,7 +101,7 @@ class CheckAuthMfa(cherrypy.Tool):
         A tool that verify Multi-Factor authentication.
         """
         # Check if MFA is enabled. `mfa_enabled` could be a function.
-        enabled = mfa_enabled(cherrypy.request.login) if hasattr(mfa_enabled, '__call__') else mfa_enabled
+        enabled = mfa_enabled() if hasattr(mfa_enabled, '__call__') else mfa_enabled
 
         # Check if `/mfa/` us request
         request = cherrypy.serving.request
@@ -124,35 +117,21 @@ class CheckAuthMfa(cherrypy.Tool):
             return
 
         # Check MFA is enabled with persistent session. We want to check user crendetials every "session.timeout"
-        session = cherrypy.session
-        if session.get(LOGIN_PERSISTENT, False) and session.get(LOGIN_TIME, False):
-            session_timeout = cherrypy.request.config.get('tools.sessions.timeout', 60)
-            if session[LOGIN_TIME] + datetime.timedelta(minutes=session_timeout) < session.now():
-                # Clear login_time to force login
-                del session[LOGIN_TIME]
-                self._set_redirect_url()
-                self.redirect_to_original_url()
+        session = cherrypy.serving.session
+        if session.get(SESSION_PERSISTENT, False) and session.get(SESSION_START_TIME, False):
+            timeout = cherrypy.request.config.get('tools.sessions.timeout', 60)
+            if session[SESSION_START_TIME] + datetime.timedelta(minutes=timeout) < session.now():
+                # Clear login to force re-login
+                cherrypy.tools.auth_form.clear_login_identity()
+                # Redirect user to "/login/" form.
+                cherrypy.tools.auth_form.redirect_to_form_url()
+                return 
 
         # Check if verified
         if not self._is_verified():
-            # Store original URL
-            self._set_redirect_url()
-            # And redirect to mfa page
-            raise cherrypy.HTTPRedirect(mfa_url)
-
-    def redirect_to_original_url(self):
-        # Redirect user to original URL
-        raise cherrypy.HTTPRedirect(self._get_redirect_url())
-
-    def _set_redirect_url(self):
-        # Keep reference to the current URL
-        request = cherrypy.serving.request
-        uri_encoding = getattr(request, 'uri_encoding', 'utf-8')
-        original_url = urllib.parse.quote(request.path_info, encoding=uri_encoding)
-        qs = request.query_string
-        new_url = cherrypy.url(original_url, qs=qs, base='')
-        if hasattr(cherrypy.serving, 'session'):
-            cherrypy.session[MFA_REDIRECT_URL] = new_url
+            # Store original URL and redirect to MFA Page.
+            cherrypy.tools.auth_form.redirect_to_form_url(mfa_url)
+            return 
 
     def verify_code(self, code, persistent=False):
         """
@@ -163,14 +142,14 @@ class CheckAuthMfa(cherrypy.Tool):
             return False
 
         # Verify code.
-        session = cherrypy.session
+        session = cherrypy.serving.session
         if not check_password(code, session.get(MFA_CODE)):
             # If invalid increase attempt
             session[MFA_CODE_ATTEMPT] = session.get(MFA_CODE_ATTEMPT, 0) + 1
             return False
 
         # Store information in session
-        session[LOGIN_PERSISTENT] = persistent
+        session[SESSION_PERSISTENT] = persistent
         session[MFA_VERIFICATION_TIME] = session.now()
         session[MFA_TRUSTED_IP_LIST] = session.get(MFA_TRUSTED_IP_LIST, []) + [cherrypy.serving.request.remote.ip]
         session[MFA_CODE] = None

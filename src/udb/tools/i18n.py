@@ -93,6 +93,7 @@ That's it.
 import os
 import threading
 from contextlib import contextmanager
+from functools import lru_cache
 
 import cherrypy
 import pytz
@@ -151,7 +152,8 @@ def preferred_timezone(timezone):
         _current.tzinfo = prev_tzinfo
 
 
-def _search_translation(langs, dirname, domain):
+@lru_cache(maxsize=10)
+def _search_translation(dirname, domain, *langs):
     """
     Loads the first existing translations for known locale.
 
@@ -166,7 +168,7 @@ def _search_translation(langs, dirname, domain):
 
     :returns: Translations, the corresponding Locale object.
     """
-    if not isinstance(langs, list):
+    if not isinstance(langs, (list, tuple)):
         langs = [langs]
     t = Translations.load(dirname, langs, domain)
     # Ignore null translation
@@ -219,7 +221,7 @@ def get_translation():
     preferred_lang = getattr(_current, 'preferred_lang', [default])
     mo_dir = cherrypy.config.get('tools.i18n.mo_dir')
     domain = cherrypy.config.get('tools.i18n.domain')
-    trans = _search_translation(preferred_lang, mo_dir, domain)
+    trans = _search_translation(mo_dir, domain, *preferred_lang)
     if trans is None:
         trans = NullTranslations()
         trans.locale = Locale('en')
@@ -236,7 +238,7 @@ def list_available_locales():
     if not mo_dir:
         return
     for lang in os.listdir(mo_dir):
-        trans = _search_translation(lang, mo_dir, domain)
+        trans = _search_translation(mo_dir, domain, lang)
         if trans is not None:
             yield trans.locale
 

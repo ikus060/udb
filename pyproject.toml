@@ -47,7 +47,6 @@ test = [
     "html5lib",
     "parameterized",
     "pytest",
-    "response",
     "selenium",
 ]
 

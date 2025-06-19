@@ -21,6 +21,7 @@ import cherrypy
 
 from udb.controller.tests import WebCase
 from udb.core.model import User
+from udb.tools.sessions_timeout import SESSION_PERSISTENT, SESSION_START_TIME
 
 
 class MfaPageTest(WebCase):
@@ -257,16 +258,12 @@ class MfaPageTest(WebCase):
         self.assertNotEqual(prev_session_id, self.session_id)
         session = self.Session(id=self.session_id)
         session.load()
-        self.assertTrue(session['login_persistent'])
+        self.assertTrue(session[SESSION_PERSISTENT])
         # When the login_time expired (after 60 min)
-        session['login_time'] = session.now() - datetime.timedelta(minutes=60, seconds=1)
+        session[SESSION_START_TIME] = session.now() - datetime.timedelta(minutes=60, seconds=1)
         session.save()
-        # Then next query redirect user to same page (by mfa)
+        # Then next query redirect user to /login/ page (by mfa)
         self.getPage("/dashboard/")
-        self.assertStatus(303)
-        self.assertHeaderItemValue('Location', self.baseurl + '/dashboard/')
-        self.getPage("/dashboard/")
-        # Then user is redirected to /login/ page (by auth_form)
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', self.baseurl + '/login/')
         prev_session_id = self.session_id
@@ -290,7 +287,7 @@ class MfaPageTest(WebCase):
         self.assertNotEqual(prev_session_id, self.session_id)
         session = self.Session(id=self.session_id)
         session.load()
-        self.assertTrue(session['login_persistent'])
+        self.assertTrue(session[SESSION_PERSISTENT])
         # When the mfa verification timeout (after 30 days)
         session['_auth_mfa_time'] = session.now() - datetime.timedelta(days=30, seconds=1)
         session.save()

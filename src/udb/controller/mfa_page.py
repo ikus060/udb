@@ -21,7 +21,7 @@ from wtforms.validators import ValidationError
 
 from udb.controller import flash
 from udb.controller.form import CherryForm
-from udb.tools.auth_form import LOGIN_PERSISTENT
+from udb.tools.sessions_timeout import SESSION_PERSISTENT
 from udb.tools.i18n import gettext_lazy as _
 
 # Define the logger
@@ -42,7 +42,7 @@ class MfaForm(CherryForm):
         },
     )
     persistent = BooleanField(
-        _('Remember me'), default=lambda: cherrypy.session.get(LOGIN_PERSISTENT, False), render_kw={'width': '1/2'}
+        _('Remember me'), default=lambda: cherrypy.session.get(SESSION_PERSISTENT, False), render_kw={'width': '1/2'}
     )
     submit = SubmitField(
         _('Sign in'),
@@ -79,7 +79,7 @@ class MfaPage:
         if form.is_submitted():
             if form.validate():
                 if form.submit.data:
-                    cherrypy.tools.auth_mfa.redirect_to_original_url()
+                    cherrypy.tools.auth_form.redirect_to_original_url()
                 elif form.resend_code.data:
                     self.send_code()
         if cherrypy.tools.auth_mfa.is_code_expired():

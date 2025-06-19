@@ -46,7 +46,7 @@ from udb.controller.environment_page import EnvironmentApi, EnvironmentPage
 from udb.controller.ip_page import IpPage
 from udb.controller.language import Language
 from udb.controller.load_page import LoadPage
-from udb.controller.login_page import LoginPage
+from udb.controller.login_page import LoginPage, LogoutPage
 from udb.controller.mac_page import MacPage
 from udb.controller.mfa_page import MfaPage
 from udb.controller.notifications_page import NotificationsPage
@@ -65,6 +65,8 @@ try:
 except ImportError:
     # For Python 2 or Python 3 with older setuptools
     from pkg_resources import resource_filename
+
+SESSION_USER_KEY='username'
 
 # Define cherrypy development environment
 cherrypy.config.environments['development'] = {
@@ -136,17 +138,17 @@ def json_handler(*args, **kwargs):
     return ujson.dumps(value).encode('utf-8')
 
 
-@cherrypy.tools.proxy(local=None, remote='X-Real-IP')
-@cherrypy.tools.sessions()
-@cherrypy.tools.auth_form()
-@cherrypy.tools.auth_mfa(
-    mfa_enabled=lambda username: User.query_user(username).mfa,
-)
-@cherrypy.tools.currentuser(userobj=User.query_user)
+@cherrypy.tools.auth_form(session_user_key=SESSION_USER_KEY)
+@cherrypy.tools.auth_mfa(mfa_enabled=lambda: cherrypy.request.currentuser.mfa)
+@cherrypy.tools.currentuser(userobj_func=User.query_user)
 @cherrypy.tools.i18n(func=lambda: getattr(cherrypy.request, 'currentuser', False) and cherrypy.request.currentuser.lang)
+@cherrypy.tools.proxy(local=None, remote='X-Real-IP')
+@cherrypy.tools.ratelimit(on=False, session_user_key=SESSION_USER_KEY)
 @cherrypy.tools.secure_headers(
     csp="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/; img-src 'self' data: https://cdn.jsdelivr.net/;font-src https://cdn.jsdelivr.net/"
 )
+@cherrypy.tools.sessions()
+@cherrypy.tools.sessions_timeout()
 class Root(object):
     """
     Root entry point exposed using cherrypy.
@@ -157,6 +159,7 @@ class Root(object):
         self.audit = AuditPage()
         self.dashboard = DashboardPage()
         self.login = LoginPage()
+        self.logout = LogoutPage()
         self.notifications = NotificationsPage()
         self.profile = ProfilePage()
         self.search = SearchPage()
@@ -217,8 +220,8 @@ class UdbApplication(Application):
                 'tools.sessions.httponly': True,
                 'tools.sessions.timeout': cfg.session_idle_timeout,  # minutes
                 'tools.sessions.persistent': False,  # auth_form should update this.
-                'tools.auth_form.persistent_timeout': cfg.session_persistent_timeout,  # minutes
-                'tools.auth_form.absolute_timeout': cfg.session_absolute_timeout,  # minutes
+                'tools.sessions_timeout.persistent_timeout': cfg.session_persistent_timeout,  # minutes
+                'tools.sessions_timeout.absolute_timeout': cfg.session_absolute_timeout,  # minutes
                 # Configure rate limit
                 'tools.ratelimit.debug': cfg.debug,
                 'tools.ratelimit.limit': cfg.rate_limit,

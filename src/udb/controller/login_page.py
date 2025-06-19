@@ -21,7 +21,7 @@ from wtforms.validators import InputRequired, Length, Regexp
 
 from udb.controller import flash
 from udb.controller.form import CherryForm
-from udb.tools.auth_form import LOGIN_PERSISTENT, SESSION_KEY
+from udb.tools.sessions_timeout import SESSION_PERSISTENT
 from udb.tools.i18n import gettext_lazy as _
 
 
@@ -29,7 +29,6 @@ class LoginForm(CherryForm):
     redirect = HiddenField(default='/', validators=[Regexp('^/', message=_('invalid redirect url'))])
     username = StringField(
         _('Username'),
-        default=lambda: cherrypy.session.get(SESSION_KEY, None),
         validators=[
             InputRequired(),
             Length(max=256),
@@ -46,7 +45,7 @@ class LoginForm(CherryForm):
     )
     persistent = BooleanField(
         _('Remember me'),
-        default=lambda: cherrypy.session.get(LOGIN_PERSISTENT, False),
+        default=lambda: cherrypy.session.get(SESSION_PERSISTENT, False),
         render_kw={'width': '1/2'},
     )
     submit = SubmitField(
@@ -62,16 +61,22 @@ class LoginPage:
 
     @cherrypy.expose
     @cherrypy.tools.auth_mfa(on=False)
+    @cherrypy.tools.currentuser(on=False)
     @cherrypy.tools.jinja2(template='login.html')
     @cherrypy.tools.ratelimit(methods=['POST'])
     def index(self, **kwargs):
-
+        
+        # Redirect user to dashboard page if already login
+        if getattr(cherrypy.request, 'login', False):
+            raise cherrypy.HTTPRedirect('/')
+        
         #  When data is submited, validate credentials.
         form = LoginForm(data=cherrypy.request.params)
         if form.validate_on_submit():
             results = [r for r in cherrypy.engine.publish('login', form.username.data, form.password.data) if r]
             if len(results) > 0 and results[0]:
-                cherrypy.tools.auth_form.login(username=results[0].username, persistent=form.persistent.data)
+                cherrypy.tools.auth_form.login(username=results[0].username)
+                cherrypy.tools.sessions_timeout.set_persistent(form.persistent.data)
                 cherrypy.tools.auth_form.redirect_to_original_url()
             else:
                 flash(_('Invalid credentials'))
@@ -82,3 +87,18 @@ class LoginPage:
         params = {'form': form}
 
         return params
+
+class LogoutPage:
+
+    @cherrypy.expose()
+    @cherrypy.tools.allow(methods=['POST'])
+    @cherrypy.tools.auth_form(on=False)
+    @cherrypy.tools.auth_mfa(on=False)
+    @cherrypy.tools.currentuser(on=False)
+    @cherrypy.tools.ratelimit(methods=['POST'])
+    def default(self, **kwargs):
+        """
+        Logout user
+        """
+        cherrypy.tools.auth_form.clear_session()
+        raise cherrypy.HTTPRedirect('/')

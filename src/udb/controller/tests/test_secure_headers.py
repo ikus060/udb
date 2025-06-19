@@ -50,20 +50,23 @@ class SecureHeadersTest(WebCase):
 
     @parameterized.expand(
         [
-            ('/invalid', 404),
-            ('/browse/invalid', 404),
-            ('/login', 301),
-            ('/logout/', 405),
+            ('/invalid', True, 404),
+            ('/browse/invalid', True, 404),
+            ('/login', True, 301),
+            ('/logout/', False, 405),
         ]
     )
-    def test_cookie_with_https_http_error(self, url, expected_error_code):
+    def test_cookie_with_https_http_error(self, url, expect_cookie, expected_error_code):
         # Given an https request made to udb
         self.getPage(url, headers=[('X-Forwarded-Proto', 'https')])
         # When receiving the response
         self.assertStatus(expected_error_code)
-        # Then the header contains Set-Cookie with Secure
-        cookie = self.assertHeader('Set-Cookie')
-        self.assertIn('Secure', cookie)
+        if expect_cookie:
+            # Then the header contains Set-Cookie with Secure
+            cookie = self.assertHeader('Set-Cookie')
+            self.assertIn('Secure', cookie)
+        else:
+            self.assertNoHeader('Set-Cookie')
 
     def test_cookie_with_http(self):
         # Given an https request made to udb
