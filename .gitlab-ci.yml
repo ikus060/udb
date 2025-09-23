@@ -36,9 +36,6 @@ py3:
       - coverage.xml
       - xunit.xml
 
-sqlalchemy2:
-  <<: *tox
-
 selenium:
   <<: *tox
   before_script:
@@ -48,7 +45,7 @@ selenium:
       - coverage-selenium.xml
       - xunit-selenium.xml
 
-bookworm:
+trixie:
   <<: *tox
 
 postgresql:
@@ -91,14 +88,12 @@ bdist:deb:
   image: buildpack-deps:$DIST
   parallel:
     matrix:
-      - DIST: [bookworm]
+      - DIST: [trixie]
   script: |
     set -x
     set -e
     apt update
     apt -y --no-install-recommends install devscripts
-    wget https://apt.progress-linux.org/archive/tmp/jinjax/0.45+dfsg-1/python3-jinjax_0.45+dfsg-1_all.deb
-    apt install -y ./python3-jinjax_0.45+dfsg-1_all.deb
     apt build-dep -y .
     export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_UDB=$(python3 -m setuptools_scm)
     dch -v "$SETUPTOOLS_SCM_PRETEND_VERSION_FOR_UDB" "automated build"
@@ -126,18 +121,16 @@ test-bdist:deb:
     - bdist:deb
   parallel:
     matrix:
-      - DIST: [bookworm]
+      - DIST: [trixie]
   script:
     - apt update
-    - wget https://apt.progress-linux.org/archive/tmp/jinjax/0.45+dfsg-1/python3-jinjax_0.45+dfsg-1_all.deb
-    - apt install -y ./python3-jinjax_0.45+dfsg-1_all.deb
     - apt install -y ./dist/$DIST/udb*.deb
     - udb --version | grep -v '0.0.0'
     - (/usr/bin/udb --database-uri sqlite:///data.db &)
     - timeout 60 bash -c 'until curl --silent http://localhost:8080; do sleep 1; done'
 
 upload:deb:
-  image: buildpack-deps:bookworm
+  image: buildpack-deps:trixie
   needs:
     - bdist:deb
   only:
@@ -146,19 +139,21 @@ upload:deb:
       - $NEXUS_PWD
   parallel:
     matrix:
-      - DIST: [bookworm]
+      - DIST: [trixie]
   script: |
     set -e
     set -x
     if [[ "$CI_COMMIT_TAG" == *.+([0-9]) ]]; then
       APT_URL="$NEXUS_URL/repository/apt-release-${DIST}/"
+      APT_COMPONENT=${DIST}
     else
       APT_URL="$NEXUS_URL/repository/apt-dev-${DIST}/"
+      APT_COMPONENT=${DIST}-dev
     fi
     export FILE=$(ls -1 ./dist/$DIST/udb*.deb)
     curl --fail -u "$NEXUS_USR:$NEXUS_PWD" -H "Content-Type: multipart/form-data" --data-binary "@$FILE" "$APT_URL"
     sleep 2
-    curl --fail ${APT_URL}/dists/$DIST/main/binary-all/Packages | grep "$(basename $FILE)"
+    curl --fail ${APT_URL}dists/$APT_COMPONENT/main/binary-all/Packages | grep "$(basename $FILE)"
   stage: upload
 
 upload:doc:
@@ -188,7 +183,7 @@ deploy:dev:
   image: registry.gitlab.com/finestructure/pipeline-trigger
   script:
     - apk update && apk add git
-    - export DEB_VERSION=$(ls -1 dist/bookworm/udb_*_all.deb | cut -d '_' -f 2)
+    - export DEB_VERSION=$(ls -1 dist/trixie/udb_*_all.deb | cut -d '_' -f 2)
     - echo DEB_VERSION=$DEB_VERSION
     # Trigger ansible-config pipeline
     - trigger -a "$ANSIBLE_PIPELINE_GITLAB_API_TOKEN" -t master -e "UDB_VERSION=$DEB_VERSION" -p 36bae86778d901fc6b2d6453a41844 18716492

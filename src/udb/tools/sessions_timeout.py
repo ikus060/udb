@@ -54,12 +54,12 @@ class SessionsTimeout(cherrypy.Tool):
             expiration_idle = now + datetime.timedelta(minutes=idle_timeout)
             expiration_absolute = session[SESSION_START_TIME] + datetime.timedelta(minutes=absolute_timeout)
             expiration = min(expiration_idle, expiration_absolute)
-            
+
             max_age = int((expiration - now).total_seconds())
             session.timeout = max_age // 60
 
         # Regenerate the session if expired.
-        if session.timeout<=0:
+        if session.timeout <= 0:
             session.clear()
             session.timeout = absolute_timeout
             session.regenerate()

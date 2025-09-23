@@ -21,7 +21,6 @@ from sqlalchemy.orm import deferred, validates
 from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
-from zxcvbn import zxcvbn
 
 from udb.core.passwd import check_password, hash_password
 from udb.tools.i18n import gettext_lazy as _
@@ -30,6 +29,29 @@ from ._json import JsonMixin
 from ._message import MessageMixin
 from ._status import StatusMixing
 from ._update import column_add, column_exists
+
+# Debian trixie drop python3-zxcvbn.
+# Until further notice, let use zxcvbn-rs-py as a replacement
+try:
+    from zxcvbn import zxcvbn
+except ImportError:
+    from zxcvbn_rs_py import zxcvbn as _zxcvbn
+
+    def zxcvbn(password):
+        # Return a dict.
+        entropy = _zxcvbn(password)
+        return {
+            'score': int(entropy.score),
+            'feedback': (
+                {
+                    'warning': str(entropy.feedback.warning),
+                    'suggestions': map(str, entropy.feedback.suggestions),
+                }
+                if entropy.feedback
+                else {}
+            ),
+        }
+
 
 Base = cherrypy.db.get_base()
 

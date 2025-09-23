@@ -21,8 +21,8 @@ from wtforms.validators import ValidationError
 
 from udb.controller import flash
 from udb.controller.form import CherryForm
-from udb.tools.sessions_timeout import SESSION_PERSISTENT
 from udb.tools.i18n import gettext_lazy as _
+from udb.tools.sessions_timeout import SESSION_PERSISTENT
 
 # Define the logger
 logger = logging.getLogger(__name__)

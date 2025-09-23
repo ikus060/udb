@@ -21,8 +21,8 @@ from wtforms.validators import InputRequired, Length, Regexp
 
 from udb.controller import flash
 from udb.controller.form import CherryForm
-from udb.tools.sessions_timeout import SESSION_PERSISTENT
 from udb.tools.i18n import gettext_lazy as _
+from udb.tools.sessions_timeout import SESSION_PERSISTENT
 
 
 class LoginForm(CherryForm):
@@ -65,11 +65,11 @@ class LoginPage:
     @cherrypy.tools.jinja2(template='login.html')
     @cherrypy.tools.ratelimit(methods=['POST'])
     def index(self, **kwargs):
-        
+
         # Redirect user to dashboard page if already login
         if getattr(cherrypy.request, 'login', False):
             raise cherrypy.HTTPRedirect('/')
-        
+
         #  When data is submited, validate credentials.
         form = LoginForm(data=cherrypy.request.params)
         if form.validate_on_submit():
@@ -87,6 +87,7 @@ class LoginPage:
         params = {'form': form}
 
         return params
+
 
 class LogoutPage:
 

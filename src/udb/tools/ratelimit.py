@@ -111,7 +111,16 @@ class FileRateLimit(_DataStore):
 
 
 def check_ratelimit(
-    session_user_key, delay=3600, limit=25, return_status=429, logout=False, scope=None, methods=None, debug=False, hit=1, **conf
+    session_user_key,
+    delay=3600,
+    limit=25,
+    return_status=429,
+    logout=False,
+    scope=None,
+    methods=None,
+    debug=False,
+    hit=1,
+    **conf,
 ):
     """
     Verify the ratelimit. By default return a 429 HTTP error code (Too Many Request). After 25 request within the same hour.

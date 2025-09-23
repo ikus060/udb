@@ -9,18 +9,17 @@ authors = [
 ]
 description = "Web application used to manage records to configure enterprise network with ansible-playbook."
 readme = "README.md"
-requires-python = ">=3.6, <4"
+requires-python = ">=3.10, <4"
 license = {text = "GPLv3"}
 classifiers = [
     "Development Status :: 4 - Beta",
     "Framework :: CherryPy",
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "apscheduler",
@@ -30,12 +29,12 @@ dependencies = [
     "configargparse",
     "email_validator",
     "Jinja2",
-    "jinjax==0.45",
+    "jinjax==0.57",
     "ldap3",
     "pytz",
     "requests",
     "ujson",
-    "sqlalchemy>=1.4,<3",
+    "sqlalchemy>=2,<3",
     "validators",
     "WTForms>=2.2.1",
     "zxcvbn>=4.4.27",

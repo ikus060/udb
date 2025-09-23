@@ -39,7 +39,7 @@ if not http.cookies.Morsel().isReservedKey("samesite"):
 def _build_csp(csp):
     if isinstance(csp, dict):
         return "; ".join(
-            f"{directive} {' '.join(sources) if isinstance(sources, (list,tuple)) else str(sources)}"
+            f"{directive} {' '.join(sources) if isinstance(sources, (list, tuple)) else str(sources)}"
             for directive, sources in csp.items()
         )
     return str(csp)

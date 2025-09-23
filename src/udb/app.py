@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import importlib.resources
+
 import cherrypy
 import jinja2
 import jinjax
@@ -60,13 +62,7 @@ from udb.controller.vrf_page import VrfPage
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User, Vrf
 from udb.tools.i18n import format_datetime, gettext_lazy, ngettext
 
-try:
-    from importlib.resources import resource_filename
-except ImportError:
-    # For Python 2 or Python 3 with older setuptools
-    from pkg_resources import resource_filename
-
-SESSION_USER_KEY='username'
+SESSION_USER_KEY = 'username'
 
 # Define cherrypy development environment
 cherrypy.config.environments['development'] = {
@@ -94,8 +90,8 @@ env.globals['url_for'] = url_for
 env.filters['format_datetime'] = format_datetime
 env.add_extension(jinjax.JinjaX)
 catalog = jinjax.Catalog(jinja_env=env, root_url="/static/")
-catalog.add_folder(resource_filename('udb', 'templates/components'))
-catalog.add_folder(resource_filename('udb', 'templates/widgets'))
+catalog.add_folder(importlib.resources.files('udb') / 'templates/components')
+catalog.add_folder(importlib.resources.files('udb') / 'templates/widgets')
 
 
 def _error_page(**kwargs):
@@ -146,12 +142,13 @@ def json_handler(*args, **kwargs):
 @cherrypy.tools.ratelimit(on=False, session_user_key=SESSION_USER_KEY)
 @cherrypy.tools.secure_headers(
     csp={
-    "default-src": "'self'",
-    "script-src": ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net/"),
-    "style-src": ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net/"),
-    "img-src": ("'self'", "data:", "https://cdn.jsdelivr.net/"),
-    "font-src": "https://cdn.jsdelivr.net/",
-})
+        "default-src": "'self'",
+        "script-src": ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net/"),
+        "style-src": ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net/"),
+        "img-src": ("'self'", "data:", "https://cdn.jsdelivr.net/"),
+        "font-src": "https://cdn.jsdelivr.net/",
+    }
+)
 @cherrypy.tools.sessions()
 @cherrypy.tools.sessions_timeout()
 class Root(object):
@@ -284,7 +281,7 @@ class UdbApplication(Application):
                 # Configure locales
                 'tools.i18n.default': cfg.default_lang,
                 'tools.i18n.default_timezone': cfg.default_timezone,
-                'tools.i18n.mo_dir': resource_filename('udb', 'locales'),
+                'tools.i18n.mo_dir': importlib.resources.files('udb') / 'locales',
                 'tools.i18n.domain': 'messages',
             }
         )

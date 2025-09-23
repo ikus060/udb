@@ -125,13 +125,13 @@ class CheckAuthMfa(cherrypy.Tool):
                 cherrypy.tools.auth_form.clear_login_identity()
                 # Redirect user to "/login/" form.
                 cherrypy.tools.auth_form.redirect_to_form_url()
-                return 
+                return
 
         # Check if verified
         if not self._is_verified():
             # Store original URL and redirect to MFA Page.
             cherrypy.tools.auth_form.redirect_to_form_url(mfa_url)
-            return 
+            return
 
     def verify_code(self, code, persistent=False):
         """

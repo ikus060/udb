@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import cherrypy
 
+
 def get_currentuser(userobj_func):
     """
     When session is enabled and user is authenticated, get the
@@ -27,12 +28,13 @@ def get_currentuser(userobj_func):
     login = getattr(cherrypy.serving.request, 'login', False)
     if not login:
         raise cherrypy.HTTPError(403)
-    
+
     # Query user object
     currentuser = userobj_func(login)
     if not currentuser:
         raise cherrypy.HTTPError(403)
-    
+
     cherrypy.serving.request.currentuser = currentuser
+
 
 cherrypy.tools.currentuser = cherrypy.Tool('before_handler', get_currentuser, priority=74)

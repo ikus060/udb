@@ -13,14 +13,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import importlib.resources
+
 import cherrypy
 from cherrypy.lib.static import serve_file
-
-try:
-    from importlib.resources import resource_filename
-except ImportError:
-    # For Python 2 or Python 3 with older setuptools
-    from pkg_resources import resource_filename
 
 
 @cherrypy.tools.auth_form(on=False)
@@ -33,7 +29,7 @@ except ImportError:
 class Static:
     @cherrypy.expose
     @cherrypy.tools.staticdir(
-        section="", match=".*(\\.js|\\.css|\\.png)$", dir=resource_filename('udb.controller', 'static')
+        section="", match=".*(\\.js|\\.css|\\.png)$", dir=str(importlib.resources.files('udb.controller') / 'static')
     )
     def default(self, *args, **kwargs):
         """This entry point is used to serve content of /static/ folder and JinjaX static ressources"""
@@ -50,20 +46,28 @@ class Static:
                 return cherrypy.serving.response.body
         raise cherrypy.HTTPError(400)
 
-    @cherrypy.tools.staticfile(filename=resource_filename(__name__, 'taylor-vick-M5tzZtFCOfs-unsplash.jpg'))
+    @cherrypy.tools.staticfile(
+        filename=str(importlib.resources.files(__name__) / 'taylor-vick-M5tzZtFCOfs-unsplash.jpg')
+    )
     def login_bg_jpg(self):
         raise cherrypy.HTTPError(400)
 
     @cherrypy.expose
     def header_logo(self, **kwargs):
         cfg = cherrypy.tree.apps[''].cfg
-        filename = cfg.header_logo if cfg.header_logo else resource_filename('udb.controller.static', 'udb-logo.png')
+        filename = (
+            cfg.header_logo
+            if cfg.header_logo
+            else str(importlib.resources.files('udb.controller.static') / 'udb-logo.png')
+        )
         return serve_file(filename)
 
     @cherrypy.expose
     def favicon(self, **kwargs):
         cfg = cherrypy.tree.apps[''].cfg
-        filename = cfg.favicon if cfg.favicon else resource_filename('udb.controller.static', 'udb_16.svg')
+        filename = (
+            cfg.favicon if cfg.favicon else str(importlib.resources.files('udb.controller.static') / 'udb_16.svg')
+        )
         return serve_file(filename)
 
     favicon_ico = favicon

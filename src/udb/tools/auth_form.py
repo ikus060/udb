@@ -47,7 +47,6 @@ class CheckAuthForm(cherrypy.Tool):
         form_url = form_url or cherrypy.request.config.get('tools.auth_form.form_url', '/login/')
         raise cherrypy.HTTPRedirect(form_url)
 
-
     def redirect_to_original_url(self):
         # Redirect user to original URL
         redirect_url = self.get_original_url() or '/'

@@ -22,6 +22,7 @@ Build-Depends:
  python3-pip,
  pybuild-plugin-pyproject,
  python3-pytest,
+ python3-pytz,
  python3-requests,
  python3-setuptools,
  python3-setuptools-scm,
@@ -30,7 +31,7 @@ Build-Depends:
  python3-sqlalchemy,
  python3-validators,
  python3-wtforms,
- python3-zxcvbn,
+ python3-zxcvbn | python3-python-zxcvbn-rs-py,
 Rules-Requires-Root: no
 Standards-Version: 4.5.1
 Homepage: https://www.ikus-soft.com/en/udb/
