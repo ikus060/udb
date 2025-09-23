@@ -1,5 +1,5 @@
 # SMTP Plugins for cherrypy
-# Copyright (C) 2022-2025 IKUS Software
+# Copyright (C) 2025 IKUS Software
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,8 +24,6 @@ from xml.etree.ElementTree import fromstring, tostring
 import cherrypy
 from cherrypy.process.plugins import SimplePlugin
 
-from . import scheduler  # noqa: This plugin required scheduler
-
 
 def _html2plaintext(html, encoding='utf-8'):
     """From an HTML text, convert the HTML to plain text.
@@ -36,6 +34,8 @@ def _html2plaintext(html, encoding='utf-8'):
     # <peter@fry-it.com>
     # download here: http://www.peterbe.com/plog/html2plaintext
     assert isinstance(html, str)
+    # &#160; are non-breaking space
+    html = html.replace('&#160;', ' ')
     url_index = []
     try:
         tree = fromstring(html)
@@ -54,18 +54,21 @@ def _html2plaintext(html, encoding='utf-8'):
         pass
     # \r char is converted into &#13;, must remove it
     html = html.replace('&#13;', '')
-
+    # Remove new line & spaces defined for html formating.
+    html = re.sub('\n *', '', html)
+    # Replace tags
     html = html.replace('<strong>', '*').replace('</strong>', '*')
     html = html.replace('<b>', '*').replace('</b>', '*')
     html = html.replace('<h3>', '*').replace('</h3>', '*')
-    html = html.replace('<h2>', '**').replace('</h2>', '**')
-    html = html.replace('<h1>', '**').replace('</h1>', '**')
+    html = html.replace('<h2>', '**').replace('</h2>', '**\n')
+    html = html.replace('<h1>', '**').replace('</h1>', '**\n')
     html = html.replace('<em>', '/').replace('</em>', '/')
     html = html.replace('<tr>', '\n')
     html = html.replace('</p>', '\n')
+    html = re.sub('<style[^>]*>[^<]*</style>', '', html)
     html = re.sub(r'<br\s*/?>', '\n', html)
-    html = re.sub('<.*?>', ' ', html)
-    html = html.replace(' ' * 2, ' ')
+    html = re.sub('<[^>]*>', '', html)
+    html = re.sub(r'\n+', '\n', html)
     html = html.replace('&gt;', '>')
     html = html.replace('&lt;', '<')
     html = html.replace('&amp;', '&')
@@ -128,7 +131,7 @@ class SmtpPlugin(SimplePlugin):
             return
         self.bus.publish('schedule_task', self.send_mail, *args, **kwargs)
 
-    def send_mail(self, subject: str, message: str, to=None, cc=None, bcc=None, reply_to=None):
+    def send_mail(self, subject: str, message: str, to=None, cc=None, bcc=None, reply_to=None, headers={}):
         """
         Reusable method to be called to send email to the user user.
         `user` user object where to send the email.
@@ -136,10 +139,6 @@ class SmtpPlugin(SimplePlugin):
         assert subject
         assert message
         assert to or bcc
-        to = _formataddr(to)
-        cc = _formataddr(cc)
-        bcc = _formataddr(bcc)
-        reply_to = _formataddr(reply_to)
 
         # Skip sending email if smtp server is not configured.
         if not self.server:
@@ -149,22 +148,23 @@ class SmtpPlugin(SimplePlugin):
             self.bus.log('cannot send email because SMTP From is not configured')
             return
 
-        # Compile both template.
-        text = _html2plaintext(message)
-
         # Record the MIME types of both parts - text/plain and text/html.
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From'] = self.email_from
+        msg['Subject'] = str(subject)
+        msg['From'] = _formataddr(self.email_from)
         if to:
-            msg['To'] = to
+            msg['To'] = _formataddr(to)
         if cc:
-            msg['Cc'] = cc
+            msg['Cc'] = _formataddr(cc)
         if bcc:
-            msg['Bcc'] = bcc
+            msg['Bcc'] = _formataddr(bcc)
         if reply_to:
-            msg['Reply-To'] = reply_to
+            msg['Reply-To'] = _formataddr(reply_to)
         msg['Message-ID'] = email.utils.make_msgid()
+        if headers:
+            for key, value in headers.items():
+                msg[key] = value
+        text = _html2plaintext(message)
         msg.attach(MIMEText(text, 'plain', 'utf8'))
         msg.attach(MIMEText(message, 'html', 'utf8'))
 

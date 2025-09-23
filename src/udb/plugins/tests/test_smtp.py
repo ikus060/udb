@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from unittest import mock
+from unittest import mock, skipUnless
 
 import cherrypy
 from cherrypy.test import helper
@@ -61,6 +61,7 @@ class SmtpPluginTest(helper.CPWebCase):
             smtplib.SMTP.return_value.send_message.assert_called_once_with(mock.ANY)
             smtplib.SMTP.return_value.quit.assert_called_once_with()
 
+    @skipUnless(hasattr(cherrypy, 'scheduler'), reason='Required scheduler')
     def test_queue_mail(self):
         # Given a paused scheduler plugin
         cherrypy.scheduler._scheduler.pause()
@@ -75,21 +76,25 @@ class SmtpPluginTest(helper.CPWebCase):
         """
 
         html = """<html>
-  <head></head>
+  <head>
+    <style type="text/css">
+      body { font-family:Helvetica; }
+    </style>
+  </head>
   <body>
-    <p>Hi!<br />
-       How are you?<br />
-       Here is the <a href="https://www.python.org">link</a> you wanted.
+    <h1>Hi!</h1>
+    <p id="test"
+        class="mb-2 text-center">
+      How are you?<br/>
+      Here&#160;is the <a href="https://www.python.org">link</a> you wanted.
     </p>
   </body>
 </html>
 """
 
-        expected = """Hi!
+        expected = """**Hi!**
 How are you?
 Here is the link [1] you wanted.
-
-
 
 [1] https://www.python.org"""
         self.assertEqual(expected, smtp._html2plaintext(html))
