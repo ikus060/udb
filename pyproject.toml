@@ -29,7 +29,7 @@ dependencies = [
     "configargparse",
     "email_validator",
     "Jinja2",
-    "jinjax==0.57",
+    "jinjax @ git+https://github.com/jpsca/jinjax@55170f27ecacdb0dc3afc300af2b899cd2cd7658",
     "ldap3",
     "pytz",
     "requests",

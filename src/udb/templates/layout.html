@@ -1,7 +1,4 @@
 <!DOCTYPE html>
-{# Reset collected Javascript and Css #}
-{% set void = catalog.collected_css.clear() %}
-{% set void = catalog.collected_js.clear() %}
 <html lang="{{ lang[0:2] }}">
   <head>
     {# Required meta tags #}
@@ -33,6 +30,7 @@
     <link rel="icon"
           type="image/svg+xml"
           href="{{ url_for('static/favicon', v=cache_invalidate) }}">
+    {{ catalog.render_assets() }}
     {% block head %}{% endblock %}
   </head>
   <body>
@@ -44,7 +42,6 @@
         {% block body %}{% endblock %}
       </div>
     </main>
-    {{ catalog.render_assets() }}
     {% block script %}{% endblock %}
   </body>
 </html>
