@@ -1,5 +1,5 @@
-# rdiffweb, A web interface to rdiff-backup repositories
-# Copyright (C) 2012-2023 rdiffweb contributors
+# RestAPI plugin for cherrypy
+# Copyright (C) 2024-2025 IKUS Software
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,15 +19,15 @@ import cherrypy
 
 class Dispatcher(cherrypy.dispatch.Dispatcher):
     """
-    A decorator for _cp_dispatch
-    (cherrypy.dispatch.Dispatcher.dispatch_method_name).
-
-    Will use the HTTP method to find the proper function to be called.
+    Dispatcher using HTTP method to find the proper function to be called.
 
     e.g.:
-    GET /api/users      -> list()
-    GET /api/users/3    -> get(3)
-    DELETE /api/users/3 -> delete(3)
+    GET /api/users            -> list()
+    GET /api/users/3          -> get(3)
+    GET /api/users/my/path    -> get('my/path')
+    DELETE /api/users/3       -> delete(3)
+    DELETE /api/users/my/path -> delete('my/path')
+
     POST /api/users     -> post(data)
     POST /api/users/3   -> post(3, data)
     PUT /api/users      -> post(data)
@@ -56,19 +56,19 @@ class Dispatcher(cherrypy.dispatch.Dispatcher):
             request.handler = cherrypy.dispatch.LateParamPageHandler(resource, *vpath)
             return
 
-        # Find the subhandler
+        # Call "list()" instead of "get()" when path doesn't have an id or name.
         if meth == 'get' and not vpath and hasattr(resource, 'list'):
             meth = 'list'
+        # Find the subhandler
         func = getattr(resource, meth, None)
-        if func is None and meth == 'head':
-            func = getattr(resource, 'get', None)
         if func:
             # Grab any _cp_config on the subhandler.
             if hasattr(func, '_cp_config'):
                 request.config.update(func._cp_config)
 
             # Decode any leftover %2F in the virtual_path atoms.
-            vpath = [x.replace('%2F', '/') for x in vpath]
+            if vpath:
+                vpath = ['/'.join([x.replace('%2F', '/') for x in vpath])]
             request.handler = cherrypy.dispatch.LateParamPageHandler(func, *vpath)
         else:
             request.handler = cherrypy.HTTPError(405)

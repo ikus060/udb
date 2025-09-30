@@ -25,11 +25,13 @@ def checkpassword(realm, username, password):
     return valid
 
 
+@cherrypy.expose
 @cherrypy.tools.auth(on=True, redirect=False)
 @cherrypy.tools.auth_basic(on=True, realm='udb-api', checkpassword=checkpassword, priority=70)
 @cherrypy.tools.auth_mfa(on=False)
 @cherrypy.tools.json_out()
 @cherrypy.tools.json_in()
+@cherrypy.tools.i18n(on=False)
 @cherrypy.tools.ratelimit(scope='udb-api', hit=0, priority=69)
 @cherrypy.tools.sessions(on=False)
 class Api:
@@ -37,6 +39,5 @@ class Api:
     This class is a node to set all the configuration to access /api/
     """
 
-    @cherrypy.expose
-    def index(self, *kwargs):
+    def get(self):
         return {'status': 'OK'}

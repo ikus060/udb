@@ -23,6 +23,13 @@ from udb.controller.tests import WebCase
 class TestApiPage(WebCase):
     authorization = [('Authorization', 'Basic %s' % b64encode(b'admin:admin').decode('ascii'))]
 
+    def test_getapi_without_authorization(self):
+        """
+        Check if 401 is return when authorization is not provided.
+        """
+        self.getPage('/api/')
+        self.assertStatus('401 Unauthorized')
+
     def test_index(self):
         # Given the application is started
         # When making a query to index page
@@ -31,6 +38,7 @@ class TestApiPage(WebCase):
         self.assertStatus(200)
         self.assertBody('{"status":"OK"}')
 
+    def test_invalid(self):
         # Given the application is started
         # When making an invalid query to api page
         self.getPage('/api/invalid', headers=self.authorization)
