@@ -175,7 +175,7 @@ def _show_integrity_error(e, form=None, obj=None):
     field = None
     related = None
     metadata = None
-    constraint = _find_constraint(error)
+    constraint = getattr(e, 'constraint', None)
     if constraint and obj and obj.__table__.name in constraint.info:
         metadata = constraint.info.get(obj.__table__.name)
     elif constraint and obj and constraint.table == obj.__table__:
@@ -246,51 +246,6 @@ def _show_error(description, field=None, related=None, level='error', form=None)
         flash(message + _(' Field(s): ') + field, level=level)
     else:
         flash(message, level=level)
-
-
-def _find_constraint(error):
-    """
-    Search reference of constraint within the error message. Return None if not found.
-    """
-    # Extract the constraint name for Postgresql and SQLite
-    # Postgresql: duplicate key value violates unique constraint "subnet_name_key"\nDETAIL:  Key (name)=() already exists.\n
-    # Postgresql: violates check constraint "dnsrecord_value_domain_name"
-    # Postgresql: foreign key constraint "dnsrecord_dnszone_subnet_fk"
-    # SQLite: UNIQUE constrain: subnet.name
-    # SQLite: UNIQUE constraint failed: index 'dnszone_name_index'
-    # SQLite: CHECK constraint failed: dnsrecord_value_domain_name
-    constraint_match = (
-        re.search(r'unique constraint "([^"]+)"', error)
-        or re.search(r'check constraint "([^"]+)"', error)
-        or re.search(r"UNIQUE constraint failed: index '([^']+)'", error)
-        or re.search(r"UNIQUE constraint failed: ([^']+)", error)
-        or re.search(r"CHECK constraint failed: (.+)", error)
-        or re.search(r'foreign key constraint "([^"]+)"', error)
-    )
-    if not constraint_match:
-
-        return None
-    name = constraint_match[1]
-
-    # Use a lookup cache to simplify the search of index and constraints.
-    if not getattr(_find_constraint, '_cache', False):
-        cache = {}
-        metadata = cherrypy.db.get_base().metadata
-        for table in metadata.tables.values():
-            for item in table.constraints:
-                if item.name:
-                    cache[item.name] = item
-            for item in table.indexes:
-                # Keep reference to unique index only.
-                if item.unique:
-                    if item.name:
-                        cache[item.name] = item
-                    # SQLite return <table>.<column>
-                    key = ', '.join([f'{table.name}.{c.name}' for c in item.columns])
-                    cache[key] = item
-        _find_constraint._cache = cache
-
-    return _find_constraint._cache.get(name, None)
 
 
 def _fetch_related(func, obj):
