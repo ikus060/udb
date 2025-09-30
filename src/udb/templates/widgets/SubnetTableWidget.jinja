@@ -56,7 +56,8 @@
 {% set html_widget = html_row(empty_row, False).replace('-%s' % (field|length-1), '-TOKEN').replace('\n','') %}
 {% set unused = field.pop_entry() %}
 {# Create table to hold each row #}
-<div {{ attrs.render(class="udb-stw card bg-light mb-2 p-2") }} data-stw='{{ {'row': html_widget.__html__() } |tojson }}'>
+<div {{ attrs.render(class="udb-stw card bg-light mb-2 p-2") }}
+     data-stw='{{ {'row': html_widget.__html__() } |tojson }}'>
   {# Show/Hide deleted button place outside the table.#}
   <button type="button"
           class="btn btn-sm btn-outline-secondary cdt-btn-filter udb-stw-toggle"
