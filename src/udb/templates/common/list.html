@@ -23,23 +23,22 @@
   {% set buttons = [{'text': _('Reset'), 'extend': 'reset'}] %}
   {% set columns = columns|d([]) %}
   {# Append Action columns #}
-  {% set columns = columns + [{'name':'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px'}] %}
+  {% set columns = columns + [{'name':'url', 'title':'', 'orderable':False, 'render':'button', 'render_kwargs': {'label':_('Edit')}, 'width': '30px'}] %}
   {# Add Status Filter if status column exists #}
   {% if 'status' in (columns|map(attribute='name')|list) %}
-    {% set buttons = buttons + [{'text': _('Show Deleted'), 'extend': 'btnfilter', 'column': 'status:name', 'search':'(0|1|2)', 'search_off': '(1|2)', 'regex': True }] %}
+    {% set buttons = buttons + [{'text': _('Show Deleted'), 'extend': 'btnfilter', 'column': 'status:name', 'search':'(0|1|2)', 'search_off': '(1|2)', 'regex': True}] %}
   {% endif %}
   {# Add Owner filter if owner column exists #}
   {% if 'owner' in (columns|map(attribute='name')|list) %}
     {% set buttons = buttons + [{'text': _('Show only mine'), 'extend': 'btnfilter', 'column': 'owner:name', 'search': currentuser.summary}] %}
   {% endif %}
-  {% set buttons = buttons + extra_buttons|d([]) %}
   {# Add "Export" button collection #}
   {% set download_filename = _('export_') + model_name %}
-  {% set csv_button = {'text': _('Download Csv'), 'extend': 'csv', 'exportOptions': {'columns': '.export'}, 'title': download_filename, 'className':'dt-btn-download text-nowrap' } %}
-  {% set xsl_button = {'text': _('Download Excel'), 'extend': 'excel', 'exportOptions': {'columns': '.export'}, 'title': download_filename, 'className':'dt-btn-download text-nowrap' } %}
-  {% set pdf_button = {'text': _('Download PDF'), 'extend': 'pdf', 'exportOptions': {'columns': '.export'}, 'title': download_filename, 'className':'dt-btn-download text-nowrap', 'orientation':'landscape' } %}
+  {% set csv_button = {'text': _('Download Csv'), 'extend': 'csv', 'exportOptions': {'columns': '.export'}, 'title': download_filename } %}
+  {% set xsl_button = {'text': _('Download Excel'), 'extend': 'excel', 'exportOptions': {'columns': '.export'}, 'title': download_filename } %}
+  {% set pdf_button = {'text': _('Download PDF'), 'extend': 'pdf', 'exportOptions': {'columns': '.export'}, 'title': download_filename, 'orientation':'landscape' } %}
   {% set export_button = {'text': _('Export') + ' ', 'extend': 'collection', 'align':'button-right', 'autoClose':True, 'background': False, 'popoverTitle': _('Export'), 'buttons': [ csv_button, xsl_button, pdf_button], 'className':'udb-btn-export-menu' } %}
-  {% set buttons = buttons + [export_button] %}
+  {% set buttons = buttons + extra_buttons|d([]) + [export_button] %}
   {# Show default table #}
-  <Datatable data="data.json" columns={{ columns }} buttons={{ buttons }} fixed-header={{ True }} />
+  <CustomDatatable data="data.json" columns={{ columns }} buttons={{ buttons }} fixed-header={{ True }} />
 {% endblock body %}

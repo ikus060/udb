@@ -14,9 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from unittest.mock import MagicMock
+from unittest import mock
 
 import cherrypy
+import ldap3
 from selenium.common.exceptions import ElementNotInteractableException
 
 from udb.controller import url_for
@@ -201,28 +202,59 @@ class ProfileTest(WebCase):
         self.assertInBody('Password too weak.')
 
 
+original_connection = ldap3.Connection
+
+
+def mock_ldap_connection(*args, **kwargs):
+    kwargs.pop('client_strategy', None)
+    return original_connection(*args, client_strategy=ldap3.MOCK_ASYNC, **kwargs)
+
+
 class ProfileTestWithExternalUser(WebCase):
     login = False
 
-    def setUp(self):
-        self.listener = MagicMock()
-        cherrypy.engine.subscribe('authenticate', self.listener.authenticate, priority=40)
-        return super().setUp()
+    default_config = {
+        'ldap-uri': 'my_fake_server',
+        'ldap-base-dn': 'dc=example,dc=org',
+    }
 
-    def tearDown(self):
-        cherrypy.engine.unsubscribe('authenticate', self.listener.authenticate)
-        return super().tearDown()
+    @classmethod
+    def setup_server(cls):
+        # Configure Mock server early.
+        cls.server = ldap3.Server('my_fake_server')
+        cls.patcher = mock.patch('ldap3.Connection', side_effect=mock_ldap_connection)
+        cls.patcher.start()
+        super().setup_server()
+
+    @classmethod
+    def teardown_class(cls):
+        cherrypy.ldap.uri = None
+        # Release mock server.
+        cls.patcher.stop()
+        return super().teardown_class()
 
     def test_change_password_remote_user(self):
+        # Given a user in LDAP
+        cherrypy.ldap._pool.strategy.add_entry(
+            'cn=user01,dc=example,dc=org',
+            {
+                'userPassword': 'password1',
+                'uid': ['user01'],
+                'objectClass': ['person', 'organizationalPerson', 'inetOrgPerson', 'posixAccount'],
+            },
+        )
         # Given an external user authenticated
         User(username='user01').add().commit()
-        self.listener.authenticate.return_value = ('user01', {})
-        self._login('user01', 'mypassword')
+        self._login('user01', 'password1')
         # When updating the password
         self.getPage(
             url_for('profile', ''),
             method='POST',
-            body={'current_password': 'mypassword', 'new_password': 'newvalue', 'password_confirmation': 'newvalue'},
+            body={
+                'current_password': 'password1',
+                'new_password': 'my-new-password',
+                'password_confirmation': 'my-new-password',
+            },
         )
         self.assertStatus(200)
         # Then error message is displayed to the user
@@ -240,7 +272,7 @@ class ProfileRateLimit(WebCase):
     def test_change_password_rate_limit(self):
         # Given a user
         # When submiting invalid credentials
-        for i in range(1, 20):
+        for i in range(0, 20):
             self.getPage(
                 url_for('profile', ''),
                 method='POST',

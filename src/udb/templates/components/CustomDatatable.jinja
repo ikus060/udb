@@ -1,0 +1,38 @@
+{# def data, columns=[], order=[], empty_message=None, info_message=None, searching=True, buttons=[], paging=True, page_length=25, length_change=True, buttons_cfg={}, layout='all', server_side=False, state_save=True, auto_width=False, responsive=False, rowgroup=False, fixed_header=False, scroll_y=False #}
+{# djlint:off #}
+{% set predefined_layout={
+  "search": {
+    'topStart': 'buttons',
+    'topEnd': ['pageLength', 'info'],
+    'bottom': 'paging',
+    'bottomEnd': None,
+    'bottomStart': None
+  },
+  "without-header": {
+    'topStart': None,
+    'topEnd': None,
+    'bottom': 'paging',
+    'bottomEnd': None,
+    'bottomStart': None
+  },
+  "without-paging": {
+    'topStart': None,
+    'topEnd': None,
+    'bottomEnd': None,
+    'bottomStart': None
+  },
+  "all": {
+    'topStart': {
+        'features': ['pageLength', 'info']
+    },
+    'topEnd': {
+        'features': ['search', 'buttons']
+    },
+    'bottom': 'paging',
+    'bottomEnd': None,
+    'bottomStart': None
+  }
+} %}
+{% set buttons_cfg = buttons_cfg or {"dom": {"button": {"className": "btn btn-sm btn-outline-secondary ms-1 mb-1 " } } } %}
+{# djlint:on #}
+<Datatable data={{ data }} columns={{ columns }} order={{ order }} empty_message={{ empty_message }} info_message={{ info_message }} searching={{ searching }} buttons={{ buttons }} paging={{ paging }} page_length={{ page_length }} length_change={{ length_change }} buttons_cfg={{ buttons_cfg }} layout={{ predefined_layout.get(layout|string, layout) }} server_side={{ server_side }} state_save={{ state_save }} auto_width={{ auto_width }} responsive={{ responsive }} rowgroup={{ rowgroup }} fixed_header={{ fixed_header }} scroll_y={{ scroll_y }} />

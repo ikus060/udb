@@ -15,10 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import os
-import unittest
-import unittest.mock
-
 import cherrypy
 from parameterized import parameterized, parameterized_class
 
@@ -30,31 +26,15 @@ from udb.core.passwd import hash_password
 class TestLogin(WebCase):
     login = False
 
-    def setUp(self):
-        self.listener = unittest.mock.MagicMock()
-        self.listener.login.return_value = False
-        self.listener.authenticate.return_value = False
-        cherrypy.engine.subscribe("login", self.listener.login, priority=50)
-        cherrypy.engine.subscribe("authenticate", self.listener.authenticate, priority=50)
-        return super().setUp()
-
-    def tearDown(self):
-        cherrypy.engine.unsubscribe("login", self.listener.login)
-        cherrypy.engine.unsubscribe("authenticate", self.listener.authenticate)
-        return super().tearDown()
-
     def test_login_valid(self):
         # Given a valid username and password
         username = "admin"
         password = "admin123"
         User.create(username=username, password=password).commit()
         # When login
-        self.getPage("/login/", method="POST", body={"username": username, "password": password})
+        self.getPage("/login/", method="POST", body={"login": username, "password": password})
         # Then user is redirect to main page
         self.assertStatus('303 See Other')
-        # Then listeners was called
-        self.listener.login.assert_called_once_with(username, password)
-        self.listener.authenticate.assert_called_once_with(username, password)
 
     def test_login_case_insensitive(self):
         # Given a user
@@ -63,12 +43,9 @@ class TestLogin(WebCase):
         password = "admin123"
         User.create(username=username, password=password).commit()
         # When login
-        self.getPage("/login/", method="POST", body={"username": "AdMin", "password": password})
+        self.getPage("/login/", method="POST", body={"login": "AdMin", "password": password})
         # Then user is redirect to main page
         self.assertStatus('303 See Other')
-        # Then listeners was called
-        self.listener.login.assert_called_once_with("AdMin", password)
-        self.listener.authenticate.assert_called_once_with("AdMin", password)
 
     def test_login_with_redirect(self):
         # Given a login form submited with a redirect value.
@@ -83,7 +60,7 @@ class TestLogin(WebCase):
         self.getPage(
             "/login/",
             method="POST",
-            body={"username": username, "password": password},
+            body={"login": username, "password": password},
         )
         # Then user is redirect to the proper URL.
         self.assertStatus('303 See Other')
@@ -98,7 +75,7 @@ class TestLogin(WebCase):
         self.getPage(
             "/login/",
             method="POST",
-            body={"username": username, "password": password, "redirect": "invalid"},
+            body={"login": username, "password": password, "redirect": "invalid"},
         )
         # Then user is redirect to the proper URL.
         self.assertStatus('200 OK')
@@ -126,7 +103,7 @@ class TestLogin(WebCase):
         password = "mypassword"
         User.create(username=username, password=password).commit()
         # When trying to login
-        self.getPage("/login/", method="POST", body={"username": username, "password": "invalid"})
+        self.getPage("/login/", method="POST", body={"login": username, "password": "invalid"})
         # Then login page is displayed with an error message.
         self.assertStatus("200 OK")
         self.assertInBody("Invalid credentials")
@@ -140,7 +117,7 @@ class TestLogin(WebCase):
         username = ""
         password = "admin"
         # When sending the form to the login page.
-        self.getPage("/login/", method="POST", body={"username": username, "password": password})
+        self.getPage("/login/", method="POST", body={"login": username, "password": password})
         # Then login page is displayed with an error message.
         self.assertStatus("200 OK")
         self.assertInBody("This field is required.")
@@ -150,7 +127,7 @@ class TestLogin(WebCase):
         username = "admin"
         password = "admin"
         User(username=username, password=hash_password(password)).add().commit()
-        self.getPage("/login/", method='POST', body={'username': username, 'password': password})
+        self.getPage("/login/", method='POST', body={'login': username, 'password': password})
         self.assertStatus('303 See Other')
         self.assertHeaderItemValue("Location", self.baseurl + "/")
         self.getPage("/dashboard/")
@@ -166,7 +143,7 @@ class TestLogin(WebCase):
         username = 'myuser'
         password = 'mypassword'
         userobj = User(username=username, password=hash_password(password)).add().commit()
-        self.getPage("/login/", method='POST', body={'username': username, 'password': password})
+        self.getPage("/login/", method='POST', body={'login': username, 'password': password})
         self.assertStatus('303 See Other')
         self.assertHeaderItemValue("Location", self.baseurl + "/")
         self.getPage("/dashboard/")
@@ -174,9 +151,10 @@ class TestLogin(WebCase):
         # When deleting this user from database
         userobj.delete()
         userobj.commit()
-        # Then user access is refused
+        # Then user is redirected to login page
         self.getPage("/")
-        self.assertStatus('403 Forbidden')
+        self.assertStatus('303 See Other')
+        self.assertHeaderItemValue("Location", self.baseurl + "/login/")
 
     def test_redirect_to_login(self):
         # When trying to access a proptected page.
@@ -215,40 +193,42 @@ class TestLogin(WebCase):
         username = "patrik"
         password = "test123"
         userobj = User.create(username=username, password=password).commit()
-        self.getPage("/login/", method="POST", body={"username": username, "password": password})
+        self.getPage("/login/", method="POST", body={"login": username, "password": password})
         self.assertStatus('303 See Other')
         self.getPage("/dashboard/")
         self.assertStatus(200)
         # When user get deleted
         userobj.status = user_status
         userobj.add().commit()
-        # Then user cannot get access page
+        # Then user is redirected to login page.
         self.getPage("/dashboard/")
-        self.assertStatus(403)
+        self.assertStatus('303 See Other')
+        self.assertHeaderItemValue('Location', self.baseurl + '/login/')
 
 
 @parameterized_class(
     [
-        {"default_config": {'rate-limit': 20}},
-        {"default_config": {'rate-limit': 20, 'rate-limit-dir': '/tmp'}},
+        {"default_config": {'rate-limit': 5}},
+        {"default_config": {'rate-limit': 5, 'rate-limit-dir': '/tmp'}},
     ]
 )
 class TestLoginRateLimit(WebCase):
     login = False
 
     def setUp(self):
-        if os.path.isfile('/tmp/ratelimit-127.0.0.1'):
-            os.unlink('/tmp/ratelimit-127.0.0.1')
-        if os.path.isfile('/tmp/ratelimit-127.0.0.1.-login'):
-            os.unlink('/tmp/ratelimit-127.0.0.1.-login')
+        cherrypy.tools.ratelimit.reset()
         return super().setUp()
+
+    def tearDown(self):
+        cherrypy.tools.ratelimit.reset()
+        return super().tearDown()
 
     def test_login_rate_limit(self):
         # Given an anonymous user
         # When submiting invalid credentials
-        for i in range(1, 20):
-            self.getPage("/login/", method="POST", body={"username": 'username', "password": 'invalid'})
+        for i in range(0, 5):
+            self.getPage("/login/", method="POST", body={"login": 'username', "password": 'invalid'})
             self.assertStatus(200)
         # Then IP address get blocked
-        self.getPage("/login/", method="POST", body={"username": 'username', "password": 'invalid'})
+        self.getPage("/login/", method="POST", body={"login": 'username', "password": 'invalid'})
         self.assertStatus(429)

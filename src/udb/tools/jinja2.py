@@ -1,5 +1,5 @@
-# udb, A web interface to manage IT network
-# Copyright (C) 2022-2025 IKUS Software inc.
+# Jinja2 tools for cherrypy
+# Copyright (C) 2021-2025 Patrik Dufresne
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ import cherrypy
 
 def jinja2_handler(*args, **kwargs):
     request = cherrypy.serving.request
+    env = request._jinja2_inner_env
     # Get more variables
     values = dict()
     if request._jinja2_extra_processor:
@@ -30,10 +31,14 @@ def jinja2_handler(*args, **kwargs):
     # Get the right templates
     if isinstance(request._jinja2_inner_template, (list, tuple)):
         names = [t.format(**values) for t in request._jinja2_inner_template]
-        tmpl = request._jinja2_inner_env.select_template(names)
+        tmpl = env.select_template(names)
     else:
-        tmpl = request._jinja2_inner_env.get_template(request._jinja2_inner_template)
-    return tmpl.render(values)
+        tmpl = env.get_template(request._jinja2_inner_template)
+    out = tmpl.render(values)
+    # Check if jinjax > 0.60 is used
+    if 'catalog' in env.globals and hasattr(env.globals['catalog'], '_finalize_assets'):
+        out = env.globals['catalog']._finalize_assets(out)
+    return out
 
 
 def jinja2_out(env, template, extra_processor=None, debug=False):

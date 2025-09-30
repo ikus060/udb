@@ -340,7 +340,7 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
         self.wait_for_tasks()
         self.listener.send_mail.reset_mock()
         # When a comment is made on that record
-        date = datetime.utcfromtimestamp(1680111611).replace(tzinfo=timezone.utc)
+        date = datetime.fromtimestamp(1680111611, tz=timezone.utc)
         record.add_message(Message(body='This is my comment', date=date))
         record.add()
         record.commit()

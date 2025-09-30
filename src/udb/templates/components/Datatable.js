@@ -1,6 +1,6 @@
 /**
- * udb, A web interface to manage IT network
- * Copyright (C) 2024 IKUS Software
+ * BFH Science Self-Service Portal
+ * Copyright (C) 2025 IKUS Software
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,38 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/**
- * Escape string value.
- */
-function safe(data) {
-    return String(data).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+/* Throw a JavaScript error. */
+$.fn.dataTable.ext.errMode = 'throw';
 
-/**
- * Convert a string to a date. This function support the following input:
- * - full ISO format
- * - epoch as number or string
- * - YYYY-MM-dd
- */
-const DATE_PATTERN = /^(\d\d\d\d)(\-)?(\d\d)(\-)?(\d\d)$/i;
-function toDate(n) {
-    let matches, year, month, day;
-    if (typeof n === "number") {
-        n = new Date(n * 1000); // epoch
-    } else if (typeof n === 'string' && (matches = n.match(DATE_PATTERN))) {
-        year = parseInt(matches[1], 10);
-        month = parseInt(matches[3], 10) - 1;
-        day = parseInt(matches[5], 10);
-        return new Date(year, month, day);
-    } else if (n) { // str
-        n = isNaN(n) ? new Date(n) : new Date(parseInt(n) * 1000);
-    }
-    return n;
-}
+$.fn.dataTable.rowGroupRender = $.fn.dataTable.rowGroupRender || {};
 
 /**
  * Buttons to filter content of datatable.
- * 
+ *
  * Options:
  * - search: Define the search criteria when filter is active
  * - search_off: Define the search criteria when filter is not active (optional)
@@ -55,12 +31,12 @@ function toDate(n) {
  * - multi: True to enablemultiple selection for the same column.
  */
 $.fn.dataTable.ext.buttons.filter = {
-    init: function (dt, node, config) {
+    init: function(dt, node, config) {
         if (config.search_off && config.multi) {
             console.error('search_off and multi are not supported together');
         }
         const that = this;
-        dt.on('search.dt', function () {
+        dt.on('search.dt', function() {
             let activate;
             const curSearch = dt.column(config.column).search();
             if (config.multi) {
@@ -72,7 +48,7 @@ $.fn.dataTable.ext.buttons.filter = {
             that.active(activate);
         });
     },
-    action: function (e, dt, node, config) {
+    action: function(e, dt, node, config) {
         const curSearch = dt.column(config.column).search();
         let terms = curSearch.replace(/^\(/, '').replace(/\)$/, '').split('|').filter(item => item !== '');
         if (node.hasClass('active')) {
@@ -104,30 +80,29 @@ $.fn.dataTable.ext.buttons.filter = {
 };
 $.fn.dataTable.ext.buttons.btnfilter = {
     extend: 'filter',
-    className: 'dt-btn-filter'
+    className: 'cdt-btn-filter'
 };
 $.fn.dataTable.ext.buttons.collectionfilter = {
     align: 'button-right',
     autoClose: true,
     background: false,
     extend: 'collection',
-    className: 'udb-btn-collectionfilter',
-    init: function (dt, node, config) {
+    className: 'cdt-btn-collectionfilter',
+    init: function(dt, node, config) {
         const that = this;
-        dt.on('search.dt', function () {
+        dt.on('search.dt', function() {
             const activate = dt.column(config.column).search() !== '';
             that.active(activate);
         });
     },
 };
-
 /**
  * Button to reset the filters of datatable.
  * Default settings are restored using init() API.
  */
 $.fn.dataTable.ext.buttons.reset = {
     text: 'Reset',
-    action: function (e, dt, node, config) {
+    action: function(e, dt, node, config) {
         dt.search('');
         if (dt.init().aoSearchCols) {
             const searchCols = dt.init().aoSearchCols;
@@ -141,275 +116,205 @@ $.fn.dataTable.ext.buttons.reset = {
         dt.draw(true);
     }
 };
-
 /**
  * Default render
  */
-$.fn.dataTable.render.action = function () {
+$.fn.dataTable.render.button = function ({
+  label = 'changeme',
+  className = 'btn btn-sm btn-primary btn-hover text-nowrap',
+  ...attrs
+} = {}) {
+  const { escapeHtml } = DataTable.util;
+
+  const attr = (name, value) => {
+    if (value == null || value === false) return '';
+    if (value === true) return ` ${name}`;
+    return ` ${name}="${escapeHtml(String(value))}"`;
+  };
+
+  return {
+    display: function (data, type, row, meta) {
+      if (!data) return '';
+
+      const href = encodeURI(String(data));
+
+      // If caller supplies `class`, prefer it over className
+      const { class: clsFromAttrs, ...rest } = attrs;
+      const classValue = clsFromAttrs ?? className;
+
+      const known = attr('class', classValue);
+
+      const extra = Object.entries(rest)
+        .map(([k, v]) => attr(k, v))
+        .join('');
+
+      return `<a${known}${extra} href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
+    },
+  };
+};
+$.fn.dataTable.render.choices = function(choices) {
+    let lookup = null;
+    if (Array.isArray(choices)) {
+        // Convert array of tuples to a lookup object
+        lookup = Object.fromEntries(choices);
+    } else if (typeof choices === "object" && choices !== null) {
+        // Already a dictionary
+        lookup = choices;
+    }
     return {
-        display: function (data, type, row, meta) {
-            return '<a class="btn btn-primary btn-circle btn-hover" href="' + encodeURI(data) + '"><i class="bi bi-chevron-right" aria-hidden="true"></i><span class="visually-hidden">Edit</span></a>'
+        display: function(data, type, row, meta) {
+            return (lookup && data in lookup) ? lookup[data] : data;
         },
     };
 }
 
-$.fn.dataTable.render.choices = function (choices) {
-    return {
-        display: function (data, type, row, meta) {
-            for (const choice of choices) {
-                if (choice[0] == data) {
-                    return choice[1];
-                }
-            }
-            return data;
-        },
-    };
+// Build a child-row table showing only the hidden columns
+$.fn.dataTable.Responsive.renderer.tableHidden =  function (options) {
+  options = $.extend(
+    {
+      tableClass: '',
+      empty: '—' // placeholder when a hidden cell is empty
+    },
+    options
+  );
+
+  return function (api, rowIdx, columns) {
+    const data = $.map(columns, function (col) {
+      if (!col.hidden) {
+        return '';
+      }
+
+      const klass = col.className
+        ? 'class="' + col.className + '"'
+        : '';
+
+      const title =
+        '' !== col.title
+          ? col.title + ':'
+          : '';
+
+      // Treat null/undefined/empty-string as empty
+      const cell =
+        col.data !== null &&
+        col.data !== undefined &&
+        col.data !== ''
+          ? col.data
+          : options.empty;
+
+      return (
+        '<tr ' +
+        klass +
+        ' data-dt-row="' +
+        col.rowIndex +
+        '" data-dt-column="' +
+        col.columnIndex +
+        '">' +
+        '<th class="dtr-title-cell">' +
+        title +
+        '</th> ' +
+        '<td class="dtr-data-cell">' +
+        cell +
+        '</td>' +
+        '</tr>'
+      );
+    }).join('');
+
+    // If there are no hidden columns, return false so no child row is shown
+    return data
+      ? $(
+          '<table class="' +
+            options.tableClass +
+            ' dtr-details" width="100%"/>'
+        ).append(data)
+      : false;
+  };
 }
 
-$.fn.dataTable.render.datetime = function () {
-    return {
-        display: function (data, type, row, meta) {
-            const api = new $.fn.dataTable.Api(meta.settings);
-            const date = toDate(data);
-            const localDate = date ? safe(date.toLocaleString()) : '';
-            /* Format date as 2 month ago */
-            const seconds = Math.floor((new Date() - date) / 1000);
-            const years = seconds / 31536000;
-            const months = seconds / 2592000;
-            const days = seconds / 86400;
-            const hours = seconds / 3600;
-            const minutes = seconds / 60;
-            let relativeDate;
-            if (years > 1) {
-                relativeDate = api.settings().i18n("udb.years", "%d years ago", Math.floor(years));
-            } else if (months > 1) {
-                relativeDate = api.settings().i18n("udb.months", "%d months ago", Math.floor(months));
-            } else if (days > 1) {
-                relativeDate = api.settings().i18n("udb.days", "%d days ago", Math.floor(days));
-            } else if (hours > 1) {
-                relativeDate = api.settings().i18n("udb.hours", "%d hours ago", Math.floor(hours));
-            } else if (minutes > 1) {
-                relativeDate = api.settings().i18n("udb.minutes", "%d minutes ago", Math.floor(minutes));
-            } else {
-                relativeDate = api.settings().i18n("udb.seconds", "%d seconds ago", Math.floor(seconds));
-            }
-            return `<time datetime="${date}" title="${localDate}">${relativeDate}</time>`;
-        },
-        sort: function (data, type, row, meta) {
-            const date = toDate(data);
-            return date ? date.getTime() : 0;
+// Resolve one spec (render/startRender/endRender) into a callable
+function resolveRenderSpec(source, key) {
+    if (!source || !key || source[key] == null) return;
+
+    const value = source[key];
+    let fn;
+
+    if (typeof value === 'function') {
+        // Case A: already a function — use as-is
+        fn = value;
+    } else {
+        // Case B: value is a string naming a render factory, e.g. 'number', 'text', 'ellipsis', 'myPlugin'
+        const factoryName = value;
+        let renderNS;
+        if(key == 'render') {
+            renderNS = $.fn.dataTable?.render;
+        } else if(key == 'startRender' || key == 'endRender') {
+            renderNS = $.fn.dataTable?.rowGroupRender;
+        } else if(key == 'renderer') {
+            renderNS = $.fn.dataTable?.Responsive?.renderer;
         }
-    };
-}
-
-/**
- * Render for record history.
- */
-$.fn.dataTable.render.changes = function () {
-    return {
-        display: function (data, type, row, meta) {
-            const api = new $.fn.dataTable.Api(meta.settings);
-            let html = '';
-            const body_idx = api.column('body:name').index();
-            if (body_idx && row[body_idx]) {
-                html += safe(row[body_idx]);
-            }
-            const type_idx = api.column('type:name').index();
-            if (data) {
-                const null_value = api.settings().i18n(`udb.field.null`, 'undefined')
-                html += '<ul class="mb-0">';
-                if (row[type_idx] === 'new') {
-                    /* For new record display only the new value. */
-                    for (const [key, values] of Object.entries(data)) {
-                        const field_name = safe(api.settings().i18n(`udb.field.${key}`, key));
-                        if(values[1] !== null ) {
-                            const new_value = safe(api.settings().i18n(`udb.value.${key}.${values[1]}`, `${values[1]}` )) ;
-                            html += '<li><strong>' + field_name + '</strong>: ' + new_value + ' </li>';
-                        }
-                    }
-                } else {
-                    /* For updates, display old and new value */
-                    for (const [key, values] of Object.entries(data)) {
-                        const field_name = safe(api.settings().i18n(`udb.field.${key}`, key));
-                        html += '<li><strong>' + field_name + '</strong>: '
-                        if (Array.isArray(values[0])) {
-                            for (const deleted of values[0]) {
-                                html += '<br/> - ' + safe(deleted);
-                            }
-                            for (const added of values[1]) {
-                                html += '<br/> + ' + safe(added);
-                            }
-                        } else {
-                            const old_value = safe(api.settings().i18n(`udb.value.${key}.${values[0]}`, `${values[0] !== null ? values[0] : undefined }`)) ;
-                            const new_value = safe(api.settings().i18n(`udb.value.${key}.${values[1]}`, `${values[1] !== null ? values[1] : undefined }`)) ;
-                            html += old_value + ' → ' + new_value + '</li>';
-                        }
-                    }
-                }
-                html += '</ul>';
-            }
-            return html;
+        
+        const factory = renderNS?.[factoryName];
+        if (typeof factory !== 'function') {
+            console.warn(`DataTables render factory '${factoryName}' not found`);
+            return;
         }
-    };
-}
 
-$.fn.dataTable.render.message_body = function () {
-
-    const datetime = $.fn.dataTable.render.datetime().display;
-
-    const changes = $.fn.dataTable.render.changes().display;
-
-    return {
-        display: function (data, type, row, meta) {
-            const api = new $.fn.dataTable.Api(meta.settings);
-            let html = '';
-
-            const type_idx = api.column('type:name').index();
-            if (type_idx) {
-                const type = row[type_idx];
-                html += api.settings().i18n(`udb.value.type.${type}`, type);
-            }
-
-            const author_idx = api.column('author:name').index();
-            if (author_idx) {
-                html += ' <em>' + row[author_idx] + '</em> • ';
-            }
-
-            const date_idx = api.column('date:name').index();
-            if (date_idx) {
-                html += datetime(row[date_idx], type, row, meta);
-            }
-
-            html += '<br />' + changes(data, type, row, meta);
-            return html;
-        },
-        sort: function (data, type, row, meta) {
-            const api = new $.fn.dataTable.Api(meta.settings);
-            const date_idx = api.column('date:name').index();
-            const value = toDate(row[date_idx]);
-            return value ? value.getTime() : 0;
-        },
-    };
-}
-
-$.fn.dataTable.render.primary_range = function () {
-    return {
-        display: function (data, type, row, meta) {
-            let html = '<a href="' + encodeURI(row[row.length - 1]) + '" class="depth-' + safe(row[3]) + '">' +
-                '<i class="bi bi-diagram-3-fill me-1" aria-hidden="true"></i>' +
-                '<strong>' + safe(data) + '</strong>' +
-                '</a> ';
-            const api = new $.fn.dataTable.Api(meta.settings);
-            const status_idx = api.column('status:name').index();
-            if (status_idx) {
-                if (row[status_idx] == 1) {
-                    html += ' <span class="badge bg-warning">' + api.settings().i18n('udb.status.disabled') + '</span>';
-                } else if (row[status_idx] == 0) {
-                    html += ' <span class="badge bg-danger">' + api.settings().i18n('udb.status.deleted') + '</span>';
-                }
-            }
-            return html;
-        },
-        sort: function (data, type, row, meta) {
-            return row[2];
-        },
-    };
-}
-$.fn.dataTable.render.summary = function (render_arg) {
-    /* FIXME Need to make this list canonical */
-    let icon_table = {
-        'dnszone': 'bi-collection',
-        'subnet': 'bi-diagram-3-fill',
-        'dhcprecord': 'bi-pin',
-        'dnsrecord': 'bi-signpost-split-fill',
-        'ip': 'bi-geo-fill',
-        'mac': 'bi-ethernet',
-        'user': 'bi-person-fill',
-        'vrf': 'bi-layers',
-        'deployment': 'bi-cloud-upload-fill',
-        'environment': 'bi-terminal-fill',
-        'rule': 'bi-ui-checks'
-    };
-
-    const model_name = typeof render_arg === 'string' ? render_arg : null;
-    const model_name_column = render_arg?.model_name_column || 'model_name:name';
-    const url_column = render_arg?.url_column || 'url:name';
-
-    return {
-        display: function (data, type, row, meta) {
-            if (!data) return '-';
-            const api = new $.fn.dataTable.Api(meta.settings);
-            /* Get model_name from arguments or from row data */
-            let effective_model_name = model_name;
-            if (effective_model_name == null) {
-                const model_idx = api.column(model_name_column).index();
-                if (model_idx) {
-                    effective_model_name = row[model_idx];
-                }
-            }
-
-            /* Define the URL */
-            let url = "#";
-            const url_idx = api.column(url_column).index();
-            if (url_idx) {
-                url = encodeURI(row[url_idx])
-            }
-
-            let html = '<a href="' + url + '">' +
-                '<i class="bi ' + icon_table[effective_model_name] + ' me-1" aria-hidden="true"></i>' +
-                '<strong>' + safe(data).replace(/\./g, '.<wbr>') + '</strong>' +
-                '</a>';
-
-            /* add label with status if available */
-            const status_idx = api.column('status:name').index();
-            if (status_idx) {
-                if (row[status_idx] == 1) {
-                    html += ' <span class="badge bg-warning">' + api.settings().i18n('udb.status.disabled') + '</span>';
-                } else if (row[status_idx] == 0) {
-                    html += ' <span class="badge bg-danger">' + api.settings().i18n('udb.status.deleted') + '</span>';
-                }
-            }
-            return html;
-        },
-        sort: function (data, type, row, meta) {
-            return data;
+        // Support kwargs | args | arg
+        if (source[`${key}_kwargs`]) {
+            fn = factory({...source[`${key}_kwargs`]});
+        } else if (source[`${key}_args`]) {
+            fn = factory(...source[`${key}_args`]);
+        } else if (Object.hasOwn(source, `${key}_arg`)) {
+            fn = factory(source[`${key}_arg`]);
+        } else {
+            fn = factory();
         }
-    };
+    }
+
+    return fn;
 }
 
-jQuery(function () {
-    $('table[data-ajax]').each(function (_idx) {
+jQuery(function() {
+    $('table[data-ajax]').each(function(_idx) {
         /* Load column properties */
         let columns = $(this).attr('data-columns');
         $(this).removeAttr('data-columns');
         columns = JSON.parse(columns);
-        $.each(columns, function (_index, item) {
-            /* process the render attribute as a function. */
-            if (item.render) {
-                if (item.render_arg) {
-                    item.render = $.fn.dataTable.render[item.render](item.render_arg);
-                } else {
-                    item.render = $.fn.dataTable.render[item.render]();
-                }
-            }
-            /* 
-             * Patch column visibility for responsive<2.0.0 
-             * Ref:https://datatables.net/extensions/responsive/classes
-             */
-            if ('visible' in item && !item['visible']) {
-                item['className'] = 'never';
-            }
+        $.each(columns, function(_index, item) {
+            item.render = resolveRenderSpec(item, 'render');
         });
-        let searchCols = columns.map(function (item, _index) {
+
+        /* Process rowGroup render */
+        let rowGroup = $(this).attr('data-row-group');
+        $(this).removeAttr('data-row-group');
+        rowGroup = JSON.parse(rowGroup);
+        if(rowGroup && typeof rowGroup === 'object') {
+            rowGroup.startRender = resolveRenderSpec(rowGroup, 'startRender');
+            rowGroup.endRender = resolveRenderSpec(rowGroup, 'endRender');
+        }
+
+        /* Process responsive details render */
+        let responsive = $(this).attr('data-responsive');
+        $(this).removeAttr('data-responsive');
+        responsive = JSON.parse(responsive);
+        if(responsive && typeof responsive === 'object') {
+            responsive.renderer = resolveRenderSpec(responsive, 'renderer');
+        }
+
+        let searchCols = columns.map(function(item, _index) {
             if (item.search !== undefined) {
-                return { "search": item.search, "regex": item.regex || false };
+                return {
+                    "search": item.search,
+                    "regex": item.regex || false
+                };
             }
             return null;
         });
         let dt = $(this).DataTable({
             columns: columns,
+            rowGroup: rowGroup,
+            responsive: responsive,
             searchCols: searchCols,
-            drawCallback: function (_settings) {
+            drawCallback: function(_settings) {
                 // This callback show or hide the pagination when required
                 if (_settings.aanFeatures.p) {
                     if (_settings._iDisplayLength > _settings.fnRecordsDisplay()) {
@@ -418,11 +323,10 @@ jQuery(function () {
                         $(_settings.aanFeatures.p[0]).parent().show();
                     }
                 }
-
                 // This callback is responsible to add and remove 'sorting-x-x' class
                 // to allow CSS customization of the table based on the sorted column
-                this.removeClass(function (_index, className) {
-                    return className.split(/\s+/).filter(function (c) {
+                this.removeClass(function(_index, className) {
+                    return className.split(/\s+/).filter(function(c) {
                         return c.startsWith('sorted-');
                     }).join(' ');
                 });
@@ -437,11 +341,15 @@ jQuery(function () {
                     }
                 }
             },
-            initComplete: function () {
+            initComplete: function() {
                 // Remove no-footer class to fix CSS display with bootstrap5
                 $(this).removeClass("no-footer");
                 // If searching is enabled, focus on search field.
                 $("div.dataTables_filter input").focus();
+                // Trigger responsive recalculation on window resize
+                $(window).on('resize', function() {
+                    dt.columns.adjust().responsive.recalc();
+                });
             },
             processing: true,
             deferRender: true,

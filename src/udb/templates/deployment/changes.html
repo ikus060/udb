@@ -22,7 +22,7 @@
                   {'name':'changes', 'title':_('Changes'), 'orderable':False, 'render':'message_body' },
                   {'name':'url', 'visible':False}
                 ] %}
-        <Datatable data="changes.json" columns={{ columns }} order={{ [[ 0, 'desc' ]] }} searching={{ False }} dom_cfg="without-header" page_length={{ 5 }} length_change={{ False }} empty_message={{ _("No changes activated by this deployment.") }} />
+        <CustomDatatable data="changes.json" columns={{ columns }} order={{ [[ 0, 'desc' ]] }} searching={{ False }} layout="without-header" page_length={{ 5 }} length_change={{ False }} empty_message={{ _("No changes activated by this deployment.") }} />
       </div>
     </div>
   </div>

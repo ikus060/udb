@@ -89,7 +89,7 @@ class CommonTest:
             with self.assertRaises(Exception):
                 driver.find_element('xpath', "//span[@class='badge bg-danger' and contains(text(), 'Deleted')]")
             # When user click on "Show Deleted" buttons
-            element = driver.find_element('css selector', 'button.dt-btn-filter')
+            element = driver.find_element('css selector', 'button.cdt-btn-filter')
             self.assertEqual("Show Deleted", element.text)
             element.click()
             # Then the web page is loaded without error.
@@ -458,9 +458,7 @@ class CommonTest:
         user = User.create(username='guest', password='password', role='guest').add()
         user.commit()
         self.getPage("/logout", method='POST')
-        self.getPage(
-            "/login/", method='POST', body={'username': user.username, 'password': 'password', 'redirect': '/'}
-        )
+        self.getPage("/login/", method='POST', body={'login': user.username, 'password': 'password', 'redirect': '/'})
         self.assertStatus('303 See Other')
         # Given a record
         obj = self.obj_cls(**self.new_data).add()
@@ -477,9 +475,7 @@ class CommonTest:
         user = User.create(username='guest', password='password', role='guest').add()
         user.commit()
         self.getPage("/logout", method='POST')
-        self.getPage(
-            "/login/", method='POST', body={'username': user.username, 'password': 'password', 'redirect': '/'}
-        )
+        self.getPage("/login/", method='POST', body={'login': user.username, 'password': 'password', 'redirect': '/'})
         self.assertStatus('303 See Other')
         # Given a DnsZone
         obj = self.obj_cls(**self.new_data).add()

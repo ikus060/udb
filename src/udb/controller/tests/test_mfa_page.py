@@ -21,7 +21,9 @@ import cherrypy
 
 from udb.controller.tests import WebCase
 from udb.core.model import User
-from udb.tools.sessions_timeout import SESSION_PERSISTENT, SESSION_START_TIME
+from udb.tools.auth import AUTH_LAST_PASSWORD_AT
+from udb.tools.auth_mfa import MFA_DEFAULT_CODE_TIMEOUT, MFA_DEFAULT_TRUST_DURATION
+from udb.tools.sessions_timeout import SESSION_PERSISTENT
 
 
 class MfaPageTest(WebCase):
@@ -198,7 +200,7 @@ class MfaPageTest(WebCase):
         # When sending a valid verification code that expired
         session = self.Session(id=self.session_id)
         session.load()
-        session['_auth_mfa_code_time'] = session.now() - datetime.timedelta(minutes=session.timeout + 1)
+        session['_auth_mfa_code_time'] = session.now() - datetime.timedelta(minutes=MFA_DEFAULT_CODE_TIMEOUT + 1)
         session.save()
         self.getPage("/mfa/", method='POST', body={'code': code, 'submit': '1'})
         # Then a new code get generated.
@@ -247,9 +249,9 @@ class MfaPageTest(WebCase):
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', self.baseurl + '/prefs/general')
 
-    def test_login_persistent_when_login_timout(self):
+    def test_login_persistent_when_login_timeout(self):
         prev_session_id = self.session_id
-        # Given a user authenticated with MFA with "login_persistent"
+        # Given a user authenticated with MFA with "persistent"
         code = self._get_code()
         self.getPage("/mfa/", method='POST', body={'code': code, 'submit': '1', 'persistent': '1'})
         self.assertStatus(303)
@@ -259,26 +261,29 @@ class MfaPageTest(WebCase):
         session = self.Session(id=self.session_id)
         session.load()
         self.assertTrue(session[SESSION_PERSISTENT])
-        # When the login_time expired (after 60 min)
-        session[SESSION_START_TIME] = session.now() - datetime.timedelta(minutes=60, seconds=1)
+        # When the re-auth time expired (after 60 min)
+        session[AUTH_LAST_PASSWORD_AT] = session.now() - datetime.timedelta(minutes=60, seconds=1)
         session.save()
         # Then next query redirect user to /login/ page (by mfa)
         self.getPage("/dashboard/")
         self.assertStatus(303)
         self.assertHeaderItemValue('Location', self.baseurl + '/login/')
         prev_session_id = self.session_id
+        # Then the username is pre-filled
+        self.getPage("/login/")
+        self.assertInBody(self.username)
         # When user enter valid username password
-        self.getPage("/login/", method='POST', body={'username': self.username, 'password': self.password})
-        self.assertStatus(303)
+        self.getPage("/login/", method='POST', body={'login': self.username, 'password': self.password})
         self.assertNotEqual(prev_session_id, self.session_id)
-        # Then user is redirected to original url
+        # Then user is redirected to original url without need to pass MFA again.
+        self.assertStatus(303)
         self.assertHeaderItemValue('Location', self.baseurl + '/dashboard/')
         self.getPage("/dashboard/")
         self.assertStatus(200)
 
     def test_login_persistent_when_mfa_timeout(self):
         prev_session_id = self.session_id
-        # Given a user authenticated with MFA with "login_persistent"
+        # Given a user authenticated with MFA with "persistent"
         code = self._get_code()
         self.getPage("/mfa/", method='POST', body={'code': code, 'submit': '1', 'persistent': '1'})
         self.assertStatus(303)
@@ -288,8 +293,8 @@ class MfaPageTest(WebCase):
         session = self.Session(id=self.session_id)
         session.load()
         self.assertTrue(session[SESSION_PERSISTENT])
-        # When the mfa verification timeout (after 30 days)
-        session['_auth_mfa_time'] = session.now() - datetime.timedelta(days=30, seconds=1)
+        # When the mfa verification timeout (after 15 min)
+        session['_auth_mfa_time'] = session.now() - datetime.timedelta(minutes=MFA_DEFAULT_TRUST_DURATION, seconds=1)
         session.save()
         # Then next query redirect user to mfa page
         self.getPage("/prefs/general")

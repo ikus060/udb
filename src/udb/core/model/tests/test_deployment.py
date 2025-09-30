@@ -50,7 +50,7 @@ class DeploymentTest(WebCase):
         # Then it contains our changes.
         self.assertEqual(len(deployment.changes), 2)
         self.assertEqual(
-            [f.changes for f in sorted(deployment.changes, key=lambda c: c.date)],
+            [f.changes for f in sorted(deployment.changes, key=lambda c: c.id)],
             [
                 {'name': [None, 'dnsrecord_env'], 'model_name': [None, 'dnsrecord']},
                 {
@@ -78,7 +78,7 @@ class DeploymentTest(WebCase):
         # Then it contains our changes.
         self.assertEqual(len(deployment.changes), 2)
         self.assertEqual(
-            [f.changes for f in sorted(deployment.changes, key=lambda c: c.date)],
+            [f.changes for f in sorted(deployment.changes, key=lambda c: c.id)],
             [
                 {'name': [None, 'dhcprecord_env'], 'model_name': [None, 'dhcprecord']},
                 {

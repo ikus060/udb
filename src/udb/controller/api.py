@@ -17,25 +17,21 @@ import cherrypy
 
 
 def checkpassword(realm, username, password):
-    """
-    We need to combine check passwork with rate limit to
-    flexibly block brute force attack for unknown user.
-    """
-    # Use login plugin to validate user's credentials
-    valid = any(cherrypy.engine.publish('login', username, password))
+    # Use auth tools to validate user's credentials
+    valid = cherrypy.tools.auth.login_with_credentials(username, password)
     if not valid:
         # When invalid, we need to increase the rate limit.
-        cherrypy.tools.ratelimit.hit()
+        cherrypy.tools.ratelimit.increase_hit()
     return valid
 
 
+@cherrypy.tools.auth(on=True, redirect=False)
+@cherrypy.tools.auth_basic(on=True, realm='udb-api', checkpassword=checkpassword, priority=70)
+@cherrypy.tools.auth_mfa(on=False)
 @cherrypy.tools.json_out()
 @cherrypy.tools.json_in()
-@cherrypy.tools.sessions(on=False)
-@cherrypy.tools.auth_form(on=False)
-@cherrypy.tools.auth_mfa(on=False)
 @cherrypy.tools.ratelimit(scope='udb-api', hit=0, priority=69)
-@cherrypy.tools.auth_basic(on=True, realm='udb-api', checkpassword=checkpassword, priority=70)
+@cherrypy.tools.sessions(on=False)
 class Api:
     """
     This class is a node to set all the configuration to access /api/

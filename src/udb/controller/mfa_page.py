@@ -76,12 +76,11 @@ class MfaPage:
         form = MfaForm()
 
         # Validate MFA
-        if form.is_submitted():
-            if form.validate():
-                if form.submit.data:
-                    cherrypy.tools.auth_form.redirect_to_original_url()
-                elif form.resend_code.data:
-                    self.send_code()
+        if form.validate_on_submit():
+            if form.submit.data:
+                raise cherrypy.tools.auth.redirect_to_original_url()
+            elif form.resend_code.data:
+                self.send_code()
         if cherrypy.tools.auth_mfa.is_code_expired():
             # Send verification code if previous code expired.
             self.send_code()

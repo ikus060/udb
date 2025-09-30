@@ -77,13 +77,14 @@ class WebCase(BaseClass):
         super().teardown_class()
 
     def wait_for_tasks(self):
-        count = 0
-        time.sleep(0.02)
-        while count < 20 and len(cherrypy.scheduler.list_tasks()) or cherrypy.scheduler.is_job_running():
+        if hasattr(cherrypy, 'scheduler'):
+            count = 0
             time.sleep(0.02)
-            count += 1
-        self.assertFalse(cherrypy.scheduler.list_tasks())
-        self.assertFalse(cherrypy.scheduler.is_job_running())
+            while count < 20 and len(cherrypy.scheduler.list_tasks()) or cherrypy.scheduler.is_job_running():
+                time.sleep(0.02)
+                count += 1
+            self.assertFalse(cherrypy.scheduler.list_tasks())
+            self.assertFalse(cherrypy.scheduler.is_job_running())
 
     @classmethod
     def setup_server(cls):
@@ -235,7 +236,7 @@ class WebCase(BaseClass):
             user.commit()
         # Authenticate
         self.getPage("/logout", method="POST")
-        self.getPage("/login/", method='POST', body={'username': username, 'password': password, 'redirect': redirect})
+        self.getPage("/login/", method='POST', body={'login': username, 'password': password, 'redirect': redirect})
         self.assertStatus('303 See Other')
 
     @property

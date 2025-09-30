@@ -1,5 +1,5 @@
-# udb, A web interface to rdiff-backup repositories
-# Copyright (C) 2012-2021 udb contributors
+# Secure Headers tool for cherrypy
+# Copyright (C) 2012-2025 IKUS Software
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_CSP = {
     'default-src': 'self',
     'style-src': ('self', 'unsafe-inline'),
-    'script-src': ('self' 'unsafe-inline'),
+    'script-src': ('self', 'unsafe-inline'),
 }
 
 #

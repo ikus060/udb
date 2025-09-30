@@ -36,6 +36,38 @@ except Exception:
     __version__ = 'DEV'
 
 
+def _comma_or_space_separated(value):
+    """
+    Parse comma or space separated values for argparse.
+
+    Args:
+        value (str): Input string containing comma or space separated values
+
+    Returns:
+        list: List of parsed values with whitespace stripped
+
+    Raises:
+        argparse.ArgumentTypeError: If the input cannot be parsed
+    """
+    if not isinstance(value, str):
+        raise argparse.ArgumentTypeError(f"Expected string, got {type(value).__name__}")
+
+    if not value.strip():
+        return []
+
+    # Split by comma first, then by spaces if no commas found
+    if ',' in value:
+        # Split by comma and strip whitespace from each item
+        items = [item.strip() for item in value.split(',')]
+    else:
+        # Split by any whitespace
+        items = value.split()
+
+    # Filter out empty strings
+    items = [item for item in items if item]
+    return items
+
+
 def _userid(value):
     """
     Parse the user value attribute that could be either a username or a userid.
@@ -257,6 +289,7 @@ def parse_args(args=None, config_file_contents=None):
         help=_(
             "The attribute to search username. If no attributes are provided, the default is to use `uid`. It's a good idea to choose an attribute that will be unique across all entries in the subtree you will be using."
         ),
+        type=_comma_or_space_separated,
         default='uid',
     )
 
@@ -386,8 +419,7 @@ def parse_args(args=None, config_file_contents=None):
         help=_(
             "LDAP attribute for user display name. If `fullname` is blank, the fullname is taken from the `firstname` and `lastname`. Attributes 'cn', or 'displayName' commonly carry full names."
         ),
-        default=[],
-        action='append',
+        type=_comma_or_space_separated,
     )
 
     parser.add_argument(
@@ -395,8 +427,8 @@ def parse_args(args=None, config_file_contents=None):
         help=_(
             "LDAP attribute for user first name. Used when the attribute configured for name does not exist. e.g.: `givenName`"
         ),
-        default=[],
-        action='append',
+        type=_comma_or_space_separated,
+        default='givenName',
     )
 
     parser.add_argument(
@@ -404,15 +436,15 @@ def parse_args(args=None, config_file_contents=None):
         help=_(
             "LDAP attribute for user last name. Used when the attribute configured for name does not exist. e.g.: `sn`"
         ),
-        default=[],
-        action='append',
+        type=_comma_or_space_separated,
+        default='sn',
     )
 
     parser.add_argument(
         '--ldap-email-attribute',
         help=_("LDAP attribute for user email. e.g.: mail, email, userPrincipalName"),
-        default=[],
-        action='append',
+        type=_comma_or_space_separated,
+        default='mail,email',
     )
 
     # Email

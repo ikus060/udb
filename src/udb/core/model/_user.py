@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
+
 import cherrypy
 from sqlalchemy import Column, String, case, event, inspect
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -52,6 +54,8 @@ except ImportError:
             ),
         }
 
+
+logger = logging.getLogger(__name__)
 
 Base = cherrypy.db.get_base()
 
@@ -99,6 +103,15 @@ class User(JsonMixin, StatusMixing, MessageMixin, Base):
     mfa = Column(Integer, nullable=False, default=MFA_DISABLED, server_default=str(MFA_DISABLED))
 
     @classmethod
+    def authenticate(cls, login, password):
+        """
+        Verify username password against local database.
+        """
+        # Check user password.
+        userobj = cls.query_user(login)
+        return userobj and userobj.check_password(password)
+
+    @classmethod
     def create_default_admin(cls, default_username, default_password):
         """
         If the database is empty, create a default admin user.
@@ -124,6 +137,64 @@ class User(JsonMixin, StatusMixing, MessageMixin, Base):
         password = hash_password(password) if password else None
         user = cls(username=username, password=password, **kwargs)
         return user.add()
+
+    @classmethod
+    def _get_user_role(cls, member_of):
+        """
+        Look for user role based on group member ship.
+        """
+        if member_of is None:
+            return None
+        cfg = cherrypy.tree.apps[''].cfg
+        group_map = [
+            ('admin', cfg.ldap_admin_group),
+            ('dnszone-mgmt', cfg.ldap_dnszone_mgmt_group),
+            ('subnet-mgmt', cfg.ldap_subnet_mgmt_group),
+            ('user', cfg.ldap_user_group),
+            ('guest', cfg.ldap_guest_group),
+        ]
+        for role, groups in group_map:
+            if groups and member_of and set(groups) & set(member_of):
+                return role
+        return None
+
+    @classmethod
+    def get_create_or_update_user(cls, login, user_info=None):
+        """
+        Used during authentication process to search for existing user,
+        create user if missing and update user if required.
+        """
+        # Validate credentials.
+        fullname = user_info.get('_fullname', None)
+        email = user_info.get('_email', None)
+        member_of = user_info.get('_member_of', None)
+        role = cls._get_user_role(member_of)
+        # When enabled, create missing userobj in database.
+        userobj = cls.query_user(login)
+        cfg = cherrypy.tree.apps[''].cfg
+        if userobj is None and cfg.add_missing_user:
+            try:
+                # At this point, we need to create a new user in database.
+                # In case default values are invalid, let evaluate them
+                # before creating the user in database.
+                userobj = User(username=login, role=cfg.add_user_default_role).add().commit()
+            except Exception:
+                logger.warning('fail to create new user', exc_info=1)
+        if userobj is None:
+            # User doesn't exists in database
+            return None
+
+        # Update user attributes
+        if role and userobj.role != role:
+            userobj.role = role
+            userobj.add().commit()
+        if fullname and userobj.fullname != fullname:
+            userobj.fullname = fullname
+            userobj.add().commit()
+        if email and userobj.email != email:
+            userobj.email = email
+            userobj.add().commit()
+        return userobj.username, userobj
 
     def is_admin(self):
         """

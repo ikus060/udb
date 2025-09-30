@@ -45,6 +45,6 @@
           {'name':'value', 'title':form.value.label.text|string, 'orderable':True, 'className':'export'},
           {'name': 'url', 'visible':False}
         ] %}
-    <Datatable data="related" columns={{ columns }} order={{ [[ 3, 'asc' ]] }} searching={{ False }} dom-cfg="without-header" empty-message={{ _("No DNS record for the same hostname.") }} page-length={{ 5 }} />
+    <CustomDatatable data="related" columns={{ columns }} order={{ [[ 3, 'asc' ]] }} searching={{ False }} layout="without-header" empty-message={{ _("No DNS record for the same hostname.") }} page-length={{ 5 }} />
   </div>
 {% endblock %}

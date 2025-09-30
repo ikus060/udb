@@ -22,9 +22,9 @@
                       {'name': 'created_at', 'title':_('Started on'), 'orderable': False, 'render':'datetime'},
                       {'name': 'change_count', 'title':_('Number of changes'), 'orderable': False},
                       {'name': 'owner', 'title':_('Deployed by'), 'orderable': False},
-                      {'name': 'url', 'title':'', 'orderable':False, 'render':'action', 'width': '30px'}
+                      {'name': 'url', 'title':'', 'orderable':False, 'render':'button', 'width': '30px'}
                     ] %}
-          <Datatable data="deployments.json" empty_message={{ _("Changes never deployed.") }} searching={{ False }} dom_cfg="without-header" columns={{ columns }} order={{ [[ 0, 'desc' ]] }} />
+          <CustomDatatable data="deployments.json" empty_message={{ _("Changes never deployed.") }} searching={{ False }} layout="without-header" columns={{ columns }} order={{ [[ 0, 'desc' ]] }} />
         </div>
       </div>
     </div>

@@ -13,9 +13,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-
 from base64 import b64encode
+
+import cherrypy
 
 from udb.controller.tests import WebCase
 
@@ -45,14 +45,22 @@ class TestApiPageRateLimit(WebCase):
     }
     authorization = [('Authorization', 'Basic %s' % b64encode(b'admin:admin').decode('ascii'))]
 
+    def setUp(self):
+        cherrypy.tools.ratelimit.reset()
+        return super().setUp()
+
+    def tearDown(self):
+        cherrypy.tools.ratelimit.reset()
+        return super().tearDown()
+
     def test_ratelimit(self):
         # Given multiple request with valid password
-        for i in range(1, 40):
+        for i in range(0, 40):
             self.getPage('/api/', headers=self.authorization)
             # Then request are never blocked
             self.assertStatus(200)
         # Given multiple request with invalid password
-        for i in range(1, 20):
+        for i in range(0, 20):
             authorization = [
                 ('Authorization', 'Basic %s' % b64encode(b'admin:invalid' + str(i).encode('ascii')).decode('ascii'))
             ]

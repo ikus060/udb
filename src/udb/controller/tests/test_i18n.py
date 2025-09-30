@@ -55,7 +55,7 @@ class TestI18nWebCase(WebCase):
 
     def test_with_preferred_lang(self):
         # Given a default lang 'en'
-        date = datetime.utcfromtimestamp(1680111611).replace(tzinfo=timezone.utc)
+        date = datetime.fromtimestamp(1680111611, tz=timezone.utc)
         self.assertEqual("Remember me", i18n.ugettext("Remember me"))
         self.assertIn('March', i18n.format_datetime(date, format='long'))
         # When using preferred_lang with french
@@ -154,7 +154,7 @@ class TestI18nTimezone(WebCase):
     def test_with_preferred_timezone(self):
         with i18n.preferred_lang('en'):
             # Given a date with timezone 'UTC'
-            date = datetime.utcfromtimestamp(1680111611).replace(tzinfo=timezone.utc)
+            date = datetime.fromtimestamp(1680111611, tz=timezone.utc)
             self.assertIn('Coordinated Universal Time', i18n.format_datetime(date, format='full'))
             # When using preferred_lang with french
             with i18n.preferred_timezone('America/Toronto'):
@@ -169,7 +169,7 @@ class TestI18nTimezone(WebCase):
 
     def test_timezone(self):
         # Given english locale
-        date = datetime.utcfromtimestamp(1680111611).replace(tzinfo=timezone.utc)
+        date = datetime.fromtimestamp(1680111611, tz=timezone.utc)
         with i18n.preferred_lang('en'):
             # When getting list of timezone
             timezones = [

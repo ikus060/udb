@@ -38,7 +38,7 @@ class RoleTest(WebCase):
         self.add_records()
         self.user = User.create(username='test-user', password='password', role='guest').add()
         self.user.commit()
-        self.getPage("/login/", method='POST', body={'username': self.user, 'password': 'password', 'redirect': '/'})
+        self.getPage("/login/", method='POST', body={'login': self.user, 'password': 'password', 'redirect': '/'})
         self.assertStatus('303 See Other')
 
     @parameterized.expand(

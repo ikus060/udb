@@ -1,184 +1,47 @@
+/* Remove default margin from layout */
+div.dt-container div.dt-layout-row {
+    margin: 0;
+}
+
+/* Remove default seperator */
+div.dt-container.dt-empty-footer .dt-scroll-body {
+    border-bottom: 0;
+}
+
 /* Show hide Action button */
-tr .btn-hover {
+.dt-container tr .btn-hover {
     opacity: 0;
 }
 
-tr:hover .btn-hover {
+.dt-container tr:hover .btn-hover {
     opacity: 1;
 }
 
-/* Disable underline for link in table header used for sorting */
-th>a {
-    text-decoration: none;
+/*
+* Hide responsive column "none" during loading.
+*/
+.dt-container th.none {
+    display: none;
 }
 
-/* Fix datatable filter alignment */
-.dataTables_wrapper .dataTables_info {
-    padding-top: 0;
-}
-
-.dataTables_filter {
-    white-space: nowrap;
-}
-
-.dataTables_filter label {
-    margin-bottom: 0;
-}
-
-.dataTables_filter input {
-    display: inline-block;
-    width: auto;
-}
-
-@media screen and (max-width: 640px) {
-    .dataTables_wrapper .dt-buttons {
-        text-align: center;
-    }
-}
-
-/* Adjust width of button collections */
-.dataTables_wrapper .dt-buttons .dt-button-collection {
-    width: 200px;
-}
-
-/* Make Affix floating header white and adjust for mobile */
-div.dtfh-floatingparent {
+/* Fix background color of button collection in DarkMode */
+div.dt-button-collection {
     background-color: var(--bs-body-bg);
-    margin-top: 74px;
+    color: var(--bs-body-color);
+    border-color: var(--bs-border-color-translucent);
 }
 
-@media (min-width: 992px) {
-    div.dtfh-floatingparent {
-        margin-top: 0;
-    }
+/* Css for responsive details render tableHidden */
+table.dtr-details .dtr-title-cell {
+  width: 15%;
+  white-space: nowrap;
+  vertical-align: top;
+  padding: 8px 10px;
 }
 
-/* Make row separator gray */
-.dataTables_wrapper.no-footer div.dataTables_scrollHead table.dataTable,
-.dataTables_wrapper.no-footer div.dataTables_scrollBody>table {
-    border-bottom: 1px solid var(--bs-table-border-color);
-}
-
-/* Hide bottom row separator */
-.dataTables_wrapper.no-footer .dataTables_scrollBody {
-    border-bottom: none;
-}
-
-/* Remove floating attribute */
-.dataTables_wrapper .dataTables_length,
-.dataTables_wrapper .dataTables_info {
-    float: none;
-    display: inline-block;
-    margin-right: 3px;
-}
-
-.dataTables_wrapper .dataTables_processing {
-    height: 100%;
-    top: inherit;
-    padding-top: 15%;
-}
-
-.dataTables_wrapper .dataTables_processing::before {
-    content: '';
-    color: var(--bs-primary);
-    margin-right: 10px;
-    /* The following is a copy-past of style: .spinner-border */
-    display: inline-block;
-    width: 2rem;
-    height: 2rem;
-    vertical-align: -0.5rem;
-    border: 0.25em solid currentColor;
-    border-right-color: transparent;
-    border-radius: 50%;
-    -webkit-animation: .75s linear infinite spinner-border;
-    animation: .75s linear infinite spinner-border;
-}
-
-/* Custom class for subnet depth */
-table.dataTable.sorted-primary_range-asc .depth-1 {
-    padding-left: 2em;
-}
-
-table.dataTable.sorted-primary_range-asc .depth-2 {
-    padding-left: 4em;
-}
-
-table.dataTable.sorted-primary_range-asc .depth-3 {
-    padding-left: 6em;
-}
-
-table.dataTable.sorted-primary_range-asc .depth-4 {
-    padding-left: 8em;
-}
-
-table.dataTable.sorted-primary_range-asc .depth-5 {
-    padding-left: 10em;
-}
-
-table.dataTable.sorted-primary_range-asc .depth-6 {
-    padding-left: 12em;
-}
-
-table.dataTable.sorted-primary_range-asc .depth-7 {
-    padding-left: 14em;
-}
-
-table.dataTable.sorted-primary_range-asc .depth-8 {
-    padding-left: 16em;
-}
-
-table.dataTable.sorted-primary_range-asc .depth-9 {
-    padding-left: 18em;
-}
-
-/* Make filter buttons stand out when active*/
-.dt-btn-filter.active {
-    color: var(--bs-white);
-    border-color: var(--bs-secondary);
-    background-color: var(--bs-secondary);
-}
-
-.dt-btn-filter::before,
-.dt-btn-download::before,
-.udb-btn-collectionfilter::before {
-    /* Apply bootstrap icons */
-    padding-right: 5px;
-    display: inline-block;
-    font-family: bootstrap-icons !important;
-    font-style: normal;
-    font-weight: normal !important;
-    font-variant: normal;
-    text-transform: none;
-    line-height: 1;
-    vertical-align: -0.125em;
-    -webkit-font-smoothing: antialiased;
-}
-
-.dt-btn-filter::before {
-    content: "\F5D7";
-}
-
-.dt-btn-filter.active::before {
-    content: "\F5D8";
-}
-
-/* Customize the download button */
-.dt-btn-download::before {
-    content: "\F30A";
-}
-
-/* Customize Filter Menu */
-.udb-btn-collectionfilter::before {
-    content: "\F5DA";
-}
-
-/* Fix responsive buttons colors */
-table.dataTable.dtr-inline.collapsed>tbody>tr>td:first-child:before,
-table.dataTable.dtr-inline.collapsed>tbody>tr>th:first-child:before {
-    background-color: var(--bs-primary);
-}
-
-table.dataTable.dtr-inline.collapsed>tbody>tr.parent>td:first-child:before,
-table.dataTable.dtr-inline.collapsed>tbody>tr.parent>th:first-child:before {
-    background-color: var(--bs-secondary);
+table.dtr-details .dtr-data-cell {
+  width: 85%;
+  white-space: normal;
+  word-break: break-word;
+  padding: 8px 10px;
 }

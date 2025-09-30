@@ -22,15 +22,14 @@ import jinjax
 import ujson
 from cherrypy import Application
 
-import udb.core.login  # noqa
 import udb.core.notification  # noqa
 import udb.plugins.db  # noqa: import cherrypy.db
 import udb.plugins.ldap  # noqa
 import udb.plugins.restapi
+import udb.plugins.scheduler  # noqa
 import udb.plugins.smtp  # noqa
-import udb.tools.auth_form  # noqa: import cherrypy.tools.auth_form
+import udb.tools.auth  # noqa: import cherrypy.tools.auth
 import udb.tools.auth_mfa  # noqa: import cherrypy.tools.auth_mfa
-import udb.tools.currentuser  # noqa: import cherrypy.tools.currentuser
 import udb.tools.errors  # noqa
 import udb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
 import udb.tools.ratelimit
@@ -60,7 +59,7 @@ from udb.controller.subnet_page import SubnetPage
 from udb.controller.user_page import UserPage
 from udb.controller.vrf_page import VrfPage
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User, Vrf
-from udb.tools.i18n import format_datetime, gettext_lazy, ngettext
+from udb.tools.i18n import format_datetime, ngettext, ugettext
 
 SESSION_USER_KEY = 'username'
 
@@ -85,7 +84,7 @@ env = jinja2.Environment(
     lstrip_blocks=True,
     extensions=['jinja2.ext.i18n'],
 )
-env.install_gettext_callables(gettext_lazy, ngettext, newstyle=True)
+env.install_gettext_callables(ugettext, ngettext, newstyle=True)
 env.globals['url_for'] = url_for
 env.filters['format_datetime'] = format_datetime
 env.add_extension(jinjax.JinjaX)
@@ -134,9 +133,13 @@ def json_handler(*args, **kwargs):
     return ujson.dumps(value).encode('utf-8')
 
 
-@cherrypy.tools.auth_form(session_user_key=SESSION_USER_KEY)
+@cherrypy.tools.auth(
+    session_user_key=SESSION_USER_KEY,
+    user_lookup_func=User.get_create_or_update_user,
+    user_from_key_func=User.query_user,
+    checkpassword=[User.authenticate, cherrypy.ldap.authenticate],
+)
 @cherrypy.tools.auth_mfa(mfa_enabled=lambda: cherrypy.request.currentuser.mfa)
-@cherrypy.tools.currentuser(userobj_func=User.query_user)
 @cherrypy.tools.i18n(func=lambda: getattr(cherrypy.request, 'currentuser', False) and cherrypy.request.currentuser.lang)
 @cherrypy.tools.proxy(local=None, remote='X-Real-IP')
 @cherrypy.tools.ratelimit(on=False, session_user_key=SESSION_USER_KEY)
@@ -265,15 +268,6 @@ class UdbApplication(Application):
                 'smtp.password': cfg.smtp_password,
                 'smtp.email_from': cfg.smtp_from and '%s <%s>' % (cfg.header_name, cfg.smtp_from),
                 'smtp.encryption': cfg.smtp_encryption,
-                # Configure login
-                'login.query_user': User.query_user,
-                'login.add_missing_user': cfg.add_missing_user,
-                'login.add_user_default_role': cfg.add_user_default_role,
-                'login.admin_group': cfg.ldap_admin_group,
-                'login.dnszone_mgmt_group': cfg.ldap_dnszone_mgmt_group,
-                'login.subnet_mgmt_group': cfg.ldap_subnet_mgmt_group,
-                'login.user_group': cfg.ldap_user_group,
-                'login.guest_group': cfg.ldap_guest_group,
                 # Configure notification
                 'notification.env': env,
                 'notification.header_name': cfg.header_name,
