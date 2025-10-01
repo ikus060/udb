@@ -112,6 +112,7 @@ class WebCase(BaseClass):
         # Need to wait for task before deleting to avoid dead lock in postgresql.
         self.wait_for_tasks()
         # Drop tables
+        cherrypy.db.clear_sessions()
         cherrypy.db.drop_all()
         # Delete selenium download
         if getattr(self, '_selenium_download_dir', False):
