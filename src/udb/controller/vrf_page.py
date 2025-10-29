@@ -23,7 +23,8 @@ from udb.core.model import User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, SelectObjectField
+from .fields import SelectObjectField
+from .form import CherryForm
 
 
 class VrfForm(CherryForm):

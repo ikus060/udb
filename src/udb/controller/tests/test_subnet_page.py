@@ -16,6 +16,7 @@
 
 
 from parameterized import parameterized
+from selenium.webdriver import ActionChains
 from selenium.webdriver.common.keys import Keys
 
 from udb.controller import url_for
@@ -61,7 +62,7 @@ class SubnetPageTest(WebCase, CommonTest):
             available = driver.find_element(
                 'css selector', '.non-selected-wrapper button.item[data-value="%s"]' % zone.id
             )
-            available.click()
+            ActionChains(driver).move_to_element(available).pause(0.2).click().perform()
             # Then element is transfer to selected list
             driver.find_element('css selector', '.selected-wrapper button.item[data-value="%s"]' % zone.id)
             # When saving the form

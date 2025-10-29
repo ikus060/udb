@@ -28,7 +28,8 @@ from udb.core.model import DnsZone, Subnet, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, SelectMultipleObjectField, SelectObjectField, SubnetTableWidget, SwitchWidget
+from .fields import SelectMultipleObjectField, SelectObjectField, SubnetTableWidget, SwitchWidget
+from .form import CherryForm
 
 
 def _subnet_of(range1, range2):
@@ -198,7 +199,7 @@ class SubnetForm(CherryForm):
             ),
         ],
         render_kw={
-            'width': '1/4',
+            'container_class': 'col-sm-3',
             "pattern": "\\d+",
             "title": _('Layer 3 Virtual Network Identifier'),
         },
@@ -214,7 +215,7 @@ class SubnetForm(CherryForm):
             ),
         ],
         render_kw={
-            'width': '1/4',
+            'container_class': 'col-sm-3',
             "pattern": "\\d+",
             "title": _('Layer 2 Virtual Network Identifier'),
         },
@@ -226,7 +227,7 @@ class SubnetForm(CherryForm):
             NumberRange(min=1, max=4095, message=_('The VLAN ID can range from %(min)s to %(max)s.')),
         ],
         render_kw={
-            'width': '1/4',
+            'container_class': 'col-sm-3',
             "pattern": "\\d+",
             "title": _('Virtual Local Area Network ID'),
         },
@@ -242,7 +243,7 @@ class SubnetForm(CherryForm):
         coerce=lambda value: value if value else None,
         default='',
         render_kw={
-            'width': '1/4',
+            'container_class': 'col-sm-3',
         },
     )
     dnszones = SelectMultipleObjectField(

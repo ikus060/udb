@@ -85,7 +85,7 @@ class EnvironmentPageTest(WebCase, CommonTest):
         # Then an error is displayed
         self.getPage(url_for(self.base_url, obj.id, 'edit'))
         self.assertStatus(200)
-        self.assertInBody('last_change: This field is required.')
+        self.assertInBody('Last Change: This field is required.')
 
     def test_deploy_with_obsolete_last_change(self):
         # Given a new environment

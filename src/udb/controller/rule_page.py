@@ -23,7 +23,8 @@ from udb.core.model import Rule, User, all_models
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonApi, CommonPage
-from .form import CherryForm, SelectObjectField, SwitchWidget
+from .fields import SelectObjectField, SwitchWidget
+from .form import CherryForm
 
 
 class RuleForm(CherryForm):
@@ -35,7 +36,7 @@ class RuleForm(CherryForm):
         render_kw={
             "placeholder": _("Rule Identifier"),
             "autofocus": True,
-            'width': '1/2',
+            'container_class': 'col-sm-6',
         },
     )
 
@@ -43,7 +44,7 @@ class RuleForm(CherryForm):
         _('Enforced'),
         widget=SwitchWidget(),
         render_kw={
-            'width': '1/4',
+            'container_class': 'col-sm-3',
         },
         description=_('Enforced rule prevent record from being saved.'),
     )
@@ -52,7 +53,7 @@ class RuleForm(CherryForm):
         _('Built-in'),
         widget=SwitchWidget(),
         render_kw={
-            'width': '1/4',
+            'container_class': 'col-sm-3',
             'readonly': True,
             'disabled': True,
         },

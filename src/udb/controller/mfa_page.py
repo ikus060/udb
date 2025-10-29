@@ -42,11 +42,13 @@ class MfaForm(CherryForm):
         },
     )
     persistent = BooleanField(
-        _('Remember me'), default=lambda: cherrypy.session.get(SESSION_PERSISTENT, False), render_kw={'width': '1/2'}
+        _('Remember me'),
+        default=lambda: cherrypy.session.get(SESSION_PERSISTENT, False),
+        render_kw={'container_class': 'col-sm-6'},
     )
     submit = SubmitField(
         _('Sign in'),
-        render_kw={"class": "btn-primary float-end", 'width': '1/2'},
+        render_kw={"class": "btn-primary float-end", 'container_class': 'col-sm-6'},
     )
     resend_code = SubmitField(
         _('Resend code to my email'),

@@ -28,7 +28,8 @@ from udb.tools.i18n import gettext
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, SelectObjectField
+from .fields import SelectObjectField
+from .form import CherryForm
 
 ChangeRow = namedtuple(
     'ChangeRow', ['model_id', 'summary', 'model_name', 'author', 'date', 'type', 'body', 'changes', 'url']
@@ -37,7 +38,7 @@ ChangeRow = namedtuple(
 
 class EnvironmentForm(CherryForm):
     name = StringField(
-        _('Environment Name'), validators=[DataRequired()], render_kw={'width': '1/2', "autofocus": True}
+        _('Environment Name'), validators=[DataRequired()], render_kw={'container_class': 'col-sm-6', "autofocus": True}
     )
     model_name = SelectField(
         _('Data Type'),
@@ -45,7 +46,7 @@ class EnvironmentForm(CherryForm):
             DataRequired(),
             Length(max=256),
         ],
-        render_kw={'width': '1/2'},
+        render_kw={'container_class': 'col-sm-6'},
     )
     script = TextAreaField(
         _('Script'),

@@ -1,9 +1,9 @@
 {% extends 'layout.html' %}
 {% block title %}
-  {% trans %}Result for: {% endtrans %}{{ form.q.data }}
+  {% trans %}Result for: {% endtrans %}{{ q }}
 {% endblock title %}
 {% block body %}
-  <h4>{% trans %}Result for: {% endtrans %}{{ form.q.data }}</h4>
+  <h4>{% trans %}Result for: {% endtrans %}{{ q }}</h4>
   {# Create Tabs at the top #}
   {% set ns = namespace(buttons=[], display_name_table=[]) %}
   {% for model_name in counts %}
@@ -41,5 +41,5 @@
       {'name':'modified_at', 'title':_('Last Modified'), 'orderable':True, 'render':'datetime'},
       {'name':'url', 'visible':False},
     ] %}
-  <CustomDatatable data={{ url_for('search', 'data.json', q=form.q.data) }} server_side={{ True }} columns={{ columns }} buttons={{ buttons }} buttons_cfg={{ buttons_cfg }} state_save={{ False }} layout="search" empty_message={{ _("Sorry, that filter combination has no result. Please try different criteria.") }} fixed_header={{ True }} />
+  <CustomDatatable data={{ url_for('search', 'data.json', q=q) }} server_side={{ True }} columns={{ columns }} buttons={{ buttons }} buttons_cfg={{ buttons_cfg }} state_save={{ False }} layout="search" empty_message={{ _("Sorry, that filter combination has no result. Please try different criteria.") }} fixed_header={{ True }} />
 {% endblock body %}

@@ -17,11 +17,8 @@ from collections import namedtuple
 
 import cherrypy
 from sqlalchemy import desc, func, literal, select, union_all
-from wtforms.fields import StringField
-from wtforms.validators import InputRequired, Length
 
 from udb.controller import url_for, validate_int
-from udb.controller.form import CherryForm
 from udb.core.model import User, searchable_models
 from udb.tools.i18n import gettext as _
 
@@ -48,18 +45,6 @@ SearchRow = namedtuple(
 )
 
 
-class SearchForm(CherryForm):
-    q = StringField(
-        validators=[
-            InputRequired(),
-            Length(max=256),
-        ]
-    )
-
-    def is_submitted(self):
-        return cherrypy.request.method in ['GET']
-
-
 class SearchPage:
     @cherrypy.expose()
     @cherrypy.tools.jinja2(template=['search.html'])
@@ -83,10 +68,9 @@ class SearchPage:
             if model_name in kwargs:
                 active = model_name
                 break
-        form = SearchForm()
         return {
             'active': active,
-            'form': form,
+            'q': q,
             'counts': counts,
         }
 

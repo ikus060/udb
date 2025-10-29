@@ -25,7 +25,9 @@
       <form method="POST" action="{{ url_for(model, 'new') }}">
         <div class="card">
           <div class="card-body">
-            <div class="row">{{ form() }}</div>
+            <div class="row">
+              <Fields form={{ form }} />
+            </div>
           </div>
           <div class="card-footer text-end">
             <a class="btn btn-secondary" href="{{ url_for(model) }}">{% trans %}Cancel{% endtrans %}</a>

@@ -1,5 +1,5 @@
-# udb, A web interface to manage IT network
-# Copyright (C) 2022-2025 IKUS Software inc.
+# Cherrypy Form
+# Copyright (C) 2020-2025 IKUS Software
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,13 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
 import cherrypy
 from markupsafe import Markup
-from wtforms.fields import SelectField, SelectMultipleField
 from wtforms.form import Form
-
-from udb.tools.i18n import gettext as _
 
 
 class _ProxyFormdata:
@@ -57,28 +53,16 @@ class CherryForm(Form):
     Explicitly pass ``formdata=None`` to prevent this.
     """
 
-    class Meta:
-        def render_field(self, field, render_kw):
-            # Merge the two render_kw
-            render_kw = render_kw.copy()
-            other_kw = getattr(field, "render_kw", None)
-            if other_kw:
-                other_kw = other_kw.copy()
-                for k, v in render_kw.items():
-                    if k in ['class', 'class_']:
-                        other_kw['class'] = other_kw.get('class', '') + ' ' + render_kw[k]
-                    else:
-                        other_kw[k] = render_kw[k]
-                render_kw = other_kw
-            env = cherrypy.request.config.get('tools.jinja2.env')
-            tmpl = env.get_template('components/field.html')
-            return Markup(tmpl.render(field=field, render_kw=render_kw))
-
     def __init__(self, **kwargs):
+        # Seamlessly support Json input if available.
+        if 'json' in kwargs and kwargs.pop('json'):
+            cherrypy.request.params = getattr(cherrypy.request, 'json', cherrypy.request.params)
+        # Support explicit formdata
         if 'formdata' in kwargs:
-            super().__init__(**kwargs)
+            formdata = kwargs.pop('formdata')
         else:
-            super().__init__(formdata=_AUTO if self.is_submitted() else None, **kwargs)
+            formdata = _AUTO if CherryForm.is_submitted(self) else None
+        super().__init__(formdata=formdata, **kwargs)
 
     def is_submitted(self):
         """
@@ -86,6 +70,18 @@ class CherryForm(Form):
         the method is ``POST``.
         """
         return cherrypy.request.method == 'POST'
+
+    def strict_validate(self):
+        """
+        Special validation to verify if all the field submited exists in this form.
+        Raise an error if some fields are unknown.
+        """
+        form_errors = self.form_errors if hasattr(self, 'form_errors') else self.errors.setdefault(None, [])
+        for key in cherrypy.request.params.keys():
+            if key not in self:
+                form_errors.append("unsuported field: %s" % key)
+                return False
+        return self.validate()
 
     def validate_on_submit(self):
         """
@@ -96,207 +92,28 @@ class CherryForm(Form):
 
     @property
     def error_message(self):
+        """
+        Return all error message in a single string.
+        """
         if self.errors:
-            return ' '.join(
-                ['%s: %s' % (field, ', '.join([str(m) for m in messages])) for field, messages in self.errors.items()]
-            )
-
-    def __html__(self):
-        """
-        Return a HTML representation of the form. For more powerful rendering, see the __call__() method.
-        """
-        return self()
-
-    def __call__(self, **kwargs):
-        env = cherrypy.request.config.get('tools.jinja2.env')
-        tmpl = env.get_template('components/form.html')
-        return Markup(tmpl.render(form=self, **kwargs))
+            msg = Markup("")
+            for field, messages in self.errors.items():
+                if msg:
+                    msg += Markup('<br/>')
+                # Field name
+                if field in self:
+                    msg += "%s: " % self[field].label.text
+                elif field:
+                    msg += "%s: " % field
+                for m in messages:
+                    msg += m
+            return msg
 
     def populate_obj(self, obj):
+        """
+        Override default implementation to take acount of readonly fields.
+        """
         for name, field in self._fields.items():
             if field.render_kw and field.render_kw.get('readonly'):
                 continue
             field.populate_obj(obj, name)
-
-
-class JinjaWidget:
-    """
-    Create field widget from Jinja2 templates.
-    """
-
-    filename = None
-
-    def __init__(self, **options):
-        self.options = options
-
-    def __call__(self, field, **kwargs):
-        env = cherrypy.request.config.get('tools.jinja2.env')
-        kwargs = dict(self.options, **kwargs)
-        # Support JinjaX
-        if self.filename.endswith('.jinja'):
-            catalog = env.globals['catalog']
-            return catalog.irender(self.filename[0:-6], field=field, **kwargs)
-        else:
-            tmpl = env.get_template(self.filename)
-            return Markup(tmpl.render(field=field, **kwargs))
-
-
-# Widget that could be used with FieldList
-class TableWidget(JinjaWidget):
-    filename = 'widgets/TableWidget.html'
-
-
-class SubnetTableWidget(JinjaWidget):
-    filename = 'SubnetTableWidget.jinja'
-
-
-class SwitchWidget(JinjaWidget):
-    filename = 'SwitchWidget.jinja'
-
-
-class SideBySideMultiSelect(JinjaWidget):
-    filename = 'SideBySideMultiSelect.jinja'
-
-
-class SelectMultipleObjectField(SelectMultipleField):
-    """
-    Field to select one or more sqlalchemy object.
-    """
-
-    widget = SideBySideMultiSelect()
-
-    def __init__(self, label=None, validators=None, object_cls=None, object_query=None, **kwargs):
-        assert object_cls
-        assert object_query is None or hasattr(object_query, '__call__')
-        super().__init__(label, validators, coerce=self.db_obj, choices=None, **kwargs)
-        self.object_cls = object_cls
-        self.object_query = object_query
-
-    def _summary_with_status(self, obj):
-        """
-        Return a summary with a status.
-        """
-        if obj.estatus == self.object_cls.STATUS_ENABLED:
-            return obj.summary
-        elif obj.estatus == self.object_cls.STATUS_DISABLED:
-            return obj.summary + ' [%s]' % _('Disabled')
-        return obj.summary + ' [%s]' % _('Deleted')
-
-    @property
-    def choices(self):
-        """
-        Replace default implementation by returning the list of objects.
-        Hide deleted record
-        """
-        entries = [
-            (obj.id, self._summary_with_status(obj))
-            for obj in self._query().all()
-            if obj.estatus != self.object_cls.STATUS_DELETED or (self.data and obj.id in self.data)
-        ]
-        return entries
-
-    @choices.setter
-    def choices(self, new_choices):
-        # Disallow modification of choices
-        pass
-
-    def db_obj(self, value):
-        if value is None or value == 'None':
-            return []
-        elif hasattr(value, 'id'):
-            return value.id
-        return int(value)
-
-    def populate_obj(self, obj, name):
-        """
-        Assign object value.
-        """
-        values = self.object_cls.query.filter(self.object_cls.id.in_(self.data)).all()
-        setattr(obj, name, values)
-
-    def _query(self):
-        """
-        Build query of object to be listed by the Field.
-        """
-        q = self.object_cls.query.with_entities(
-            self.object_cls.id, self.object_cls.summary, self.object_cls.estatus
-        ).order_by(self.object_cls.summary)
-        if self.object_query:
-            assert hasattr(self.object_query, '__call__'), "object_query should be callable"
-            q = self.object_query()
-        return q
-
-
-class SelectObjectField(SelectField):
-    """
-    Field to select a single sqlalchemy object. e.g.: select a User
-    """
-
-    def __init__(self, label=None, validators=None, object_cls=None, object_query=None, **kwargs):
-        assert object_cls
-        assert object_query is None or hasattr(object_query, '__call__')
-        super().__init__(label, validators, coerce=self.obj_id, choices=None, **kwargs)
-        self.object_cls = object_cls
-        self.object_query = object_query
-
-    def _summary_with_status(self, obj):
-        """
-        Return a summary with a status.
-        """
-        if obj.estatus == self.object_cls.STATUS_ENABLED:
-            return obj.summary
-        elif obj.estatus == self.object_cls.STATUS_DISABLED:
-            return obj.summary + ' [%s]' % _('Disabled')
-        return obj.summary + ' [%s]' % _('Deleted')
-
-    @property
-    def choices(self):
-        """
-        Replace default implementation by returning the list of objects.
-        """
-        entries = [
-            (obj.id, self._summary_with_status(obj))
-            for obj in self._query().all()
-            if obj.estatus != self.object_cls.STATUS_DELETED or obj.id == self.data
-        ]
-        # Add a "null" option if the field is optional
-        if 'required' not in self.flags:
-            entries.insert(0, (None, _("-")))
-        return entries
-
-    @choices.setter
-    def choices(self, new_choices):
-        # Disallow modification of choices
-        pass
-
-    def obj_id(self, value):
-        if value is None or value == 'None':
-            return None
-        elif isinstance(value, self.object_cls):
-            return value.id
-        return int(value)
-
-    def populate_obj(self, obj, name):
-        """
-        Let populate the object in a special way to help sqlalchemy
-        history to show object change instead of object_id change.
-        """
-        # If the attribute could be assigned as an object, let update the object.
-        if name.endswith('_id') and hasattr(obj, name[:-3]):
-            # Then fetch the object using another query.
-            value = self.object_cls.query.filter(self.object_cls.id == self.data).first()
-            setattr(obj, name[:-3], value)
-        else:
-            super().populate_obj(obj, name)
-
-    def _query(self):
-        """
-        Build query of object to be listed by the Field.
-        """
-        q = self.object_cls.query.with_entities(
-            self.object_cls.id, self.object_cls.summary, self.object_cls.estatus
-        ).order_by(self.object_cls.summary)
-        if self.object_query:
-            assert hasattr(self.object_query, '__call__'), "object_query should be callable"
-            q = self.object_query()
-        return q

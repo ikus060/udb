@@ -1,0 +1,10 @@
+/* Adjust style of form check box */
+ul.form-list-widget  {
+    list-style: none;
+}
+
+/* Change color of read-only fields */
+input[type="text"][readonly], select[readonly] {
+    background-color: var(--bs-tertiary-bg);
+    cursor: not-allowed;
+}

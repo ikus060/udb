@@ -25,7 +25,8 @@ from udb.core.model import DnsRecord, DnsZone, Subnet, User
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, SelectMultipleObjectField, SelectObjectField
+from .fields import SelectMultipleObjectField, SelectObjectField
+from .form import CherryForm
 
 
 def _subnet_query():

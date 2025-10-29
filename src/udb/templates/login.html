@@ -15,7 +15,7 @@
           {% include "flash.html" %}
           {% block content %}
             <form id="form-login" role="form" method="post">
-              <div class="row align-items-center">{{ form() }}</div>
+              <Fields form={{ form }} floating={{ True }} />
             </form>
           {% endblock %}
         </div>

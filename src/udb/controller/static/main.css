@@ -55,7 +55,7 @@ main {
 
 /* Make form label bold */
 .form-label {
-    font-weight: 500;
+    font-weight: 600;
 }
 
 /* Fix header of history in edit view */

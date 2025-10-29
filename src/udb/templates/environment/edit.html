@@ -3,7 +3,7 @@
   {# Deployment #}
   <div class="mb-2">
     <form method="POST" action="{{ url_for('environment', obj.id, 'deploy') }}">
-      {{ deploy_form }}
+      <Fields form={{ deploy_form }} />
     </form>
   </div>
 {% endblock %}

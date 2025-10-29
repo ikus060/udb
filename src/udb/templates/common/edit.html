@@ -55,9 +55,7 @@
           <div class="card-body">
             {# Edit Form #}
             <fieldset {% if not edit_perm %}disabled{% endif %}>
-              <div class="row">
-                {% block edit_form %}{{ form() }}{% endblock %}
-              </div>
+              {% block edit_form %}<Fields form={{ form }} />{% endblock %}
             </fieldset>
             {# /Edit Form #}
           </div>

@@ -16,8 +16,7 @@
 
 import cherrypy
 from wtforms.fields import BooleanField, PasswordField, StringField, SubmitField
-from wtforms.fields.simple import HiddenField
-from wtforms.validators import InputRequired, Length, Regexp
+from wtforms.validators import InputRequired, Length
 
 from udb.controller import flash
 from udb.controller.form import CherryForm
@@ -25,7 +24,6 @@ from udb.tools.i18n import gettext_lazy as _
 
 
 class LoginForm(CherryForm):
-    redirect = HiddenField(default='/', validators=[Regexp('^/', message=_('invalid redirect url'))])
     login = StringField(
         _('Username'),
         default=lambda: cherrypy.tools.auth.get_user_key() or "",
@@ -52,11 +50,11 @@ class LoginForm(CherryForm):
     persistent = BooleanField(
         _('Remember me'),
         default=lambda: cherrypy.tools.sessions_timeout.is_persistent(),
-        render_kw={'width': '1/2'},
+        render_kw={'container_class': 'col-sm-6'},
     )
     submit = SubmitField(
         _('Sign in'),
-        render_kw={"class": "btn-primary float-end", 'width': '1/2'},
+        render_kw={"class": "btn-primary float-end", 'container_class': 'col-sm-6'},
     )
 
 

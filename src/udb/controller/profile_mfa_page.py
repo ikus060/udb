@@ -40,10 +40,10 @@ class MfaToggleForm(CherryForm):
     )
     resend_code = SubmitField(
         _('Resend code to my email'),
-        render_kw={"class": "btn-link", 'width': '1/2', 'style': 'padding-left:0;'},
+        render_kw={"class": "btn-link", 'container_class': 'col-sm-6', 'style': 'padding-left:0;'},
     )
-    enable_mfa = SubmitField(_('Enable'), render_kw={"class": "btn-success float-end", 'width': '1/2'})
-    disable_mfa = SubmitField(_('Disable'), render_kw={"class": "btn-warning float-end", 'width': '1/2'})
+    enable_mfa = SubmitField(_('Enable'), render_kw={"class": "btn-success float-end", 'container_class': 'col-sm-6'})
+    disable_mfa = SubmitField(_('Disable'), render_kw={"class": "btn-warning float-end", 'container_class': 'col-sm-6'})
 
     def __init__(self, obj, **kwargs):
         assert obj

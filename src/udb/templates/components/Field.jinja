@@ -1,0 +1,56 @@
+{# def field, floating=False #}
+{# djlint:off #}
+{% set bootstrap_class_table = {
+  "CheckboxInput": ("form-check-input", "form-check-label", False, True),
+  "EmailInput": ("form-control", "form-label", True, False),
+  "NumberInput": ("form-control", "form-label", True, False),
+  "PasswordInput": ("form-control", "form-label", True, False),
+  "Select": ("form-select", "form-label", True, False),
+  "SubmitInput": ("btn", "d-none", False, False),
+  "TextArea": ("form-control", "form-label", True, False),
+  "TextInput": ("form-control", "form-label", True, False),
+  "RadioInput": ("form-check", "form-label", False, False),
+  "ListWidget": ("form-list-widget", "form-label", False, False)
+} %}
+{# djlint:on #}
+{# Add proper class if field is invalid. #}
+{% if field.errors %}
+  {% do attrs.add_class('is-invalid') %}
+{% endif %}
+{# Also include render_kw if any #}
+{% if field.render_kw %}
+  {% do attrs.set(**field.render_kw) %}
+{% endif %}
+{% if field.widget.input_type is defined and field.widget.input_type == 'hidden' %}
+  {{ field.widget(field, **attrs.as_dict) }}
+{% else %}
+  {# For each widget list supported options. #}
+  {# Assign propert bootstrap class based on wtform widget #}
+  {% set input_class, label_class, floating_supported, label_always_last = bootstrap_class_table.get(field.widget.__class__.__name__) or ('', 'form-label', False, False) %}
+  {% set label_last = (floating and floating_supported) or label_always_last %}
+  {% do attrs.add_class(input_class) %}
+  {# Render label an widget #}
+  {# Used for input-group #}
+  {% set prepend = attrs.get('prepend', None) %}
+  {% set append = attrs.get('append', None) %}
+  {% set input_group = prepend or append %}
+  {% set container_class = attrs.get('container_class', 'col-12') %}
+  {% do attrs.__delitem__('container_class') %}
+  <div class="mb-2 form-field {{ container_class }}">
+    {% if floating and floating_supported %}<div class="form-floating">{% endif %}
+      {% if not label_last %}{{ field.label(class=label_class) }}{% endif %}
+      {% if input_group %}
+        <div class="input-group">
+          {% if prepend %}<span class="input-group-text">{{ prepend }}</span>{% endif %}
+        {% endif %}
+        {{ field.widget(field, **attrs.as_dict) }}
+        {% if input_group %}
+          {% if append %}<span class="input-group-text">{{ append }}</span>{% endif %}
+        </div>
+      {% endif %}
+      {% if label_last %}{{ field.label(class=label_class) }}{% endif %}
+      {% for error in field.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+      {% if field.description %}<div class="form-text small test-secondary">{{ field.description }}</div>{% endif %}
+      {% if floating and floating_supported %}</div>{% endif %}
+  </div>
+{% endif %}

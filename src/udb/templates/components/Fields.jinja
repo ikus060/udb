@@ -1,0 +1,4 @@
+{# def form, floating=False #}
+<div class="row">
+  {% for id, field in form._fields.items() %}<Field field={{ field }} floating={{ floating }} />{% endfor %}
+</div>

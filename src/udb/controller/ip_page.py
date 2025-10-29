@@ -25,7 +25,8 @@ from udb.core.model import DhcpRecord, DnsRecord, Ip, User, Vrf
 from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .form import CherryForm, SelectObjectField, TableWidget
+from .fields import SelectObjectField, TableWidget
+from .form import CherryForm
 
 
 class RelatedDnsRecordFrom(Form):
