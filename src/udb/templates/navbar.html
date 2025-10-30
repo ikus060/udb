@@ -1,4 +1,22 @@
 {# Main Navigation #}
+{# djlint:off #}
+{% set typeahead_source = {
+  'model': {
+    'ajax': {
+      'url': url_for('search', 'typeahead.json'),
+      'path': 'data',
+      'data': {
+        'q': '{{query}}'
+      }
+    }
+  }
+} %}
+{% set group_show_all = "<input class='btn btn-link btn-sm float-end p-0' type='submit' name='"|safe + '{{model_name}}' +"'value='"|safe + _("Show all") + "'>"|safe %}
+{% set typeahead_group = {
+  'key':'model_name',
+  'template': '{{model_name}}' + group_show_all
+} %}
+{% set typeahead_url = "{{url}}" %}
 <header>
   {# Sidebar #}
   <nav class="sidebar navbar navbar-expand-lg navbar-dark udb-navbar bg-dark fixed-top p-3 flex-column align-items-start ">
@@ -26,7 +44,9 @@
     <div id="sidebarMenu"
          class="collapse navbar-collapse flex-column align-items-start w-100 mt-3">
       {# Typeahead Search #}
-      <Typeahead />
+      <form method="GET" action="{{ url_for('search') }}">
+        <Typeahead name="q" autofocus={{ True }} dynamic={{ True }} filter={{ False }} hint={{ True }} source={{ typeahead_source }} group={{ typeahead_group }} display={{ ["summary"] }} href={{ typeahead_url }} />
+      </form>
       {# Network #}
       <div class="navbar-text mt-2 text-white">
         <strong>{% trans %}Network{% endtrans %}</strong>
