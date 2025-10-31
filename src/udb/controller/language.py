@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import cherrypy
-
-from udb.tools.i18n import gettext as _
-from udb.tools.i18n import preferred_lang
+from cherrypy_foundation.tools.i18n import gettext as _
+from cherrypy_foundation.tools.i18n import preferred_lang
 
 
 @cherrypy.tools.auth(on=False)

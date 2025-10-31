@@ -18,12 +18,12 @@ import datetime
 from unittest.mock import ANY, MagicMock
 
 import cherrypy
+from cherrypy_foundation.tools.auth import AUTH_LAST_PASSWORD_AT
+from cherrypy_foundation.tools.auth_mfa import MFA_DEFAULT_CODE_TIMEOUT, MFA_DEFAULT_TRUST_DURATION
+from cherrypy_foundation.tools.sessions_timeout import SESSION_PERSISTENT
 
 from udb.controller.tests import WebCase
 from udb.core.model import User
-from udb.tools.auth import AUTH_LAST_PASSWORD_AT
-from udb.tools.auth_mfa import MFA_DEFAULT_CODE_TIMEOUT, MFA_DEFAULT_TRUST_DURATION
-from udb.tools.sessions_timeout import SESSION_PERSISTENT
 
 
 class MfaPageTest(WebCase):

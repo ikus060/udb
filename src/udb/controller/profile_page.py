@@ -16,15 +16,15 @@
 
 
 import cherrypy
+from cherrypy_foundation.flash import flash
+from cherrypy_foundation.form import CherryForm
+from cherrypy_foundation.tools.i18n import get_timezone_name
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
+from cherrypy_foundation.tools.i18n import list_available_locales, list_available_timezones
 from wtforms.fields import PasswordField, SelectField, StringField
 from wtforms.validators import DataRequired, Email, EqualTo, InputRequired, Length, Optional, ValidationError
 
-from udb.controller import flash
-from udb.controller.form import CherryForm
 from udb.controller.profile_mfa_page import ProfileMfaPage
-from udb.tools.i18n import get_timezone_name
-from udb.tools.i18n import gettext_lazy as _
-from udb.tools.i18n import list_available_locales, list_available_timezones
 
 
 class AccountForm(CherryForm):

@@ -18,8 +18,8 @@
 from io import StringIO
 
 import requests
+from cherrypy_foundation.url import url_for
 
-from udb.controller import url_for
 from udb.controller.tests import WebCase
 from udb.core.model import DnsRecord, DnsZone, Subnet, Vrf
 

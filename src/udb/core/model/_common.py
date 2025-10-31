@@ -18,11 +18,12 @@ from sqlalchemy import Column, ForeignKey, Integer, String, func, inspect
 from sqlalchemy.orm import declarative_mixin, declared_attr, relationship
 
 from ._timestamp import Timestamp
+from ._url import UrlMixin
 from ._user import User
 
 
 @declarative_mixin
-class CommonMixin(object):
+class CommonMixin(UrlMixin):
     """
     Mixin for common item properties.
     """

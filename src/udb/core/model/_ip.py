@@ -17,11 +17,10 @@
 import ipaddress
 
 import cherrypy
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from sqlalchemy import Column, ForeignKey, Index, Integer, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, validates
-
-from udb.tools.i18n import gettext_lazy as _
 
 from ._cidr import InetType
 from ._common import CommonMixin

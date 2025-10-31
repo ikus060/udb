@@ -17,6 +17,7 @@ import importlib.resources
 
 import cherrypy
 from cherrypy.lib.static import serve_file
+from cherrypy_foundation.components import StaticMiddleware
 
 
 @cherrypy.tools.auth(on=False)
@@ -26,24 +27,8 @@ from cherrypy.lib.static import serve_file
 @cherrypy.tools.secure_headers(on=False)
 @cherrypy.tools.sessions(on=False)
 class Static:
-    @cherrypy.expose
-    @cherrypy.tools.staticdir(
-        section="", match=".*(\\.js|\\.css|\\.png)$", dir=str(importlib.resources.files('udb.controller') / 'static')
-    )
-    def default(self, *args, **kwargs):
-        """This entry point is used to serve content of /static/ folder and JinjaX static ressources"""
-        # Make use of JinjaX catalog
-        env = cherrypy.request.config.get('tools.jinja2.env')
-        if env is None or 'catalog' not in env.globals:
-            raise cherrypy.HTTPError(400)
 
-        # JinjaX resources could be locaed in multiple path.
-        jinjax_catalog = env.globals['catalog']
-        for path in jinjax_catalog.paths:
-            handled = cherrypy.lib.static.staticdir(section="static", match=".*(\\.js|\\.css)$", dir=path)
-            if handled:
-                return cherrypy.serving.response.body
-        raise cherrypy.HTTPError(400)
+    components = StaticMiddleware()
 
     @cherrypy.tools.staticfile(
         filename=str(importlib.resources.files(__name__) / 'taylor-vick-M5tzZtFCOfs-unsplash.jpg')
@@ -70,3 +55,7 @@ class Static:
         return serve_file(filename)
 
     favicon_ico = favicon
+
+    @cherrypy.tools.staticfile(filename=str(importlib.resources.files(__name__) / 'main.css'))
+    def main_css(self):
+        raise cherrypy.HTTPError(400)

@@ -17,7 +17,8 @@
 from base64 import b64encode
 from unittest.mock import ANY
 
-from udb.controller import url_for
+from cherrypy_foundation.url import url_for
+
 from udb.controller.tests import WebCase
 from udb.core.model import Deployment, DhcpRecord, DnsRecord, DnsZone, Environment, Message, Subnet, User, Vrf
 

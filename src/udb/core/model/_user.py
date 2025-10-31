@@ -17,6 +17,8 @@
 import logging
 
 import cherrypy
+from cherrypy_foundation.passwd import check_password, hash_password
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from sqlalchemy import Column, String, case, event, inspect
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import deferred, validates
@@ -24,13 +26,11 @@ from sqlalchemy.sql.expression import func
 from sqlalchemy.sql.schema import Index
 from sqlalchemy.sql.sqltypes import Integer
 
-from udb.core.passwd import check_password, hash_password
-from udb.tools.i18n import gettext_lazy as _
-
 from ._json import JsonMixin
 from ._message import MessageMixin
 from ._status import StatusMixing
 from ._update import column_add, column_exists
+from ._url import UrlMixin
 
 # Debian trixie drop python3-zxcvbn.
 # Until further notice, let use zxcvbn-rs-py as a replacement
@@ -60,7 +60,7 @@ logger = logging.getLogger(__name__)
 Base = cherrypy.db.get_base()
 
 
-class User(JsonMixin, StatusMixing, MessageMixin, Base):
+class User(JsonMixin, StatusMixing, MessageMixin, UrlMixin, Base):
     __tablename__ = 'user'
 
     MFA_DISABLED = 0

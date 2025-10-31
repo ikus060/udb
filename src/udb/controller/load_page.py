@@ -22,14 +22,14 @@ import shutil
 import tempfile
 
 import cherrypy
+from cherrypy_foundation.flash import flash
+from cherrypy_foundation.form import CherryForm
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from wtforms import validators
 from wtforms.fields import FileField, SelectField
 
-from udb.controller import flash, show_exception, url_for
+from udb.controller import show_exception, url_for
 from udb.core.model import DnsRecord, DnsZone, Subnet, Vrf
-from udb.tools.i18n import gettext_lazy as _
-
-from .form import CherryForm
 
 
 class LoadForm(CherryForm):

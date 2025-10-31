@@ -15,12 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import cherrypy
+from cherrypy_foundation.flash import flash
+from cherrypy_foundation.form import CherryForm
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from wtforms.fields import BooleanField, PasswordField, StringField, SubmitField
 from wtforms.validators import InputRequired, Length
-
-from udb.controller import flash
-from udb.controller.form import CherryForm
-from udb.tools.i18n import gettext_lazy as _
 
 
 class LoginForm(CherryForm):

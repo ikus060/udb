@@ -17,19 +17,20 @@
 import ipaddress
 
 import cherrypy
+from cherrypy_foundation.form import CherryForm
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
+from cherrypy_foundation.url import url_for
+from cherrypy_foundation.widgets import SwitchWidget
 from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import aliased
 from wtforms.fields import BooleanField, FieldList, FormField, IntegerField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, StopValidation, ValidationError
 from wtforms.widgets import HiddenInput
 
-from udb.controller import url_for
 from udb.core.model import DnsZone, Subnet, User, Vrf
-from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
-from .fields import SelectMultipleObjectField, SelectObjectField, SubnetTableWidget, SwitchWidget
-from .form import CherryForm
+from .fields import SelectMultipleObjectField, SelectObjectField, SubnetTableWidget
 
 
 def _subnet_of(range1, range2):

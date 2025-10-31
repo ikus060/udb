@@ -17,16 +17,16 @@ import logging
 from collections import namedtuple
 
 import cherrypy
+from cherrypy_foundation.flash import flash
+from cherrypy_foundation.form import CherryForm
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.inspection import inspect
 from wtforms.fields import TextAreaField
 from wtforms.validators import InputRequired, Length
 
-from udb.controller import flash, show_exception, url_for, verify_perm
+from udb.controller import show_exception, url_for, verify_perm
 from udb.core.model import Message, Rule, RuleError, User
-from udb.tools.i18n import gettext_lazy as _
-
-from .form import CherryForm
 
 logger = logging.getLogger(__name__)
 

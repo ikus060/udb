@@ -17,10 +17,10 @@
 from unittest import mock
 
 import cherrypy
+from cherrypy_foundation.url import url_for
 from parameterized import parameterized
 from selenium.common.exceptions import ElementNotInteractableException
 
-from udb.controller import url_for
 from udb.controller.tests import WebCase
 from udb.core.model import User
 

@@ -15,10 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import cherrypy
+from cherrypy_foundation.tools.i18n import gettext as _
+from cherrypy_foundation.widgets import SideBySideMultiSelect
 from markupsafe import Markup
 from wtforms.fields import SelectField, SelectMultipleField
-
-from udb.tools.i18n import gettext as _
 
 
 class JinjaWidget:
@@ -50,14 +50,6 @@ class TableWidget(JinjaWidget):
 
 class SubnetTableWidget(JinjaWidget):
     filename = 'SubnetTableWidget.jinja'
-
-
-class SwitchWidget(JinjaWidget):
-    filename = 'SwitchWidget.jinja'
-
-
-class SideBySideMultiSelect(JinjaWidget):
-    filename = 'SideBySideMultiSelect.jinja'
 
 
 class SelectMultipleObjectField(SelectMultipleField):

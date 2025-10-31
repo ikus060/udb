@@ -17,6 +17,7 @@
 import ipaddress
 
 import cherrypy
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from sqlalchemy import (
     CheckConstraint,
     Column,
@@ -34,8 +35,6 @@ from sqlalchemy import (
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from sqlalchemy.orm import aliased, relationship, validates
 from sqlalchemy.types import Boolean, Integer, String
-
-from udb.tools.i18n import gettext_lazy as _
 
 from ._cidr import CidrType, InetType
 from ._common import CommonMixin

@@ -13,16 +13,16 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from cherrypy_foundation.form import CherryForm
+from cherrypy_foundation.tools.i18n import get_timezone_name, gettext
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
+from cherrypy_foundation.tools.i18n import list_available_locales, list_available_timezones
 from wtforms.fields import PasswordField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, Optional
 
 from udb.core.model import User
-from udb.tools.i18n import get_timezone_name, gettext
-from udb.tools.i18n import gettext_lazy as _
-from udb.tools.i18n import list_available_locales, list_available_timezones
 
 from .common_page import CommonPage
-from .form import CherryForm
 
 
 class NewUserForm(CherryForm):

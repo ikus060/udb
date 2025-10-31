@@ -18,9 +18,9 @@
 from datetime import datetime, timezone
 
 import cherrypy
+from cherrypy_foundation.tools import i18n
 
 from udb.controller.tests import WebCase
-from udb.tools import i18n
 
 
 class TestI18nWebCase(WebCase):

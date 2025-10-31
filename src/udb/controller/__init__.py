@@ -15,102 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 import re
-import time
-from collections import namedtuple
 
 import cherrypy
+from cherrypy_foundation.flash import flash
+from cherrypy_foundation.tools.i18n import get_translation
+from cherrypy_foundation.tools.i18n import gettext as _
+from cherrypy_foundation.url import url_for
 from markupsafe import Markup
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.inspection import inspect
 
-import udb
 from udb.core.model import Environment, Rule, RuleError
-from udb.tools.i18n import get_translation
-from udb.tools.i18n import gettext as _
 
 logger = logging.getLogger(__name__)
-
-FlashMessage = namedtuple('FlashMessage', ['message', 'level'])
-
-# Capture epoch time to invalidate cache of static file.
-_cache_invalidate = int(time.time())
-
-
-def flash(message, level='info'):
-    """
-    Add a flashin message to the session.
-    """
-    assert message
-    assert level in ['info', 'error', 'warning', 'success']
-    if 'flash' not in cherrypy.session:  # @UndefinedVariable
-        cherrypy.session['flash'] = []  # @UndefinedVariable
-    # Support Markup and string
-    if hasattr(message, '__html__'):
-        flash_message = FlashMessage(message, level)
-    else:
-        flash_message = FlashMessage(str(message), level)
-    cherrypy.session['flash'].append(flash_message)
-
-
-def get_flashed_messages():
-    if 'flash' in cherrypy.session:  # @UndefinedVariable
-        messages = cherrypy.session['flash']  # @UndefinedVariable
-        del cherrypy.session['flash']  # @UndefinedVariable
-        return messages
-    return []
-
-
-def url_for(*args, relative=None, **kwargs):
-    """
-    Generate a URL for the given endpoint, path (*args) with parameters (**kwargs)
-
-    If `relative` is None or not provided, default to absolute
-    path. If False, the output will be an absolute URL (including
-    the scheme, host, vhost, and script_name). If True, the output
-    will instead be a URL that is relative to the
-    current request path, perhaps including '..' atoms. If relative is
-    the string 'server', the output will instead be a URL that is
-    relative to the server root; i.e., it will start with a slash.
-    """
-    path = ""
-    for chunk in args:
-        if isinstance(chunk, str):
-            if not chunk.startswith('.'):
-                path += "/"
-            path += chunk.rstrip("/")
-        elif isinstance(chunk, int):
-            path += "/"
-            path += str(chunk)
-        elif hasattr(chunk, 'model_name') and hasattr(chunk, 'model_id'):
-            path += "/%s/%s" % (chunk.model_name, chunk.model_id)
-        elif hasattr(chunk, '_sa_instance_state'):
-            # SQLAlchemy object
-            base = chunk.__class__.__name__.lower()
-            key_name = inspect(chunk.__class__).primary_key[0].name
-            key = getattr(chunk, key_name)
-            path += "/%s/%s" % (base, key)
-        elif hasattr(chunk, '_sa_registry'):
-            # SQLAlchemy model
-            path += "/"
-            path += chunk.__name__.lower()
-            if len(args) == 1:
-                path += "/"
-        else:
-            raise ValueError('invalid positional arguments, url_for accept str, bytes, int: %r' % chunk)
-    # When path is empty, we are browsing the same page.
-    # Let keep the original query_string to avoid loosing it.
-    if path == "":
-        params = cherrypy.request.params.copy()
-        params.update(kwargs)
-        qs = [(k, v) for k, v in sorted(params.items()) if v is not None]
-    else:
-        qs = [(k, v) for k, v in sorted(kwargs.items()) if v is not None]
-    # Outside a request, use the external_url as base if defined
-    base = None
-    if not cherrypy.request.app:
-        cfg = cherrypy.tree.apps[''].cfg
-        base = cfg.external_url
-    return cherrypy.url(path=path, qs=qs, relative=relative, base=base)
 
 
 def verify_perm(perm):
@@ -122,22 +38,16 @@ def verify_perm(perm):
         raise cherrypy.HTTPError(403, 'Insufficient privileges')
 
 
-def template_processor(request):
-    cfg = cherrypy.tree.apps[''].cfg
+def template_processor():
+    request = cherrypy.serving.request
     values = {
         'lang': str(get_translation().locale),
-        'header_name': cfg.header_name,
-        'footer_url': cfg.footer_url,
-        'footer_name': cfg.footer_name,
-        'get_flashed_messages': get_flashed_messages,
-        'current_url': cherrypy.url(path=cherrypy.request.path_info),
-        'cache_invalidate': _cache_invalidate,
-        'version': udb.__version__,
+        'current_url': cherrypy.url(path=request.path_info),
     }
-    if hasattr(cherrypy.serving.request, 'login'):
-        values['username'] = cherrypy.serving.request.login
-    if hasattr(cherrypy.serving.request, 'currentuser'):
-        values['currentuser'] = cherrypy.serving.request.currentuser
+    if hasattr(request, 'login'):
+        values['username'] = request.login
+    if hasattr(request, 'currentuser'):
+        values['currentuser'] = request.currentuser
         values['pending_changes'] = Environment.count_pending_changes()
     return values
 
@@ -224,17 +134,20 @@ def _show_error(description, field=None, related=None, level='error', form=None)
 
     # From data collected, create an error message for the user.
     message = description
-    # Append liste of related records if provided.
+    # Append list of related records if provided.
     if related:
         # Related could be a single object or a list of objects.
         if not isinstance(related, list):
             related = [related]
         for obj in related:
             # From time to time, a record may have no summary. So provide a default value for the label.
-            message += Markup(' <a href="%s">%s</a>') % (
-                url_for(obj, 'edit'),
-                obj.summary or _('Show related record'),
-            )
+            try:
+                message += Markup(' <a href="%s">%s</a>') % (
+                    url_for(obj, 'edit'),
+                    obj.summary or _('Show related record'),
+                )
+            except ValueError:
+                message += f" {obj.summary}"
 
     if form and field in form:
         # Add message to form if field exists.

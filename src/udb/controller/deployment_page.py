@@ -18,8 +18,9 @@
 from collections import namedtuple
 
 import cherrypy
+from cherrypy_foundation.url import url_for
 
-from udb.controller import url_for, verify_perm
+from udb.controller import verify_perm
 from udb.controller.api import checkpassword
 from udb.controller.common_page import CommonApi
 from udb.core.model import Deployment, DnsRecord, DnsZone, Environment, User

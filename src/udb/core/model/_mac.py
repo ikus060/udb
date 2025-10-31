@@ -17,11 +17,10 @@
 
 import cherrypy
 import validators
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from sqlalchemy import Column, Index, String
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import validates
-
-from udb.tools.i18n import gettext_lazy as _
 
 from ._common import CommonMixin
 from ._follower import FollowerMixin

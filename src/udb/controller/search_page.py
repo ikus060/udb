@@ -16,11 +16,12 @@
 from collections import namedtuple
 
 import cherrypy
+from cherrypy_foundation.tools.i18n import gettext as _
+from cherrypy_foundation.url import url_for
 from sqlalchemy import desc, func, literal, select, union_all
 
-from udb.controller import url_for, validate_int
+from udb.controller import validate_int
 from udb.core.model import User, searchable_models
-from udb.tools.i18n import gettext as _
 
 Base = cherrypy.db.get_base()
 
@@ -141,7 +142,7 @@ class SearchPage:
                     owner=obj.owner,
                     notes=obj.notes,
                     modified_at=obj.modified_at and obj.modified_at.isoformat(),
-                    url=url_for(obj, 'edit', relative='server'),
+                    url=url_for(obj.model_name, obj.model_id, 'edit', relative='server'),
                 )
                 for obj in data
             ],
@@ -169,7 +170,7 @@ class SearchPage:
                 'model_id': obj.model_id,
                 'model_name': obj.model_name,
                 'summary': obj.summary,
-                'url': url_for(obj, 'edit', relative='server'),
+                'url': url_for(obj.model_name, obj.model_id, 'edit', relative='server'),
             }
             for obj in session.execute(query).all()
         ]

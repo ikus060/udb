@@ -20,12 +20,12 @@ from collections import namedtuple
 
 import cherrypy
 from cherrypy.process.plugins import SimplePlugin
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
+from cherrypy_foundation.tools.i18n import preferred_lang, preferred_timezone
 from sqlalchemy import and_, or_
 from sqlalchemy.event import listen, remove
 
 from udb.core.model import Follower, Message, User
-from udb.tools.i18n import gettext_lazy as _
-from udb.tools.i18n import preferred_lang, preferred_timezone
 
 Session = cherrypy.db.get_session()
 

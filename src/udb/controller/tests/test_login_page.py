@@ -16,11 +16,11 @@
 
 
 import cherrypy
+from cherrypy_foundation.passwd import hash_password
 from parameterized import parameterized, parameterized_class
 
 from udb.controller.tests import WebCase
 from udb.core.model import User
-from udb.core.passwd import hash_password
 
 
 class TestLogin(WebCase):

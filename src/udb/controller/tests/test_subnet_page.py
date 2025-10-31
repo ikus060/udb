@@ -15,11 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from cherrypy_foundation.url import url_for
 from parameterized import parameterized
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.keys import Keys
 
-from udb.controller import url_for
 from udb.controller.tests import WebCase
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, Vrf
 

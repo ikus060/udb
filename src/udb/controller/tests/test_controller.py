@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from udb.controller import url_for
+from cherrypy_foundation.url import url_for
+
 from udb.controller.tests import WebCase
 from udb.core.model import DnsZone
 
@@ -24,7 +25,7 @@ class TestController(WebCase):
     def test_url_for_with_relative(self):
         self.assertEqual(
             url_for(DnsZone, relative=True),
-            '%s:%s/dnszone/' % (self.HOST, self.PORT),
+            '%s:%s/dnszone' % (self.HOST, self.PORT),
         )
         self.assertEqual(
             url_for(DnsZone, 'new', relative='server'),
@@ -32,7 +33,7 @@ class TestController(WebCase):
         )
 
     def test_url_for_with_model(self):
-        self.assertEqual(url_for(DnsZone), 'http://%s:%s/dnszone/' % (self.HOST, self.PORT))
+        self.assertEqual(url_for(DnsZone), 'http://%s:%s/dnszone' % (self.HOST, self.PORT))
         self.assertEqual(url_for(DnsZone, 'new'), 'http://%s:%s/dnszone/new' % (self.HOST, self.PORT))
 
     def test_url_for_with_object(self):
@@ -43,25 +44,14 @@ class TestController(WebCase):
         # Then URL is create with object name and object id
         self.assertEqual(url_for(obj), 'http://%s:%s/dnszone/%s' % (self.HOST, self.PORT, obj.id))
 
-    def test_url_for_with_message(self):
-        # Given a database with a record
-        obj = DnsZone(name='bfh.ch').add()
-        obj.commit()
-        # When creating URL using the message
-        msg = obj.messages[-1]
-        # Then URL is create with object name and object id
-        self.assertEqual(url_for(msg), 'http://%s:%s/dnszone/%s' % (self.HOST, self.PORT, obj.id))
-
     def test_with_proxy(self):
         self.getPage('/dashboard/', headers=[('Host', 'www.example.test')])
         self.assertInBody('http://www.example.test/static/main.css')
-        self.assertInBody('http://www.example.test/static/main.js')
         self.assertInBody('http://www.example.test/static/favicon')
 
     def test_with_https_proxy(self):
         self.getPage('/dashboard/', headers=[('Host', 'www.example.test'), ('X-Forwarded-Proto', 'https')])
         self.assertInBody('https://www.example.test/static/main.css')
-        self.assertInBody('https://www.example.test/static/main.js')
         self.assertInBody('https://www.example.test/static/favicon')
 
     def test_with_forwarded_host_ignored(self):

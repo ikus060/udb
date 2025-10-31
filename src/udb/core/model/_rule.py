@@ -17,11 +17,10 @@
 import logging
 
 import cherrypy
+from cherrypy_foundation.tools.i18n import gettext as _
 from sqlalchemy import Boolean, CheckConstraint, Column, SmallInteger, String, event, text
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql import ddl
-
-from udb.tools.i18n import gettext as _
 
 from ._common import CommonMixin
 from ._follower import FollowerMixin

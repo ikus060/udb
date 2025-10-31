@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import cherrypy
+from cherrypy_foundation.form import CherryForm
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from sqlalchemy import func
 from sqlalchemy.orm import aliased
 from wtforms.fields import StringField
@@ -22,11 +24,9 @@ from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, Length
 
 from udb.core.model import DnsRecord, DnsZone, Subnet, User
-from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
 from .fields import SelectMultipleObjectField, SelectObjectField
-from .form import CherryForm
 
 
 def _subnet_query():

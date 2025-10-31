@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from udb.controller import url_for
+from cherrypy_foundation.url import url_for
+
 from udb.controller.tests import WebCase
 from udb.core.model import DhcpRecord, Mac, Subnet, User, Vrf
 

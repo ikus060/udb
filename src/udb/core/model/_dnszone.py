@@ -17,12 +17,11 @@
 import re
 
 import cherrypy
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from sqlalchemy import CheckConstraint, Column, ForeignKey, Index, Table, event, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import String
-
-from udb.tools.i18n import gettext_lazy as _
 
 from ._common import CommonMixin
 from ._follower import FollowerMixin

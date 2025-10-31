@@ -18,11 +18,12 @@
 from collections import namedtuple
 
 import cherrypy
+from cherrypy_foundation.tools.i18n import gettext as _
+from cherrypy_foundation.url import url_for
 from sqlalchemy import and_, desc, func, literal, select, union_all
 
-from udb.controller import url_for, validate_int
+from udb.controller import validate_int
 from udb.core.model import Message, User, auditable_models
-from udb.tools.i18n import gettext as _
 
 AuditRow = namedtuple(
     'AuditRow', ['model_id', 'status', 'summary', 'model_name', 'author_name', 'date', 'type', 'body', 'changes', 'url']

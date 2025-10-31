@@ -15,17 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import cherrypy
+from cherrypy_foundation.form import CherryForm
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from sqlalchemy import func
 from wtforms.fields import StringField
 from wtforms.fields.simple import TextAreaField
 from wtforms.validators import DataRequired, IPAddress, Length, MacAddress
 
 from udb.core.model import DhcpRecord, User, Vrf
-from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
 from .fields import SelectObjectField
-from .form import CherryForm
 
 
 class DhcpRecordForm(CherryForm):

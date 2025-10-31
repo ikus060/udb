@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from cherrypy_foundation.form import CherryForm
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from sqlalchemy import func
 from wtforms.fields import FieldList, FormField, StringField
 from wtforms.fields.simple import TextAreaField
@@ -21,11 +23,9 @@ from wtforms.form import Form
 from wtforms.validators import DataRequired, Length
 
 from udb.core.model import DhcpRecord, Mac, User
-from udb.tools.i18n import gettext_lazy as _
 
 from .common_page import CommonPage
 from .fields import SelectObjectField, TableWidget
-from .form import CherryForm
 
 
 class RelatedDhcpRecordForm(Form):

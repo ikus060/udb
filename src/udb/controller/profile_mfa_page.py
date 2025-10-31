@@ -16,14 +16,14 @@
 
 
 import cherrypy
+from cherrypy_foundation.flash import flash
+from cherrypy_foundation.form import CherryForm
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from wtforms.fields import StringField, SubmitField
 from wtforms.validators import ValidationError
 from wtforms.widgets import HiddenInput
 
-from udb.controller import flash
-from udb.controller.form import CherryForm
 from udb.core.model import User
-from udb.tools.i18n import gettext_lazy as _
 
 
 class MfaToggleForm(CherryForm):

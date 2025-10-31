@@ -16,8 +16,7 @@
 import inspect
 
 import cherrypy
-
-import udb.plugins.db  # noqa
+import cherrypy_foundation.plugins.db  # noqa
 
 from . import _bool_or  # noqa
 from . import _format  # noqa

@@ -26,6 +26,7 @@ dependencies = [
     "argon2-cffi>=18.3.0",
     "babel",
     "CherryPy>18",
+    "cherrypy-foundation @ git+https://gitlab.com/ikus-soft/cherrypy-foundation@23c76a1fff8852ed799bf502b1fd68ba0a89eb43",
     "cheroot<11",
     "configargparse",
     "email_validator",

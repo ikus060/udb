@@ -16,14 +16,14 @@
 
 
 import cherrypy
+from cherrypy_foundation.flash import flash
+from cherrypy_foundation.form import CherryForm
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from sqlalchemy import and_, literal, select, union_all
 from wtforms.fields import BooleanField
 
-from udb.controller import flash, show_exception, url_for
+from udb.controller import show_exception, url_for
 from udb.core.model import Follower, User, followable_model_name, followable_models
-from udb.tools.i18n import gettext_lazy as _
-
-from .form import CherryForm
 
 AllModel = union_all(
     *[
@@ -155,7 +155,7 @@ class NotificationsPage:
                     obj.estatus,
                     obj.model_name,
                     obj.summary,
-                    url_for(obj, 'edit'),
+                    url_for(obj.model_name, obj.model_id, 'edit'),
                 ]
                 for obj in query.all()
             ]

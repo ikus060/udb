@@ -18,9 +18,9 @@ import datetime
 import json
 from base64 import b64encode
 
+from cherrypy_foundation.url import url_for
 from parameterized import parameterized
 
-from udb.controller import url_for
 from udb.core.model import User
 
 

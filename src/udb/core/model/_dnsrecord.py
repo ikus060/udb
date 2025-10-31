@@ -17,6 +17,7 @@ import ipaddress
 from collections import namedtuple
 
 import cherrypy
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from sqlalchemy import (
     CheckConstraint,
     Column,
@@ -41,8 +42,6 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from sqlalchemy.orm import aliased, declared_attr, foreign, relationship, remote, validates
 from sqlalchemy.types import Integer, String
-
-from udb.tools.i18n import gettext_lazy as _
 
 from ._cidr import CidrType, InetType
 from ._common import CommonMixin
@@ -95,6 +94,7 @@ def _collapse_slave_subnets(obj):
     if row is None:
         return None
     # Get list of range
+    Row = namedtuple('Row', ['model_id', 'model_name', 'summary', 'url_for'])
     ranges = row.ranges.split(',')
     try:
         # Convert string to ip_network objects
@@ -102,15 +102,16 @@ def _collapse_slave_subnets(obj):
         # Combine the range
         combined_ranges = sorted(list(ipaddress.collapse_addresses(ranges)))
         # Replace original summary by our combined range
-        new_obj = namedtuple('Row', ['model_id', 'model_name', 'summary'])
-        return new_obj(
-            row.model_id,
-            row.model_name,
-            row.summary + ' ' + ', '.join(map(str, combined_ranges)),
-        )
+        new_summary = row.summary + ' ' + ', '.join(map(str, combined_ranges))
     except ValueError:
         # Return original zone object if summary is not a subnet ranges.
-        return row
+        new_summary = row.summary
+    return Row(
+        row.model_id,
+        row.model_name,
+        new_summary,
+        f"{row.model_name}/{row.model_id}",
+    )
 
 
 def _sqlite_split_part(string, delimiter, position):

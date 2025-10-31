@@ -17,23 +17,23 @@
 import importlib.resources
 
 import cherrypy
-import jinja2
-import jinjax
+import cherrypy_foundation.plugins.db  # noqa: import cherrypy.db
+import cherrypy_foundation.plugins.ldap  # noqa
+import cherrypy_foundation.plugins.restapi
+import cherrypy_foundation.plugins.scheduler  # noqa
+import cherrypy_foundation.plugins.smtp  # noqa
+import cherrypy_foundation.tools.auth  # noqa: import cherrypy.tools.auth
+import cherrypy_foundation.tools.auth_mfa  # noqa: import cherrypy.tools.auth_mfa
+import cherrypy_foundation.tools.errors  # noqa
+import cherrypy_foundation.tools.jinja2  # noqa: import cherrypy.tools.jinja2
+import cherrypy_foundation.tools.ratelimit
+import cherrypy_foundation.tools.secure_headers  # noqa: import cherrypy.tools.secure_headers
 import ujson
 from cherrypy import Application
+from cherrypy_foundation.error_page import error_page
+from cherrypy_foundation.flash import get_flashed_messages
 
 import udb.core.notification  # noqa
-import udb.plugins.db  # noqa: import cherrypy.db
-import udb.plugins.ldap  # noqa
-import udb.plugins.restapi
-import udb.plugins.scheduler  # noqa
-import udb.plugins.smtp  # noqa
-import udb.tools.auth  # noqa: import cherrypy.tools.auth
-import udb.tools.auth_mfa  # noqa: import cherrypy.tools.auth_mfa
-import udb.tools.errors  # noqa
-import udb.tools.jinja2  # noqa: import cherrypy.tools.jinja2
-import udb.tools.ratelimit
-import udb.tools.secure_headers  # noqa: import cherrypy.tools.secure_headers
 from udb.controller import template_processor, url_for
 from udb.controller.api import Api
 from udb.controller.audit_page import AuditPage
@@ -59,7 +59,6 @@ from udb.controller.subnet_page import SubnetPage
 from udb.controller.user_page import UserPage
 from udb.controller.vrf_page import VrfPage
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Subnet, User, Vrf
-from udb.tools.i18n import format_datetime, ngettext, ugettext
 
 SESSION_USER_KEY = 'username'
 
@@ -73,61 +72,10 @@ cherrypy.config.environments['development'] = {
     'log.screen': False,
 }
 
-#
-# Create singleton Jinja2 environement.
-#
-env = jinja2.Environment(
-    loader=jinja2.PackageLoader('udb'),
-    auto_reload=True,
-    autoescape=True,
-    trim_blocks=True,
-    lstrip_blocks=True,
-    extensions=['jinja2.ext.i18n'],
-)
-env.install_gettext_callables(ugettext, ngettext, newstyle=True)
-env.globals['url_for'] = url_for
-env.filters['format_datetime'] = format_datetime
-env.add_extension(jinjax.JinjaX)
-catalog = jinjax.Catalog(jinja_env=env, root_url="/static/")
-catalog.add_folder(importlib.resources.files('udb') / 'templates/components')
-catalog.add_folder(importlib.resources.files('udb') / 'templates/widgets')
-
-
-def _error_page(**kwargs):
-    """
-    Custom error page to return plain text error message.
-    """
-    # Check expected response type.
-    mtype = cherrypy.serving.response.headers.get('Content-Type') or cherrypy.tools.accept.callable(
-        ['text/html', 'text/plain', 'application/json']
-    )
-
-    # Replace message by generic one for 404 to avoid vulnerability.
-    if kwargs.get('status', '') == '404 Not Found':
-        kwargs['message'] = 'Nothing matches the given URI'
-
-    if mtype == 'text/plain':
-        return kwargs.get('message')
-    elif mtype == 'application/json':
-        return ujson.dumps({'message': kwargs.get('message', ''), 'status': kwargs.get('status', '')})
-    # Try to build a nice error page.
-    try:
-        env = cherrypy.request.config.get('tools.jinja2.env')
-        extra_processor = cherrypy.request.config.get('tools.jinja2.extra_processor')
-        values = dict()
-        if extra_processor:
-            values.update(extra_processor(cherrypy.request))
-        values.update(kwargs)
-        template = env.get_template('error_page.html')
-        return template.render(**values)
-    except Exception:
-        # If failing, send the raw error message.
-        return kwargs.get('message')
-
 
 def json_handler(*args, **kwargs):
     """
-    Custom Json Handler to produce a more compact Json.
+    Custom Json Handler to produce a more compact Json using ujson.
     """
     value = cherrypy.serving.request._json_inner_handler(*args, **kwargs)
     return ujson.dumps(value).encode('utf-8')
@@ -203,18 +151,32 @@ class Root(object):
 class UdbApplication(Application):
     def __init__(self, cfg):
         self.cfg = cfg
+
+        # Configure Jinja2 environment.
+        env = cherrypy.tools.jinja2.create_env(
+            package_name='udb',
+            globals={
+                'footer_name': cfg.footer_name,
+                'footer_url': cfg.footer_url,
+                'get_flashed_messages': get_flashed_messages,
+                'header_name': cfg.header_name,
+                'url_for': url_for,
+                'version': udb.__version__,
+            },
+        )
+
         # Pick the right implementation for storage
-        rate_limit_storage_class = udb.tools.ratelimit.RamRateLimit
+        rate_limit_storage_class = cherrypy_foundation.tools.ratelimit.RamRateLimit
         session_storage_class = cherrypy.lib.sessions.RamSession
         if cfg.session_dir:
-            rate_limit_storage_class = udb.tools.ratelimit.FileRateLimit
+            rate_limit_storage_class = cherrypy_foundation.tools.ratelimit.FileRateLimit
             session_storage_class = cherrypy.lib.sessions.FileSession
         cherrypy.config.update(
             {
                 # Define cherrypy config based on debug flag.
                 'environment': 'development' if cfg.debug else 'production',
                 # Define error page handler.
-                'error_page.default': _error_page,
+                'error_page.default': error_page,
                 # Configure database plugins
                 'db.uri': cfg.database_uri,
                 'db.debug': cfg.debug,
@@ -281,7 +243,7 @@ class UdbApplication(Application):
         )
 
         config = {
-            '/api': {'request.dispatch': udb.plugins.restapi.Dispatcher()},
+            '/api': {'request.dispatch': cherrypy_foundation.plugins.restapi.Dispatcher()},
         }
 
         # Initialize the application

@@ -20,8 +20,7 @@ import pwd
 import sys
 
 import configargparse
-
-from udb.tools.i18n import gettext as _
+from cherrypy_foundation.tools.i18n import gettext as _
 
 # Get package version
 try:

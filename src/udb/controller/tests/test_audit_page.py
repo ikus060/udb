@@ -18,10 +18,10 @@ import time
 from base64 import b64encode
 from unittest.mock import ANY
 
+from cherrypy_foundation.url import url_for
 from parameterized import parameterized
 from selenium.common.exceptions import NoSuchElementException
 
-from udb.controller import url_for
 from udb.controller.tests import WebCase
 
 

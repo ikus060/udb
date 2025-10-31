@@ -16,13 +16,12 @@
 import logging
 
 import cherrypy
+from cherrypy_foundation.flash import flash
+from cherrypy_foundation.form import CherryForm
+from cherrypy_foundation.tools.i18n import gettext_lazy as _
+from cherrypy_foundation.tools.sessions_timeout import SESSION_PERSISTENT
 from wtforms.fields import BooleanField, StringField, SubmitField
 from wtforms.validators import ValidationError
-
-from udb.controller import flash
-from udb.controller.form import CherryForm
-from udb.tools.i18n import gettext_lazy as _
-from udb.tools.sessions_timeout import SESSION_PERSISTENT
 
 # Define the logger
 logger = logging.getLogger(__name__)
