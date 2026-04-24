@@ -82,7 +82,7 @@ class DeploymentPage:
                     type=obj.type,
                     body=obj.body,
                     changes=obj.changes,
-                    url=url_for(obj.model_name, obj.model_id, 'edit', relative='server'),
+                    url=url_for(obj.model_name, obj.model_id, 'edit', _relative='server'),
                 )
                 for obj in deployment.changes
             ]

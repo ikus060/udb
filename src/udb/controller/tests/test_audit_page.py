@@ -21,6 +21,9 @@ from unittest.mock import ANY
 from cherrypy_foundation.url import url_for
 from parameterized import parameterized
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 from udb.controller.tests import WebCase
 
@@ -113,15 +116,15 @@ class AuditPageTest(WebCase):
             driver.get(url_for(self.base_url, ''))
             # Then all record type are displayed
             # When user click on Type Menu
-            type_menu = driver.find_element('css selector', '.cdt-btn-collectionfilter')
+            type_menu = driver.find_element('css selector', '.cf-dt-collectionfilter')
             type_menu.click()
             # When user select VRF in the menu
-            vrf_btn = driver.find_element(
-                'xpath', "//*[contains(@class, 'cdt-btn-filter')]/span[contains(text(), 'VRF')]"
-            )
+            vrf_btn = driver.find_element('xpath', "//*[contains(@class, 'dt-buttons')]//span[contains(text(), 'VRF')]")
             vrf_btn.click()
             # Then the table get filtered
-            driver.find_element('xpath', "//*[contains(text(), '(default)')]")
+            WebDriverWait(driver, 10).until(
+                EC.visibility_of_element_located((By.XPATH, "//*[contains(text(), '(default)')]"))
+            )
             with self.assertRaises(NoSuchElementException):
                 driver.find_element('xpath', "//*[contains(text(), 'dnsrecord_ptr_dnszone_required_rule')]")
 
@@ -131,18 +134,16 @@ class AuditPageTest(WebCase):
             # When making a query to audit log
             driver.get(url_for(self.base_url, ''))
             # When user select VRF in the menu
-            type_menu = driver.find_element('css selector', '.cdt-btn-collectionfilter')
+            type_menu = driver.find_element('css selector', '.cf-dt-collectionfilter')
             type_menu.click()
-            vrf_btn = driver.find_element(
-                'xpath', "//*[contains(@class, 'cdt-btn-filter')]/span[contains(text(), 'VRF')]"
-            )
+            vrf_btn = driver.find_element('xpath', "//*[contains(@class, 'dt-buttons')]//span[contains(text(), 'VRF')]")
             vrf_btn.click()
             # When user select User in the menu
             time.sleep(1)
-            type_menu = driver.find_element('css selector', '.cdt-btn-collectionfilter')
+            type_menu = driver.find_element('css selector', '.cf-dt-collectionfilter')
             type_menu.click()
             user_btn = driver.find_element(
-                'xpath', "//*[contains(@class, 'cdt-btn-filter')]/span[contains(text(), 'User')]"
+                'xpath', "//*[contains(@class, 'dt-buttons')]//span[contains(text(), 'User')]"
             )
             user_btn.click()
             # Then the table get filtered

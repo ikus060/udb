@@ -131,7 +131,7 @@ class AuditPage:
                     type=row.type,
                     body=row.body,
                     changes=Message.json_changes(row.changes),
-                    url=url_for(row.model_name, row.model_id, 'edit', relative='server'),
+                    url=url_for(row.model_name, row.model_id, 'edit', _relative='server'),
                 )
                 for row in data
             ],

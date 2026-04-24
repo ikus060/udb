@@ -12,7 +12,7 @@
 {# Add menu to filter by VRF. #}
 {% set ns = namespace(vrf_btn=[]) %}
 {% for id, name, count in vrf_list|sort(attribute=1) %}
-  {% set ns.vrf_btn = ns.vrf_btn + [{'text':'%s (%s)' % (name, count), 'extend': 'btnfilter', 'column': 'vrf_id:name', 'search': '^' + id|string + '$' , 'regex': True, 'multi': True}] %}
+  {% set ns.vrf_btn = ns.vrf_btn + [{'text':'%s (%s)' % (name, count), 'extend': 'filter', 'column': 'vrf_id:name', 'search': '^' + id|string + '$' , 'regex': True, 'multi': True}] %}
 {% endfor %}
 {% set vrf_menu = {'text': _('VRF') + ' ', 'extend': 'collectionfilter', 'popoverTitle': _('VRF'), 'buttons': ns.vrf_btn, 'column': 'vrf_id:name' } %}
 {% set extra_buttons = [vrf_menu] %}

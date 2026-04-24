@@ -24,11 +24,11 @@ from udb.core.model import DnsZone
 class TestController(WebCase):
     def test_url_for_with_relative(self):
         self.assertEqual(
-            url_for(DnsZone, relative=True),
+            url_for(DnsZone, _relative=True),
             '%s:%s/dnszone' % (self.HOST, self.PORT),
         )
         self.assertEqual(
-            url_for(DnsZone, 'new', relative='server'),
+            url_for(DnsZone, 'new', _relative='server'),
             '/dnszone/new',
         )
 

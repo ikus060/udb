@@ -45,7 +45,7 @@
          class="collapse navbar-collapse flex-column align-items-start w-100 mt-3">
       {# Typeahead Search #}
       <form method="GET" action="{{ url_for('search') }}">
-        <Typeahead name="q" autofocus={{ True }} dynamic={{ True }} filter={{ False }} hint={{ True }} source={{ typeahead_source }} group={{ typeahead_group }} display={{ ["summary"] }} href={{ typeahead_url }} />
+        <cf:Typeahead name="q" autofocus={{ True }} dynamic={{ True }} filter={{ False }} hint={{ True }} source={{ typeahead_source }} group={{ typeahead_group }} display={{ ["summary"] }} href={{ typeahead_url }} />
       </form>
       {# Network #}
       <div class="navbar-text mt-2 text-white">

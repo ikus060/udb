@@ -47,10 +47,7 @@ from ._search_string import SearchableMixing
 from ._status import StatusMixing
 from ._vrf import Vrf
 
-Base = cherrypy.db.get_base()
-
-
-Session = cherrypy.db.get_session()
+Base = cherrypy.db.base
 
 
 class Subnet(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):

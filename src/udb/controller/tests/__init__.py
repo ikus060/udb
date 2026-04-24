@@ -78,13 +78,7 @@ class WebCase(BaseClass):
 
     def wait_for_tasks(self):
         if hasattr(cherrypy, 'scheduler'):
-            count = 0
-            time.sleep(0.02)
-            while count < 20 and len(cherrypy.scheduler.list_tasks()) or cherrypy.scheduler.is_job_running():
-                time.sleep(0.02)
-                count += 1
-            self.assertFalse(cherrypy.scheduler.list_tasks())
-            self.assertFalse(cherrypy.scheduler.is_job_running())
+            cherrypy.scheduler.wait_for_jobs()
 
     @classmethod
     def setup_server(cls):
@@ -102,9 +96,11 @@ class WebCase(BaseClass):
     def setUp(self):
         super().setUp()
         # Drop previous tables
+        cherrypy.db.clear_sessions()
         cherrypy.db.drop_all()
-        # Create new tables.
         cherrypy.db.create_all()
+        cherrypy.db.session.commit()
+        cherrypy.engine.publish('graceful')
         if self.login:
             self._login()
 
@@ -113,7 +109,6 @@ class WebCase(BaseClass):
         self.wait_for_tasks()
         # Drop tables
         cherrypy.db.clear_sessions()
-        cherrypy.db.drop_all()
         # Delete selenium download
         if getattr(self, '_selenium_download_dir', False):
             shutil.rmtree(self._selenium_download_dir)
@@ -181,10 +176,6 @@ class WebCase(BaseClass):
             line = self.body.splitlines()[row - 1].decode('utf8', errors='replace')
             msg = msg or ('URL %s contains invalid HTML: %s on line %s: %s' % (self.url, e, row, line))
             self.fail(msg)
-
-    @property
-    def session(self):
-        return cherrypy.db.get_session()
 
     @property
     def baseurl(self):

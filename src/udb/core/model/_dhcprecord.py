@@ -57,9 +57,7 @@ from ._subnet import Subnet
 from ._update import trigger_on_update
 from ._vrf import Vrf
 
-Base = cherrypy.db.get_base()
-
-Session = cherrypy.db.get_session()
+Base = cherrypy.db.base
 
 
 class DhcpRecord(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):
@@ -312,11 +310,11 @@ def dhcprecord_before_flush(session, flush_context, obj):
     # Update relation to IP when vrf_id or ip get updated
     if obj.attr_has_changes('vrf', 'ip') and obj.ip is not None and obj.vrf is not None:
         obj._ip  # Fetch record for history tracking
-        obj._ip = Ip.unique_ip(session, obj.ip, obj.vrf)
+        obj._ip = Ip.unique_ip(obj.ip, obj.vrf)
 
     if obj.attr_has_changes('mac'):
         obj._mac  # Fetch record for history tracking
-        obj._mac = Mac.unique_mac(session, obj.mac)
+        obj._mac = Mac.unique_mac(obj.mac)
 
 
 @event.listens_for(Subnet, 'after_update')

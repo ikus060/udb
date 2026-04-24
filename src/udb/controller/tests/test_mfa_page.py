@@ -97,7 +97,7 @@ class MfaPageTest(WebCase):
         # Given an authenticated user with MFA enabled and already verified
         session = self.Session(id=self.session_id)
         session.load()
-        session['_auth_mfa_username'] = self.username
+        session['_auth_mfa_user_key'] = self.username
         session['_auth_mfa_time'] = session.now()
         session['_auth_mfa_trusted_ip_list'] = ['127.0.0.1']
         session.save()
@@ -111,7 +111,7 @@ class MfaPageTest(WebCase):
         # Given an authenticated user with MFA enabled and already verified
         session = self.Session(id=self.session_id)
         session.load()
-        session['_auth_mfa_username'] = self.username
+        session['_auth_mfa_user_key'] = self.username
         session['_auth_mfa_time'] = session.now() - datetime.timedelta(minutes=session.timeout)
         session.save()
         # When requesting /mfa/ page
@@ -129,7 +129,7 @@ class MfaPageTest(WebCase):
         # Given an authenticated user with MFA enabled and already verified
         session = self.Session(id=self.session_id)
         session.load()
-        session['_auth_mfa_username'] = self.username
+        session['_auth_mfa_user_key'] = self.username
         session['_auth_mfa_time'] = session.now()
         session.save()
         # When requesting /mfa/ page from a different ip

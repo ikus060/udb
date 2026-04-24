@@ -20,5 +20,4 @@
 {%- else -%}
   {%- set model_name = value -%}
 {%- endif -%}
-<i {{ attrs.render(class="bi " + icon_table.get(model_name, '') ) }}
-   aria-hidden="true"></i>
+<cf:Icon :value="icon_table.get(model_name, value)" />

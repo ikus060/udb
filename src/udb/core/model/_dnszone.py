@@ -40,7 +40,7 @@ NAME_PATTERN = re.compile(
 )
 
 
-Base = cherrypy.db.get_base()
+Base = cherrypy.db.base
 
 dnszone_subnet = Table(
     'dnszone_subnet',

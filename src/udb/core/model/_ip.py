@@ -31,9 +31,7 @@ from ._search_string import SearchableMixing
 from ._subnet import Subnet
 from ._vrf import Vrf
 
-Base = cherrypy.db.get_base()
-
-Session = cherrypy.db.get_session()
+Base = cherrypy.db.base
 
 
 class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, Base):
@@ -49,26 +47,24 @@ class Ip(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, 
         return cls.ip.host() + " " + cls.notes
 
     @classmethod
-    def unique_ip(cls, session, ip_value, vrf):
+    def unique_ip(cls, ip_value, vrf):
         """
         Using a session cache, make sure to return unique IP object.
         """
         assert ip_value and vrf
-        cache = getattr(session, '_unique_ip_cache', None)
-        if cache is None:
-            session._unique_ip_cache = cache = {}
-
-        chache_key = (ip_value, vrf.id)
-        if chache_key in cache:
-            return cache[chache_key]
-        else:
-            with session.no_autoflush:
-                obj = session.query(Ip).filter_by(ip=ip_value, vrf_id=vrf.id).first()
-                if not obj:
-                    obj = Ip(ip=ip_value, vrf=vrf)
-                    session.add(obj)
-            cache[chache_key] = obj
+        session = cherrypy.db.session
+        # Search current sessions for matching IP
+        matching_ip = next(
+            (obj for obj in session.new if isinstance(obj, Ip) and obj.ip == ip_value and obj.vrf == vrf), None
+        )
+        if matching_ip:
+            return matching_ip
+        # If not found in our session, search database.
+        obj = Ip.query.filter_by(ip=ip_value, vrf_id=vrf.id).first()
+        if obj:
             return obj
+        # If not found in database, create it.
+        return Ip(ip=ip_value, vrf=vrf).add()
 
     @hybrid_property
     def summary(self):

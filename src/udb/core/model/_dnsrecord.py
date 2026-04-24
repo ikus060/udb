@@ -57,9 +57,7 @@ from ._subnet import Subnet
 from ._update import trigger_on_update
 from ._vrf import Vrf
 
-Base = cherrypy.db.get_base()
-
-Session = cherrypy.db.get_session()
+Base = cherrypy.db.base
 
 
 def _collapse_slave_subnets(obj):
@@ -668,7 +666,7 @@ def dnsrecord_before_flush(session, flush_context, obj):
         from ._ip import Ip
 
         obj._ip  # Fetch record for history tracking
-        obj._ip = Ip.unique_ip(session, obj.ip_value, obj.vrf)
+        obj._ip = Ip.unique_ip(obj.ip_value, obj.vrf)
     else:
         obj._ip = None
 

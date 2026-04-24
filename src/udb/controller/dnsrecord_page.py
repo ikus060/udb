@@ -156,7 +156,7 @@ class DnsRecordPage(CommonPage):
                 reverse_record.add().commit()
                 flash(_("Reverse DNS Record created."))
             except Exception as e:
-                cherrypy.db.get_session().rollback()
+                cherrypy.db.session.rollback()
                 flash(_("Cannnot create Reverse DNS Record."), level='error')
                 show_exception(e, obj=reverse_record)
                 reverse_record = None

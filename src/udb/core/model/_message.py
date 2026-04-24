@@ -20,7 +20,7 @@ import json
 import cherrypy
 from cherrypy_foundation.tools.i18n import gettext as _
 from sqlalchemy import Boolean, Column, String, and_, event, inspect
-from sqlalchemy.orm import backref, declared_attr, foreign, relationship, remote
+from sqlalchemy.orm import Session, backref, declared_attr, foreign, relationship, remote
 from sqlalchemy.sql.functions import func
 from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.sql.sqltypes import Integer
@@ -29,8 +29,7 @@ from ._json import JsonMixin
 from ._search_string import SearchableMixing
 from ._timestamp import Timestamp
 
-Base = cherrypy.db.get_base()
-Session = cherrypy.db.get_session()
+Base = cherrypy.db.base
 
 
 def _get_model_changes(model, ignore=['messages']):

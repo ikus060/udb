@@ -23,7 +23,7 @@ from sqlalchemy.sql.sqltypes import Integer
 
 from ._user import User
 
-Base = cherrypy.db.get_base()
+Base = cherrypy.db.base
 
 
 class Follower(Base):

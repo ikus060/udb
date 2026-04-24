@@ -121,7 +121,7 @@ class TestSearchPage(WebCase):
         with self.selenium() as driver:
             # When typing in search bar
             driver.get(url_for('profile'))
-            search_bar = driver.find_element('css selector', 'input.js-typeahead')
+            search_bar = driver.find_element('css selector', 'input.cf-typeahead')
             search_bar.click()
             search_bar.send_keys('DMZ')
             # Then the web page is loaded without error.

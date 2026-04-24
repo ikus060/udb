@@ -38,7 +38,7 @@ from ._status import StatusMixing
 from ._subnet import Subnet
 from ._vrf import Vrf
 
-Base = cherrypy.db.get_base()
+Base = cherrypy.db.base
 
 
 def _deploy(deployment_id, base_url):
@@ -259,7 +259,7 @@ class Deployment(CommonMixin, JsonMixin, Base):
         assert self.id, 'deployment must be commit'
         assert self.state == Deployment.STATE_STARTING, 'cannot schedule deployment twice'
         # Detach the object from the session. Otherwise it cause trouble with multi-threading.
-        cherrypy.engine.publish('schedule_task', _deploy, self.id, base_url)
+        cherrypy.engine.publish('scheduler:add_job_now', _deploy, self.id, base_url)
 
     def to_json(self):
         return {

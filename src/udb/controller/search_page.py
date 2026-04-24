@@ -23,8 +23,6 @@ from sqlalchemy import desc, func, literal, select, union_all
 from udb.controller import validate_int
 from udb.core.model import User, searchable_models
 
-Base = cherrypy.db.get_base()
-
 SearchableModel = union_all(
     *[
         select(
@@ -61,7 +59,7 @@ class SearchPage:
             )
             .group_by(SearchableModel.c.model_name)
         )
-        session = cherrypy.db.get_session()
+        session = cherrypy.db.session
         counts = {row[0]: row[1] for row in session.execute(query).all()}
         # Determine active tab
         active = None
@@ -124,7 +122,7 @@ class SearchPage:
             query = query.filter(SearchableModel.c.model_name == model_name)
 
         # Execute the query
-        session = cherrypy.db.get_session()
+        session = cherrypy.db.session
         filtered = session.execute(select(func.count("*")).select_from(query.subquery())).first()[0]
         data = session.execute(query.offset(start).limit(length)).all()
 
@@ -142,7 +140,7 @@ class SearchPage:
                     owner=obj.owner,
                     notes=obj.notes,
                     modified_at=obj.modified_at and obj.modified_at.isoformat(),
-                    url=url_for(obj.model_name, obj.model_id, 'edit', relative='server'),
+                    url=url_for(obj.model_name, obj.model_id, 'edit', _relative='server'),
                 )
                 for obj in data
             ],
@@ -164,13 +162,13 @@ class SearchPage:
             )
             .order_by(~SearchableModel.c.summary.startswith(q))
         )
-        session = cherrypy.db.get_session()
+        session = cherrypy.db.session
         data = [
             {
                 'model_id': obj.model_id,
                 'model_name': obj.model_name,
                 'summary': obj.summary,
-                'url': url_for(obj.model_name, obj.model_id, 'edit', relative='server'),
+                'url': url_for(obj.model_name, obj.model_id, 'edit', _relative='server'),
             }
             for obj in session.execute(query).all()
         ]

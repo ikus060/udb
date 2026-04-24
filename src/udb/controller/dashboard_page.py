@@ -20,8 +20,6 @@ from sqlalchemy import desc, func
 
 from udb.core.model import DhcpRecord, DnsRecord, DnsZone, Ip, Mac, Message, Subnet, User, Vrf
 
-Base = cherrypy.db.get_base()
-
 
 class DashboardPage:
     @cherrypy.expose()

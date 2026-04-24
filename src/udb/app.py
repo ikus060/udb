@@ -24,7 +24,8 @@ import cherrypy_foundation.plugins.scheduler  # noqa
 import cherrypy_foundation.plugins.smtp  # noqa
 import cherrypy_foundation.tools.auth  # noqa: import cherrypy.tools.auth
 import cherrypy_foundation.tools.auth_mfa  # noqa: import cherrypy.tools.auth_mfa
-import cherrypy_foundation.tools.errors  # noqa
+
+# import cherrypy_foundation.tools.errors  # noqa
 import cherrypy_foundation.tools.jinja2  # noqa: import cherrypy.tools.jinja2
 import cherrypy_foundation.tools.ratelimit
 import cherrypy_foundation.tools.secure_headers  # noqa: import cherrypy.tools.secure_headers
@@ -88,16 +89,18 @@ def json_handler(*args, **kwargs):
     checkpassword=[User.authenticate, cherrypy.ldap.authenticate],
 )
 @cherrypy.tools.auth_mfa(mfa_enabled=lambda: cherrypy.request.currentuser.mfa)
-@cherrypy.tools.i18n(func=lambda: getattr(cherrypy.request, 'currentuser', False) and cherrypy.request.currentuser.lang)
+@cherrypy.tools.i18n(
+    lang=lambda: getattr(cherrypy.request, 'currentuser', False) and cherrypy.request.currentuser.lang,
+    tzinfo=lambda: getattr(cherrypy.serving.request, 'currentuser', False) and cherrypy.request.currentuser.timezone,
+)
 @cherrypy.tools.proxy(local=None, remote='X-Real-IP')
 @cherrypy.tools.ratelimit(on=False, session_user_key=SESSION_USER_KEY)
 @cherrypy.tools.secure_headers(
     csp={
         "default-src": "'self'",
-        "script-src": ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net/"),
-        "style-src": ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net/"),
-        "img-src": ("'self'", "data:", "https://cdn.jsdelivr.net/"),
-        "font-src": "https://cdn.jsdelivr.net/",
+        "script-src": ("'self'", "'unsafe-inline'"),
+        "style-src": ("'self'", "'unsafe-inline'"),
+        "img-src": ("'self'", "data:"),
     }
 )
 @cherrypy.tools.sessions()
@@ -180,6 +183,8 @@ class UdbApplication(Application):
                 # Configure database plugins
                 'db.uri': cfg.database_uri,
                 'db.debug': cfg.debug,
+                # Configure external_url
+                'tools.proxy.base': cfg.external_url,
                 # Configure session storage
                 'tools.sessions.debug': cfg.debug,
                 'tools.sessions.storage_class': session_storage_class,

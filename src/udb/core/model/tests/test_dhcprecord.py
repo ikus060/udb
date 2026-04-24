@@ -16,6 +16,7 @@
 
 from unittest import mock
 
+import cherrypy
 from sqlalchemy.exc import IntegrityError
 
 from udb.controller.tests import WebCase
@@ -203,7 +204,7 @@ class DhcpRecordTest(WebCase):
             subnet.vrf = new_vrf
             subnet.add().commit()
         subnet.rollback()
-        is_sqlite = 'sqlite' in str(self.session.bind)
+        is_sqlite = 'sqlite' in str(cherrypy.db.session.bind)
         if is_sqlite:
             # SQLite doesn't return the name of the constraint.
             self.assertIn('FOREIGN KEY constraint failed', str(cm.exception))

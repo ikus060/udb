@@ -120,7 +120,7 @@ class SubnetTest(WebCase):
         with self.assertRaises(DatabaseError):
             subnet.slave_subnets = [Subnet(range='10.255.0.0/16')]
             subnet.add().commit()
-        self.session.rollback()
+        subnet.rollback()
         # Then data was not updated
         self.assertEqual(1, Subnet.query.count())
 

@@ -20,7 +20,6 @@ import cherrypy
 from cherrypy_foundation.flash import flash
 from cherrypy_foundation.form import CherryForm
 from cherrypy_foundation.tools.i18n import gettext_lazy as _
-from sqlalchemy.exc import DatabaseError
 from sqlalchemy.inspection import inspect
 from wtforms.fields import TextAreaField
 from wtforms.validators import InputRequired, Length
@@ -97,7 +96,7 @@ class CommonPage(object):
     def _to_list(self, data):
         if not isinstance(data, list):
             data = list(data)
-        data.append(url_for(self.model, data[0], 'edit', relative='server'))
+        data.append(url_for(self.model, data[0], 'edit', _relative='server'))
         return data
 
     @cherrypy.expose
@@ -172,7 +171,7 @@ class CommonPage(object):
                 Rule.verify(obj, errors='raise', severity=Rule.SEVERITY_ENFORCED)
                 obj.commit()
             except Exception as e:
-                cherrypy.db.get_session().rollback()
+                cherrypy.db.session.rollback()
                 show_exception(e, form=form, obj=obj)
             else:
                 flash(_('Record created successfully.'))
@@ -222,13 +221,13 @@ class CommonPage(object):
                 Rule.verify(obj, errors='raise', severity=Rule.SEVERITY_ENFORCED)
                 obj.commit()
             except Exception as e:
-                cherrypy.db.get_session().rollback()
+                cherrypy.db.session.rollback()
                 # Recreate an object from the copied fields to make sure the message contains the right values.
                 obj_copy.pop('_sa_instance_state')
                 edited_obj = self.model(**obj_copy)
                 show_exception(e, form=form, obj=edited_obj)
                 # Then we need to rollback to clear the sqlalchemy session.
-                cherrypy.db.get_session().rollback()
+                cherrypy.db.session.rollback()
             else:
                 flash(_('Record updated successfully'))
                 Rule.verify(obj)
@@ -283,12 +282,6 @@ class CommonPage(object):
 
 
 @cherrypy.expose
-@cherrypy.tools.errors(
-    error_table={
-        ValueError: 400,
-        DatabaseError: 400,
-    }
-)
 class CommonApi(object):
     def __init__(
         self,

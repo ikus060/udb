@@ -2,16 +2,42 @@
 
 include /usr/share/dpkg/pkg-info.mk
 
+export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_UDB := $(DEB_VERSION_UPSTREAM)
+
 %:
 	dh $@ --buildsystem=pybuild --test-pytest
 
+# For testing, we need a timezone
+override_dh_auto_test:
+	TZ=UTC dh_auto_test
+
 execute_after_dh_auto_install:
-	rm -rf debian/udb/usr/lib/python*/dist-packages/udb/controller/tests
-	rm -rf debian/udb/usr/lib/python*/dist-packages/udb/core/tests
-	rm -rf debian/udb/usr/lib/python*/dist-packages/udb/tests
-	rm -f  debian/udb/usr/lib/python*/dist-packages/udb/test.py
-	rm -f  debian/udb/usr/lib/python*/dist-packages/udb/static/bootstrap5/*
-	rm -f  debian/udb/usr/lib/python*/dist-packages/udb/static/datatables/css/*
-	rm -f  debian/udb/usr/lib/python*/dist-packages/udb/static/datatables/images/*
-	rm -f  debian/udb/usr/lib/python*/dist-packages/udb/static/jquery/*
-	rm -f  debian/udb/usr/lib/python*/dist-packages/udb/static/popper.js/*
+# Compile locale
+	for pofile in debian/udb/usr/lib/python$(PYTHON3_DEFAULT)/dist-packages/bfh_science_ssp/locales/*/LC_MESSAGES/*.po ; do \
+		mofile=`echo $$pofile | sed -e "s/\.po/\.mo/g"`; \
+		msgfmt $$pofile -o $$mofile; \
+	done
+# Remove tests files
+	find debian/udb/usr/lib/python$(PYTHON3_DEFAULT)/dist-packages/rdiffweb -type d -name "tests" -exec rm -rf {} +
+
+# Generate bash-completions with shtab
+execute_after_dh_bash-completion:
+	PYTHONPATH=debian/udb/usr/lib/python$(PYTHON3_DEFAULT)/dist-packages:$(PYTHONPATH) \
+	shtab --shell=bash -u bfh_science_ssp.config.get_parser --error-unimportable --prog udb \
+		> debian/udb.bash-completion
+
+# Generate man page from argparse
+execute_after_dh_installman:
+	mkdir -p debian/udb/usr/share/man/man1
+	PYTHONPATH=debian/udb/usr/lib/python$(PYTHON3_DEFAULT)/dist-packages:$(PYTHONPATH) \
+	argparse-manpage --module bfh_science_ssp.config --function get_parser \
+		--version "$(DEB_VERSION_UPSTREAM)" \
+		--output debian/udb/usr/share/man/man1/udb.1
+
+execute_before_dh_auto_clean:
+	rm -rf *.egg-info
+
+# Generate orig.tar.gz
+gentarball:
+	git archive --format=tar HEAD --prefix=$(DEB_SOURCE)-$(DEB_VERSION_UPSTREAM)/ | gzip -9 > ../$(DEB_SOURCE)_$(DEB_VERSION_UPSTREAM).orig.tar.gz
+	mk-origtargz --compression gzip ../$(DEB_SOURCE)_$(DEB_VERSION_UPSTREAM).orig.tar.gz

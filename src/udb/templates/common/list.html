@@ -26,11 +26,11 @@
   {% set columns = columns + [{'name':'url', 'title':'', 'orderable':False, 'render':'button', 'render_kwargs': {'label':_('Edit')}, 'width': '30px'}] %}
   {# Add Status Filter if status column exists #}
   {% if 'status' in (columns|map(attribute='name')|list) %}
-    {% set buttons = buttons + [{'text': _('Show Deleted'), 'extend': 'btnfilter', 'column': 'status:name', 'search':'(0|1|2)', 'search_off': '(1|2)', 'regex': True}] %}
+    {% set buttons = buttons + [{'text': _('Show Deleted'), 'extend': 'filter', 'column': 'status:name', 'search':'(0|1|2)', 'search_off': '(1|2)', 'regex': True, 'className':'udb-btn-filter-deleted'}] %}
   {% endif %}
   {# Add Owner filter if owner column exists #}
   {% if 'owner' in (columns|map(attribute='name')|list) %}
-    {% set buttons = buttons + [{'text': _('Show only mine'), 'extend': 'btnfilter', 'column': 'owner:name', 'search': currentuser.summary}] %}
+    {% set buttons = buttons + [{'text': _('Show only mine'), 'extend': 'filter', 'column': 'owner:name', 'search': currentuser.summary}] %}
   {% endif %}
   {# Add "Export" button collection #}
   {% set download_filename = _('export_') + model_name %}

@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import inspect
 
-import cherrypy
 import cherrypy_foundation.plugins.db  # noqa
 
 from . import _bool_or  # noqa
@@ -34,8 +33,6 @@ from ._rule import Rule, RuleError  # noqa
 from ._subnet import Subnet  # noqa
 from ._user import User  # noqa
 from ._vrf import Vrf  # noqa
-
-Base = cherrypy.db.get_base()
 
 # Build list of model with 'messages' attributes
 all_models = [value for value in locals().values() if inspect.isclass(value) and hasattr(value, '__tablename__')]

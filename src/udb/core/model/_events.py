@@ -16,10 +16,8 @@
 
 import itertools
 
-import cherrypy
 from sqlalchemy import event
-
-Session = cherrypy.db.get_session()
+from sqlalchemy.orm import Session
 
 _registry = {'after_flush': [], 'before_flush': []}
 

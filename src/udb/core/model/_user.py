@@ -57,7 +57,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-Base = cherrypy.db.get_base()
+Base = cherrypy.db.base
 
 
 class User(JsonMixin, StatusMixing, MessageMixin, UrlMixin, Base):

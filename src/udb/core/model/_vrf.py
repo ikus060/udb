@@ -28,7 +28,7 @@ from ._message import MessageMixin
 from ._search_string import SearchableMixing
 from ._status import StatusMixing
 
-Base = cherrypy.db.get_base()
+Base = cherrypy.db.base
 
 
 class Vrf(CommonMixin, JsonMixin, StatusMixing, MessageMixin, FollowerMixin, SearchableMixing, Base):

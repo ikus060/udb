@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
+import cherrypy
 from cherrypy_foundation.url import url_for
 from parameterized import parameterized
 
@@ -531,7 +531,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
         # Then an exception is raised.
         self.assertStatus(200)
         # Make sure the constraint of dnsrecord is not shown.
-        is_sqlite = 'sqlite' in str(self.session.bind)
+        is_sqlite = 'sqlite' in str(cherrypy.db.session.bind)
         if is_sqlite:
             self.assertInBody('Database integrity error:')
             self.assertInBody('FOREIGN KEY constraint failed')
@@ -549,7 +549,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
         # Then an exception is raised.
         self.assertStatus(200)
         # Make sure the constraint of dnsrecord is not shown.
-        is_sqlite = 'sqlite' in str(self.session.bind)
+        is_sqlite = 'sqlite' in str(cherrypy.db.session.bind)
         if is_sqlite:
             self.assertInBody('Database integrity error:')
             self.assertInBody('FOREIGN KEY constraint failed')
@@ -573,7 +573,7 @@ class DnsRecordPageTest(WebCase, CommonTest):
         # Then an exception is raised.
         self.assertStatus(200)
         # Make sure the constraint of dnsrecord is not shown.
-        is_sqlite = 'sqlite' in str(self.session.bind)
+        is_sqlite = 'sqlite' in str(cherrypy.db.session.bind)
         if is_sqlite:
             self.assertInBody('Database integrity error:')
             self.assertInBody('FOREIGN KEY constraint failed')

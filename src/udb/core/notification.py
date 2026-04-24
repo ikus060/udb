@@ -24,10 +24,9 @@ from cherrypy_foundation.tools.i18n import gettext_lazy as _
 from cherrypy_foundation.tools.i18n import preferred_lang, preferred_timezone
 from sqlalchemy import and_, or_
 from sqlalchemy.event import listen, remove
+from sqlalchemy.orm import Session
 
 from udb.core.model import Follower, Message, User
-
-Session = cherrypy.db.get_session()
 
 Recipient = namedtuple('Recipient', 'email,lang,timezone')
 
@@ -78,7 +77,7 @@ class NotifiationPlugin(SimplePlugin):
         # On every commit, let trigger a background task to collect
         # Messages to be notified.
         del self._new_messages[session]
-        self.bus.publish('schedule_task', self._notification_task)
+        self.bus.publish('scheduler:add_job_now', self._notification_task)
 
     def _notification_task(self):
         """

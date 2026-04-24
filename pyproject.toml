@@ -26,7 +26,7 @@ dependencies = [
     "argon2-cffi>=18.3.0",
     "babel",
     "CherryPy>18",
-    "cherrypy-foundation @ git+https://gitlab.com/ikus-soft/cherrypy-foundation@23c76a1fff8852ed799bf502b1fd68ba0a89eb43",
+    "cherrypy-foundation>=1.6.0,<2",
     "cheroot<11",
     "configargparse",
     "email_validator",
@@ -67,5 +67,12 @@ line_length = 120
 
 [tool.djlint]
 indent=2
+custom_html = """
+  cf:Datatable,\
+  cf:Field,\
+  cf:Fields,\
+  cf:Flash,\
+  cf:Icon
+"""
 
 [tool.setuptools_scm]

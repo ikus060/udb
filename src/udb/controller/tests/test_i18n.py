@@ -30,19 +30,19 @@ class TestI18nWebCase(WebCase):
         #  Query the page without login-in
         self.getPage("/login/", headers=[("Accept-Language", "it")])
         self.assertStatus('200 OK')
-        self.assertHeaderItemValue("Content-Language", "en")
+        self.assertHeaderItemValue("Content-Language", "en-US")
         self.assertInBody("Remember me")
 
     def test_language_en(self):
         self.getPage("/login/", headers=[("Accept-Language", "en-US,en;q=0.8")])
         self.assertStatus('200 OK')
-        self.assertHeaderItemValue("Content-Language", "en")
+        self.assertHeaderItemValue("Content-Language", "en-US")
         self.assertInBody("Remember me")
 
     def test_language_en_fr(self):
         self.getPage("/login/", headers=[("Accept-Language", "en-US,en;q=0.8,fr-CA;q=0.8")])
         self.assertStatus('200 OK')
-        self.assertHeaderItemValue("Content-Language", "en")
+        self.assertHeaderItemValue("Content-Language", "en-US")
         self.assertInBody("Remember me")
 
     def test_language_fr(self):
@@ -50,7 +50,7 @@ class TestI18nWebCase(WebCase):
         self.assertInBody("Remember me")
         self.getPage("/login/", headers=[("Accept-Language", "fr-CA;q=0.8,fr;q=0.6")])
         self.assertStatus('200 OK')
-        self.assertHeaderItemValue("Content-Language", "fr")
+        self.assertHeaderItemValue("Content-Language", "fr-CA")
         self.assertInBody("Se souvenir de moi")
 
     def test_with_preferred_lang(self):
@@ -115,11 +115,6 @@ class TestI18nInvalidDefaultLangWebCase(WebCase):
     login = False
     default_config = {'default-lang': 'invalid', 'default-timezone': 'invalid'}
 
-    def setUp(self):
-        # Manually clear variables between each test
-        i18n._current.__dict__.clear()
-        return super().setUp()
-
     def test_default_lang_invalid(self):
         # Given an invalid default language
         # When user connect to the application without Accept-Language
@@ -141,8 +136,7 @@ class TestI18nTimezone(WebCase):
     default_config = {'default-timezone': 'UTC'}
 
     def setUp(self):
-        # Manually clear variables between each test
-        i18n._current.__dict__.clear()
+        i18n._tzinfo.set(None)
         return super().setUp()
 
     def test_get_timezone(self):

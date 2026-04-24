@@ -13,8 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-
+import cherrypy
 from parameterized import parameterized
 from sqlalchemy.exc import IntegrityError
 
@@ -607,7 +606,7 @@ class DnsRecordTest(WebCase):
             subnet.vrf = new_vrf
             subnet.add().commit()
         subnet.rollback()
-        is_sqlite = 'sqlite' in str(self.session.bind)
+        is_sqlite = 'sqlite' in str(cherrypy.db.session.bind)
         if is_sqlite:
             # SQLite doesn't return the name of the constraint.
             self.assertIn('FOREIGN KEY constraint failed', str(cm.exception))
@@ -626,7 +625,7 @@ class DnsRecordTest(WebCase):
             subnet.dnszones = []
             subnet.commit()
         subnet.rollback()
-        is_sqlite = 'sqlite' in str(self.session.bind)
+        is_sqlite = 'sqlite' in str(cherrypy.db.session.bind)
         if is_sqlite:
             # SQLite doesn't return the name of the constraint.
             self.assertIn('FOREIGN KEY constraint failed', str(cm.exception))

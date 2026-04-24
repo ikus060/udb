@@ -28,9 +28,7 @@ from ._json import JsonMixin
 from ._message import MessageMixin
 from ._search_string import SearchableMixing
 
-Base = cherrypy.db.get_base()
-
-Session = cherrypy.db.get_session()
+Base = cherrypy.db.base
 
 
 class Mac(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing, Base):
@@ -42,25 +40,22 @@ class Mac(CommonMixin, JsonMixin, MessageMixin, FollowerMixin, SearchableMixing,
         return cls.mac + " " + cls.notes
 
     @classmethod
-    def unique_mac(cls, session, key):
+    def unique_mac(cls, key):
         """
         Using a session cache, make sure to return unique Mac object.
         """
         assert key
-        cache = getattr(session, '_unique_mac_cache', None)
-        if cache is None:
-            session._unique_mac_cache = cache = {}
-
-        if key in cache:
-            return cache[key]
-        else:
-            with session.no_autoflush:
-                obj = session.query(Mac).filter_by(mac=key).first()
-                if not obj:
-                    obj = Mac(mac=key)
-                    session.add(obj)
-            cache[key] = obj
+        session = cherrypy.db.session
+        # Search current sessions for matching IP
+        matching_mac = next((obj for obj in session.new if isinstance(obj, Mac) and obj.mac == key), None)
+        if matching_mac:
+            return matching_mac
+        # If not found in our session, search database.
+        obj = Mac.query.filter_by(mac=key).first()
+        if obj:
             return obj
+        # If not found in database, create it.
+        return Mac(mac=key).add()
 
     @hybrid_property
     def summary(self):
