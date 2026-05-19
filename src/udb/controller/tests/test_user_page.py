@@ -17,6 +17,7 @@
 from unittest import mock
 
 import cherrypy
+from cherrypy_foundation.plugins import smtp
 from cherrypy_foundation.url import url_for
 from parameterized import parameterized
 from selenium.common.exceptions import ElementNotInteractableException
@@ -26,6 +27,13 @@ from udb.core.model import User
 
 
 class UserPageTest(WebCase):
+    # Confgiure smtp to send email.
+    default_config = {
+        'smtp-server': '__default__',
+        'smtp-username': 'username',
+        'smtp-password': 'password',
+        'smtp-from': 'Test <email_from@test.com>',
+    }
 
     new_data = {'username': 'newuser', 'role': 'guest'}
 
@@ -230,7 +238,8 @@ class UserPageTest(WebCase):
             ({'email': 'newemail@test.com'}, ['myuser@test.com', 'newemail@test.com']),
         ]
     )
-    def test_user_changes_notification(self, new_body, expected_email):
+    @mock.patch(smtp.__name__ + '.smtplib')
+    def test_user_changes_notification(self, new_body, expected_email, mock_smtp):
         # Given a user with email
         userobj = User.create(username='myuser', email='myuser@test.com', role='user').add().commit()
         self.wait_for_tasks()

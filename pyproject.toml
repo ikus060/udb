@@ -26,7 +26,7 @@ dependencies = [
     "argon2-cffi>=18.3.0",
     "babel",
     "CherryPy>18",
-    "cherrypy-foundation>=1.6.0,<2",
+    "cherrypy-foundation>=1.12.0,<2",
     "cheroot<11",
     "configargparse",
     "email_validator",

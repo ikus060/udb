@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from unittest import mock
 
 import cherrypy
+from cherrypy_foundation.plugins import smtp
 from parameterized import parameterized
 
 from udb.controller.tests import MATCH, WebCase
@@ -24,15 +25,27 @@ from udb.core.model import DnsRecord, DnsZone, Follower, Message, Subnet, User, 
 
 
 class AbstractNotificationPluginTest(WebCase):
+
+    default_config = {
+        'smtp-server': '__default__',
+        'smtp-username': 'username',
+        'smtp-password': 'password',
+        'smtp-from': 'Test <email_from@test.com>',
+    }
+
     def setUp(self):
         cherrypy.config.update({'notification.catch_all_email': None})
         self.listener = mock.MagicMock()
         cherrypy.engine.subscribe("send_mail", self.listener.send_mail, priority=50)
+        # Patch smtplib to avoid sending real email.
+        self._smtp_patcher = mock.patch(smtp.__name__ + '.smtplib')
+        self._smtp_patcher.start()
         return super().setUp()
 
     def tearDown(self):
         cherrypy.config.update({'notification.catch_all_email': None})
         cherrypy.engine.unsubscribe("send_mail", self.listener.send_mail)
+        self._smtp_patcher.stop()
         return super().tearDown()
 
 
@@ -358,7 +371,14 @@ class NotificationPluginTest(AbstractNotificationPluginTest):
 
 class ExternalUrlNotificationPluginTest(AbstractNotificationPluginTest):
 
-    default_config = {'debug': False, 'external-url': 'https://test.examples.com'}
+    default_config = {
+        'debug': False,
+        'external-url': 'https://test.examples.com',
+        'smtp-server': '__default__',
+        'smtp-username': 'username',
+        'smtp-password': 'password',
+        'smtp-from': 'Test <email_from@test.com>',
+    }
 
     def test_with_external_url(self):
         # Given a catchall notification email in configuration
