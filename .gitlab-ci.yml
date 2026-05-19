@@ -8,7 +8,7 @@ stages:
   - package
   - doc
   - test-package
-  - upload
+  - publish
   - deploy
 
 .tox: &tox
@@ -82,64 +82,132 @@ doc:
       - .tox/doc/tmp/html
     expire_in: 1 day
 
-bdist:deb:
+
+package:dsc:
   stage: package
   needs: []
-  image: buildpack-deps:$DIST
-  parallel:
-    matrix:
-      - DIST: [trixie]
-  script: |
-    set -x
-    set -e
-    apt update
-    apt -y --no-install-recommends install devscripts
-    apt build-dep -y .
-    export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_UDB=$(python3 -m setuptools_scm)
-    dch -v "$SETUPTOOLS_SCM_PRETEND_VERSION_FOR_UDB" "automated build"
-    dpkg-buildpackage -b
-    mkdir -p ./dist/$DIST
-    mv ../udb*.deb ./dist/$DIST/
+  image: buildpack-deps:unstable
+  variables:
+    GIT_DEPTH: 50  # GitLab runner will fetch last 50 commits
+  script: 
+    - rm -f ../*.debian.tar.xz ../*.orig.tar.xz ../*.dsc
+    # Install build dependencies
+    - apt -U -y --no-install-recommends install tox
+    - apt build-dep -y --no-install-recommends -P nocheck,nodoc .
+    # Update changelog for automatic build
+    - git config user.email "$GITLAB_USER_EMAIL"
+    - git config user.name "$GITLAB_USER_NAME"
+    - (tox -e changelog && git commit -m "automatic build" CHANGELOG.md debian/changelog) || true
+    # Create original tarball ".orig.tar.xz"
+    - debian/rules gentarball
+    # Build debian source package ".dsc"
+    - dpkg-buildpackage -S --no-check-builddeps
+    - mkdir -p ./dist/
+    - mv ../*.debian.tar.xz ../*.orig.tar.xz ../*.dsc ./dist/
   artifacts:
     paths:
       - ./dist/*
 
-package:docker:
-  image: docker:20
-  needs: []
-  script:
-    - docker --version
-    - docker build -t ${CONTAINER_IMAGE} .
+package:deb:
   stage: package
-  services:
-    - name: docker:20-dind
-
-test-bdist:deb:
-  stage: test-package
+  needs: 
+    - package:dsc
   image: buildpack-deps:$DIST
-  needs:
-    - bdist:deb
+  variables:
+     GIT_STRATEGY: none  # GitLab runner will NOT clone/fetch repo
   parallel:
     matrix:
-      - DIST: [trixie]
+      - DIST: [forky]
+  script: |
+    set -x
+    set -e
+    rm -f *.deb
+    # Add APT repo ofr cherrypy-foundation dependencies
+    wget -O /etc/apt/keyrings/ikus-keyring.asc https://www.ikus-soft.com/archive/public.key
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/ikus-keyring.asc] https://nexus.ikus-soft.com/repository/apt-dev-$DIST/ $DIST-dev main" > /etc/apt/sources.list.d/ikus.list
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/ikus-keyring.asc] https://nexus.ikus-soft.com/repository/apt-release-$DIST/ $DIST main" >> /etc/apt/sources.list.d/ikus.list
+    # Install build dependencies
+    apt update
+    apt -y --no-install-recommends install lintian
+    ls -1 ./dist/*.dsc | while read -r FILE
+    do
+      rm -rf builddir
+      dpkg-source -x ${FILE} builddir/
+      pushd builddir/
+      apt build-dep -y --no-install-recommends .
+      # Build debian binary package ".deb"
+      dpkg-buildpackage -b
+      popd
+      lintian --info --display-info --pedantic *.deb ${FILE}
+      mkdir -p ./dist/${DIST}
+      mv *.deb ./dist/${DIST}/
+    done
+  artifacts:
+    paths:
+      - ./dist/*
+
+test-package:deb:
+  stage: test-package
+  image: buildpack-deps:unstable
+  needs: ["package:deb"]
+  parallel:
+    matrix:
+    - DIST: [forky]
   script:
     - apt update
-    - apt install -y ./dist/$DIST/udb*.deb
-    - udb --version | grep -v '0.0.0'
-    - (/usr/bin/udb --database-uri sqlite:///data.db &)
+    - apt install -y apt-transport-https ca-certificates lsb-release gpg
+    - wget -O /etc/apt/keyrings/minarca-keyring.asc https://www.ikus-soft.com/archive/minarca/public.key
+    - echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/minarca-keyring.asc] https://nexus.ikus-soft.com/repository/apt-dev-$DIST/ $DIST-dev main" > /etc/apt/sources.list.d/minarca.list
+    - echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/minarca-keyring.asc] https://nexus.ikus-soft.com/repository/apt-release-$DIST/ $DIST main" >> /etc/apt/sources.list.d/minarca.list
+    - apt update
+    - apt -y --no-install-recommends install ./dist/$DIST/bfh-ssp_*_all.deb
+    - bfh-ssp --version
+    - (bfh-ssp &)
     - timeout 60 bash -c 'until curl --silent http://localhost:8080; do sleep 1; done'
 
-upload:deb:
-  image: buildpack-deps:trixie
+publish:dsc:
   needs:
-    - bdist:deb
+    - package:dsc
+  only:
+    variables:
+      - $NEXUS_USR
+      - $NEXUS_PWD
+  script: |
+    set -e
+    set -x
+    # Loop on dsc files
+    ls -1 ./dist/*.dsc | while read -r FILE
+    do
+      # Define where to send files.
+      FILENAME="${FILE##*/}" 
+      PKGNAME="${FILENAME%%_*}"
+      TMP="${FILENAME#*_}"
+      VERSION="${TMP%.dsc}"
+      ARCHIVE_URL="$NEXUS_URL/repository/archive/debian/$PKGNAME/$VERSION"
+      # For each file in dsc, upload it to nexus
+      grep -A99 "^Files:" "$FILE" | grep "^ " | awk '{print $3}' | while read -r ASSET
+      do
+        curl --fail -u "$NEXUS_USR:$NEXUS_PWD" \
+          --upload-file "./dist/$ASSET" \
+          "$ARCHIVE_URL/$(basename "$ASSET")"
+      done
+      # Upload the .dsc itself
+      curl --fail -u "$NEXUS_USR:$NEXUS_PWD" \
+        --upload-file "$FILE" \
+        "$ARCHIVE_URL/$(basename "$FILE")"
+    done
+  stage: publish
+
+publish:deb:
+  needs:
+    - package:deb
   only:
     variables:
       - $NEXUS_USR
       - $NEXUS_PWD
   parallel:
     matrix:
-      - DIST: [trixie]
+      - DIST: [forky]
   script: |
     set -e
     set -x
@@ -150,14 +218,18 @@ upload:deb:
       APT_URL="$NEXUS_URL/repository/apt-dev-${DIST}/"
       APT_COMPONENT=${DIST}-dev
     fi
-    export FILE=$(ls -1 ./dist/$DIST/udb*.deb)
-    curl --fail -u "$NEXUS_USR:$NEXUS_PWD" -H "Content-Type: multipart/form-data" --data-binary "@$FILE" "$APT_URL"
-    sleep 2
-    curl --fail ${APT_URL}dists/$APT_COMPONENT/main/binary-all/Packages | grep "$(basename $FILE)"
-  stage: upload
+    # Upload binaries
+    ls -1 ./dist/$DIST/*.deb | while read -r FILE
+    do
+      curl --fail -u "$NEXUS_USR:$NEXUS_PWD" -H "Content-Type: multipart/form-data" --data-binary "@$FILE" "$APT_URL"
+      sleep 2
+      ARCH=$(echo "$FILE" | grep -oP '(?<=_)[^_]+(?=\.deb$)')
+      curl --fail "${APT_URL}dists/$APT_COMPONENT/main/binary-${ARCH}/Packages" | grep "$(basename $FILE)"
+    done
+  stage: publish
 
-upload:doc:
-  stage: upload
+publish:doc:
+  stage: publish
   only:
     variables:
       - $NEXUS_USR
@@ -178,12 +250,11 @@ deploy:dev:
     name: dev
     url: https://udb-demo.ikus-soft.com/
   needs:
-    - bdist:deb
-    - upload:deb
+    - publish:deb
   image: registry.gitlab.com/finestructure/pipeline-trigger
   script:
     - apk update && apk add git
-    - export DEB_VERSION=$(ls -1 dist/trixie/udb_*_all.deb | cut -d '_' -f 2)
+    - export DEB_VERSION=$(ls -1 dist/forky/udb_*_all.deb | cut -d '_' -f 2)
     - echo DEB_VERSION=$DEB_VERSION
     # Trigger ansible-config pipeline
     - trigger -a "$ANSIBLE_PIPELINE_GITLAB_API_TOKEN" -t master -e "UDB_VERSION=$DEB_VERSION" -p 36bae86778d901fc6b2d6453a41844 18716492

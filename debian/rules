@@ -13,7 +13,7 @@ override_dh_auto_test:
 
 execute_after_dh_auto_install:
 # Compile locale
-	for pofile in debian/udb/usr/lib/python$(PYTHON3_DEFAULT)/dist-packages/bfh_science_ssp/locales/*/LC_MESSAGES/*.po ; do \
+	for pofile in debian/udb/usr/lib/python$(PYTHON3_DEFAULT)/dist-packages/udb/locales/*/LC_MESSAGES/*.po ; do \
 		mofile=`echo $$pofile | sed -e "s/\.po/\.mo/g"`; \
 		msgfmt $$pofile -o $$mofile; \
 	done
@@ -23,14 +23,14 @@ execute_after_dh_auto_install:
 # Generate bash-completions with shtab
 execute_after_dh_bash-completion:
 	PYTHONPATH=debian/udb/usr/lib/python$(PYTHON3_DEFAULT)/dist-packages:$(PYTHONPATH) \
-	shtab --shell=bash -u bfh_science_ssp.config.get_parser --error-unimportable --prog udb \
+	shtab --shell=bash -u udb.config.get_parser --error-unimportable --prog udb \
 		> debian/udb.bash-completion
 
 # Generate man page from argparse
 execute_after_dh_installman:
 	mkdir -p debian/udb/usr/share/man/man1
 	PYTHONPATH=debian/udb/usr/lib/python$(PYTHON3_DEFAULT)/dist-packages:$(PYTHONPATH) \
-	argparse-manpage --module bfh_science_ssp.config --function get_parser \
+	argparse-manpage --module udb.config --function get_parser \
 		--version "$(DEB_VERSION_UPSTREAM)" \
 		--output debian/udb/usr/share/man/man1/udb.1
 
@@ -39,5 +39,5 @@ execute_before_dh_auto_clean:
 
 # Generate orig.tar.gz
 gentarball:
-	git archive --format=tar HEAD --prefix=$(DEB_SOURCE)-$(DEB_VERSION_UPSTREAM)/ | gzip -9 > ../$(DEB_SOURCE)_$(DEB_VERSION_UPSTREAM).orig.tar.gz
-	mk-origtargz --compression gzip ../$(DEB_SOURCE)_$(DEB_VERSION_UPSTREAM).orig.tar.gz
+	# Generate orig.tar.xz
+	git archive --format=tar HEAD --prefix=$(DEB_SOURCE)-$(DEB_VERSION_UPSTREAM)/ ":!debian" | xz > ../$(DEB_SOURCE)_$(DEB_VERSION_UPSTREAM).orig.tar.xz

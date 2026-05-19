@@ -105,12 +105,7 @@ def _umask(value):
         raise argparse.ArgumentError('invalid umask value %s' % value)
 
 
-def parse_args(args=None, config_file_contents=None):
-    """
-    Load application configuration using program's arguments or environment variables.
-    """
-    args = sys.argv[1:] if args is None else args
-
+def get_parser():
     parser = configargparse.ArgumentParser(
         description='A web interface to manage IT network',
         default_config_files=['/etc/udb/udb.conf', '/etc/udb/udb.conf.d/*.conf'],
@@ -536,5 +531,13 @@ def parse_args(args=None, config_file_contents=None):
         metavar='GROUP',
         type=_groupid,
     )
+    return parser
 
+
+def parse_args(args=None, config_file_contents=None):
+    """
+    Load application configuration using program's arguments or environment variables.
+    """
+    parser = get_parser()
+    args = sys.argv[1:] if args is None else args
     return parser.parse_args(args, config_file_contents=config_file_contents)
