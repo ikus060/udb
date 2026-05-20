@@ -85,28 +85,30 @@ class NotifiationPlugin(SimplePlugin):
         """
         # Let use python lock to minimize the lock on database
         with self._lock:
-            all_messages = (
-                Message.query.filter(Message.sent.is_not(True)).order_by(Message.model_name, Message.model_id).all()
-            )
-            if not all_messages:
-                return
+            with cherrypy.db.session.begin():
+                all_messages = (
+                    Message.query.filter(Message.sent.is_not(True)).order_by(Message.model_name, Message.model_id).all()
+                )
+                if not all_messages:
+                    return
 
-            # For each message determine the recipients
-            final_recipients = {}
-            for message in all_messages:
-                recipients = self._get_recipients(message)
-                for recipient in recipients:
-                    final_recipients.setdefault(recipient, []).append(message)
+                # For each message determine the recipients
+                final_recipients = {}
+                for message in all_messages:
+                    recipients = self._get_recipients(message)
+                    for recipient in recipients:
+                        final_recipients.setdefault(recipient, []).append(message)
 
-            # For each recipients send the messages
-            for recipient, messages in final_recipients.items():
-                self.send_mail(recipient, 'email_notification.html', header_name=self.header_name, messages=messages)
+                # For each recipients send the messages
+                for recipient, messages in final_recipients.items():
+                    self.send_mail(
+                        recipient, 'email_notification.html', header_name=self.header_name, messages=messages
+                    )
 
-            # Update the "sent" flag
-            for message in all_messages:
-                message.sent = True
-                message.add()
-            Message.session.commit()
+                # Update the "sent" flag
+                for message in all_messages:
+                    message.sent = True
+                    message.add()
 
     def _get_recipients(self, message):
 

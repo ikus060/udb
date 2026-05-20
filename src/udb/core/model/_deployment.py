@@ -46,12 +46,12 @@ def _deploy(deployment_id, base_url):
     Called by the scheduler to execute the deployment.
     """
     # Get the deployment object
-    deployment = Deployment.query.filter(Deployment.id == deployment_id).one()
-    deployment.state = Deployment.STATE_RUNNING
-    deployment.commit()
+    with cherrypy.db.session.begin():
+        deployment = Deployment.query.filter(Deployment.id == deployment_id).one()
+        deployment.state = Deployment.STATE_RUNNING
 
-    # Create a temporary folder
-    working_dir = tempfile.mkdtemp(prefix='udb-deployment-%s-' % deployment.id)
+        # Create a temporary folder
+        working_dir = tempfile.mkdtemp(prefix='udb-deployment-%s-' % deployment.id)
 
     try:
         # Switch permissions to nobody when running as root on Python>=3.9
@@ -59,15 +59,16 @@ def _deploy(deployment_id, base_url):
         if sys.version_info[0:2] >= (3, 9) and os.getuid() == 0:
             kwargs = {'user': 65534, 'group': 65534}
         # Define environment variables.
-        env = {
-            "UDB_USERID": str(deployment.owner.id),
-            "UDB_USERNAME": deployment.owner.username,
-            "UDB_DEPLOYMENT_ID": str(deployment.id),
-            "UDB_DEPLOYMENT_TOKEN": deployment.token,
-            "UDB_DEPLOYMENT_AUTH": "%s:%s" % (deployment.owner.username, deployment.token),
-            "UDB_DEPLOYMENT_MODEL_NAME": deployment.environment.model_name,
-            "UDB_DEPLOYMENT_DATA_URL": cherrypy.url("api/deployment/%s" % deployment.id, base=base_url),
-        }
+        with cherrypy.db.session.begin():
+            env = {
+                "UDB_USERID": str(deployment.owner.id),
+                "UDB_USERNAME": deployment.owner.username,
+                "UDB_DEPLOYMENT_ID": str(deployment.id),
+                "UDB_DEPLOYMENT_TOKEN": deployment.token,
+                "UDB_DEPLOYMENT_AUTH": "%s:%s" % (deployment.owner.username, deployment.token),
+                "UDB_DEPLOYMENT_MODEL_NAME": deployment.environment.model_name,
+                "UDB_DEPLOYMENT_DATA_URL": cherrypy.url("api/deployment/%s" % deployment.id, base=base_url),
+            }
         # Start the process with bash.
         process = subprocess.Popen(
             '/bin/bash',
@@ -80,7 +81,8 @@ def _deploy(deployment_id, base_url):
             **kwargs,
         )
         # Write script using "newline" instead of "cariage return"
-        script = deployment.environment.script.replace('\r\n', '\n').encode('utf8')
+        with cherrypy.db.session.begin():
+            script = deployment.environment.script.replace('\r\n', '\n').encode('utf8')
         process.stdin.write(script)
         process.stdin.close()
         # Read output.
@@ -89,23 +91,23 @@ def _deploy(deployment_id, base_url):
             if not line:
                 break
             # Obfuscate deployment token and store output to database
-            line = line.decode('utf-8').replace(deployment.token, '********')
-            deployment.output += line
-            deployment.commit()
+            with cherrypy.db.session.begin():
+                line = line.decode('utf-8').replace(deployment.token, '********')
+                deployment.output += line
         process.wait()
-        if process.returncode != 0:
-            deployment.output += '\nreturn code: %s' % process.returncode
+        with cherrypy.db.session.begin():
+            if process.returncode != 0:
+                deployment.output += '\nreturn code: %s' % process.returncode
+                deployment.output += '\nFAILED'
+                deployment.state = Deployment.STATE_FAILURE
+            else:
+                deployment.output += '\nSUCCESS'
+                deployment.state = Deployment.STATE_SUCCESS
+    except Exception as e:
+        with cherrypy.db.session.begin():
+            deployment.output += '\n' + str(e)
             deployment.output += '\nFAILED'
             deployment.state = Deployment.STATE_FAILURE
-        else:
-            deployment.output += '\nSUCCESS'
-            deployment.state = Deployment.STATE_SUCCESS
-        deployment.commit()
-    except Exception as e:
-        deployment.output += '\n' + str(e)
-        deployment.output += '\nFAILED'
-        deployment.state = Deployment.STATE_FAILURE
-        deployment.commit()
     finally:
         # Delete temporary folder
         shutil.rmtree(working_dir, ignore_errors=True)
