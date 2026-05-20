@@ -1,4 +1,7 @@
-Tests: smoke
+Tests:
+ smoke,
 Depends:
  udb,
-Restrictions: allow-stderr, superficial
+Restrictions:
+ allow-stderr,
+ superficial,

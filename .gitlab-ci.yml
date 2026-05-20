@@ -36,6 +36,15 @@ selenium:
       - coverage-selenium.xml
       - xunit-selenium.xml
 
+wrap-and-sort:
+  stage: test
+  image: buildpack-deps:stable
+  script:
+  - apt update
+  - apt -y --no-install-recommends install devscripts python3-debian
+  - CHANGES=$(wrap-and-sort -astN)
+  - if [[ ! -z "$CHANGES" ]]; then echo "$CHANGES"; exit 1; fi
+
 trixie:
   <<: *tox
 
