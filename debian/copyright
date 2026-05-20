@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: udb
-Upstream-Contact: Patrik Dufresne <patrik@ikus-soft.com>
+Upstream-Contact: https://gitlab.com/ikus-soft/udb/-/issues/new
 Source: https://gitlab.com/ikus-soft/udb
 
 Files: *
