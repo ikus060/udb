@@ -34,7 +34,6 @@ Build-Depends:
  python3-validators <!nocheck>,
  python3-wtforms <!nocheck>,
  python3-zxcvbn | python3-python-zxcvbn-rs-py <!nocheck>,
-Rules-Requires-Root: no
 Standards-Version: 4.7.3
 Homepage: https://www.ikus-soft.com/en/udb/
 Vcs-Git: https://gitlab.com/ikus-soft/udb.git
