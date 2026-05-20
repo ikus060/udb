@@ -1,5 +1,478 @@
-udb (0.0.1-1) unstable; urgency=medium
+udb (1.0.0+20260520-1) UNRELEASED; urgency=medium
 
-  * Initial upload to debian (Closes: #969974).
+  * Make better use of form floating
+  * Start using JinjaX for edit view
+  * Migrate table to JinjaX component
+  * Migrate typeahead to JinjaX component
+  * Migrate SubnetTableWidget to JinjaX components
+  * Migrate SwitchWidget to JinjaX component
+  * Upgrade JinjaX to v0.45
+  * Migrate macro.html to JinjaX components
+  * Migrate Select.multi (Side-by-side) widget to JinjaX components
+  * Exclude static files from Sonarqube analysis
+  * Migrate button with confirmation to JinjaX components
+  * Add `.venv` to git ignore
+  * Add `pytz` as explicit dependencies
+  * Fix timming issue in few selenium test
+  * Fix user's password updates
+  * Upgrade db tools into plugin
+  * Update license headers
+  * Upgrade black
+  * Upgrade datatables component
+  * Upgrade authentication modules
+  * Upgrade secure headers module
+  * Add support for Debian trixie
+  * Update smtp plugins
+  * Update datatable and other plugins ans tools
+  * Update db plugin
+  * Upgrade jinjax
+  * Update djlint
+  * Update RestApi dispatcher
+  * Update timestamp
+  * Pin cheroot to workarround a bug
+  * Update test module to call clear_sessions()
+  * Add python3-jinjax as dependency
+  * Update to make use of <Fields> component
+  * Update Typeahead component
+  * Reorganize foundation modules
+  * deps: bump cherrypy-foundation to v1.6.0
+  * deps: bump cherrypy-foundation to v1.12.0
+  * ci: build for forky
+  * build: consolidate lint tools into a single tox environment
 
- -- Patrik Dufresne <patrik@ikus-soft.com>  Mon, 01 Feb 2022 13:11:20 +0400
+ -- Patrik Dufresne <patrik@ikus-soft.com>  Wed, 20 May 2026 09:10:22 -0400
+
+udb (1.0.0-1) unstable; urgency=medium
+
+  * Initial version
+  * Fix test error and flake8
+  * Complete project skeleton & creating login page #3
+  * Update SQLAlchemy integration
+  * Implement basic view to add,edit record
+  * Add more record type with test and validation
+  * Merge branch 'patrik-login' into 'master'
+  * Merge branch 'patrik-add-edit-messages-followers' into 'master'
+  * Adding more unit test
+  * Re-implement navigation using sidebar
+  * Working version
+  * Creatre RESTful API for CRUD operation #8
+  * Merge branch 'patrik-sidebar' into 'master'
+  * Merge branch 'patrik-rest-api' into 'master'
+  * Rename application from CMDB to UDB
+  * Merge branch 'patrik-rename-app' into 'master'
+  * Fix enabled state #17
+  * Fix "Not Assigned" owner #20
+  * Adjust CSS Layout
+  * Use a single table for followers
+  * Use a single table for messages
+  * Fix history when owner is updated #13
+  * Merge branch 'patrik-fixes' into 'master'
+  * Add basic favicon #11
+  * Merge branch 'patrik-favicon' into 'master'
+  * Merge branch 'patrik-dns-zone-subnets' into 'master'
+  * Add Many-to-Many dnszone and subnet #18
+  * Add all the required DNS record type #19
+  * Merge branch 'patrik-dns-records' into 'master'
+  * Add IP View with related records #7
+  * Merge branch 'patrik-ip-view' into 'master'
+  * Provide a Debian package #14
+  * Merge branch 'patrik-debian-package' into 'master'
+  * Complete IP View changes #7
+  * Add audit log on record creation #29
+  * Merge branch 'patrik-ip-list' into 'master'
+  * Merge branch 'patrik-audit-log-create-record' into 'master'
+  * Add specific PTR record validation #31
+  * Merge branch 'patrik-ptr-validation' into 'master'
+  * Include PTR record ipv4 and ipv6 in IP View
+  * Merge branch 'patrik-config-db' into 'master'
+  * Make database-uri configurable #25 #33
+  * Merge branch 'patrik-ip-view-with-ptr-records' into 'master'
+  * Add user managements #27
+  * Add new plugins to the project
+  * Implement LDAP authentication #4
+  * Complete user managements
+  * Update sidebar
+  * Merge branch 'patrik-user-management' into 'master'
+  * Configuring setup() using setup.cfg files
+  * Add isort and black to project
+  * Validate if subnet creation conflict with other existing subnet #9
+  * Merge branch 'patrik-subnet-conflict' into 'master'
+  * Add DNS Zone / Subnet / Dns Record validation #21
+  * Merge branch 'patrik-validate-dns-record-subnet' into 'master'
+  * Run test during Debian Packaging using pytest
+  * Make tables sortable #30
+  * Merge branch 'patrik-deb-pytest' into 'master'
+  * Merge branch 'patrik-table-sorting' into 'master'
+  * Fix test for postgresql database
+  * Add full text search #28
+  * Fix sonar coverage
+  * Merge branch 'patrik-full-text-search' into 'master'
+  * Replace font awsome by bootstrap-icons #24 #34
+  * Merge branch 'patrik-replace-fontawsome' into 'master'
+  * Update Copyright year
+  * Send notification to followers #15
+  * Merge branch 'patrik-notification' into 'master'
+  * Fetch email and fullname attributes from LDAP #43
+  * Merge branch 'patrik-ldap-attributes' into 'master'
+  * Add catch-all email to configuration #44
+  * Fix notification
+  * Add aria-hidden="true" to icons
+  * Add aria-describedby to table
+  * Make email template compliant
+  * Add alt to image logo
+  * Merge branch 'patrik-catchall-email' into 'master'
+  * Merge branch 'patrik-fix-sonar-issues' into 'master'
+  * Add a view to list all subscriptions #40
+  * Move display_name to jinja2 templates
+  * Fix to support email-validator v1.2.0
+  * Exclude generated templates from sonar
+  * Merge branch 'patrik-notification-view' into 'master'
+  * Exclude deleted records from relation to IP #42
+  * Merge branch 'patrik-hide-related-deleted-records' into 'master'
+  * Reffactoring reverse_ip as hybrid_property
+  * Validate PTR Record using DNS Zone #37
+  * Add .vscode to gitignore
+  * Fix open redirect in login page #45
+  * Merge branch 'patrik-ptr-within-dns-zone' into 'master'
+  * Avoid editing followers using HTTP GET
+  * Avoid editing status using HTTP GET method
+  * Merge branch 'patrik-fix-open-redirect' into 'master'
+  * Add `cc` to smtp module
+  * Add logo to login page
+  * Add related_subnets to IP View #39
+  * Merge branch 'patrik-ip-view-subnets' into 'master'
+  * Add a dashboard page #26
+  * Define a timestamp decorator to handle timezone
+  * Define default image to upload deb
+  * Merge branch 'patrik-dashboard' into 'master'
+  * Fix URL in notifications view
+  * Define inherit_cache for cidr
+  * Redirect user to previous page after editing #22
+  * Ad scalar_subquery to remove sqlalchemy warning
+  * Make IP View a custom template
+  * Merge branch 'patrik-redirect' into 'master'
+  * Provide a default configfile #52
+  * Provide a default page for /api/
+  * Allow Administrators to define or remove user's password #51
+  * Update db Base class
+  * Cosmetic changes
+  * Merge branch 'patrik-improve-deb' into 'master'
+  * Merge branch 'patrik-update-db.py' into 'master'
+  * Merge branch 'patrik-cosmetic-changes' into 'master'
+  * Update db module plugins
+  * Change package name
+  * Use datatables library to display tables #48 #66
+  * Provide default log configuration for debian package
+  * Enabled `cherrypy.tools.proxy` to support reverse proxy #65
+  * Support VRF Records
+  * Complete datatable changes
+  * Merge branch 'patrik-datatables' into 'master'
+  * Redirect user to same page after edit
+  * Define default security headers #67
+  * Avoid leaking stacktrace when running in production mode #67
+  * Define proper proxy settings for best security #67
+  * Remove deprecated auth_basic module
+  * Update auth_form
+  * Update Content-Security-Policy
+  * Implement POST, REDIRECt, GET in user profile
+  * Enforce field limit in wtform validation
+  * Encofre strong password with zxcvbn
+  * Add ratelimit protection on sensitive endpoints
+  * Enforce 'Origin' validation to counter CSRF and XSS
+  * Add changelog
+  * Merge branch 'patrik-update-security' into 'master'
+  * Support multiple IP Range for a single Subnet #61
+  * Add DualList widget #68
+  * Automatically deploy to demo server #70
+  * Merge branch 'patrik-ipv4-ipv4' into 'master'
+  * Merge branch 'patrik-fix-small-ui-bugs' into 'master'
+  * Fix small user interface display issue
+  * Remove auto commit to have better control over what is commited #71
+  * Merge branch 'patrik-disable-auto-commit' into 'master'
+  * Improve notification system
+  * Hide navbar on login page
+  * Allow user to comment before save changes
+  * Merge branch 'patrik-edit' into 'master'
+  * Notify follower of other DNS Record #56
+  * Distinct from "created" vs "modified" notification
+  * Provide bootstrap invalid hint
+  * Merge branch 'patrik-dns-record-notification' into 'master'
+  * Merge branch 'patrik-form-invalid-hint' into 'master'
+  * Allow user to unfollow from all record #58
+  * Order messages to have preditable order for unit test
+  * Merge branch 'patrik-unfollow-all' into 'master'
+  * Rename "DHCP Record" to "DHCP Reservation" #77
+  * Re-order menu item item #82
+  * Improve dashboard #78
+  * Make record status standout when editing #74
+  * Remove duplicate comments vs message #75
+  * Merge branch 'patrik-tiny-changes' into 'master'
+  * Add creation of reverse DNS Record #38
+  * Merge branch 'patrik-reverse-ptr' into 'master'
+  * Create IP Table
+  * Merge branch 'patrik-ip-record' into 'master'
+  * Change vocabulary for "Reverse" and "Forward" #83
+  * Merge branch 'patrik-create-forward' into 'master'
+  * Assign owner when creating reverse DNS Record #84
+  * Fix initial state for `data-showif`
+  * Merge branch 'patrik-assign-owner-onreverse-record' into 'master'
+  * Re-design the followers list on desktop & mobile #85
+  * Merge branch 'patrik-followers-redesign' into 'master'
+  * Merge branch 'patrik-lazy-load-history' into 'master'
+  * Lazy load history with paging #76
+  * Rename "Ip" to "IP" #88
+  * Merge branch 'patrik-rename-ip' into 'master'
+  * Fix display of comments
+  * Update IP reference count #86
+  * Disable i18n caching
+  * Merge branch 'patrik-python3.11' into 'master'
+  * Fix build to support latest Bookworm & Python 3.11
+  * Merge branch 'patrik-fix-translation' into 'master'
+  * Merge branch 'patrik-fix-comment-layout' into 'master'
+  * Create MAC Record #89
+  * Merge branch 'patrik-ip-owner-status-notes' into 'master'
+  * Merge branch 'patrik-mac-record' into 'master'
+  * Allow to Pre-fill Form #23
+  * Re-format templates
+  * Properly redirect user with `referer` #22
+  * Merge branch 'patrik-pre-fill-form' into 'master'
+  * Add Environment & Deployment
+  * Merge branch 'patrik-deployment' into 'master'
+  * Sort DNS Record in zone file #97
+  * Merge branch 'patrik-sort-zone-file' into 'master'
+  * Reduce data.json footprint by using list instead of dict
+  * Merge branch 'patrik-data-json-list' into 'master'
+  * Add `user`, `group`, `umask` option to drop priviledge #102
+  * Limit notification sizes #107
+  * Fix loading of activities in dashboard view
+  * Force cache invalidate on restart for static files
+  * Merge branch 'patrik-oom' into 'master'
+  * Redesign role & permissions
+  * Merge branch 'patrik-perm' into 'master'
+  * Redesign role & permissions #99
+  * Fix dashboard summary link
+  * Merge branch 'patrik-fix-dashboard-link' into 'master'
+  * Add selenium testing
+  * Merge branch 'patrik-selenium' into 'master'
+  * Merge branch 'patrik-default-lang' into 'master'
+  * Add default language support
+  * Add test to check links
+  * Use html5lib to validate HTML
+  * Add autofocus to default focus on widget #118
+  * Keep searchbar always visible in navigation bar #119
+  * Use primary-blue for all cards in dashboard view #120
+  * Make toggle filter more visible when active #114
+  * Little fix for multi-language support in flash message
+  * Disable edit form when user doesn't have edit permissions
+  * Enforce dateformat in email notification #111
+  * Update error page layout to make the message the main attraction #112
+  * Move deployment templates
+  * Add an audit log view #121
+  * Re-use audit log implementation everywhere
+  * Merge branch 'patrik-changes' into 'master'
+  * Fix error page template when user to logged out
+  * Fix duplicate email behaviour
+  * Make all unique index explicit
+  * Move StringFieldSet to form module
+  * Rollback changes made by mistake to History card in edit page
+  * Reuse dual-list widget in subnet page #115
+  * Add button to download table as Excel file #122
+  * Merge branch 'patrik-side-by-side' into 'master'
+  * Merge branch 'patrik-download' into 'master'
+  * Use LDAP Group to assign user's role #36
+  * Merge branch 'patrik-ldap' into 'master'
+  * Show flash message in list page
+  * Fix potential problem with Subnet deployment
+  * Hide deleted record in edit page #113
+  * Merge branch 'patrik-hide-deleted' into 'master'
+  * Add `rir_status` field to Subnet #60
+  * Make use of libjs-bootstrap5 Debian package #103
+  * Merge branch 'patrik-libjs-bootstrap5' into 'master'
+  * Merge branch 'patrik-ripe' into 'master'
+  * Use recent version of popper.js
+  * Define pattern on integer field for validation
+  * Use SmallInteger where applicable
+  * Make use of with_entities() when validating DNS Records
+  * Make use of count to check Followers
+  * Merge branch 'patrik-bootstrap-form-validation' into 'master'
+  * Support server side-processing in Search page
+  * Support SQLAlchemy 2.0 #94
+  * Fix search vector
+  * Merge branch 'patrik-search-vector' into 'master'
+  * Add Record Class to Zone file
+  * Improve Import
+  * Merge branch 'patrik-zone-file' into 'master'
+  * Make username readonly only when editing user #131
+  * Support CSV & Excel download
+  * Merge branch 'patrik-readonly-username' into 'master'
+  * Upgrade djlint to 1.19.16
+  * Localize date in email notification #126
+  * Accept value of zero (0) for vlan, l2vni l3vni
+  * Remove uniq index on user's email
+  * Merge branch 'patrik-locale-date' into 'master'
+  * Implement Typeahead
+  * Merge branch 'patrik-search-group' into 'master'
+  * Add default timezone to date format
+  * Merge branch 'patrik-local-date' into 'master'
+  * Support prefix search for typeahead
+  * Merge branch 'patrik-sqlalchemy-2.0' into 'master'
+  * Merge branch 'patrik-fix-py-version' into 'master'
+  * Fix version in python & debian packages
+  * Merge branch 'patrik-wip-prefix-search' into 'master'
+  * Replace bootstrapemail by Jinja2 template
+  * Merge branch 'patrik-drop-bootstrap-email' into 'master'
+  * Remove scrollbar #133
+  * Add version to left menu #134
+  * Support wildcard lookup
+  * Support search of subnet ranges
+  * Add "Show all" link in typeahead search bar
+  * Merge branch 'patrik-wildcard-search' into 'master'
+  * Merge branch 'patrik-remove-scrollbar' into 'master'
+  * Add support to export as PDF #139
+  * Merge branch 'patrik-pdf-export' into 'master'
+  * Add tracking of User record #129
+  * Replace Search table in notification_page
+  * Replace Search table in search_page
+  * Merge branch 'patrik-user-traking' into 'master'
+  * Send notification for user changes #138
+  * Merge branch 'patrik-user-change-notification' into 'master'
+  * Migrate everything to pyproject.toml #137
+  * Merge branch 'patrik-pyproject-toml' into 'master'
+  * Merge branch 'patrik-dhcp-in-subnet' into 'master'
+  * DHCP Reservation must be created within a subnet #143
+  * WIP Fix history ordering
+  * Merge branch 'patrik-fix-history-ordering' into 'master'
+  * Include French translation #135
+  * Merge branch 'patrik-french' into 'master'
+  * Detect DNS Record Mismatch #47
+  * Merge branch 'patrik-linter' into 'master'
+  * Upgrade djLint to 1.30.2
+  * Merge branch 'patrik-djlint' into 'master'
+  * Add DHCP column to subnet #145
+  * Restrict DHCP Reservation to Subnet with DHCP enabled #146
+  * Implement soft rules validation #144 #100
+  * Disable AutoWidth on DNS Record to improve performance
+  * Merge branch 'patrik-subnet-dhcp' into 'master'
+  * Allow DHCP Reservation on DHCP Disabled subnet #149
+  * Limit login to enabled users #147
+  * Merge branch 'patrik-dhcp' into 'master'
+  * Merge branch 'patrik-user-delete' into 'master'
+  * Add timezone info in email notification #156
+  * Merge branch 'patrik-timezone-email-notification' into 'master'
+  * Fix subnet creation
+  * Merge branch 'patrik-fix-subnet' into 'master'
+  * Improve PTR soft rule #151
+  * Merge branch 'patrik-ptr-soft-rule' into 'master'
+  * Merge branch 'patrik-soa-validation' into 'master'
+  * Enforce validation of SOA DNS Records #153
+  * Merge branch 'patrik-improve-filter-ui' into 'master'
+  * Improve search using filter menu #148
+  * Update french translation and fix typo
+  * Merge branch 'patrik-fix-typo' into 'master'
+  * Disable AutoWidth #158
+  * Merge branch 'patrik-disable-auto-width' into 'master'
+  * Implement soft and enforced custom rule #152
+  * Merge branch 'patrik-enforced-rule' into 'master'
+  * Merge branch 'patrik-fixed-header' into 'master'
+  * Affix table headers #154
+  * Sort typehead result #164
+  * Merge branch 'patrik-type-ahead-sorting' into 'master'
+  * Adjust affix header on mobile #169
+  * Merge branch 'patrik-affix-header-mobile' into 'master'
+  * Change API to include Subnet Range & DHCP
+  * Fix audit log for subnet ranges
+  * remove ranges
+  * Add DHCP Range configuration to subnet #160
+  * Make curl test stable
+  * Allow multiple selection in list filter #168
+  * Merge branch 'patrik-multi-filter' into 'master'
+  * Improve loading view
+  * Improve rule SQL formating
+  * Merge branch 'patrik-dhcp-config' into 'master'
+  * Merge branch 'patrik-handle-error' into 'master'
+  * Return link to duplicate record on unique index error #162
+  * Re-implement business rule using CheckConstraint and RuleConstraint
+  * Fix to support selenium >= 4.11
+  * Merge branch 'patrik-rule' into 'master'
+  * Add full timezone in email notification #156
+  * Merge branch 'patrik-email-timezone' into 'master'
+  * Use SELECT DISTINCT for some rule to avoid duplicates
+  * Merge branch 'patrik-fix-rule' into 'master'
+  * Show Unique Indexes and Check Constraints in rule view
+  * Fix dead lock in test
+  * Remove status change on Unique Index and check constraint rule #173
+  * Fix "Modified by null" #172
+  * Revisit change count calculation #96
+  * Update french translation
+  * Merge branch 'patrik-dead-lock-test' into 'master'
+  * Count pending changes
+  * Show DHCP Status in IP View
+  * Show hostname in DHCP Record page
+  * Change display of related dnsrecord in dhcp #162
+  * Fix timezone formating #175
+  * Merge branch 'patrik-count-changes' into 'master'
+  * Add VRF to IP, DnsRecord and DhcpRecord #178
+  * Enforce CNAME uniqueness #165
+  * Merge branch 'patrik-cname-unique-enforced' into 'master'
+  * Merge branch 'patrik-add-vrf' into 'master'
+  * Merge branch 'patrik-status' into 'master'
+  * Add inherited status
+  * Allow update of VRF of existing DNS Record and DHCP Reservation
+  * Update translation of history
+  * Merge branch 'patrik-update-vrf' into 'master'
+  * Add foreignkey constraint for dnsrecord
+  * Add support for wtforms v3.1.0
+  * Merge branch 'patrik-dnsrecord-constraint' into 'master'
+  * Change display of "DHCP Enabled" column for "1 out of 4" #174
+  * Support find "ahead" in side-by-side widget #116
+  * Merge branch 'patrik-dhcp-enabled-label' into 'master'
+  * Merge branch 'patrik-dual-list' into 'master'
+  * Fix error message for reverse recordcreation
+  * Fix `inherit_cache` warning for format()
+  * Add dnsrecord count to DNS Zone view
+  * Block editing DNS Zone name #181
+  * Merge branch 'patrik-dns-zone-rename' into 'master'
+  * Multiple changes related to record status and data integrity
+  * Expire all on Load Page
+  * Reassign Subnet of DHCP and DNS
+  * Merge branch 'patrik-update-subnet-assignment' into 'master'
+  * Fix vrf_id changes #189
+  * Initial documentation
+  * Update `auth_form`
+  * Fix display of DNS Zone name in error message #191
+  * Merge branch 'patrik-docs' into 'master'
+  * Merge branch 'patrik-mfa' into 'master'
+  * Add MFA support
+  * Add more inter-link between records
+  * Merge branch 'patrik-inter-link' into 'master'
+  * Fix background color based on estatus
+  * Redefine relation between subnet and range
+  * Change how subnet slave get created, modified and deleted
+  * Merge branch 'patrik-subnet-slave' into 'master'
+  * Obfuscate password change #195
+  * Reorganize rest api
+  * Merge branch 'patrik-hide-password' into 'master'
+  * Merge branch 'patrik-restapi' into 'master'
+  * Improve history tracking of parent changes
+  * Replace calls to pkg_resources #202
+  * sonar: fix Dockerfile
+  * Add missing argo2 dependencies #203
+  * sonar: Replace miss-use of <a> by <button>
+  * sonar: reduce function complexity
+  * sonar: enforce datetime with tzinfo
+  * exclude multi.js
+  * Remove obsolete table_lang.json file
+  * Merge branch 'patrik-subnet-history' into 'master'
+  * Change behaviour of redirect #212
+  * Support disable state for side-by-side widget #211
+  * Fix test stability for postgresql
+  * Redirect user trying to edit slave subnet #210
+  * Improve Docker image
+  * Add test for subnet circular reference #205
+  * Add dnszone_name to DNS deployment with ansible
+  * Adjust error message when adding dhcp record without proper VRF
+  * Update i18n
+  * Merge branch 'patrik-history' into 'master'
+
+ -- Patrik Dufresne <patrik@ikus-soft.com>  Mon, 19 Aug 2024 12:36:12 +0000
+

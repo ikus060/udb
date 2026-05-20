@@ -1,101 +1,512 @@
-# Change Log
+# Changelog
 
-## Next Release
+All notable changes to this project will be documented in this file.
 
-* Enforce 'Origin' validation to counter CSRF and XSS
-* Add ratelimit protection on sensitive endpoints
-* Enforce strong password with zxcvbn
-* Enforce field limit in wtform validation
-* Implement POST, REDIRECT, GET in user profile
-* Update Content-Security-Policy
-* Update auth_form
-* Remove deprecated auth_basic module
-* Define proper proxy settings for best security #67
-* Avoid leaking stacktrace when running in production mode #67
-* Define default security headers #67
-* Redirect user to same page after edit
-* Complete datatable changes
-* Support VRF Records
-* Enabled `cherrypy.tools.proxy` to support reverse proxy #65
-* Use datatables library to display tables #48 #66
-* Provide default log configuration for debian package
-* Change package name
-* Update db module plugins
-* Cosmetic changes
-* Allow Administrators to define or remove user's password #51
-* Provide a default page for /api/
-* Provide a default configfile #52
-* Update db Base class
-* Make IP View a custom template
-* Ad scalar_subquery to remove sqlalchemy warning
-* Redirect user to previous page after editing #22
-* Define inherit_cache for cidr
-* Fix URL in notifications view
-* Define default image to upload deb
-* Define a timestamp decorator to handle timezone
-* Add a dashboard page #26
-* Add related_subnets to IP View #39
-* Add logo to login page
-* Add `cc` to smtp module
-* Avoid editing status using HTTP GET method
-* Avoid editing followers using HTTP GET
-* Fix open redirect in login page #45
-* Add .vscode to gitignore
-* Validate PTR Record using DNS Zone #37
-* Reffactoring reverse_ip as hybrid_property
-* Exclude deleted records from relation to IP #42
-* Exclude generated templates from sonar
-* Fix to support email-validator v1.2.0
-* Move display_name to jinja2 templates
-* Add a view to list all subscriptions #40
-* Add catch-all email to configuration #44
-* Add alt to image logo
-* Make email template compliant
-* Add aria-describedby to table
-* Add aria-hidden="true" to icons
-* Fix notification
-* Add catch-all email to configuration #44
-* Fetch email and fullname attributes from LDAP #43
-* Send notification to followers #15
-* Update Copyright year
-* Replace font awsome by bootstrap-icons #24 #34
-* Fix sonar coverage
-* Add full text search #28
-* Fix test for postgresql database
-* Make tables sortable #30
-* Run test during Debian Packaging using pytest
-* Add DNS Zone / Subnet / Dns Record validation #21
-* Validate if subnet creation conflict with other existing subnet #9
-* Add isort and black to project
-* Configuring setup() using setup.cfg files
-* Update sidebar
-* Complete user managements
-* Implement LDAP authentication #4
-* Add new plugins to the project
-* Add user managements #27
-* Include PTR record ipv4 and ipv6 in IP View
-* Make database-uri configurable #25 #33
-* Add specific PTR record validation #31
-* Add audit log on record creation #29
-* Complete IP View changes #7
-* Provide a Debian package #14
-* Add IP View with related records #7
-* Add all the required DNS record type #19
-* Add Many-to-Many dnszone and subnet #18
-* Add basic favicon #11
-* Fix history when owner is updated #13
-* Use a single table for messages
-* Use a single table for followers
-* Adjust CSS Layout
-* Fix "Not Assigned" owner #20
-* Fix enabled state #17
-* Rename application from CMDB to UDB
-* Creatre RESTful API for CRUD operation #8
-* Working version
-* Re-implement navigation using sidebar
-* Adding more unit test
-* Add more record type with test and validation
-* Implement basic view to add,edit record
-* Update SQLAlchemy integration
-* Complete project skeleton & creating login page #3
-* Fix test error and flake8
+The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
+and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+
+<!-- insertion marker -->
+## Unreleased
+
+<small>[Compare with latest](https://gitlab.com/ikus-soft/udb/compare/1.0.0...HEAD)</small>
+
+### Added
+
+- Add python3-jinjax as dependency ([92f7f2d](https://gitlab.com/ikus-soft/udb/commit/92f7f2d133b779e631b693ad22b523ff1a79b6b4) by Patrik Dufresne).
+- Add support for Debian trixie ([f9ff5b4](https://gitlab.com/ikus-soft/udb/commit/f9ff5b4b41ba4bc2c63063a30b18fa8b3d0f08ec) by Patrik Dufresne).
+- Add `pytz` as explicit dependencies ([721a2e7](https://gitlab.com/ikus-soft/udb/commit/721a2e7d48a1fcd3dd1a372750883ca5556386b4) by Patrik Dufresne).
+- Add `.venv` to git ignore ([006289a](https://gitlab.com/ikus-soft/udb/commit/006289a17c43f8f8e3146db22ac108979e7787d2) by Patrik Dufresne).
+
+### Fixed
+
+- Fix user's password updates ([e184171](https://gitlab.com/ikus-soft/udb/commit/e1841719bb7af7fee1a5cb559fb37689eb8ba4e5) by Patrik Dufresne).
+- Fix timming issue in few selenium test ([148aa88](https://gitlab.com/ikus-soft/udb/commit/148aa8801131dbec089f69a060052437824d0482) by Patrik Dufresne).
+
+### Misc
+
+- build: consolidate lint tools into a single tox environment ([cf4f885](https://gitlab.com/ikus-soft/udb/commit/cf4f885fce48b315328317e86ddd400780617b82) by Patrik Dufresne).
+- ci: build for forky ([7f7362f](https://gitlab.com/ikus-soft/udb/commit/7f7362f8dfdd68a184518ee2a6aea31c651e3b88) by Patrik Dufresne).
+- deps: bump cherrypy-foundation to v1.12.0 ([e5b7245](https://gitlab.com/ikus-soft/udb/commit/e5b7245d1504931ab7e423bc31f5e43203f3ee4a) by Patrik Dufresne).
+- deps: bump cherrypy-foundation to v1.6.0 ([5e47156](https://gitlab.com/ikus-soft/udb/commit/5e47156e6be286d49f43da4fb1b02671125909af) by Patrik Dufresne).
+- Reorganize foundation modules ([c1cf2b9](https://gitlab.com/ikus-soft/udb/commit/c1cf2b998d60a1ad4992febb3c18925af57643f4) by Patrik Dufresne).
+- Update Typeahead component ([65a865c](https://gitlab.com/ikus-soft/udb/commit/65a865cededcbe73f4d587ead31d0617521f20d3) by Patrik Dufresne).
+- Update to make use of <Fields> component ([f9d48f1](https://gitlab.com/ikus-soft/udb/commit/f9d48f1e33c8f263405e6b0df5103fad540a042e) by Patrik Dufresne).
+- Update test module to call clear_sessions() ([cbffbca](https://gitlab.com/ikus-soft/udb/commit/cbffbca96d8cb722db6672557419a9b5c2a07506) by Patrik Dufresne).
+- Pin cheroot to workarround a bug ([ac7bf17](https://gitlab.com/ikus-soft/udb/commit/ac7bf17eabc4203822927c47ff2f43ab137f408f) by Patrik Dufresne).
+- Update timestamp ([a605cea](https://gitlab.com/ikus-soft/udb/commit/a605ceaaeb51234da072333b3020168002d41f5e) by Patrik Dufresne).
+- Update RestApi dispatcher ([2c8c133](https://gitlab.com/ikus-soft/udb/commit/2c8c13324cfadf6c8bc3a23e3400a6a8a0d12408) by Patrik Dufresne).
+- Update djlint ([26bf49a](https://gitlab.com/ikus-soft/udb/commit/26bf49a294fd55db149e0fa5fb309359c25b6021) by Patrik Dufresne).
+- Upgrade jinjax ([5e262e1](https://gitlab.com/ikus-soft/udb/commit/5e262e18451a9d87af20c98b0c05ba42ef31eded) by Patrik Dufresne).
+- Update db plugin ([2635d89](https://gitlab.com/ikus-soft/udb/commit/2635d897608d5095c1430c7d60a70590acb8adbc) by Patrik Dufresne).
+- Update datatable and other plugins ans tools ([321cbc6](https://gitlab.com/ikus-soft/udb/commit/321cbc6b317d519f8d659830dc41556f81c879dd) by Patrik Dufresne).
+- Update smtp plugins ([3517ebb](https://gitlab.com/ikus-soft/udb/commit/3517ebb4f4daa908fa5f11760dd2c13b18c4e7eb) by Patrik Dufresne).
+- Upgrade secure headers module ([cef3f29](https://gitlab.com/ikus-soft/udb/commit/cef3f29f0139331c6b496a17e865ed592cd5b9ab) by Patrik Dufresne).
+- Upgrade authentication modules ([f694201](https://gitlab.com/ikus-soft/udb/commit/f6942018cbce1bcc5719ca71181d2631284e1e5c) by Patrik Dufresne).
+- Upgrade datatables component ([9a77be7](https://gitlab.com/ikus-soft/udb/commit/9a77be73179a91c301286d4e65d6718a2386dd81) by Patrik Dufresne).
+- Upgrade black ([a1ec63a](https://gitlab.com/ikus-soft/udb/commit/a1ec63a2b8b3cb774aa1d6c8882ec212800e936f) by Patrik Dufresne).
+- Update license headers ([345fada](https://gitlab.com/ikus-soft/udb/commit/345fada1fba877ae59c1ddf467135152c4ccbd8e) by Patrik Dufresne).
+- Upgrade db tools into plugin ([e674a97](https://gitlab.com/ikus-soft/udb/commit/e674a97d9e4c799d0c22991296f6dac4a6123bff) by Patrik Dufresne).
+- Migrate button with confirmation to JinjaX components ([8c61ed0](https://gitlab.com/ikus-soft/udb/commit/8c61ed0ac842ee97e222540952e33d82eae1de63) by Patrik Dufresne).
+- Exclude static files from Sonarqube analysis ([b8fbdb2](https://gitlab.com/ikus-soft/udb/commit/b8fbdb26044b08dfeea8183e203534e689cd49f4) by Patrik Dufresne).
+- Migrate Select.multi (Side-by-side) widget to JinjaX components ([97685b0](https://gitlab.com/ikus-soft/udb/commit/97685b0542495767cbee067cca91dd7117ebe444) by Patrik Dufresne).
+- Migrate macro.html to JinjaX components ([c681bb2](https://gitlab.com/ikus-soft/udb/commit/c681bb2949ca5536bac069b8b3db9d0226c52449) by Patrik Dufresne).
+- Upgrade JinjaX to v0.45 ([6872fe4](https://gitlab.com/ikus-soft/udb/commit/6872fe4a3c38f7d2950a4d27e50d4dcf9bc7a62b) by Patrik Dufresne).
+- Migrate SwitchWidget to JinjaX component ([b07009e](https://gitlab.com/ikus-soft/udb/commit/b07009eb7f6fea59c0bebb1dfb87162aab10a4e4) by Patrik Dufresne).
+- Migrate SubnetTableWidget to JinjaX components ([1e74552](https://gitlab.com/ikus-soft/udb/commit/1e74552bf328c5624b0aced5f97e356c547b3173) by Patrik Dufresne).
+- Migrate typeahead to JinjaX component ([f36ab1a](https://gitlab.com/ikus-soft/udb/commit/f36ab1a028dfb6b4027aa26bec1ac9d89eec6390) by Patrik Dufresne).
+- Migrate table to JinjaX component ([ee2120c](https://gitlab.com/ikus-soft/udb/commit/ee2120c18ed97647863777634156bc8c4e1bd390) by Patrik Dufresne).
+- Start using JinjaX for edit view ([9cd074f](https://gitlab.com/ikus-soft/udb/commit/9cd074fb715ec996b4e45b5fa8624c1bc80aa767) by Patrik Dufresne).
+- Make better use of form floating ([1250f91](https://gitlab.com/ikus-soft/udb/commit/1250f91e270f10a0283508bbfe6ba08a4703d7d2) by Patrik Dufresne).
+
+<!-- insertion marker -->
+## [1.0.0](https://gitlab.com/ikus-soft/udb/tags/1.0.0) - 2024-08-19
+
+<small>[Compare with first commit](https://gitlab.com/ikus-soft/udb/compare/8dfc847a127b8b738b9652946709e3f4f17650dd...1.0.0)</small>
+
+### Added
+
+- Add dnszone_name to DNS deployment with ansible ([401a5e4](https://gitlab.com/ikus-soft/udb/commit/401a5e4e96b5c67fa0f3c8d5fac21046454aacd7) by Patrik Dufresne).
+- Add test for subnet circular reference #205 ([0bb392d](https://gitlab.com/ikus-soft/udb/commit/0bb392d036d9a200991b22d5b97c60137a2bdfab) by Patrik Dufresne).
+- Add missing argo2 dependencies #203 ([3dabb3d](https://gitlab.com/ikus-soft/udb/commit/3dabb3d10453a51f59d8d25f44366d36d3e1856d) by Patrik Dufresne).
+- Add more inter-link between records ([3a47f03](https://gitlab.com/ikus-soft/udb/commit/3a47f039f8ece497b5d1f465fedbc090a44ef056) by Patrik Dufresne).
+- Add MFA support ([2cf2d88](https://gitlab.com/ikus-soft/udb/commit/2cf2d8857521c1a2e61021b27f9468843896cbdc) by Patrik Dufresne).
+- Add dnsrecord count to DNS Zone view ([0e7bb9f](https://gitlab.com/ikus-soft/udb/commit/0e7bb9f0cd11771f862b1b794f1858b60e9dc520) by Patrik Dufresne).
+- Add support for wtforms v3.1.0 ([23bfe29](https://gitlab.com/ikus-soft/udb/commit/23bfe29a32c19d289d53e0698074e4abc0229b41) by Patrik Dufresne).
+- Add foreignkey constraint for dnsrecord ([8b5b5d6](https://gitlab.com/ikus-soft/udb/commit/8b5b5d680fa742e406c86d7a09fbb5fa206f705d) by Patrik Dufresne).
+- Add inherited status ([4966c56](https://gitlab.com/ikus-soft/udb/commit/4966c5679e0a80b9ff2832c317db4f0627b5a41a) by Patrik Dufresne).
+- Add VRF to IP, DnsRecord and DhcpRecord #178 ([5cd5026](https://gitlab.com/ikus-soft/udb/commit/5cd5026126343636e4e160164f5ea6b29eda5f81) by Patrik Dufresne).
+- Add full timezone in email notification #156 ([5fa08f9](https://gitlab.com/ikus-soft/udb/commit/5fa08f933ef891754d34661af7469fd9cae38bcf) by Patrik Dufresne).
+- Add DHCP Range configuration to subnet #160 ([8bd6fd2](https://gitlab.com/ikus-soft/udb/commit/8bd6fd25e8d67e31365ec360e4a7cc1df158ad81) by Patrik Dufresne).
+- Add timezone info in email notification #156 ([8f6f134](https://gitlab.com/ikus-soft/udb/commit/8f6f1349d2711e3873172f83c8d14ee62dc29a91) by Patrik Dufresne).
+- Add DHCP column to subnet #145 ([9aa056e](https://gitlab.com/ikus-soft/udb/commit/9aa056e86caa1173503648a0cf1e6752f78e239c) by Patrik Dufresne).
+- Add tracking of User record #129 ([58ff145](https://gitlab.com/ikus-soft/udb/commit/58ff14545067dbc63a72f50cc39b9f51013fd141) by Patrik Dufresne).
+- Add support to export as PDF #139 ([cbc4892](https://gitlab.com/ikus-soft/udb/commit/cbc4892cf374f9abd8265ccedfa227775e1d5545) by Patrik Dufresne).
+- Add "Show all" link in typeahead search bar ([0b17dcf](https://gitlab.com/ikus-soft/udb/commit/0b17dcfccd697bbf43d208f473c585a17d46f624) by Patrik Dufresne).
+- Add version to left menu #134 ([cde317d](https://gitlab.com/ikus-soft/udb/commit/cde317d915fa7fdfb10c28438cc927c7d5eda185) by Patrik Dufresne).
+- Add default timezone to date format ([e7fd5d7](https://gitlab.com/ikus-soft/udb/commit/e7fd5d7d1eebc280c130a7ab749e788e4e957936) by Patrik Dufresne).
+- Add Record Class to Zone file ([402408b](https://gitlab.com/ikus-soft/udb/commit/402408b283e80d11a3f368615910dac50bf3cb02) by Patrik Dufresne).
+- Add `rir_status` field to Subnet #60 ([a0c85ec](https://gitlab.com/ikus-soft/udb/commit/a0c85ecc8063ca297df93ddcf6b89c56e85ee8b8) by Patrik Dufresne).
+- Add button to download table as Excel file #122 ([47fc60f](https://gitlab.com/ikus-soft/udb/commit/47fc60fdd82ebc400ed32519c1088faa96ea295f) by Patrik Dufresne).
+- Add an audit log view #121 ([f1b9099](https://gitlab.com/ikus-soft/udb/commit/f1b9099ecc0e4e95c52e92f7834133902a8c6289) by Patrik Dufresne).
+- Add autofocus to default focus on widget #118 ([9ae50f6](https://gitlab.com/ikus-soft/udb/commit/9ae50f6f77d1f349051cdd90c08ab0df96505ceb) by Patrik Dufresne).
+- Add test to check links ([c99b1e1](https://gitlab.com/ikus-soft/udb/commit/c99b1e1aee1591c5dbda66deb8828aeb3651ab57) by Patrik Dufresne).
+- Add default language support ([b92d5cf](https://gitlab.com/ikus-soft/udb/commit/b92d5cfc77cef1813b1ff504aaca730cb2c621d2) by Patrik Dufresne).
+- Add selenium testing ([cfe2399](https://gitlab.com/ikus-soft/udb/commit/cfe2399af10c8ba6bacd2fa11fe65ccd66e4f737) by Patrik Dufresne).
+- Add `user`, `group`, `umask` option to drop priviledge #102 ([e25c0cd](https://gitlab.com/ikus-soft/udb/commit/e25c0cdce2e31ed8b66862ebc03376c43bd9d2b2) by Patrik Dufresne).
+- Add Environment & Deployment ([7880c5a](https://gitlab.com/ikus-soft/udb/commit/7880c5a35db9664a3324dc9b8b33e64c50b4ef54) by Patrik Dufresne).
+- Add creation of reverse DNS Record #38 ([fcc7a92](https://gitlab.com/ikus-soft/udb/commit/fcc7a92ae567dc8b0a764d945c0b2b4c187c96e5) by Patrik Dufresne).
+- Add DualList widget #68 ([f2e96f9](https://gitlab.com/ikus-soft/udb/commit/f2e96f990ddf45f8444950a4fac4212f363e637a) by Patrik Dufresne).
+- Add changelog ([a87ad2c](https://gitlab.com/ikus-soft/udb/commit/a87ad2cdc90b9a9900eab4e91555b08424d56561) by Patrik Dufresne).
+- Add ratelimit protection on sensitive endpoints ([d756779](https://gitlab.com/ikus-soft/udb/commit/d756779d140d2e57376c50eb93e8ad1b278d59f5) by Patrik Dufresne).
+- Add a dashboard page #26 ([3c4afd2](https://gitlab.com/ikus-soft/udb/commit/3c4afd23f0453910a3fb7d69963238d5099f8bdc) by Patrik Dufresne).
+- Add related_subnets to IP View #39 ([7a0ac00](https://gitlab.com/ikus-soft/udb/commit/7a0ac00a1a6c074962351ebdc3fc05bdfcd140ec) by Patrik Dufresne).
+- Add logo to login page ([8e2cb9e](https://gitlab.com/ikus-soft/udb/commit/8e2cb9eed64edf541ab12d4f4bfd07f3b2935e61) by Patrik Dufresne).
+- Add `cc` to smtp module ([fc0010e](https://gitlab.com/ikus-soft/udb/commit/fc0010e0d5c61ecf5980534d5b60759a9f2e4ca1) by Patrik Dufresne).
+- Add .vscode to gitignore ([29e45e0](https://gitlab.com/ikus-soft/udb/commit/29e45e0eaaed876aabadcd4c0cb08e7c8912fd22) by Patrik Dufresne).
+- Add a view to list all subscriptions #40 ([e5c0b38](https://gitlab.com/ikus-soft/udb/commit/e5c0b38e836e50b9df411840e02c6eb7c096727d) by Patrik Dufresne).
+- Add catch-all email to configuration #44 ([38f0b55](https://gitlab.com/ikus-soft/udb/commit/38f0b553ee036efdaa84e5a457838be9a763553e) by Patrik Dufresne).
+- Add alt to image logo ([4eaf9a9](https://gitlab.com/ikus-soft/udb/commit/4eaf9a9b5d241e7226e44d40fe0ce56a8b6c1114) by Patrik Dufresne).
+- Add aria-describedby to table ([4853dc7](https://gitlab.com/ikus-soft/udb/commit/4853dc7544b437e1e904126dd408e4a8186b4ba7) by Patrik Dufresne).
+- Add aria-hidden="true" to icons ([d0d0c93](https://gitlab.com/ikus-soft/udb/commit/d0d0c93f146e66f93d770b1745fc59de4b7b4649) by Patrik Dufresne).
+- Add full text search #28 ([1971a74](https://gitlab.com/ikus-soft/udb/commit/1971a7468b3c655b665660fb2b55921a28c47f8b) by Patrik Dufresne).
+- Add DNS Zone / Subnet / Dns Record validation #21 ([7633dbb](https://gitlab.com/ikus-soft/udb/commit/7633dbbd9c6421680a162ca93fd5b16b57a5b288) by Patrik Dufresne).
+- Add isort and black to project ([3ce0b7b](https://gitlab.com/ikus-soft/udb/commit/3ce0b7b07b44cdc1100e1adffbe6f0fd606bfc9b) by Patrik Dufresne).
+- Add new plugins to the project ([9a12307](https://gitlab.com/ikus-soft/udb/commit/9a12307f049d461f56ba7be6b58ed8539e119618) by Patrik Dufresne).
+- Add user managements #27 ([ecdc933](https://gitlab.com/ikus-soft/udb/commit/ecdc9331fb8f8dc03c1685d99159b47d06cb21db) by Patrik Dufresne).
+- Add specific PTR record validation #31 ([2c5a2a0](https://gitlab.com/ikus-soft/udb/commit/2c5a2a094d17a6d034e20477c8f0b47da67ab45d) by Patrik Dufresne).
+- Add audit log on record creation #29 ([8fd7f3e](https://gitlab.com/ikus-soft/udb/commit/8fd7f3e1aa2337202697363e1954a304a918d303) by Patrik Dufresne).
+- Add IP View with related records #7 ([114c311](https://gitlab.com/ikus-soft/udb/commit/114c3117df29fa2b217245772aa933246946ec4c) by Patrik Dufresne).
+- Add all the required DNS record type #19 ([7433db8](https://gitlab.com/ikus-soft/udb/commit/7433db8cab353e79993197ed83c6f5569a7362ae) by Patrik Dufresne).
+- Add Many-to-Many dnszone and subnet #18 ([9d593d9](https://gitlab.com/ikus-soft/udb/commit/9d593d98607913f358608e7253ff7d2c555640fc) by Patrik Dufresne).
+- Add basic favicon #11 ([e3ee4db](https://gitlab.com/ikus-soft/udb/commit/e3ee4db2d485e754bcb559dc25fc535fdbcfe1aa) by Patrik Dufresne).
+- Adding more unit test ([f17c747](https://gitlab.com/ikus-soft/udb/commit/f17c7474b0d860e6435c6cafc72df41e740b0076) by Patrik Dufresne).
+- Add more record type with test and validation ([d7343f2](https://gitlab.com/ikus-soft/udb/commit/d7343f24143768ec24ec97f704c4e42fb056751a) by Patrik Dufresne).
+
+### Fixed
+
+- Fix test stability for postgresql ([df0aaf2](https://gitlab.com/ikus-soft/udb/commit/df0aaf2e111fcb6617911efe26d8e589fd5eb634) by Patrik Dufresne).
+- sonar: fix Dockerfile ([1f835ab](https://gitlab.com/ikus-soft/udb/commit/1f835ab42f76082991c1047134fed9bb5827e734) by Patrik Dufresne).
+- Fix background color based on estatus ([ade7a83](https://gitlab.com/ikus-soft/udb/commit/ade7a83f013b391f6c742aeac6357e7b07f8c375) by Patrik Dufresne).
+- Fix display of DNS Zone name in error message #191 ([f20637f](https://gitlab.com/ikus-soft/udb/commit/f20637f7647f3d4a3836ed0eb432b469bfdb2a98) by Patrik Dufresne).
+- Fix vrf_id changes #189 ([fbdd86c](https://gitlab.com/ikus-soft/udb/commit/fbdd86cde3f480b3a4b456b3ea35f8c7d387150e) by Patrik Dufresne).
+- Fix `inherit_cache` warning for format() ([669a610](https://gitlab.com/ikus-soft/udb/commit/669a6108c50d4cea1f99733f502508b6dc597d97) by Patrik Dufresne).
+- Fix error message for reverse recordcreation ([9b80957](https://gitlab.com/ikus-soft/udb/commit/9b809578483c4ac3341349beb2ed11fab2949f87) by Patrik Dufresne).
+- Fix timezone formating #175 ([85adcf1](https://gitlab.com/ikus-soft/udb/commit/85adcf1f8b3556593ec42a47a221949ffd131b15) by Patrik Dufresne).
+- Fix "Modified by null" #172 ([8452696](https://gitlab.com/ikus-soft/udb/commit/845269625d23ee04eb7f07a9025e682b5e59a496) by Patrik Dufresne).
+- Fix dead lock in test ([a040939](https://gitlab.com/ikus-soft/udb/commit/a040939ee448bbda297f69f76f2f664289759a5f) by Patrik Dufresne).
+- Fix to support selenium >= 4.11 ([a7c1f10](https://gitlab.com/ikus-soft/udb/commit/a7c1f1050a0f450c2930ac75624937570399a5e6) by Patrik Dufresne).
+- Fix audit log for subnet ranges ([2357393](https://gitlab.com/ikus-soft/udb/commit/2357393fa6c30fca5219441ff84d8e4486506157) by Patrik Dufresne).
+- Fix subnet creation ([6a10948](https://gitlab.com/ikus-soft/udb/commit/6a10948c6b7900874b4b211d48c6a35f4ee4ebad) by Patrik Dufresne).
+- Fix version in python & debian packages ([2e15ea3](https://gitlab.com/ikus-soft/udb/commit/2e15ea3b65888d1bdcb2eedb48f3fcb1d6c4bce5) by Patrik Dufresne).
+- Fix search vector ([7206d51](https://gitlab.com/ikus-soft/udb/commit/7206d51c518e69ebdd835268baa58f436c9956a4) by Patrik Dufresne).
+- Fix potential problem with Subnet deployment ([388da9d](https://gitlab.com/ikus-soft/udb/commit/388da9dbe4fc56fb901c9626f3d2a6daf7f48ed1) by Patrik Dufresne).
+- Fix duplicate email behaviour ([ca6145d](https://gitlab.com/ikus-soft/udb/commit/ca6145dc6fd73c53c718596612ceaf27ac505d02) by Patrik Dufresne).
+- Fix error page template when user to logged out ([3c72c74](https://gitlab.com/ikus-soft/udb/commit/3c72c747ff40a7ba2fb2aa9359b088d742642351) by Patrik Dufresne).
+- Fix dashboard summary link ([cbd612a](https://gitlab.com/ikus-soft/udb/commit/cbd612a9c37c4f6f98c585b4a5e9c50d2004d547) by Patrik Dufresne).
+- Fix loading of activities in dashboard view ([ffa630f](https://gitlab.com/ikus-soft/udb/commit/ffa630f643a223f055961d80c63893166265bc2e) by Patrik Dufresne).
+- Fix build to support latest Bookworm & Python 3.11 ([a516e3c](https://gitlab.com/ikus-soft/udb/commit/a516e3cfc1120a3fc9d0be6ec9b9b7fb19f9b36d) by Patrik Dufresne).
+- Fix display of comments ([7a18774](https://gitlab.com/ikus-soft/udb/commit/7a187744488cad05abae827e34e2b4ec18fd5d5f) by Patrik Dufresne).
+- Fix initial state for `data-showif` ([37168a4](https://gitlab.com/ikus-soft/udb/commit/37168a44e16a37a1e516c44dab4c163b8a5586fa) by Patrik Dufresne).
+- Fix small user interface display issue ([b68a612](https://gitlab.com/ikus-soft/udb/commit/b68a6122ddb619f2b6dd5ba4d5be9439ff15b981) by Patrik Dufresne).
+- Fix URL in notifications view ([4e7caa2](https://gitlab.com/ikus-soft/udb/commit/4e7caa2ee0ee4a72487b485aa68c6d66cccaa311) by Patrik Dufresne).
+- Fix open redirect in login page #45 ([78b9f42](https://gitlab.com/ikus-soft/udb/commit/78b9f422dbe2da18f5298016c6992979f96530b9) by Patrik Dufresne).
+- Fix to support email-validator v1.2.0 ([fdc4c05](https://gitlab.com/ikus-soft/udb/commit/fdc4c05b0a919ba95869e9cc9b7aa637af6da815) by Patrik Dufresne).
+- Fix notification ([a9892a2](https://gitlab.com/ikus-soft/udb/commit/a9892a2f706467d63f3039f4dc30775d28e9ff08) by Patrik Dufresne).
+- Fix sonar coverage ([5156aa4](https://gitlab.com/ikus-soft/udb/commit/5156aa41ec558e1ab545a23c5bd0b119e0a7bfc1) by Patrik Dufresne).
+- Fix test for postgresql database ([635f53d](https://gitlab.com/ikus-soft/udb/commit/635f53d897d19afde5de2b0f2a2f29c4b5cd7f80) by Patrik Dufresne).
+- Fix history when owner is updated #13 ([54cf6b8](https://gitlab.com/ikus-soft/udb/commit/54cf6b8188c829811382862aa78d2182cdcadbac) by Patrik Dufresne).
+- Fix "Not Assigned" owner #20 ([e4812b0](https://gitlab.com/ikus-soft/udb/commit/e4812b0744bedbe42e4edc0ecb83e64a36f7e9e6) by Patrik Dufresne).
+- Fix enabled state #17 ([d4cfe4a](https://gitlab.com/ikus-soft/udb/commit/d4cfe4aaffbfd3ea14a3d2b7dfe03763f3df74ef) by Patrik Dufresne).
+- Fix test error and flake8 ([92ae03f](https://gitlab.com/ikus-soft/udb/commit/92ae03f84e17732da2024b27555fb870f0ac8954) by Patrik Dufresne).
+
+### Changed
+
+- Change behaviour of redirect #212 ([b545ad2](https://gitlab.com/ikus-soft/udb/commit/b545ad27a8188b2668745aeec3911d569e8a7142) by Patrik Dufresne).
+- Change how subnet slave get created, modified and deleted ([a115f6a](https://gitlab.com/ikus-soft/udb/commit/a115f6ae121a9ff94ce6824598f024c2f15d97ad) by Patrik Dufresne).
+- Change display of "DHCP Enabled" column for "1 out of 4" #174 ([bac26d3](https://gitlab.com/ikus-soft/udb/commit/bac26d3f542267fdc3d4aa0e9c47f20aa03e759b) by Patrik Dufresne).
+- Change display of related dnsrecord in dhcp #162 ([3e848d6](https://gitlab.com/ikus-soft/udb/commit/3e848d61f78df5cbdd927d7849d67abfd9086f21) by Patrik Dufresne).
+- Change API to include Subnet Range & DHCP ([638ac8d](https://gitlab.com/ikus-soft/udb/commit/638ac8dc820bdfc3adebfbba85cc7021e1749519) by Patrik Dufresne).
+- Change vocabulary for "Reverse" and "Forward" #83 ([6e7c2dd](https://gitlab.com/ikus-soft/udb/commit/6e7c2ddb8372458c037c30d1f10fb31132961276) by Patrik Dufresne).
+- Change package name ([1af50eb](https://gitlab.com/ikus-soft/udb/commit/1af50eb29ba94d4b601dabda3dce28f3edacf7a7) by Patrik Dufresne).
+
+### Removed
+
+- Remove obsolete table_lang.json file ([e0fb9a8](https://gitlab.com/ikus-soft/udb/commit/e0fb9a8f69a5dbc2aa5382d8f6b4381d63870224) by Patrik Dufresne).
+- Remove status change on Unique Index and check constraint rule #173 ([dcb2c64](https://gitlab.com/ikus-soft/udb/commit/dcb2c64a351bccb6d9d6014a5ac429f5c1694766) by Patrik Dufresne).
+- remove ranges ([1423e02](https://gitlab.com/ikus-soft/udb/commit/1423e0273e0f8aa921bd7f61793d643c5f3f7db8) by Patrik Dufresne).
+- Remove scrollbar #133 ([a3c0978](https://gitlab.com/ikus-soft/udb/commit/a3c09787c7864ad2118f637686494620424006d4) by Patrik Dufresne).
+- Remove uniq index on user's email ([93cf3a9](https://gitlab.com/ikus-soft/udb/commit/93cf3a94356d8f500f8f9d18822002b22ba7076c) by Patrik Dufresne).
+- Remove duplicate comments vs message #75 ([63d9a15](https://gitlab.com/ikus-soft/udb/commit/63d9a15f631a8931200656a8da0410323e2d8f02) by Patrik Dufresne).
+- Remove auto commit to have better control over what is commited #71 ([3a12572](https://gitlab.com/ikus-soft/udb/commit/3a12572820773579370a4145091cdcca641dd2c2) by Patrik Dufresne).
+- Remove deprecated auth_basic module ([35aa1e3](https://gitlab.com/ikus-soft/udb/commit/35aa1e3990ae22017628ba7a36c25ee31df74c77) by Patrik Dufresne).
+
+### Merged
+
+- Merge branch 'patrik-history' into 'master' ([50b179a](https://gitlab.com/ikus-soft/udb/commit/50b179a2ed07d5a375c257142e82ade671063e15) by Patrik Dufresne).
+- Merge branch 'patrik-subnet-history' into 'master' ([9917d51](https://gitlab.com/ikus-soft/udb/commit/9917d51fc2b1baeae9c1b2dabaa7bf7b6c6f3017) by Patrik Dufresne).
+- Merge branch 'patrik-restapi' into 'master' ([97f2968](https://gitlab.com/ikus-soft/udb/commit/97f29683fbc5b54cf819ba51626ca2fb6f06373a) by Patrik Dufresne).
+- Merge branch 'patrik-hide-password' into 'master' ([685be3b](https://gitlab.com/ikus-soft/udb/commit/685be3bddfa00f44e9f8f26551399664ef7476c5) by Patrik Dufresne).
+- Merge branch 'patrik-subnet-slave' into 'master' ([90ad1b0](https://gitlab.com/ikus-soft/udb/commit/90ad1b0241da006095d32134122fdc2366320ff4) by Patrik Dufresne).
+- Merge branch 'patrik-inter-link' into 'master' ([bc41fc8](https://gitlab.com/ikus-soft/udb/commit/bc41fc841be05937da3b99d816f9c4362e1d9715) by Patrik Dufresne).
+- Merge branch 'patrik-mfa' into 'master' ([2b2fecb](https://gitlab.com/ikus-soft/udb/commit/2b2fecb6926a0e4ef887871c97b2a7e4546330fb) by Patrik Dufresne).
+- Merge branch 'patrik-docs' into 'master' ([46ce795](https://gitlab.com/ikus-soft/udb/commit/46ce7957569c3d6292fdf041f5e2478912fd7b47) by Patrik Dufresne).
+- Merge branch 'patrik-update-subnet-assignment' into 'master' ([53be5cc](https://gitlab.com/ikus-soft/udb/commit/53be5cc81e97f913f479cce44741d54a5a84d9e6) by Patrik Dufresne).
+- Merge branch 'patrik-dns-zone-rename' into 'master' ([2981a88](https://gitlab.com/ikus-soft/udb/commit/2981a8884dae7b79ca1da2a7272b2318f55e2f80) by Patrik Dufresne).
+- Merge branch 'patrik-dual-list' into 'master' ([57d9e74](https://gitlab.com/ikus-soft/udb/commit/57d9e74c1c774a8ee20e91778b605f852a9556b8) by Patrik Dufresne).
+- Merge branch 'patrik-dhcp-enabled-label' into 'master' ([f1ee3a9](https://gitlab.com/ikus-soft/udb/commit/f1ee3a99d70f627a77887850dce5f8020f9e40c9) by Patrik Dufresne).
+- Merge branch 'patrik-dnsrecord-constraint' into 'master' ([aa288cf](https://gitlab.com/ikus-soft/udb/commit/aa288cfe1f5319df97d94ee4c8bf921403ed67e2) by Patrik Dufresne).
+- Merge branch 'patrik-update-vrf' into 'master' ([4351b9f](https://gitlab.com/ikus-soft/udb/commit/4351b9fd53c30d1805b8a8f9989a65df6018fa1b) by Patrik Dufresne).
+- Merge branch 'patrik-status' into 'master' ([6120251](https://gitlab.com/ikus-soft/udb/commit/612025182bc8b75e4a573ba5245759a181ce3568) by Patrik Dufresne).
+- Merge branch 'patrik-add-vrf' into 'master' ([eb56ccc](https://gitlab.com/ikus-soft/udb/commit/eb56ccc50107e207e8d7e32a9f2bd479a015a09d) by Patrik Dufresne).
+- Merge branch 'patrik-cname-unique-enforced' into 'master' ([ab9e890](https://gitlab.com/ikus-soft/udb/commit/ab9e8903f5016a27b216618a3a51bac5d7ac0b56) by Patrik Dufresne).
+- Merge branch 'patrik-count-changes' into 'master' ([53d9aa0](https://gitlab.com/ikus-soft/udb/commit/53d9aa05faa7fe9e3e17e6303e477ccfd561426a) by Patrik Dufresne).
+- Merge branch 'patrik-dead-lock-test' into 'master' ([c4d1f6c](https://gitlab.com/ikus-soft/udb/commit/c4d1f6cefb2229f5d57ee96bf4c184deadf17cc3) by Patrik Dufresne).
+- Merge branch 'patrik-fix-rule' into 'master' ([3342603](https://gitlab.com/ikus-soft/udb/commit/3342603243259dcf2b8d93965cbc13618d2d3e95) by Patrik Dufresne).
+- Merge branch 'patrik-email-timezone' into 'master' ([ebedd11](https://gitlab.com/ikus-soft/udb/commit/ebedd1180714d19829faaa049234ce81f5b47c8f) by Patrik Dufresne).
+- Merge branch 'patrik-selenium' into 'master' ([ee242fc](https://gitlab.com/ikus-soft/udb/commit/ee242fc1c46dd521de223787b13bfba4ded2bedc) by Patrik Dufresne).
+- Merge branch 'patrik-rule' into 'master' ([0e08553](https://gitlab.com/ikus-soft/udb/commit/0e08553008b981a584339429e73fbe72101dfcb1) by Patrik Dufresne).
+- Merge branch 'patrik-handle-error' into 'master' ([053da82](https://gitlab.com/ikus-soft/udb/commit/053da82b3ac1d1a5d61cbad87ccfced56474fa22) by Patrik Dufresne).
+- Merge branch 'patrik-dhcp-config' into 'master' ([99483ee](https://gitlab.com/ikus-soft/udb/commit/99483ee3273e2d881f23ce9a9737cd8a826e1bd3) by Patrik Dufresne).
+- Merge branch 'patrik-multi-filter' into 'master' ([1b1904f](https://gitlab.com/ikus-soft/udb/commit/1b1904f3f4d0c60ed320478b5aba34de12029e10) by Patrik Dufresne).
+- Merge branch 'patrik-affix-header-mobile' into 'master' ([32fb85e](https://gitlab.com/ikus-soft/udb/commit/32fb85ee1cc78c74533318bbc7f2664708f8f6e5) by Patrik Dufresne).
+- Merge branch 'patrik-type-ahead-sorting' into 'master' ([a589984](https://gitlab.com/ikus-soft/udb/commit/a589984b04431af64111101b8b7fdacfa9a0d294) by Patrik Dufresne).
+- Merge branch 'patrik-fixed-header' into 'master' ([effb379](https://gitlab.com/ikus-soft/udb/commit/effb3796ed578597b9b4c3d4224b3bf901ef9885) by Patrik Dufresne).
+- Merge branch 'patrik-enforced-rule' into 'master' ([550beb5](https://gitlab.com/ikus-soft/udb/commit/550beb569cf5e0ba06a415ddfbdcf15e09c35a97) by Patrik Dufresne).
+- Merge branch 'patrik-disable-auto-width' into 'master' ([55b90fe](https://gitlab.com/ikus-soft/udb/commit/55b90fe04cc2f8729dac5285f6e9b9abbfd6f350) by Patrik Dufresne).
+- Merge branch 'patrik-fix-typo' into 'master' ([cc72143](https://gitlab.com/ikus-soft/udb/commit/cc72143ad3462240ae2ba645259e91971a28626c) by Patrik Dufresne).
+- Merge branch 'patrik-improve-filter-ui' into 'master' ([553126a](https://gitlab.com/ikus-soft/udb/commit/553126acf1b155d45264ef4c75315e63b8ec741c) by Patrik Dufresne).
+- Merge branch 'patrik-soa-validation' into 'master' ([0cf3949](https://gitlab.com/ikus-soft/udb/commit/0cf394944bffbb6d5b1107c12906827ba17e6658) by Patrik Dufresne).
+- Merge branch 'patrik-ptr-soft-rule' into 'master' ([a3073fc](https://gitlab.com/ikus-soft/udb/commit/a3073fc48415ff6fd1ac46aa1ffb0046f78a92ff) by Patrik Dufresne).
+- Merge branch 'patrik-fix-subnet' into 'master' ([203ba3f](https://gitlab.com/ikus-soft/udb/commit/203ba3f5448f420b22dc4c5de5356640a46af5e2) by Patrik Dufresne).
+- Merge branch 'patrik-timezone-email-notification' into 'master' ([24745cd](https://gitlab.com/ikus-soft/udb/commit/24745cd83998994aac57413622ecd60652739e26) by Patrik Dufresne).
+- Merge branch 'patrik-user-delete' into 'master' ([7a0f859](https://gitlab.com/ikus-soft/udb/commit/7a0f859c477502b8f35b5ecabdeeabb2d2b4284e) by Patrik Dufresne).
+- Merge branch 'patrik-dhcp' into 'master' ([a49c939](https://gitlab.com/ikus-soft/udb/commit/a49c9394bce360222b69dd31e8dd13c0751c5ac3) by Patrik Dufresne).
+- Merge branch 'patrik-linter' into 'master' ([7f52bbf](https://gitlab.com/ikus-soft/udb/commit/7f52bbfe1f28c4acea3f20b4137690b895e67cd5) by Patrik Dufresne).
+- Merge branch 'patrik-subnet-dhcp' into 'master' ([b56d3aa](https://gitlab.com/ikus-soft/udb/commit/b56d3aa0ee5ecbb9c8dc47e214de0ea20ded70ca) by Patrik Dufresne).
+- Merge branch 'patrik-djlint' into 'master' ([b3dd0c5](https://gitlab.com/ikus-soft/udb/commit/b3dd0c5eee401f64689cadb631f0a2789dc73021) by Patrik Dufresne).
+- Merge branch 'patrik-french' into 'master' ([bf49bff](https://gitlab.com/ikus-soft/udb/commit/bf49bffffa2d750676e23b4fd6ce1c7c3eecc96e) by Patrik Dufresne).
+- Merge branch 'patrik-fix-history-ordering' into 'master' ([ea6d1d0](https://gitlab.com/ikus-soft/udb/commit/ea6d1d0837c83fc5292709f678045ebbc10203f1) by Patrik Dufresne).
+- Merge branch 'patrik-dhcp-in-subnet' into 'master' ([39f8344](https://gitlab.com/ikus-soft/udb/commit/39f8344a084befcd4e7bca1aef31b560a0461fe0) by Patrik Dufresne).
+- Merge branch 'patrik-pyproject-toml' into 'master' ([9c56934](https://gitlab.com/ikus-soft/udb/commit/9c5693443d2f55638820e0f48f3104f03a893d74) by Patrik Dufresne).
+- Merge branch 'patrik-user-change-notification' into 'master' ([04c54b9](https://gitlab.com/ikus-soft/udb/commit/04c54b9d2b3fcf4498555bbfee997618e852bdd7) by Patrik Dufresne).
+- Merge branch 'patrik-user-traking' into 'master' ([1dbe16a](https://gitlab.com/ikus-soft/udb/commit/1dbe16a8528921bd4b11f859a3e4e6ba20d542d1) by Patrik Dufresne).
+- Merge branch 'patrik-pdf-export' into 'master' ([be9a177](https://gitlab.com/ikus-soft/udb/commit/be9a177ae62a4a2a704c0e5f1cef1282e50b8975) by Patrik Dufresne).
+- Merge branch 'patrik-remove-scrollbar' into 'master' ([5562731](https://gitlab.com/ikus-soft/udb/commit/556273119cf4dbe026e761e419041342189e3615) by Patrik Dufresne).
+- Merge branch 'patrik-wildcard-search' into 'master' ([b05cc17](https://gitlab.com/ikus-soft/udb/commit/b05cc176a9ce321e956b5c3430bcf6b6752258c0) by Patrik Dufresne).
+- Merge branch 'patrik-drop-bootstrap-email' into 'master' ([2aa9a8b](https://gitlab.com/ikus-soft/udb/commit/2aa9a8b5e9e9e44de13ee8ac32dcab14d1c20043) by Patrik Dufresne).
+- Merge branch 'patrik-wip-prefix-search' into 'master' ([0914ef8](https://gitlab.com/ikus-soft/udb/commit/0914ef805f66f7b584d9f10c8e6a933fcb56a9c1) by Patrik Dufresne).
+- Merge branch 'patrik-fix-py-version' into 'master' ([d855459](https://gitlab.com/ikus-soft/udb/commit/d855459f6b62781266c51dae6b3bda60e7ada38b) by Patrik Dufresne).
+- Merge branch 'patrik-sqlalchemy-2.0' into 'master' ([3f0c1a9](https://gitlab.com/ikus-soft/udb/commit/3f0c1a9440b5d20da11c3566e1a3cb4946f75c01) by Patrik Dufresne).
+- Merge branch 'patrik-local-date' into 'master' ([cedf0d8](https://gitlab.com/ikus-soft/udb/commit/cedf0d851ca97ee50c38364553fa3119e8db81a2) by Patrik Dufresne).
+- Merge branch 'patrik-search-group' into 'master' ([b5bd9cf](https://gitlab.com/ikus-soft/udb/commit/b5bd9cf40851ea48f7adf63b2ceae72ea5add60a) by Patrik Dufresne).
+- Merge branch 'patrik-locale-date' into 'master' ([25a4690](https://gitlab.com/ikus-soft/udb/commit/25a469087b821da853a69be7dbb76c79dc63b137) by Patrik Dufresne).
+- Merge branch 'patrik-download' into 'master' ([64b6ab3](https://gitlab.com/ikus-soft/udb/commit/64b6ab3e4c0d0c78010396329a406ce3c4f12fc2) by Patrik Dufresne).
+- Merge branch 'patrik-readonly-username' into 'master' ([0955266](https://gitlab.com/ikus-soft/udb/commit/095526671dd0f623ae7105b0bbd054000cef8709) by Patrik Dufresne).
+- Merge branch 'patrik-zone-file' into 'master' ([03129bc](https://gitlab.com/ikus-soft/udb/commit/03129bca37a3e9e5eaf0899c7249ea7ebfc0f800) by Patrik Dufresne).
+- Merge branch 'patrik-search-vector' into 'master' ([643d59e](https://gitlab.com/ikus-soft/udb/commit/643d59e7bd81248f8ffff812325a916ac7026a7c) by Patrik Dufresne).
+- Merge branch 'patrik-bootstrap-form-validation' into 'master' ([a0411f7](https://gitlab.com/ikus-soft/udb/commit/a0411f730f8fd2c85e6ee62d7bc95e391ff5bdf7) by Patrik Dufresne).
+- Merge branch 'patrik-libjs-bootstrap5' into 'master' ([27e77c7](https://gitlab.com/ikus-soft/udb/commit/27e77c735749052a17a5c0cd067c15d8c0ade678) by Patrik Dufresne).
+- Merge branch 'patrik-ripe' into 'master' ([efc0277](https://gitlab.com/ikus-soft/udb/commit/efc0277d22bafe874f8bac93a0f15d102fc09bc4) by Patrik Dufresne).
+- Merge branch 'patrik-hide-deleted' into 'master' ([702598d](https://gitlab.com/ikus-soft/udb/commit/702598d0b1b529cb594a2b5abb61ccc3c2dfeda1) by Patrik Dufresne).
+- Merge branch 'patrik-ldap' into 'master' ([85f6802](https://gitlab.com/ikus-soft/udb/commit/85f6802f420a6ba5670e3452596a2bf3069fb9bc) by Patrik Dufresne).
+- Merge branch 'patrik-side-by-side' into 'master' ([18392b9](https://gitlab.com/ikus-soft/udb/commit/18392b95b88c5775766a56d3eca3c16a936a6157) by Patrik Dufresne).
+- Merge branch 'patrik-changes' into 'master' ([6f7ac05](https://gitlab.com/ikus-soft/udb/commit/6f7ac0581cf9203083aa2a611241a856eb53e474) by Patrik Dufresne).
+- Merge branch 'patrik-default-lang' into 'master' ([229fe39](https://gitlab.com/ikus-soft/udb/commit/229fe39e2139dbcd1068519cb37eb7e33cc75e53) by Patrik Dufresne).
+- Merge branch 'patrik-fix-dashboard-link' into 'master' ([7d8897c](https://gitlab.com/ikus-soft/udb/commit/7d8897cdb5b41ad1c67df0dac22e559a0e75512b) by Patrik Dufresne).
+- Merge branch 'patrik-perm' into 'master' ([f606318](https://gitlab.com/ikus-soft/udb/commit/f606318e00524b6fb16dfc7177e58d69078c549f) by Patrik Dufresne).
+- Merge branch 'patrik-oom' into 'master' ([89b85ce](https://gitlab.com/ikus-soft/udb/commit/89b85ce7449a575e9598259273623d3afcd8e554) by Patrik Dufresne).
+- Merge branch 'patrik-data-json-list' into 'master' ([828c707](https://gitlab.com/ikus-soft/udb/commit/828c707223721b9ae2311bfa465f828f172e44b0) by Patrik Dufresne).
+- Merge branch 'patrik-sort-zone-file' into 'master' ([dd562ba](https://gitlab.com/ikus-soft/udb/commit/dd562baf6b76bffdafbeb5531e3221b91c844446) by Patrik Dufresne).
+- Merge branch 'patrik-deployment' into 'master' ([cbe13bd](https://gitlab.com/ikus-soft/udb/commit/cbe13bd04761094ffac96faf554a6b0c92694063) by Patrik Dufresne).
+- Merge branch 'patrik-pre-fill-form' into 'master' ([d90074e](https://gitlab.com/ikus-soft/udb/commit/d90074e5900f8f84d0f88bbdce699312c82091e9) by Patrik Dufresne).
+- Merge branch 'patrik-mac-record' into 'master' ([10f126c](https://gitlab.com/ikus-soft/udb/commit/10f126cfdd8ad248ccee189a0f9a788688f1b531) by Patrik Dufresne).
+- Merge branch 'patrik-ip-owner-status-notes' into 'master' ([0e30b2b](https://gitlab.com/ikus-soft/udb/commit/0e30b2b680c03a53f2c8048180a42deca3c3d05e) by Patrik Dufresne).
+- Merge branch 'patrik-fix-comment-layout' into 'master' ([21ab364](https://gitlab.com/ikus-soft/udb/commit/21ab36471197007d022b8f616cdc96e338b193e9) by Patrik Dufresne).
+- Merge branch 'patrik-fix-translation' into 'master' ([3e04597](https://gitlab.com/ikus-soft/udb/commit/3e045979699c61f543bf527562ab4ac408640164) by Patrik Dufresne).
+- Merge branch 'patrik-python3.11' into 'master' ([2d75cba](https://gitlab.com/ikus-soft/udb/commit/2d75cba7725885772415238da8f1206132ffde25) by Patrik Dufresne).
+- Merge branch 'patrik-rename-ip' into 'master' ([ccb2751](https://gitlab.com/ikus-soft/udb/commit/ccb27510977a36b207ef8fafe58453a10f292e33) by Patrik Dufresne).
+- Merge branch 'patrik-lazy-load-history' into 'master' ([a3b3919](https://gitlab.com/ikus-soft/udb/commit/a3b391945c6c350b0c3c9c80e5706d4cf9265dd9) by Patrik Dufresne).
+- Merge branch 'patrik-followers-redesign' into 'master' ([0a27780](https://gitlab.com/ikus-soft/udb/commit/0a277807c85a4d2458ae0502776ddd3924f12949) by Patrik Dufresne).
+- Merge branch 'patrik-assign-owner-onreverse-record' into 'master' ([828a340](https://gitlab.com/ikus-soft/udb/commit/828a3409a3d12a1331bdc80eeecb05427c93a0d4) by Patrik Dufresne).
+- Merge branch 'patrik-create-forward' into 'master' ([f51cb91](https://gitlab.com/ikus-soft/udb/commit/f51cb91d58a4f165ec53caae7113b9c22920e0aa) by Patrik Dufresne).
+- Merge branch 'patrik-ip-record' into 'master' ([2337f76](https://gitlab.com/ikus-soft/udb/commit/2337f76fa75aff5383a59807ff09558d9bf0fa32) by Patrik Dufresne).
+- Merge branch 'patrik-reverse-ptr' into 'master' ([84f6ee9](https://gitlab.com/ikus-soft/udb/commit/84f6ee93078251a80f5e9cb50f39d73a116976ec) by Patrik Dufresne).
+- Merge branch 'patrik-tiny-changes' into 'master' ([eb511e4](https://gitlab.com/ikus-soft/udb/commit/eb511e4fdb59ba52fe6469a04eddb883c5d0edc8) by Patrik Dufresne).
+- Merge branch 'patrik-unfollow-all' into 'master' ([476c1a2](https://gitlab.com/ikus-soft/udb/commit/476c1a27b5854c3f047a9111f63c070927722142) by Patrik Dufresne).
+- Merge branch 'patrik-form-invalid-hint' into 'master' ([da7f96a](https://gitlab.com/ikus-soft/udb/commit/da7f96a930dc7e29bc64b117b07f9462934e4689) by Patrik Dufresne).
+- Merge branch 'patrik-dns-record-notification' into 'master' ([876569f](https://gitlab.com/ikus-soft/udb/commit/876569ff051fe269eed7e963cd3b69ab695f693f) by Patrik Dufresne).
+- Merge branch 'patrik-edit' into 'master' ([830e0a6](https://gitlab.com/ikus-soft/udb/commit/830e0a65ab1361ad079e8caf95c00f1e9989a377) by Patrik Dufresne).
+- Merge branch 'patrik-notification' into 'master' ([d6f190f](https://gitlab.com/ikus-soft/udb/commit/d6f190fe12707b78bc1df2920579a67fc88809eb) by Patrik Dufresne).
+- Merge branch 'patrik-disable-auto-commit' into 'master' ([b009425](https://gitlab.com/ikus-soft/udb/commit/b009425f1724487e6b2dc75d8ed750e8b3339afc) by Patrik Dufresne).
+- Merge branch 'patrik-fix-small-ui-bugs' into 'master' ([d6eb0e3](https://gitlab.com/ikus-soft/udb/commit/d6eb0e35758e52d3d1196b92c5456c84d5d42eeb) by Patrik Dufresne).
+- Merge branch 'patrik-ipv4-ipv4' into 'master' ([e2b3fb4](https://gitlab.com/ikus-soft/udb/commit/e2b3fb4652aab4e0df613c81683805a747ad552e) by Patrik Dufresne).
+- Merge branch 'patrik-update-security' into 'master' ([82a3ff4](https://gitlab.com/ikus-soft/udb/commit/82a3ff47ee02418941c44de8364a48b83f121b89) by Patrik Dufresne).
+- Merge branch 'patrik-datatables' into 'master' ([2c64e25](https://gitlab.com/ikus-soft/udb/commit/2c64e25f39726d0148e7ed4b5018d62e14775298) by Patrik Dufresne).
+- Merge branch 'patrik-cosmetic-changes' into 'master' ([1c48420](https://gitlab.com/ikus-soft/udb/commit/1c48420e074d1898beab1251969aae05dcfa0a12) by Patrik Dufresne).
+- Merge branch 'patrik-update-db.py' into 'master' ([f65e62d](https://gitlab.com/ikus-soft/udb/commit/f65e62de90e39fa70cce51412253fa90e1eba266) by Patrik Dufresne).
+- Merge branch 'patrik-improve-deb' into 'master' ([b3679c5](https://gitlab.com/ikus-soft/udb/commit/b3679c5024aa95099342f3a3370478dea4ce8c2c) by Patrik Dufresne).
+- Merge branch 'patrik-redirect' into 'master' ([8feaa7b](https://gitlab.com/ikus-soft/udb/commit/8feaa7b8c3159ccee864af3e933dda2213a99083) by Patrik Dufresne).
+- Merge branch 'patrik-dashboard' into 'master' ([f4a1ab3](https://gitlab.com/ikus-soft/udb/commit/f4a1ab3ae44219f2858c894973ba2840891d72b2) by Patrik Dufresne).
+- Merge branch 'patrik-ip-view-subnets' into 'master' ([36320fe](https://gitlab.com/ikus-soft/udb/commit/36320fef7467588137c71e47f20fcdbbbf840fa7) by Patrik Dufresne).
+- Merge branch 'patrik-fix-open-redirect' into 'master' ([2832efd](https://gitlab.com/ikus-soft/udb/commit/2832efd1fb0c0073bf3059e02e974291b39b08a8) by Patrik Dufresne).
+- Merge branch 'patrik-ptr-within-dns-zone' into 'master' ([ba18647](https://gitlab.com/ikus-soft/udb/commit/ba186479e5beb9b6fbfada0e15d421ee871f842d) by Patrik Dufresne).
+- Merge branch 'patrik-hide-related-deleted-records' into 'master' ([0770d4a](https://gitlab.com/ikus-soft/udb/commit/0770d4a1c22a1d02065ec763585cf45ba5f6f81b) by Patrik Dufresne).
+- Merge branch 'patrik-notification-view' into 'master' ([2bcb3d1](https://gitlab.com/ikus-soft/udb/commit/2bcb3d178236eeb20190b72dcee972818a60a077) by Patrik Dufresne).
+- Merge branch 'patrik-fix-sonar-issues' into 'master' ([5113371](https://gitlab.com/ikus-soft/udb/commit/5113371c546d23170ce83dd0cfade3be67df7ae4) by Patrik Dufresne).
+- Merge branch 'patrik-catchall-email' into 'master' ([90baa0a](https://gitlab.com/ikus-soft/udb/commit/90baa0a115d04dbba26e14bc66f6e6c9accc33ca) by Patrik Dufresne).
+- Merge branch 'patrik-ldap-attributes' into 'master' ([782b14d](https://gitlab.com/ikus-soft/udb/commit/782b14d901ecf009b2f7bbf621a12ccfa2adfee0) by Patrik Dufresne).
+- Merge branch 'patrik-replace-fontawsome' into 'master' ([9322b12](https://gitlab.com/ikus-soft/udb/commit/9322b125135658b3533cd6012b004fe824014b0f) by Patrik Dufresne).
+- Merge branch 'patrik-full-text-search' into 'master' ([be1aaa8](https://gitlab.com/ikus-soft/udb/commit/be1aaa8aad4681c13213da412035d976ab39035b) by Patrik Dufresne).
+- Merge branch 'patrik-table-sorting' into 'master' ([89f4fb3](https://gitlab.com/ikus-soft/udb/commit/89f4fb3514544cd8a9213032defb6c875f938cab) by Patrik Dufresne).
+- Merge branch 'patrik-deb-pytest' into 'master' ([7460643](https://gitlab.com/ikus-soft/udb/commit/74606438aa5a02bde0281ee1aa24ec2e019c3e14) by Patrik Dufresne).
+- Merge branch 'patrik-validate-dns-record-subnet' into 'master' ([557ff8e](https://gitlab.com/ikus-soft/udb/commit/557ff8effc802fddb2600ef5cb79bef136c553c7) by Patrik Dufresne).
+- Merge branch 'patrik-subnet-conflict' into 'master' ([cc5b06d](https://gitlab.com/ikus-soft/udb/commit/cc5b06db80d8bf59755810fe86b45ebeca8ec027) by Patrik Dufresne).
+- Merge branch 'patrik-user-management' into 'master' ([87b0931](https://gitlab.com/ikus-soft/udb/commit/87b093193382d97cf5040a160de945b61a73fb5a) by Patrik Dufresne).
+- Merge branch 'patrik-ip-view-with-ptr-records' into 'master' ([4bd19f9](https://gitlab.com/ikus-soft/udb/commit/4bd19f9077b5e19b59591813f115059b7c605308) by Patrik Dufresne).
+- Merge branch 'patrik-config-db' into 'master' ([6e176a1](https://gitlab.com/ikus-soft/udb/commit/6e176a1ed2901dedef1742c000d057f7dbe72ff8) by Patrik Dufresne).
+- Merge branch 'patrik-ptr-validation' into 'master' ([9d3021f](https://gitlab.com/ikus-soft/udb/commit/9d3021fe5279f0aeae9dc02a264bc00b61b3cc79) by Patrik Dufresne).
+- Merge branch 'patrik-audit-log-create-record' into 'master' ([9ba610a](https://gitlab.com/ikus-soft/udb/commit/9ba610a28efaa67892a0cbfe3ade8884abc5592d) by Patrik Dufresne).
+- Merge branch 'patrik-ip-list' into 'master' ([91867c9](https://gitlab.com/ikus-soft/udb/commit/91867c93045f5d69774d20f9ef4c5a7695a890cf) by Patrik Dufresne).
+- Merge branch 'patrik-debian-package' into 'master' ([ac1d8ba](https://gitlab.com/ikus-soft/udb/commit/ac1d8bac6c4c3cea5d9128c555a8dbefa5d2a8f5) by Patrik Dufresne).
+- Merge branch 'patrik-ip-view' into 'master' ([cc1d7bd](https://gitlab.com/ikus-soft/udb/commit/cc1d7bd732470fa9b63e9d1f63455122120430d3) by Patrik Dufresne).
+- Merge branch 'patrik-dns-records' into 'master' ([4b49389](https://gitlab.com/ikus-soft/udb/commit/4b493894c2fa2f72526c0c1d654bf43909bd1c74) by Patrik Dufresne).
+- Merge branch 'patrik-dns-zone-subnets' into 'master' ([78fe143](https://gitlab.com/ikus-soft/udb/commit/78fe143f377ae4aeb7bc81fb515069a923bda992) by Patrik Dufresne).
+- Merge branch 'patrik-favicon' into 'master' ([e2bad3c](https://gitlab.com/ikus-soft/udb/commit/e2bad3cbbd52d2908b1682effe5ee7385ec0fd1a) by Patrik Dufresne).
+- Merge branch 'patrik-fixes' into 'master' ([006d6d1](https://gitlab.com/ikus-soft/udb/commit/006d6d142442c14591415abc0b2ee71c4956eb69) by Patrik Dufresne).
+- Merge branch 'patrik-rename-app' into 'master' ([14a15d6](https://gitlab.com/ikus-soft/udb/commit/14a15d6e6f96c2daeac9bb2952aee447f1805e41) by Patrik Dufresne).
+- Merge branch 'patrik-rest-api' into 'master' ([b781b11](https://gitlab.com/ikus-soft/udb/commit/b781b117bb42f26fea405d4360447ec08fcf45a6) by Patrik Dufresne).
+- Merge branch 'patrik-sidebar' into 'master' ([77167df](https://gitlab.com/ikus-soft/udb/commit/77167dfa97055516616f826dd8c61e8caeb83f81) by Patrik Dufresne).
+- Merge branch 'patrik-add-edit-messages-followers' into 'master' ([3077e80](https://gitlab.com/ikus-soft/udb/commit/3077e80817a9f49a05337a715bd84f64b9bc5d89) by Patrik Dufresne).
+- Merge branch 'patrik-login' into 'master' ([c5c45d6](https://gitlab.com/ikus-soft/udb/commit/c5c45d6ae344e9d021fded822efe8cfb9bdcd86c) by Patrik Dufresne).
+
+### Misc
+
+- Update i18n ([4b84007](https://gitlab.com/ikus-soft/udb/commit/4b84007423dfb35897bbcee65ed677cc164d1263) by Patrik Dufresne).
+- Adjust error message when adding dhcp record without proper VRF ([50d2dee](https://gitlab.com/ikus-soft/udb/commit/50d2deecb380d8c49bfb623a7aff9e4fa5fd34cc) by Patrik Dufresne).
+- Improve Docker image ([b96ce31](https://gitlab.com/ikus-soft/udb/commit/b96ce31230418bcf9f9b70c5db2a5c185a7f7ec9) by Patrik Dufresne).
+- Redirect user trying to edit slave subnet #210 ([3eca893](https://gitlab.com/ikus-soft/udb/commit/3eca893ba982a3ac0c0f8afe467797944742ce01) by Patrik Dufresne).
+- Support disable state for side-by-side widget #211 ([3b9754b](https://gitlab.com/ikus-soft/udb/commit/3b9754b1820605d5ea188c35213002503d1dcfed) by Patrik Dufresne).
+- exclude multi.js ([b89f5b1](https://gitlab.com/ikus-soft/udb/commit/b89f5b1fc48da17add65f1c91c560d952e3b8f78) by Patrik Dufresne).
+- sonar: enforce datetime with tzinfo ([981cddb](https://gitlab.com/ikus-soft/udb/commit/981cddb5d5dc76744ede12997c91c1869a0d8211) by Patrik Dufresne).
+- sonar: reduce function complexity ([3db0a41](https://gitlab.com/ikus-soft/udb/commit/3db0a41083c5a5016ae03eb33d809367c9bee1af) by Patrik Dufresne).
+- sonar: Replace miss-use of <a> by <button> ([e34014c](https://gitlab.com/ikus-soft/udb/commit/e34014c3e6c142e85bb4179c957a48e4b8c9f4d2) by Patrik Dufresne).
+- Replace calls to pkg_resources #202 ([a5d7942](https://gitlab.com/ikus-soft/udb/commit/a5d7942192efa309128f90c81f42ee82b6afff60) by Patrik Dufresne).
+- Improve history tracking of parent changes ([1d831ce](https://gitlab.com/ikus-soft/udb/commit/1d831cee1d16f0598f6a661c67411d3723c8ba96) by Patrik Dufresne).
+- Reorganize rest api ([3e4d8bd](https://gitlab.com/ikus-soft/udb/commit/3e4d8bd16b62427287a84907c94ee9686e281102) by Patrik Dufresne).
+- Obfuscate password change #195 ([3f2bda0](https://gitlab.com/ikus-soft/udb/commit/3f2bda08bc95789a147826fe4866e66238537ad6) by Patrik Dufresne).
+- Redefine relation between subnet and range ([ba727a8](https://gitlab.com/ikus-soft/udb/commit/ba727a89d0452a60c742d2b871f60b4ea9d2876d) by Patrik Dufresne).
+- Update `auth_form` ([ca210b7](https://gitlab.com/ikus-soft/udb/commit/ca210b709a61edfed00b7159304dfd6c86662c96) by Patrik Dufresne).
+- Initial documentation ([91d6a6a](https://gitlab.com/ikus-soft/udb/commit/91d6a6a2abbc2e22a87198796df9306d731d8626) by Patrik Dufresne).
+- Reassign Subnet of DHCP and DNS ([d659085](https://gitlab.com/ikus-soft/udb/commit/d659085a12d163f3de359aa00a26f93daf110e48) by Patrik Dufresne).
+- Expire all on Load Page ([a7ca416](https://gitlab.com/ikus-soft/udb/commit/a7ca4169cf84c828cf8d53c40c7149d1964511e7) by Patrik Dufresne).
+- Multiple changes related to record status and data integrity ([8e794c1](https://gitlab.com/ikus-soft/udb/commit/8e794c17a1590593a9597f31416caf07eafa63d9) by Patrik Dufresne).
+- Block editing DNS Zone name #181 ([0673438](https://gitlab.com/ikus-soft/udb/commit/067343874cec464f3c54c0c4bacf07219b3b6e87) by Patrik Dufresne).
+- Support find "ahead" in side-by-side widget #116 ([8ab34d6](https://gitlab.com/ikus-soft/udb/commit/8ab34d68178492cdb794e79468dcc638033e640b) by Patrik Dufresne).
+- Update translation of history ([db817c7](https://gitlab.com/ikus-soft/udb/commit/db817c750ebe39c22a604c83495778f2e3f8d97f) by Patrik Dufresne).
+- Allow update of VRF of existing DNS Record and DHCP Reservation ([d7fa78d](https://gitlab.com/ikus-soft/udb/commit/d7fa78d61e644077491c1b83183472f15a574fa7) by Patrik Dufresne).
+- Enforce CNAME uniqueness #165 ([faeb757](https://gitlab.com/ikus-soft/udb/commit/faeb757051bd2b6f534013026258df3e1c0cff2b) by Patrik Dufresne).
+- Show hostname in DHCP Record page ([d85b9b8](https://gitlab.com/ikus-soft/udb/commit/d85b9b88f208ae027f10b3393338ee1377bd1afc) by Patrik Dufresne).
+- Show DHCP Status in IP View ([8c58ae7](https://gitlab.com/ikus-soft/udb/commit/8c58ae7c93d69d2dbe4afb6990a96bc7cdac4dd5) by Patrik Dufresne).
+- Count pending changes ([8458736](https://gitlab.com/ikus-soft/udb/commit/8458736d1593c2e0645a2ecc31a199c533c46f0b) by Patrik Dufresne).
+- Update french translation ([a9e5343](https://gitlab.com/ikus-soft/udb/commit/a9e5343e4fc86eac5769bd448e29ab27c2d56444) by Patrik Dufresne).
+- Revisit change count calculation #96 ([36b1883](https://gitlab.com/ikus-soft/udb/commit/36b1883905281ba118f6051b873dac48392dcbae) by Patrik Dufresne).
+- Show Unique Indexes and Check Constraints in rule view ([bb1f178](https://gitlab.com/ikus-soft/udb/commit/bb1f1786d614e0cd205539e3337c3a6c2029d9f5) by Patrik Dufresne).
+- Use SELECT DISTINCT for some rule to avoid duplicates ([1751982](https://gitlab.com/ikus-soft/udb/commit/1751982e22d801cb27779740f933ac1934e1a8ad) by Patrik Dufresne).
+- Re-implement business rule using CheckConstraint and RuleConstraint ([a4a048c](https://gitlab.com/ikus-soft/udb/commit/a4a048c77f6af54f7033aa4ec40fb32f20b4b921) by Patrik Dufresne).
+- Return link to duplicate record on unique index error #162 ([2903c97](https://gitlab.com/ikus-soft/udb/commit/2903c97b2adbe26bcc310e59e498f84d96a44a98) by Patrik Dufresne).
+- Improve rule SQL formating ([fc75772](https://gitlab.com/ikus-soft/udb/commit/fc757720fe31f9180e037c53f73ac877a5233654) by Patrik Dufresne).
+- Improve loading view ([3b7bc87](https://gitlab.com/ikus-soft/udb/commit/3b7bc8749b9fa1a0bcc29977ece1e1a90de78c54) by Patrik Dufresne).
+- Allow multiple selection in list filter #168 ([088e682](https://gitlab.com/ikus-soft/udb/commit/088e68243612c9bfea655d8c23e350278831f443) by Patrik Dufresne).
+- Make curl test stable ([9dae3b0](https://gitlab.com/ikus-soft/udb/commit/9dae3b0ffdcc76b3ea89665577eedf800c750f3f) by Patrik Dufresne).
+- Adjust affix header on mobile #169 ([841ab21](https://gitlab.com/ikus-soft/udb/commit/841ab21210744709bf82f150f5e1e37c95a4b81c) by Patrik Dufresne).
+- Sort typehead result #164 ([8dc79b3](https://gitlab.com/ikus-soft/udb/commit/8dc79b32ae12fd59a411aa9776bc432863fe2164) by Patrik Dufresne).
+- Affix table headers #154 ([9e7c454](https://gitlab.com/ikus-soft/udb/commit/9e7c454e41475d6d9292544be6b046cca101ee7c) by Patrik Dufresne).
+- Implement soft and enforced custom rule #152 ([b2807cf](https://gitlab.com/ikus-soft/udb/commit/b2807cf3d3218dce9fc888ecce919148aef57ef3) by Patrik Dufresne).
+- Disable AutoWidth #158 ([0c97598](https://gitlab.com/ikus-soft/udb/commit/0c9759828f342df31ff8a109134679d429352416) by Patrik Dufresne).
+- Update french translation and fix typo ([0e870f8](https://gitlab.com/ikus-soft/udb/commit/0e870f89629f0249a52ec2bab60a17a1ed689fdd) by Patrik Dufresne).
+- Improve search using filter menu #148 ([a908387](https://gitlab.com/ikus-soft/udb/commit/a908387c92be1155f9bb30f5e460e8ee62a118bc) by Patrik Dufresne).
+- Enforce validation of SOA DNS Records #153 ([15951be](https://gitlab.com/ikus-soft/udb/commit/15951be5a95210a8b6daeb22372139df26b57aa9) by Patrik Dufresne).
+- Improve PTR soft rule #151 ([527e745](https://gitlab.com/ikus-soft/udb/commit/527e74562b7cd6daf7e3c84577c1c2bd4013de52) by Patrik Dufresne).
+- Limit login to enabled users #147 ([7ae6627](https://gitlab.com/ikus-soft/udb/commit/7ae662707f0d3bd0ebbef0433adab8cab7a39178) by Patrik Dufresne).
+- Allow DHCP Reservation on DHCP Disabled subnet #149 ([bae412b](https://gitlab.com/ikus-soft/udb/commit/bae412b2dc8a918fd09dc10bec67e2f8970de691) by Patrik Dufresne).
+- Disable AutoWidth on DNS Record to improve performance ([92d6ad3](https://gitlab.com/ikus-soft/udb/commit/92d6ad3958aeae26ee94ed206864311b94c1ebc7) by Patrik Dufresne).
+- Implement soft rules validation #144 #100 ([89a9442](https://gitlab.com/ikus-soft/udb/commit/89a94426213a6ed8e1d7eafd3c3a91bb96dac19f) by Patrik Dufresne).
+- Restrict DHCP Reservation to Subnet with DHCP enabled #146 ([9a1c54c](https://gitlab.com/ikus-soft/udb/commit/9a1c54c7ba915d8db858cad667f37be8eb7893d2) by Patrik Dufresne).
+- Upgrade djLint to 1.30.2 ([82c1307](https://gitlab.com/ikus-soft/udb/commit/82c13071a916787a241ccc89ec89d25795886569) by Patrik Dufresne).
+- Detect DNS Record Mismatch #47 ([8dffa44](https://gitlab.com/ikus-soft/udb/commit/8dffa449acef7462c4282ff7c00b0c2d292227ef) by Patrik Dufresne).
+- Include French translation #135 ([913b2d7](https://gitlab.com/ikus-soft/udb/commit/913b2d77d689607a0bed07b197882378f8529c2e) by Patrik Dufresne).
+- WIP Fix history ordering ([1e5cb5e](https://gitlab.com/ikus-soft/udb/commit/1e5cb5e174360b90b24ef4a019d402d1b41994ae) by Patrik Dufresne).
+- DHCP Reservation must be created within a subnet #143 ([9fc000b](https://gitlab.com/ikus-soft/udb/commit/9fc000b05cb263cf3aa681c274cea49d75affffc) by Patrik Dufresne).
+- Migrate everything to pyproject.toml #137 ([440fedd](https://gitlab.com/ikus-soft/udb/commit/440fedd350a9c85d61479387dae20353e3e6fc60) by Patrik Dufresne).
+- Send notification for user changes #138 ([b641870](https://gitlab.com/ikus-soft/udb/commit/b64187072442696e02ec9450d5e73c39589d9f00) by Patrik Dufresne).
+- Replace Search table in search_page ([0982b21](https://gitlab.com/ikus-soft/udb/commit/0982b21b98cd8980c22e5c07987b6e985f6a8a58) by Patrik Dufresne).
+- Replace Search table in notification_page ([cba3993](https://gitlab.com/ikus-soft/udb/commit/cba3993da28ce82b6c5dc7ae0b18b526c867df0c) by Patrik Dufresne).
+- Support search of subnet ranges ([b672c86](https://gitlab.com/ikus-soft/udb/commit/b672c86a21b09d9ff1e6f01b5e650a7462cb65bb) by Patrik Dufresne).
+- Support wildcard lookup ([e80e147](https://gitlab.com/ikus-soft/udb/commit/e80e147c90ac0ec9d85a3198305cae81197d249c) by Patrik Dufresne).
+- Replace bootstrapemail by Jinja2 template ([983f18a](https://gitlab.com/ikus-soft/udb/commit/983f18a4932708684064e0fd3b94736fc5e14538) by Patrik Dufresne).
+- Support prefix search for typeahead ([1a62160](https://gitlab.com/ikus-soft/udb/commit/1a621601ea7acdc102382c258f32988eaaece710) by Patrik Dufresne).
+- Implement Typeahead ([586975e](https://gitlab.com/ikus-soft/udb/commit/586975ef37da345ef5abdedaf2f22d049499d49c) by Patrik Dufresne).
+- Accept value of zero (0) for vlan, l2vni l3vni ([8c3bec9](https://gitlab.com/ikus-soft/udb/commit/8c3bec9fca3305cf083fa07ec08e06329ec9f5f1) by Patrik Dufresne).
+- Localize date in email notification #126 ([790a623](https://gitlab.com/ikus-soft/udb/commit/790a62344a96fd5512fa145ae3810ccfc0bd89cb) by Patrik Dufresne).
+- Upgrade djlint to 1.19.16 ([f19ecc9](https://gitlab.com/ikus-soft/udb/commit/f19ecc9d4e20be52be3ab9f6362afda55cfb0dfe) by Patrik Dufresne).
+- Support CSV & Excel download ([9f89226](https://gitlab.com/ikus-soft/udb/commit/9f89226cc4b8adc7fe271896e5d826bc49b8830e) by Patrik Dufresne).
+- Make username readonly only when editing user #131 ([72d06ab](https://gitlab.com/ikus-soft/udb/commit/72d06abfc6feef7d574a6736244b2a15b889d7e3) by Patrik Dufresne).
+- Improve Import ([a42cdcf](https://gitlab.com/ikus-soft/udb/commit/a42cdcf7bb1d7fa66160a6534f48db9c30a42c23) by Patrik Dufresne).
+- Support SQLAlchemy 2.0 #94 ([191d7a9](https://gitlab.com/ikus-soft/udb/commit/191d7a9aa9f18d1d6e857e745389fb873af37049) by Patrik Dufresne).
+- Support server side-processing in Search page ([a63b381](https://gitlab.com/ikus-soft/udb/commit/a63b38196157ecc3f99be1befb92508e529507e1) by Patrik Dufresne).
+- Make use of count to check Followers ([de562d4](https://gitlab.com/ikus-soft/udb/commit/de562d4ad1618228d76d9842a72c7a3586a45424) by Patrik Dufresne).
+- Make use of with_entities() when validating DNS Records ([1f0ac79](https://gitlab.com/ikus-soft/udb/commit/1f0ac7959b7c52503a1c8313e49cbde94de93430) by Patrik Dufresne).
+- Use SmallInteger where applicable ([019690d](https://gitlab.com/ikus-soft/udb/commit/019690d04d9094424e2fead8e20a54107f8c041d) by Patrik Dufresne).
+- Define pattern on integer field for validation ([0cd14be](https://gitlab.com/ikus-soft/udb/commit/0cd14be0060fad8d4f78887b5580b239ce7cf28d) by Patrik Dufresne).
+- Use recent version of popper.js ([f1e6e1d](https://gitlab.com/ikus-soft/udb/commit/f1e6e1def679b0983f16377b7a95946bea655f89) by Patrik Dufresne).
+- Make use of libjs-bootstrap5 Debian package #103 ([dde8dbc](https://gitlab.com/ikus-soft/udb/commit/dde8dbcbcee2a7ae0a90e52535e5a7d6b5d6f093) by Patrik Dufresne).
+- Hide deleted record in edit page #113 ([882d922](https://gitlab.com/ikus-soft/udb/commit/882d92209d8e40eca172977e82d6b99f6172fc74) by Patrik Dufresne).
+- Show flash message in list page ([6e9e9fa](https://gitlab.com/ikus-soft/udb/commit/6e9e9fab008a0c2ecbee88869246f271a2d8435d) by Patrik Dufresne).
+- Use LDAP Group to assign user's role #36 ([91579e4](https://gitlab.com/ikus-soft/udb/commit/91579e4ebad9217a601315f604f555cb73641d8e) by Patrik Dufresne).
+- Reuse dual-list widget in subnet page #115 ([6b285a0](https://gitlab.com/ikus-soft/udb/commit/6b285a0ac18ea2ca6ec197dd7996f793d185d777) by Patrik Dufresne).
+- Rollback changes made by mistake to History card in edit page ([86a204c](https://gitlab.com/ikus-soft/udb/commit/86a204c233252dcf1904cdf6c3bdfcd8ca5dcf20) by Patrik Dufresne).
+- Move StringFieldSet to form module ([bc427a0](https://gitlab.com/ikus-soft/udb/commit/bc427a0fe3c4a4d3218030f093aa9879407742e0) by Patrik Dufresne).
+- Make all unique index explicit ([ec8c0a7](https://gitlab.com/ikus-soft/udb/commit/ec8c0a7861989eba7c4d08d3db2726cfde31208f) by Patrik Dufresne).
+- Re-use audit log implementation everywhere ([5c7ceeb](https://gitlab.com/ikus-soft/udb/commit/5c7ceebb277e88d9db159b544046ebbd516e83ae) by Patrik Dufresne).
+- Move deployment templates ([56b1b30](https://gitlab.com/ikus-soft/udb/commit/56b1b30bec9144d07e75b003ed4e3d93101affe9) by Patrik Dufresne).
+- Update error page layout to make the message the main attraction #112 ([5d7056b](https://gitlab.com/ikus-soft/udb/commit/5d7056b4512c1417742273c4fefa553a8f00087b) by Patrik Dufresne).
+- Enforce dateformat in email notification #111 ([e217486](https://gitlab.com/ikus-soft/udb/commit/e21748649dcf05912de67918f2d829fe650b8b04) by Patrik Dufresne).
+- Disable edit form when user doesn't have edit permissions ([aab0e0e](https://gitlab.com/ikus-soft/udb/commit/aab0e0ec4e0c750183f34818ead12975ca7f222b) by Patrik Dufresne).
+- Little fix for multi-language support in flash message ([25c284d](https://gitlab.com/ikus-soft/udb/commit/25c284d1a8dd91911ec6ee86c3ac18d544b21780) by Patrik Dufresne).
+- Make toggle filter more visible when active #114 ([321a2d2](https://gitlab.com/ikus-soft/udb/commit/321a2d2f1356202a256ee3214f65a943dc64cd58) by Patrik Dufresne).
+- Use primary-blue for all cards in dashboard view #120 ([d508f67](https://gitlab.com/ikus-soft/udb/commit/d508f67c237a505c72899ac61a1e5f8f32642d80) by Patrik Dufresne).
+- Keep searchbar always visible in navigation bar #119 ([853aa1d](https://gitlab.com/ikus-soft/udb/commit/853aa1dffbdfc6d91b6b87c87f1102b8f2f800f0) by Patrik Dufresne).
+- Use html5lib to validate HTML ([90b8f03](https://gitlab.com/ikus-soft/udb/commit/90b8f03ac0fe11ef4b3e877d66503e50c35ac647) by Patrik Dufresne).
+- Redesign role & permissions #99 ([71f8dc4](https://gitlab.com/ikus-soft/udb/commit/71f8dc47d2aa99dcd0d4ac60781c004fdc9f2b73) by Patrik Dufresne).
+- Redesign role & permissions ([4f8fab1](https://gitlab.com/ikus-soft/udb/commit/4f8fab1e31e9bee220694561a7ddd12bda2ec345) by Patrik Dufresne).
+- Force cache invalidate on restart for static files ([61e0e30](https://gitlab.com/ikus-soft/udb/commit/61e0e30c4383b5a2ab0259903c49f06628520862) by Patrik Dufresne).
+- Limit notification sizes #107 ([86c1151](https://gitlab.com/ikus-soft/udb/commit/86c1151ba3e1992c2dd1254f06e06c6cbecfb072) by Patrik Dufresne).
+- Reduce data.json footprint by using list instead of dict ([b4b099c](https://gitlab.com/ikus-soft/udb/commit/b4b099c9d8b6e7d24d891b8ef0140f77ede1490c) by Patrik Dufresne).
+- Sort DNS Record in zone file #97 ([be9b928](https://gitlab.com/ikus-soft/udb/commit/be9b928cfc9e5d3c56bb991ad94362c9fe9785f2) by Patrik Dufresne).
+- Properly redirect user with `referer` #22 ([3ce3ca4](https://gitlab.com/ikus-soft/udb/commit/3ce3ca4767d446bd63065a6b94b2c5ed46f68831) by Patrik Dufresne).
+- Re-format templates ([02e3d82](https://gitlab.com/ikus-soft/udb/commit/02e3d82945217ece4a9a6df175a0946e9f8486e4) by Patrik Dufresne).
+- Allow to Pre-fill Form #23 ([8b50c55](https://gitlab.com/ikus-soft/udb/commit/8b50c55c4d666e5d028f790142f81d825160283c) by Patrik Dufresne).
+- Create MAC Record #89 ([b0f928c](https://gitlab.com/ikus-soft/udb/commit/b0f928c24eb15b593853e6f5a4593988f00687ac) by Patrik Dufresne).
+- Disable i18n caching ([19c6a5e](https://gitlab.com/ikus-soft/udb/commit/19c6a5e68f1c947f8d0c7aaedb0e623ba2747dba) by Patrik Dufresne).
+- Update IP reference count #86 ([eab96e2](https://gitlab.com/ikus-soft/udb/commit/eab96e285a00ab1255e521f384356c94a30ab1c0) by Patrik Dufresne).
+- Rename "Ip" to "IP" #88 ([5bfda28](https://gitlab.com/ikus-soft/udb/commit/5bfda2801eb55dee919f66273f25df22775e284b) by Patrik Dufresne).
+- Lazy load history with paging #76 ([2f2ac81](https://gitlab.com/ikus-soft/udb/commit/2f2ac8198b0a6e9a5642b2ad92c5cda4c59da83a) by Patrik Dufresne).
+- Re-design the followers list on desktop & mobile #85 ([c0df654](https://gitlab.com/ikus-soft/udb/commit/c0df65494683ebfdf0dd14bbcce4c103794e2efd) by Patrik Dufresne).
+- Assign owner when creating reverse DNS Record #84 ([ae00bfe](https://gitlab.com/ikus-soft/udb/commit/ae00bfe9a9ddc27046d089990d6461cd610bfc2e) by Patrik Dufresne).
+- Create IP Table ([82ffd3e](https://gitlab.com/ikus-soft/udb/commit/82ffd3e0344b8c7031024ba6541414be74467aa1) by Patrik Dufresne).
+- Make record status standout when editing #74 ([4cf6bed](https://gitlab.com/ikus-soft/udb/commit/4cf6bed4247cd812bf2c4ffb7d9d3c758e9abbf5) by Patrik Dufresne).
+- Improve dashboard #78 ([a515542](https://gitlab.com/ikus-soft/udb/commit/a515542eb551343fca338979f780ad3806da9603) by Patrik Dufresne).
+- Re-order menu item item #82 ([8c7fbde](https://gitlab.com/ikus-soft/udb/commit/8c7fbdea1290a1b85298f9dafb38644ad78a6a09) by Patrik Dufresne).
+- Rename "DHCP Record" to "DHCP Reservation" #77 ([e8b3421](https://gitlab.com/ikus-soft/udb/commit/e8b342173892927c43b75d27e2d120a1de385363) by Patrik Dufresne).
+- Order messages to have preditable order for unit test ([0698af8](https://gitlab.com/ikus-soft/udb/commit/0698af84da75ebc2319ed02ec6ec60564e8ee060) by Patrik Dufresne).
+- Allow user to unfollow from all record #58 ([5170d55](https://gitlab.com/ikus-soft/udb/commit/5170d557240bd4dad65c7e1081e01d507bcf1f56) by Patrik Dufresne).
+- Provide bootstrap invalid hint ([e8788f5](https://gitlab.com/ikus-soft/udb/commit/e8788f5388464f6d6456b93edb78d0cb2089ee35) by Patrik Dufresne).
+- Distinct from "created" vs "modified" notification ([1b4ce81](https://gitlab.com/ikus-soft/udb/commit/1b4ce8131795003837532edccb375f223b890b8e) by Patrik Dufresne).
+- Notify follower of other DNS Record #56 ([6be2ee8](https://gitlab.com/ikus-soft/udb/commit/6be2ee8642df9ee3a5f27a120ed1294d32f1ce3d) by Patrik Dufresne).
+- Allow user to comment before save changes ([553fa25](https://gitlab.com/ikus-soft/udb/commit/553fa25838cf678258b041073971cf8a3acc8402) by Patrik Dufresne).
+- Hide navbar on login page ([ee4b512](https://gitlab.com/ikus-soft/udb/commit/ee4b5124eacd862fc5c23f5a40a04901b726aff7) by Patrik Dufresne).
+- Improve notification system ([516f70c](https://gitlab.com/ikus-soft/udb/commit/516f70c4e2fb82d38a5fa1fe0ca0c628993ef451) by Patrik Dufresne).
+- Automatically deploy to demo server #70 ([a45d758](https://gitlab.com/ikus-soft/udb/commit/a45d7588766ecbc7f54419a2f4828d073abed846) by Patrik Dufresne).
+- Support multiple IP Range for a single Subnet #61 ([d4d9158](https://gitlab.com/ikus-soft/udb/commit/d4d91583b60139a7a899081f6a34682c90f6de98) by Patrik Dufresne).
+- Enforce 'Origin' validation to counter CSRF and XSS ([53b2d6d](https://gitlab.com/ikus-soft/udb/commit/53b2d6dac6e5ce4516f4c01670e9f65f0e3feb0b) by Patrik Dufresne).
+- Encofre strong password with zxcvbn ([513fc44](https://gitlab.com/ikus-soft/udb/commit/513fc44fef7cdae0736bd3cc6944634454675e50) by Patrik Dufresne).
+- Enforce field limit in wtform validation ([e11c74c](https://gitlab.com/ikus-soft/udb/commit/e11c74cca968fe3a61322d09a0050dceae4f90ae) by Patrik Dufresne).
+- Implement POST, REDIRECt, GET in user profile ([ba993ea](https://gitlab.com/ikus-soft/udb/commit/ba993eae2caf6c103a38c1c8b9360a08e1734c37) by Patrik Dufresne).
+- Update Content-Security-Policy ([eedfd10](https://gitlab.com/ikus-soft/udb/commit/eedfd106d37c39b1b2d3d20c9a619b3fd0345536) by Patrik Dufresne).
+- Update auth_form ([2b18781](https://gitlab.com/ikus-soft/udb/commit/2b18781f8ceb8060b5e121efa5ecc39269c840bc) by Patrik Dufresne).
+- Define proper proxy settings for best security #67 ([ebf6d33](https://gitlab.com/ikus-soft/udb/commit/ebf6d334d5e5ed4cf0c47704f1332147c4bf5b42) by Patrik Dufresne).
+- Avoid leaking stacktrace when running in production mode #67 ([ef0ff87](https://gitlab.com/ikus-soft/udb/commit/ef0ff879875d1c3b4fada144305529b9ce5f857e) by Patrik Dufresne).
+- Define default security headers #67 ([2fef04e](https://gitlab.com/ikus-soft/udb/commit/2fef04edb02978da5ae6ff882af6964cc8806521) by Patrik Dufresne).
+- Redirect user to same page after edit ([0380258](https://gitlab.com/ikus-soft/udb/commit/0380258a8730efd608418e9b71fffc07ecbe6561) by Patrik Dufresne).
+- Complete datatable changes ([c069e23](https://gitlab.com/ikus-soft/udb/commit/c069e23c206068a4802b8a71e8ae0cf34ae7410a) by Patrik Dufresne).
+- Support VRF Records ([86dace7](https://gitlab.com/ikus-soft/udb/commit/86dace7832685a64a443f681ae3c50af9895718d) by Patrik Dufresne).
+- Enabled `cherrypy.tools.proxy` to support reverse proxy #65 ([8ed2578](https://gitlab.com/ikus-soft/udb/commit/8ed2578b4e1abe1cddef83e32b1d7794be9c0e8b) by Patrik Dufresne).
+- Provide default log configuration for debian package ([7b544e0](https://gitlab.com/ikus-soft/udb/commit/7b544e0691eb45018f002d555200ff83fc04a2c4) by Patrik Dufresne).
+- Use datatables library to display tables #48 #66 ([b112b49](https://gitlab.com/ikus-soft/udb/commit/b112b496a9a1c37f06c36a16d52b3c320a3a580a) by Patrik Dufresne).
+- Update db module plugins ([4a143a0](https://gitlab.com/ikus-soft/udb/commit/4a143a0cda8fa7f88038bd7a2e09bde76a5542e5) by Patrik Dufresne).
+- Cosmetic changes ([2e728fc](https://gitlab.com/ikus-soft/udb/commit/2e728fcc21099ef695b98ce6adecab732353731f) by Patrik Dufresne).
+- Update db Base class ([f4e8ac9](https://gitlab.com/ikus-soft/udb/commit/f4e8ac91d2fb27516731c4069e19d021e7fa45d1) by Patrik Dufresne).
+- Allow Administrators to define or remove user's password #51 ([89167c5](https://gitlab.com/ikus-soft/udb/commit/89167c528d106241337442f88dd07e3499b26b0e) by Patrik Dufresne).
+- Provide a default page for /api/ ([297dd29](https://gitlab.com/ikus-soft/udb/commit/297dd297df0718fcc8aa8e1220adea06011994f2) by Patrik Dufresne).
+- Provide a default configfile #52 ([a185555](https://gitlab.com/ikus-soft/udb/commit/a185555c15c8a23d963a151d712bbe24bc205f46) by Patrik Dufresne).
+- Make IP View a custom template ([4db2c0a](https://gitlab.com/ikus-soft/udb/commit/4db2c0abdc459640d619c14b593f95d4685ae7e2) by Patrik Dufresne).
+- Ad scalar_subquery to remove sqlalchemy warning ([0403a11](https://gitlab.com/ikus-soft/udb/commit/0403a111504b1125b2eb738232d0f8ff287cf983) by Patrik Dufresne).
+- Redirect user to previous page after editing #22 ([1724498](https://gitlab.com/ikus-soft/udb/commit/17244982b74738f7e04db430086cea423c2791bf) by Patrik Dufresne).
+- Define inherit_cache for cidr ([d258069](https://gitlab.com/ikus-soft/udb/commit/d258069025cfc1f94d68958f00d5122ed08d231d) by Patrik Dufresne).
+- Define default image to upload deb ([d335530](https://gitlab.com/ikus-soft/udb/commit/d335530a5220aa708c48afb57b515058b4119904) by Patrik Dufresne).
+- Define a timestamp decorator to handle timezone ([49460be](https://gitlab.com/ikus-soft/udb/commit/49460be0272380bffd9dc254faaed501c4560a9b) by Patrik Dufresne).
+- Avoid editing status using HTTP GET method ([4e679aa](https://gitlab.com/ikus-soft/udb/commit/4e679aac4505453e6fc313518c0b96b48be2da0c) by Patrik Dufresne).
+- Avoid editing followers using HTTP GET ([6925276](https://gitlab.com/ikus-soft/udb/commit/692527658d61ed1cda64067f6ad3fe5782639308) by Patrik Dufresne).
+- Validate PTR Record using DNS Zone #37 ([b654706](https://gitlab.com/ikus-soft/udb/commit/b654706ce7575f98be89aa1f58143adae5f36ff9) by Patrik Dufresne).
+- Reffactoring reverse_ip as hybrid_property ([1734110](https://gitlab.com/ikus-soft/udb/commit/173411019772eefd7e754d5d830142eb89452c9e) by Patrik Dufresne).
+- Exclude deleted records from relation to IP #42 ([810b503](https://gitlab.com/ikus-soft/udb/commit/810b50342831989c8d88dc4a45207f5dbfd59e97) by Patrik Dufresne).
+- Exclude generated templates from sonar ([30bd3c3](https://gitlab.com/ikus-soft/udb/commit/30bd3c382e984342fef3ee9c171b8db9f78c1466) by Patrik Dufresne).
+- Move display_name to jinja2 templates ([075f25a](https://gitlab.com/ikus-soft/udb/commit/075f25a27b2dca52a54297ec870ddcdc994b46f6) by Patrik Dufresne).
+- Make email template compliant ([5ba210e](https://gitlab.com/ikus-soft/udb/commit/5ba210e7687f2aa186ae7a7e6c852ccf7fb53565) by Patrik Dufresne).
+- Fetch email and fullname attributes from LDAP #43 ([a673ba2](https://gitlab.com/ikus-soft/udb/commit/a673ba2c0ecf098326cb5e1fd0c105526c6fc71c) by Patrik Dufresne).
+- Send notification to followers #15 ([35d4e3b](https://gitlab.com/ikus-soft/udb/commit/35d4e3b6b9e5627d2edbea33f76adbbd10e9bd89) by Patrik Dufresne).
+- Update Copyright year ([b8b5933](https://gitlab.com/ikus-soft/udb/commit/b8b5933bf8880cda0cdbdf75b2e46f12f5e6f044) by Patrik Dufresne).
+- Replace font awsome by bootstrap-icons #24 #34 ([f5df4d5](https://gitlab.com/ikus-soft/udb/commit/f5df4d5c698c240972237a28556a167ce52b047b) by Patrik Dufresne).
+- Make tables sortable #30 ([10dfa69](https://gitlab.com/ikus-soft/udb/commit/10dfa6953b005f534853ac6035b81ee54795bbb1) by Patrik Dufresne).
+- Run test during Debian Packaging using pytest ([306959f](https://gitlab.com/ikus-soft/udb/commit/306959f5a2e86b4ea59ae16dae5c7d26df2c1616) by Patrik Dufresne).
+- Validate if subnet creation conflict with other existing subnet #9 ([67fab57](https://gitlab.com/ikus-soft/udb/commit/67fab57ff1f674b0bf763edd81c93fbe43c6ff5a) by Patrik Dufresne).
+- Configuring setup() using setup.cfg files ([c6399ec](https://gitlab.com/ikus-soft/udb/commit/c6399ec995db8b757e8d7f37d3f06dcf084a47a5) by Patrik Dufresne).
+- Update sidebar ([87895a6](https://gitlab.com/ikus-soft/udb/commit/87895a621ef289f7e42c0714814cfd44ffbc4f4c) by Patrik Dufresne).
+- Complete user managements ([2c38891](https://gitlab.com/ikus-soft/udb/commit/2c38891d6a251cc36824f523264e945d74ffc3c0) by Patrik Dufresne).
+- Implement LDAP authentication #4 ([e840c59](https://gitlab.com/ikus-soft/udb/commit/e840c595aa0700211887711d759586f6862b1bae) by Patrik Dufresne).
+- Make database-uri configurable #25 #33 ([56f7dbf](https://gitlab.com/ikus-soft/udb/commit/56f7dbfb705ef2bbb0f9441794f0748d2065dc05) by Patrik Dufresne).
+- Include PTR record ipv4 and ipv6 in IP View ([8489f2b](https://gitlab.com/ikus-soft/udb/commit/8489f2bb5b0f64dabef4dd14f1507111ec35fb5e) by Patrik Dufresne).
+- Complete IP View changes #7 ([d4016ad](https://gitlab.com/ikus-soft/udb/commit/d4016ad87ff79a40992735888a1d4e84743457f5) by Patrik Dufresne).
+- Provide a Debian package #14 ([2200bca](https://gitlab.com/ikus-soft/udb/commit/2200bcaa31da66ae009f7101250cdd87c2d73df8) by Patrik Dufresne).
+- Use a single table for messages ([34c1490](https://gitlab.com/ikus-soft/udb/commit/34c14908d09c9ee03804500ee3b70555a94154d6) by Patrik Dufresne).
+- Use a single table for followers ([ba771b6](https://gitlab.com/ikus-soft/udb/commit/ba771b65ca07beae8b904c5a414d512c5fec787b) by Patrik Dufresne).
+- Adjust CSS Layout ([43a1432](https://gitlab.com/ikus-soft/udb/commit/43a1432ad648285bf0b9828a27e52037406ae5de) by Patrik Dufresne).
+- Rename application from CMDB to UDB ([624c0b8](https://gitlab.com/ikus-soft/udb/commit/624c0b8937531cbf6cfd418ca18b1f954a6893ae) by Patrik Dufresne).
+- Creatre RESTful API for CRUD operation #8 ([b15dfd6](https://gitlab.com/ikus-soft/udb/commit/b15dfd695f340611eda301449ce417d02da27f52) by Patrik Dufresne).
+- Working version ([700ff58](https://gitlab.com/ikus-soft/udb/commit/700ff585cfa6da2b517dd6427679e156036ff928) by Patrik Dufresne).
+- Re-implement navigation using sidebar ([2fbe61e](https://gitlab.com/ikus-soft/udb/commit/2fbe61eb46472898b7e1ff566bb4a25854a7decc) by Patrik Dufresne).
+- Implement basic view to add,edit record ([f21dc51](https://gitlab.com/ikus-soft/udb/commit/f21dc513f4026aa1730537ae989ff72fe36ff2f3) by Patrik Dufresne).
+- Update SQLAlchemy integration ([8dfc847](https://gitlab.com/ikus-soft/udb/commit/8dfc847a127b8b738b9652946709e3f4f17650dd) by Patrik Dufresne).
+- Complete project skeleton & creating login page #3 ([d30ddfc](https://gitlab.com/ikus-soft/udb/commit/d30ddfc7e6546f87d4119ba29ce5b61366652ec6) by Patrik Dufresne).
+- Initial version ([beaf3b0](https://gitlab.com/ikus-soft/udb/commit/beaf3b00fe0e853bc1db14ec867d053e83d654fe) by Patrik Dufresne).
+
