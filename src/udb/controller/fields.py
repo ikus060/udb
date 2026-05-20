@@ -1,5 +1,5 @@
 # udb, A web interface to manage IT network
-# Copyright (C) 2025 IKUS Software inc.
+# Copyright (C) 2026 IKUS Software inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
