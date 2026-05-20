@@ -2,7 +2,14 @@
 
 include /usr/share/dpkg/pkg-info.mk
 
-export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_UDB := $(DEB_VERSION_UPSTREAM)
+# Strip everything after + or ~. e.g. ~dfsg.2-1 +20260912
+PROJECT_UPSTREAM_VERSION := $(firstword $(subst +, ,$(subst ~,+,$(DEB_VERSION_UPSTREAM))))
+ifeq ($(DEB_DISTRIBUTION),UNRELEASED)
+	# If UNRELEASED, append .dev0
+	export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_BFH_SSP := $(PROJECT_UPSTREAM_VERSION).dev0
+else
+	export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_BFH_SSP := $(PROJECT_UPSTREAM_VERSION)
+endif
 
 %:
 	dh $@ --buildsystem=pybuild --test-pytest
