@@ -1,4 +1,4 @@
-udb (1.0.0+20260520-1) UNRELEASED; urgency=medium
+udb (1.1.0-1) unstable; urgency=medium
 
   * Make better use of form floating
   * Start using JinjaX for edit view
@@ -39,8 +39,19 @@ udb (1.0.0+20260520-1) UNRELEASED; urgency=medium
   * deps: bump cherrypy-foundation to v1.12.0
   * ci: build for forky
   * build: consolidate lint tools into a single tox environment
+  * changelog: automate changelog update
+  * ci: run wrap-and-sort
+  * debian: change upstream contact to issue tracker URL
+  * doc: update copyright year to 2026 across codebase
+  * controller: delete obsolete multi.js static file
+  * debian: change Standards-Version to 4.7.3
+  * debian: fix misplaced Rules-Requires-Root field in control file
+  * debian: fix version parsing for setuptools-scm
+  * db: fix session management using context managers
+  * debian: remove sphinxdoc dependency and refactor rules
+  * debian: add umask default configuration
 
- -- Patrik Dufresne <patrik@ikus-soft.com>  Wed, 20 May 2026 09:10:22 -0400
+ -- Patrik Dufresne <patrik@ikus-soft.com>  Thu, 21 May 2026 11:04:29 -0400
 
 udb (1.0.0-1) unstable; urgency=medium
 
@@ -475,4 +486,3 @@ udb (1.0.0-1) unstable; urgency=medium
   * Merge branch 'patrik-history' into 'master'
 
  -- Patrik Dufresne <patrik@ikus-soft.com>  Mon, 19 Aug 2024 12:36:12 +0000
-

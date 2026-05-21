@@ -6,12 +6,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
-## Unreleased
+## [1.1.0](https://gitlab.com/ikus-soft/udb/tags/1.1.0) - 2026-05-21
 
-<small>[Compare with latest](https://gitlab.com/ikus-soft/udb/compare/1.0.0...HEAD)</small>
+<small>[Compare with 1.0.0](https://gitlab.com/ikus-soft/udb/compare/1.0.0...1.1.0)</small>
 
 ### Added
 
+- debian: add umask default configuration ([bd52299](https://gitlab.com/ikus-soft/udb/commit/bd5229995925d0eeba4a7f578f48acaef6a17204) by Patrik Dufresne).
 - Add python3-jinjax as dependency ([92f7f2d](https://gitlab.com/ikus-soft/udb/commit/92f7f2d133b779e631b693ad22b523ff1a79b6b4) by Patrik Dufresne).
 - Add support for Debian trixie ([f9ff5b4](https://gitlab.com/ikus-soft/udb/commit/f9ff5b4b41ba4bc2c63063a30b18fa8b3d0f08ec) by Patrik Dufresne).
 - Add `pytz` as explicit dependencies ([721a2e7](https://gitlab.com/ikus-soft/udb/commit/721a2e7d48a1fcd3dd1a372750883ca5556386b4) by Patrik Dufresne).
@@ -19,13 +20,29 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- db: fix session management using context managers ([0ce8163](https://gitlab.com/ikus-soft/udb/commit/0ce81638bdb9659f183dc3b6c403837d4c4ec574) by Patrik Dufresne).
+- debian: fix version parsing for setuptools-scm ([9257030](https://gitlab.com/ikus-soft/udb/commit/9257030decc72dc28a16f464a2a0f79d099e5d91) by Patrik Dufresne).
+- debian: fix misplaced Rules-Requires-Root field in control file ([ae76d12](https://gitlab.com/ikus-soft/udb/commit/ae76d125ffa00da9789248b7c98dfb2f4a681c2e) by Patrik Dufresne).
 - Fix user's password updates ([e184171](https://gitlab.com/ikus-soft/udb/commit/e1841719bb7af7fee1a5cb559fb37689eb8ba4e5) by Patrik Dufresne).
 - Fix timming issue in few selenium test ([148aa88](https://gitlab.com/ikus-soft/udb/commit/148aa8801131dbec089f69a060052437824d0482) by Patrik Dufresne).
 
+### Changed
+
+- debian: change Standards-Version to 4.7.3 ([2fb9304](https://gitlab.com/ikus-soft/udb/commit/2fb9304ae4910d6b117c75a872ad0554b78cc942) by Patrik Dufresne).
+- debian: change upstream contact to issue tracker URL ([a7997ba](https://gitlab.com/ikus-soft/udb/commit/a7997ba9f278de2bfa4c4a481259104780cfb8ef) by Patrik Dufresne).
+
+### Removed
+
+- debian: remove sphinxdoc dependency and refactor rules ([c522127](https://gitlab.com/ikus-soft/udb/commit/c5221276b71a1e30fc24a89e13a1d49e172e0839) by Patrik Dufresne).
+
 ### Misc
 
-- build: consolidate lint tools into a single tox environment ([cf4f885](https://gitlab.com/ikus-soft/udb/commit/cf4f885fce48b315328317e86ddd400780617b82) by Patrik Dufresne).
-- ci: build for forky ([7f7362f](https://gitlab.com/ikus-soft/udb/commit/7f7362f8dfdd68a184518ee2a6aea31c651e3b88) by Patrik Dufresne).
+- controller: delete obsolete multi.js static file ([9aca9a2](https://gitlab.com/ikus-soft/udb/commit/9aca9a2041ff4756b65bd6cb747e52fb999b1cef) by Patrik Dufresne).
+- doc: update copyright year to 2026 across codebase ([4763939](https://gitlab.com/ikus-soft/udb/commit/476393936e6ef174bdd4d59f7da4fc9200bbb4a6) by Patrik Dufresne).
+- ci: run wrap-and-sort ([c4a4260](https://gitlab.com/ikus-soft/udb/commit/c4a42606a4c6fc5e5780093a6d22af304209ea5b) by Patrik Dufresne).
+- changelog: automate changelog update ([e5725eb](https://gitlab.com/ikus-soft/udb/commit/e5725ebda3c48a7190ef6a94662e4b1c1dd9f994) by Patrik Dufresne).
+- build: consolidate lint tools into a single tox environment ([5d22725](https://gitlab.com/ikus-soft/udb/commit/5d22725a5bd80ad731e6192d16ad357b88caa08c) by Patrik Dufresne).
+- ci: build for forky ([aabaec4](https://gitlab.com/ikus-soft/udb/commit/aabaec46d946492311cb4d776ec177d517053113) by Patrik Dufresne).
 - deps: bump cherrypy-foundation to v1.12.0 ([e5b7245](https://gitlab.com/ikus-soft/udb/commit/e5b7245d1504931ab7e423bc31f5e43203f3ee4a) by Patrik Dufresne).
 - deps: bump cherrypy-foundation to v1.6.0 ([5e47156](https://gitlab.com/ikus-soft/udb/commit/5e47156e6be286d49f43da4fb1b02671125909af) by Patrik Dufresne).
 - Reorganize foundation modules ([c1cf2b9](https://gitlab.com/ikus-soft/udb/commit/c1cf2b998d60a1ad4992febb3c18925af57643f4) by Patrik Dufresne).
@@ -58,7 +75,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Start using JinjaX for edit view ([9cd074f](https://gitlab.com/ikus-soft/udb/commit/9cd074fb715ec996b4e45b5fa8624c1bc80aa767) by Patrik Dufresne).
 - Make better use of form floating ([1250f91](https://gitlab.com/ikus-soft/udb/commit/1250f91e270f10a0283508bbfe6ba08a4703d7d2) by Patrik Dufresne).
 
-<!-- insertion marker -->
 ## [1.0.0](https://gitlab.com/ikus-soft/udb/tags/1.0.0) - 2024-08-19
 
 <small>[Compare with first commit](https://gitlab.com/ikus-soft/udb/compare/8dfc847a127b8b738b9652946709e3f4f17650dd...1.0.0)</small>
@@ -509,4 +525,3 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Update SQLAlchemy integration ([8dfc847](https://gitlab.com/ikus-soft/udb/commit/8dfc847a127b8b738b9652946709e3f4f17650dd) by Patrik Dufresne).
 - Complete project skeleton & creating login page #3 ([d30ddfc](https://gitlab.com/ikus-soft/udb/commit/d30ddfc7e6546f87d4119ba29ce5b61366652ec6) by Patrik Dufresne).
 - Initial version ([beaf3b0](https://gitlab.com/ikus-soft/udb/commit/beaf3b00fe0e853bc1db14ec867d053e83d654fe) by Patrik Dufresne).
-
