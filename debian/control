@@ -50,7 +50,6 @@ Depends:
  python3-jinjax,
  ${misc:Depends},
  ${python3:Depends},
- ${sphinxdoc:Depends},
 Suggests:
  python3-psycopg2,
 Description: Web application used to manage records to configure enterprise network with ansible-playbook.

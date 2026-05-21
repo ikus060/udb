@@ -11,38 +11,44 @@ else
 	export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_BFH_SSP := $(PROJECT_UPSTREAM_VERSION)
 endif
 
+# Force use of pyproject.toml
+export PYBUILD_SYSTEM=pyproject
+
+PYTHON3_DEFAULT := $(shell py3versions -vd)
+
 %:
 	dh $@ --buildsystem=pybuild --test-pytest
 
-# For testing, we need a timezone
+execute_after_dh_auto_clean:
+	rm -rf *.egg-info
+	rm -f debian/bfh-ssp.bash-completion
+
 override_dh_auto_test:
+	# For testing, we need a timezone and a display for Javascript tests.
 	TZ=UTC dh_auto_test
 
 execute_after_dh_auto_install:
-# Compile locale
+	# Compile locale
 	for pofile in debian/udb/usr/lib/python$(PYTHON3_DEFAULT)/dist-packages/udb/locales/*/LC_MESSAGES/*.po ; do \
 		mofile=`echo $$pofile | sed -e "s/\.po/\.mo/g"`; \
 		msgfmt $$pofile -o $$mofile; \
 	done
-# Remove tests files
-	find debian/udb/usr/lib/python$(PYTHON3_DEFAULT)/dist-packages/rdiffweb -type d -name "tests" -exec rm -rf {} +
+	# Remove tests files
+	find debian/udb/usr/lib/python$(PYTHON3_DEFAULT)/dist-packages/udb -type d -name "tests" -exec rm -rf {} +
 
-# Generate bash-completions with shtab
 execute_after_dh_bash-completion:
+	# Generate bash-completions with shtab
 	PYTHONPATH=debian/udb/usr/lib/python$(PYTHON3_DEFAULT)/dist-packages:$(PYTHONPATH) \
 	shtab --shell=bash -u udb.config.get_parser --error-unimportable --prog udb \
 		> debian/udb.bash-completion
 
-# Generate man page from argparse
 execute_after_dh_installman:
+	# Generate man page from argparse
 	mkdir -p debian/udb/usr/share/man/man1
 	PYTHONPATH=debian/udb/usr/lib/python$(PYTHON3_DEFAULT)/dist-packages:$(PYTHONPATH) \
 	argparse-manpage --module udb.config --function get_parser \
 		--version "$(DEB_VERSION_UPSTREAM)" \
 		--output debian/udb/usr/share/man/man1/udb.1
-
-execute_before_dh_auto_clean:
-	rm -rf *.egg-info
 
 # Generate orig.tar.gz
 gentarball:
